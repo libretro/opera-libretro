@@ -125,32 +125,9 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FIX_BIT_TIMING_7        (0x00000040)
 #define FIX_BIT_GRAPHICS_STEP_Y (0x00080000) // Preserve Y coordinate rather than X between CELs.
 
-#ifdef __MSVC__
-
-#ifdef FREEDOCORE_EXPORTS
-#define FREEDOCORE_API __declspec(dllexport)
-#else
-#define FREEDOCORE_API __declspec(dllimport)
-#endif
-
-
-#else
-
-#define FREEDOCORE_API
-
-#endif
-
 extern "C"
 {
-	FREEDOCORE_API void* _freedo_Interface(int procedure, void *datum=0);
+	void* _freedo_Interface(int procedure, void *datum=0);
 };
-
-#ifdef __MSVC__
-#ifndef FREEDOCORE_EXPORTS
-//#pragma comment(lib, "freedocore.lib")
-#endif
-#endif
-//------------------------------------------------------------------------------
-
 
 #endif

@@ -261,7 +261,8 @@ int sdf=0;
 int unknownflag11=0;
 int jw=0;
 int cnbfix=0;
-FREEDOCORE_API void* _freedo_Interface(int procedure, void *datum)
+
+void* _freedo_Interface(int procedure, void *datum)
 {
 	int line;
 	switch(procedure)
