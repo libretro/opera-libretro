@@ -8,17 +8,10 @@ unsigned char FIXED_CLUTR[32];
 unsigned char FIXED_CLUTG[32];
 unsigned char FIXED_CLUTB[32];
 
-static void* tempBitmap;
-static ScalingAlgorithm currentAlgorithm;
-
-//void setCurrentAlgorithm(ScalingAlgorithm algorithm);
-
 void _frame_Init(void)
 {
-	tempBitmap = NULL;
-	//currentAlgorithm = ScalingAlgorithm::None;
-
-	for(int j = 0; j < 32; j++)
+   int j;
+	for(j = 0; j < 32; j++)
 	{
 		FIXED_CLUTR[j] = (unsigned char)(((j & 0x1f) << 3) | ((j >> 2) & 7));
 		FIXED_CLUTG[j] = FIXED_CLUTR[j];
@@ -40,8 +33,6 @@ void Get_Frame_Bitmap(
 	int* resultingWidth,
 	int* resultingHeight)
 {
-	//setCurrentAlgorithm(scalingAlgorithm);
-
 	float maxCropPercent = allowCrop ? .25f : 0;
 	int maxCropTall = (int)(copyHeight * maxCropPercent);
 	int maxCropWide = (int)(copyWidth * maxCropPercent);
@@ -55,11 +46,7 @@ void Get_Frame_Bitmap(
 
 	// Destination will be directly changed if there is no scaling algorithm.
 	// Otherwise we extract to a temporary buffer.
-	unsigned char* destPtr;
-	//if (currentAlgorithm == ScalingAlgorithm::None)
-		destPtr = (unsigned char*)destinationBitmap;
-	//else
-	//	destPtr = (unsigned char*)tempBitmap;
+	unsigned char* destPtr = (unsigned char*)destinationBitmap;
 
 	VDLFrame* framePtr = sourceFrame;
 	for (int line = 0; line < copyHeight; line++)
@@ -116,24 +103,6 @@ void Get_Frame_Bitmap(
 	}
 
 	int cropAdjust = 1;
-//	switch (currentAlgorithm)
-//	{
-//	case ScalingAlgorithm::None:
-//		// Nothing left to do
-//		break;
-//	case ScalingAlgorithm::HQ2X:
-//		hq2x_32((uint32_t*)tempBitmap, (uint32_t*)destinationBitmap, copyWidth, copyHeight);
-//		cropAdjust = 2;
-//		break;
-//	case ScalingAlgorithm::HQ3X:
-//		hq3x_32((uint32_t*)tempBitmap, (uint32_t*)destinationBitmap, copyWidth, copyHeight);
-//		cropAdjust = 3;
-//		break;
-//	case ScalingAlgorithm::HQ4X:
-//		hq4x_32((uint32_t*)tempBitmap, (uint32_t*)destinationBitmap, copyWidth, copyHeight);
-//		cropAdjust = 4;
-//		break;
-//	}
 
 	bitmapCrop->top *= cropAdjust;
 	bitmapCrop->left *= cropAdjust;
@@ -143,38 +112,3 @@ void Get_Frame_Bitmap(
 	*resultingWidth = copyWidth * cropAdjust;
 	*resultingHeight = copyHeight * cropAdjust;
 }
-
-//void setCurrentAlgorithm(ScalingAlgorithm algorithm)
-//{
-//	//////////////////
-//	// De-initialize current (if necessary).
-//	if (
-//		((currentAlgorithm == ScalingAlgorithm::HQ2X)
-//		|| (currentAlgorithm == ScalingAlgorithm::HQ3X)
-//		|| (currentAlgorithm == ScalingAlgorithm::HQ4X))
-//		&& algorithm != ScalingAlgorithm::HQ2X
-//		&& algorithm != ScalingAlgorithm::HQ3X
-//		&& algorithm != ScalingAlgorithm::HQ4X )
-//	{
-//		delete tempBitmap;
-//		hqxDestroy();
-//	}
-//
-//	//////////////////
-//	// Initialize current (if necessary).
-//
-//	if (
-//		((algorithm == ScalingAlgorithm::HQ2X)
-//		|| (algorithm == ScalingAlgorithm::HQ3X)
-//		|| (algorithm == ScalingAlgorithm::HQ4X))
-//		&& currentAlgorithm != ScalingAlgorithm::HQ2X
-//		&& currentAlgorithm != ScalingAlgorithm::HQ3X
-//		&& currentAlgorithm != ScalingAlgorithm::HQ4X )
-//	{
-//		//hqxInit();
-//		tempBitmap = new unsigned char[1280*960*4];
-//	}
-//
-//	// Accept new current algorithm.
-//	currentAlgorithm = algorithm;
-//}
