@@ -391,7 +391,7 @@ void retro_get_system_info(struct retro_system_info *info)
 	info->library_name = "4DO";
 	info->library_version = "1.3.2.3";
 	info->need_fullpath = false;
-	info->valid_extensions = "cue|iso";
+	info->valid_extensions = "iso";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
