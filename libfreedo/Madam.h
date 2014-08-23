@@ -43,15 +43,15 @@ Felix Lazarev
 	 int _madam_HandleCEL();      //!!!~!
 	 void _madam_Init(unsigned char* memory);
 	 void _madam_KeyPressed(unsigned char* data, unsigned int num);
-	 void __fastcall _madam_Poke(unsigned int addr, unsigned int val);
-	 unsigned int __fastcall _madam_Peek(unsigned int addr);
+	 void _madam_Poke(unsigned int addr, unsigned int val);
+	 unsigned int _madam_Peek(unsigned int addr);
 	 
 unsigned int _madam_SaveSize();
 void _madam_Save(void *buff);
 void _madam_Load(void *buff);
 
         //void _madam_PrepToRendering();
-        //bool __fastcall _madam_VRAMBusy(unsigned int addr, int size);
+        //bool _madam_VRAMBusy(unsigned int addr, int size);
 
 
 #endif 

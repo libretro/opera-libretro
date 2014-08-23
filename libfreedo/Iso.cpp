@@ -174,7 +174,7 @@ public:
 	void Init();
 
 	unsigned int GetStatusFifo();
-	void __fastcall SendCommand(unsigned char val);
+	void  SendCommand(unsigned char val);
 	unsigned int GetPoll();
 	bool TestFIQ();
 	void SetPoll(unsigned int val);
@@ -271,7 +271,7 @@ unsigned int cdrom_Device::GetStatusFifo()
 
 }
 
-void __fastcall cdrom_Device::SendCommand(unsigned char val)
+void  cdrom_Device::SendCommand(unsigned char val)
 {
  	if (CmdPtr<7)
 	{

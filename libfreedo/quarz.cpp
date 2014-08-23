@@ -74,7 +74,7 @@ void _qrz_Load(void *buff)
 #define VDL_HS quarz.VDL_HS
 #define VDL_FS quarz.VDL_FS
 
-void __fastcall _qrz_Init()
+void  _qrz_Init()
 {
         qrz_AccVDL=qrz_AccDSP=0;
         qrz_AccARM=0;
@@ -87,21 +87,21 @@ void __fastcall _qrz_Init()
         qrz_vdlline=0;
 }
 
-int __fastcall _qrz_VDCurrLine()
+int  _qrz_VDCurrLine()
 {
         return qrz_vdlline%(VDL_HS/*+(VDL_HS/2)*/);
 }
-int __fastcall _qrz_VDHalfFrame()
+int  _qrz_VDHalfFrame()
 {
         return qrz_vdlline/(VDL_HS);
 }
 
-int __fastcall _qrz_VDCurrOverline()
+int  _qrz_VDCurrOverline()
 {
         return qrz_vdlline;
 }
 
-bool __fastcall _qrz_QueueVDL()
+bool  _qrz_QueueVDL()
 {
         if(qrz_AccVDL>>24)
         {
@@ -112,7 +112,7 @@ bool __fastcall _qrz_QueueVDL()
         }
         return false;
 }
-bool __fastcall _qrz_QueueDSP()
+bool  _qrz_QueueDSP()
 {
         if(qrz_AccDSP>>24)
         {
@@ -124,7 +124,7 @@ bool __fastcall _qrz_QueueDSP()
         return false;
 }
 
-bool __fastcall _qrz_QueueTimer()
+bool  _qrz_QueueTimer()
 {
  //uint32 cnt=_clio_GetTimerDelay();
         if(qrz_TCount>>24)//=cnt)
@@ -135,7 +135,7 @@ bool __fastcall _qrz_QueueTimer()
         return false;
 }
 
-void __fastcall _qrz_PushARMCycles(unsigned int clks)
+void  _qrz_PushARMCycles(unsigned int clks)
 {
  uint32 arm,cnt;
   int timers=21000000; //default

@@ -39,7 +39,7 @@ Felix Lazarev
 #define FLABLODE	0x8
 
 
-void __fastcall HandleDMA(unsigned int val);
+void HandleDMA(unsigned int val);
 
 //#define FIFODBG
 
@@ -114,13 +114,13 @@ int _clio_v1line()
         return cregs[12]&0x7ff;
 }
 
-bool __fastcall _clio_NeedFIQ()
+bool _clio_NeedFIQ()
 {
         if( (cregs[0x40]&cregs[0x48]) || (cregs[0x60]&cregs[0x68]) ) return true;
         return false;
 }
 
-void __fastcall _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
+void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
 {
 
 	cregs[0x40]|=reason1;
@@ -144,9 +144,9 @@ void __fastcall _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
 #include "freedocore.h"
 extern _ext_Interface  io_interface;
 //extern AString str;
-void __fastcall _clio_SetTimers(uint32 v200, uint32 v208);
-void __fastcall _clio_ClearTimers(uint32 v204, uint32 v20c);
-int __fastcall _clio_Poke(unsigned int addr, unsigned int val)
+void _clio_SetTimers(uint32 v200, uint32 v208);
+void _clio_ClearTimers(uint32 v204, uint32 v20c);
+int _clio_Poke(unsigned int addr, unsigned int val)
 {
 	int base;
 	int i;
@@ -443,7 +443,7 @@ cregs[addr]=val;
 
 
 
-unsigned int __fastcall _clio_Peek(unsigned int addr)
+unsigned int _clio_Peek(unsigned int addr)
 {
 
 #ifdef DBGCLIO
@@ -557,24 +557,24 @@ unsigned int __fastcall _clio_Peek(unsigned int addr)
 		return cregs[addr];
 }
 
-void __fastcall _clio_UpdateVCNT(int line, int halfframe)
+void _clio_UpdateVCNT(int line, int halfframe)
 {
 //	Poke(0x34,Peek(0x34)+1);
 	cregs[0x34]=(halfframe<<11)+line;
 }
 
 
-void __fastcall _clio_SetTimers(uint32 v200, uint32 v208)
+void _clio_SetTimers(uint32 v200, uint32 v208)
 {
     (void) v200;
     (void) v208;
 }
-void __fastcall _clio_ClearTimers(uint32 v204, uint32 v20c)
+void _clio_ClearTimers(uint32 v204, uint32 v20c)
 {
     (void) v204;
     (void) v20c;
 }
-void __fastcall _clio_DoTimers()
+void _clio_DoTimers()
 {
     unsigned int timer;
     unsigned short counter;
@@ -620,7 +620,7 @@ unsigned int _clio_GetTimerDelay()
 }
 
 
-void __fastcall HandleDMA(unsigned int val)
+void HandleDMA(unsigned int val)
 {
 	unsigned int src;
 	unsigned int trg;
@@ -763,7 +763,7 @@ void _clio_Init(int ResetReson)
 	Mregs=_madam_GetRegs();
 
 }
-unsigned short  __fastcall _clio_EIFIFO(unsigned short channel)
+unsigned short  _clio_EIFIFO(unsigned short channel)
 {
 	unsigned int val,base,mask;
 
@@ -811,7 +811,7 @@ unsigned short  __fastcall _clio_EIFIFO(unsigned short channel)
 	return val;
 }
 
-void  __fastcall _clio_EOFIFO(unsigned short channel, unsigned short val)
+void  _clio_EOFIFO(unsigned short channel, unsigned short val)
 {
 
 	unsigned int base;
@@ -846,14 +846,14 @@ void  __fastcall _clio_EOFIFO(unsigned short channel, unsigned short val)
 
 }
 
-unsigned short  __fastcall _clio_EIFIFONI(unsigned short channel)
+unsigned short  _clio_EIFIFONI(unsigned short channel)
 {
 	unsigned int base;
 	base=0x400+(channel*16);
 	return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])^2));
 }
 
-unsigned short   __fastcall _clio_GetEIFIFOStat(unsigned char channel)
+unsigned short   _clio_GetEIFIFOStat(unsigned char channel)
 {
 	unsigned int mask;
 
@@ -868,7 +868,7 @@ unsigned short   __fastcall _clio_GetEIFIFOStat(unsigned char channel)
 	return 0;
 }
 
-unsigned short   __fastcall _clio_GetEOFIFOStat(unsigned char channel)
+unsigned short   _clio_GetEOFIFOStat(unsigned char channel)
 {
 	unsigned int mask;
 	mask=1<<(channel+16);

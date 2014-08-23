@@ -153,12 +153,13 @@ struct ARM_CoreState
 static ARM_CoreState arm;
 static int CYCLES;	//cycle counter
 
-unsigned int __fastcall rreadusr(unsigned int rn);
-void __fastcall loadusr(unsigned int rn, unsigned int val);
-unsigned int __fastcall mreadb(unsigned int addr);
-void __fastcall mwriteb(unsigned int addr, unsigned int val);
-unsigned int __fastcall mreadw(unsigned int addr);
-void __fastcall mwritew(unsigned int addr,unsigned int val);
+//forward decls
+unsigned int rreadusr(unsigned int rn);
+void loadusr(unsigned int rn, unsigned int val);
+unsigned int mreadb(unsigned int addr);
+void mwriteb(unsigned int addr, unsigned int val);
+unsigned int mreadw(unsigned int addr);
+void mwritew(unsigned int addr,unsigned int val);
 
 #define MAS_Access_Exept	arm.MAS_Access_Exept
 #define pRam	arm.Ram
@@ -463,7 +464,7 @@ void ARM_RestUndRONS()
    }
 }
 
-void __fastcall ARM_Change_ModeSafe(uint32 mode)
+void ARM_Change_ModeSafe(uint32 mode)
 {
     switch(arm_mode_table[mode&0x1f])
     {
@@ -488,7 +489,7 @@ void __fastcall ARM_Change_ModeSafe(uint32 mode)
     }
 }
 
-void __fastcall SelectROM(int n)
+void SelectROM(int n)
 {
     gSecondROM = (n>0)? true:false;
 }
@@ -641,7 +642,7 @@ void _arm_Reset()
 int addrr=0;
 int vall=0;
 int inuse=0;
-void __fastcall ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
+void ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 {
  unsigned short x=opc&0xffff;
  unsigned short list=opc&0xffff;
@@ -727,7 +728,7 @@ if(tmp!=vall){
 }
 
 
-void __fastcall stm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
+void stm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 {
  unsigned short x=opc&0xffff;
  unsigned short list=opc&0x7fff;
@@ -803,7 +804,7 @@ void __fastcall stm_accur(unsigned int opc, unsigned int base, unsigned int rn_i
 
 
 
-void __fastcall  bdt_core(unsigned int opc)
+void  bdt_core(unsigned int opc)
 {
  unsigned int base,rn_ind;
 
@@ -838,7 +839,7 @@ typedef struct TagArg
 				unsigned int Type;
 				unsigned int Arg;
 			} TagItem;
-void __fastcall decode_swi(unsigned int i)
+void decode_swi(unsigned int i)
 {
 
     (void) i;
@@ -896,7 +897,7 @@ __inline void ARM_SET_CV_sub(uint32 rd, uint32 op1, uint32 op2)
 }
 
 
-bool __fastcall ARM_ALU_Exec(uint32 inst, uint8 opc, uint32 op1, uint32 op2, uint32 *Rd)
+bool ARM_ALU_Exec(uint32 inst, uint8 opc, uint32 op1, uint32 op2, uint32 *Rd)
 {
  switch(opc)
  {
@@ -1037,7 +1038,7 @@ bool __fastcall ARM_ALU_Exec(uint32 inst, uint8 opc, uint32 op1, uint32 op2, uin
 }
 
 
-uint32 __fastcall ARM_SHIFT_NSC(uint32 value, uint8 shift, uint8 type)
+uint32 ARM_SHIFT_NSC(uint32 value, uint8 shift, uint8 type)
 {
   switch(type)
   {
@@ -1095,7 +1096,7 @@ uint32 __fastcall ARM_SHIFT_NSC(uint32 value, uint8 shift, uint8 type)
   return 0;
 }
 
-uint32 __fastcall ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
+uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
 {
 uint32 tmp;
   switch(type)
@@ -1153,7 +1154,7 @@ uint32 tmp;
 
 
 
-void __fastcall ARM_SWAP(uint32 cmd)
+void ARM_SWAP(uint32 cmd)
 {
 
     unsigned int tmp, addr;
@@ -1211,7 +1212,7 @@ const bool is_logic[]={
     true,true,true,true
     };
 
-int __fastcall _arm_Execute()
+int _arm_Execute()
 {
     uint32 cmd,pc_tmp;
 	bool isexeption=false;
@@ -1577,7 +1578,7 @@ int __fastcall _arm_Execute()
 }
 
 
-void __fastcall _mem_write8(unsigned int addr, unsigned char val)
+void _mem_write8(unsigned int addr, unsigned char val)
 {
 	pRam[addr]=val;
 	if(addr<0x200000 || !RESSCALE) return;
@@ -1585,7 +1586,7 @@ void __fastcall _mem_write8(unsigned int addr, unsigned char val)
 	pRam[addr+2*1024*1024]=val;
 	pRam[addr+3*1024*1024]=val;
 }
-void __fastcall _mem_write16(unsigned int addr, unsigned short val)
+void  _mem_write16(unsigned int addr, unsigned short val)
 {
 	*((unsigned short*)&pRam[addr])=val;
 	if(addr<0x200000 || !RESSCALE) return;
@@ -1593,7 +1594,7 @@ void __fastcall _mem_write16(unsigned int addr, unsigned short val)
 	*((unsigned short*)&pRam[addr+2*1024*1024])=val;
 	*((unsigned short*)&pRam[addr+3*1024*1024])=val;
 }
-void __fastcall _mem_write32(unsigned int addr, unsigned int val)
+void _mem_write32(unsigned int addr, unsigned int val)
 {
 	*((unsigned int*)&pRam[addr])=val;
 	if(addr<0x200000 || !RESSCALE) return;
@@ -1602,21 +1603,21 @@ void __fastcall _mem_write32(unsigned int addr, unsigned int val)
 	*((unsigned int*)&pRam[addr+3*1024*1024])=val;
 }
 
-unsigned short __fastcall _mem_read16(unsigned int addr)
+unsigned short _mem_read16(unsigned int addr)
 {
 	return *((unsigned short*)&pRam[addr]);
 }
-unsigned int __fastcall _mem_read32(unsigned int addr)
+unsigned int _mem_read32(unsigned int addr)
 {
 	return *((unsigned int*)&pRam[addr]);
 }
-unsigned char __fastcall _mem_read8(unsigned int addr)
+unsigned char _mem_read8(unsigned int addr)
 {
 	return pRam[addr];
 }
 
 
-void __fastcall mwritew(unsigned int addr, unsigned int val)
+void mwritew(unsigned int addr, unsigned int val)
 {
     //to do -- wipe out all HW part
     //to do -- add proper loging
@@ -1683,7 +1684,7 @@ void __fastcall mwritew(unsigned int addr, unsigned int val)
 
 }
 
-unsigned int __fastcall mreadw(unsigned int addr)
+unsigned int mreadw(unsigned int addr)
 {
     //to do -- wipe out all HW
     //to do -- add abort (may be in HW)
@@ -1760,7 +1761,7 @@ unsigned int __fastcall mreadw(unsigned int addr)
 }
 
 
-void __fastcall mwriteb(unsigned int addr, unsigned int val)
+void mwriteb(unsigned int addr, unsigned int val)
 {
   int index; // for avoid bad compiler optimization
 
@@ -1796,7 +1797,7 @@ void __fastcall mwriteb(unsigned int addr, unsigned int val)
 
 
 
-unsigned int __fastcall mreadb(unsigned int addr)
+unsigned int mreadb(unsigned int addr)
 {
 
   int index; // for avoid bad compiler optimization
@@ -1831,7 +1832,7 @@ unsigned int __fastcall mreadb(unsigned int addr)
 }
 
 
-void  __fastcall loadusr(unsigned int n, unsigned int val)
+void  loadusr(unsigned int n, unsigned int val)
 {
  if(n==15)
  {
@@ -1860,7 +1861,7 @@ void  __fastcall loadusr(unsigned int n, unsigned int val)
 }
 
 
-unsigned int __fastcall rreadusr(unsigned int n)
+unsigned int rreadusr(unsigned int n)
 {
  if(n==15)return RON_USER[15];
  switch(arm_mode_table[(CPSR&0x1f)])
@@ -1883,12 +1884,12 @@ unsigned int __fastcall rreadusr(unsigned int n)
 
 
 
-unsigned int __fastcall ReadIO(unsigned int addr)
+unsigned int ReadIO(unsigned int addr)
 {
     return mreadw(addr);
 }
 
-void __fastcall WriteIO(unsigned int addr, unsigned int val)
+void WriteIO(unsigned int addr, unsigned int val)
 {
     mwritew(addr,val);
 }

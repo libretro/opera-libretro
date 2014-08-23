@@ -47,11 +47,11 @@ Felix Lazarev
 
 #define WAVELET (11025)
 
-unsigned short __fastcall RegBase(unsigned int reg);
-unsigned short __fastcall ireadh(unsigned int addr);
-void __fastcall iwriteh(unsigned int addr, unsigned short val);
-void __fastcall OperandLoader(int Requests);
-int __fastcall OperandLoaderNWB(void);
+unsigned short RegBase(unsigned int reg);
+unsigned short ireadh(unsigned int addr);
+void iwriteh(unsigned int addr, unsigned short val);
+void OperandLoader(int Requests);
+int  OperandLoaderNWB(void);
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -802,14 +802,14 @@ unsigned int _dsp_Loop()
 	return ((IMem[0x3ff]<<16)|IMem[0x3fe]);
 }
 
-void __fastcall _dsp_WriteMemory(unsigned short addr, unsigned short val) //CPU writes NMEM of DSP
+void  _dsp_WriteMemory(unsigned short addr, unsigned short val) //CPU writes NMEM of DSP
 {
 	//mwriteh(addr,val);
 	//printf("#NWRITE 0x%3.3X<=0x%4.4X\n",addr,val);
 	NMem[addr&0x3ff]=val;
 }
 
-unsigned short __fastcall RegBase(unsigned int reg)
+unsigned short  RegBase(unsigned int reg)
 {
 	unsigned short res;
 	unsigned char twi,x,y;
@@ -846,7 +846,7 @@ unsigned short __fastcall RegBase(unsigned int reg)
 	return res;
 }
 
-unsigned short __fastcall ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
+unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
 {
 
 	unsigned short val;
@@ -959,7 +959,7 @@ unsigned short __fastcall ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
 
 }
 
-void __fastcall iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I)
+void  iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I)
 {
 	//unsigned short imem;
 	addr&=0x3ff;
@@ -1022,13 +1022,13 @@ void __fastcall iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (inc
 	}
 }
 
-void __fastcall _dsp_SetRunning(bool val)
+void  _dsp_SetRunning(bool val)
 {
 	flags.Running= val;
 }
 
 
-void __fastcall _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,I of DSP
+void  _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,I of DSP
 {
 	switch(addr)
 	{
@@ -1085,7 +1085,7 @@ void __fastcall _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU wri
 
 }
 
-void __fastcall _dsp_ARMwrite2sema4(unsigned int val)
+void  _dsp_ARMwrite2sema4(unsigned int val)
 {
     // How about Sema4ACK? Now don't think about it
 	dregs.Sema4Data=val&0xffff;	// ARM write to Sema4Data low 16 bits
@@ -1095,7 +1095,7 @@ void __fastcall _dsp_ARMwrite2sema4(unsigned int val)
 }
 
 
-unsigned short __fastcall _dsp_ReadIMem(unsigned short addr) //CPU reads from EO,I of DSP
+unsigned short  _dsp_ReadIMem(unsigned short addr) //CPU reads from EO,I of DSP
 {
 
 	switch(addr)
@@ -1135,7 +1135,7 @@ unsigned int _dsp_ARMread2sema4(void)
 	return (dregs.Sema4Status<<16) | dregs.Sema4Data;
 }
 
- void __fastcall OperandLoader(int Requests)
+ void  OperandLoader(int Requests)
 {
 	int Operands;//total of operands
 	int Ptr;
@@ -1255,7 +1255,7 @@ unsigned int _dsp_ARMread2sema4(void)
 		flags.WRITEBACK=GWRITEBACK;
 }
 
-int __fastcall OperandLoaderNWB(void)
+int  OperandLoaderNWB(void)
 {
 	int Operand;
 

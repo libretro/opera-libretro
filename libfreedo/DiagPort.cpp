@@ -40,7 +40,7 @@ static unsigned short SendPTR;
 //////////////////////////////////////////////////////////////////////
 
 
-void __fastcall _diag_Send(unsigned int val)
+void _diag_Send(unsigned int val)
 {
 	if(GetPTR!=16)
 	{
@@ -62,7 +62,7 @@ void __fastcall _diag_Send(unsigned int val)
 
 }
 
-unsigned int __fastcall _diag_Get()
+unsigned int _diag_Get()
 {
 	unsigned int val;
 

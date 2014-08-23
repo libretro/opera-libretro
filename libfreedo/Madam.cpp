@@ -398,18 +398,18 @@ void _madam_Load(void *buff)
 
 
 // CLASSES /////////////////////////////////////////////////////////////////
-unsigned int __fastcall mread(unsigned int addr);
-void __fastcall mwrite(unsigned int addr, unsigned int val);
+unsigned int  mread(unsigned int addr);
+void  mwrite(unsigned int addr, unsigned int val);
 int TestInitVisual(int packed);
 int Init_Line_Map();
 void Init_Scale_Map();
 void Init_Arbitrary_Map();
-int __fastcall TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt);
-int __fastcall TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay);
-int __fastcall TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD);
-void __fastcall DrawPackedCel_New();
-void __fastcall DrawLiteralCel_New();
-void __fastcall DrawLRCel_New();
+int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt);
+int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay);
+int  TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD);
+void  DrawPackedCel_New();
+void  DrawLiteralCel_New();
+void  DrawLRCel_New();
 void HandleDMA8();
 void DMAPBus();
 
@@ -584,7 +584,7 @@ int __inline quickDivide(int a, int b)
 
 
 
-unsigned int __fastcall _madam_Peek(unsigned int addr)
+unsigned int  _madam_Peek(unsigned int addr)
 {
 
 //	if((addr>=0x400)&&(addr<=0x53f))
@@ -616,7 +616,7 @@ unsigned int __fastcall _madam_Peek(unsigned int addr)
 }
 
 
-void __fastcall _madam_Poke(unsigned int addr, unsigned int val)
+void  _madam_Poke(unsigned int addr, unsigned int val)
 {
  if(addr>0x2ff && addr<0x400)
  {
@@ -1203,7 +1203,7 @@ void exteraclocker()
 		}
 }
 
-unsigned int __fastcall mread(unsigned int addr)
+unsigned int  mread(unsigned int addr)
 {
 	unsigned int val;
 #ifdef SAFEMEMACCESS
@@ -1215,7 +1215,7 @@ unsigned int __fastcall mread(unsigned int addr)
 	return val;
 }
 
-void __fastcall mwrite(unsigned int addr, unsigned int val)
+void  mwrite(unsigned int addr, unsigned int val)
 {
 #ifdef SAFEMEMACCESS
 	addr&=0x3FFFFF;
@@ -1226,7 +1226,7 @@ void __fastcall mwrite(unsigned int addr, unsigned int val)
 
 }
 
-void __fastcall mwriteh(unsigned int addr, unsigned short val)
+void  mwriteh(unsigned int addr, unsigned short val)
 {
 #ifdef SAFEMEMACCESS
 	addr&=0x3fffff;
@@ -1236,7 +1236,7 @@ void __fastcall mwriteh(unsigned int addr, unsigned short val)
 		//exteraclocker();
 }
 
-unsigned short __fastcall mreadh(unsigned int addr)
+unsigned short  mreadh(unsigned int addr)
 {
 #ifdef SAFEMEMACCESS
 //	addr&=0x3FFFFF;
@@ -1246,7 +1246,7 @@ unsigned short __fastcall mreadh(unsigned int addr)
 	return _mem_read16((addr^2));
 }
 
-unsigned int __fastcall readPLUTDATA(unsigned int offset)
+unsigned int  readPLUTDATA(unsigned int offset)
 {
 	CELCYCLES+=4;
 	if(PLUTDATA==0)
@@ -1255,7 +1255,7 @@ unsigned int __fastcall readPLUTDATA(unsigned int offset)
 	//return ((unsigned short*)PAL_EXP)[((offset^2)>>1)];
 }
 
-unsigned int __fastcall PDEC(unsigned int pixel, unsigned short * amv)
+unsigned int  PDEC(unsigned int pixel, unsigned short * amv)
 {
 	pdeco	pix1,pix2;
 	unsigned short resamv,pres;
@@ -1356,7 +1356,7 @@ unsigned int __fastcall PDEC(unsigned int pixel, unsigned short * amv)
 	return pres;
 }
 
-unsigned int __fastcall PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, unsigned int pframe_input)
+unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, unsigned int pframe_input)
 {
 	unsigned int VHOutput;
 	
@@ -1441,7 +1441,7 @@ unsigned int __fastcall PPROJ_OUTPUT(unsigned int pdec_output, unsigned int ppro
 	return (pproc_output & 0x7FFE) | VHOutput;
 }
 
-unsigned int __fastcall PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
+unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 {
 	AVS AV;
 	PXC pixc;
@@ -1628,7 +1628,7 @@ unsigned int * _madam_GetRegs()
 
 
 
-void __fastcall DrawPackedCel_New()
+void  DrawPackedCel_New()
 {
 	sf=100000;
 	unsigned int pixel;
@@ -1984,7 +1984,7 @@ void __fastcall DrawPackedCel_New()
 	}
 }
 
-void __fastcall DrawLiteralCel_New()
+void  DrawLiteralCel_New()
 {
 	sf=100000;
 	unsigned int pixel;
@@ -2157,7 +2157,7 @@ void __fastcall DrawLiteralCel_New()
 	}
 }
 
-void __fastcall DrawLRCel_New()
+void  DrawLRCel_New()
 {
 	sf=100000;
 	unsigned int pixel;
@@ -2619,7 +2619,7 @@ void Init_Arbitrary_Map()
 	TEXTURE_HI_START=0;
 }
 
-int __fastcall TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt)
+int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt)
 {
 	int i=0,j,incx,incy;
 	unsigned int pixel;
@@ -2662,7 +2662,7 @@ __inline void writePIX(uint32 src, int i, int j, uint16 pix)
 }
 
 
-int __fastcall TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay)
+int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay)
 {
 	int i,j;
 	unsigned int pixel;
@@ -2712,7 +2712,7 @@ __inline int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
 	return CCB_ACW;
 }
 
-int __fastcall TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
+int  TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
 {
 	int miny, maxy, i, itmp, xpoints[4], j, maxyt, maxxt, maxx, minx;
 	int updowns[4],cnt_cross, jtmp;

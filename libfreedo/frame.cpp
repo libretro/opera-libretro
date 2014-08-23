@@ -13,7 +13,7 @@ static ScalingAlgorithm currentAlgorithm;
 
 //void setCurrentAlgorithm(ScalingAlgorithm algorithm);
 
-void _frame_Init()
+void _frame_Init(void)
 {
 	tempBitmap = NULL;
 	//currentAlgorithm = ScalingAlgorithm::None;

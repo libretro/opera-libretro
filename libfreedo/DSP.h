@@ -28,23 +28,20 @@ Felix Lazarev
 #ifndef DSP_3DO_HEADER
 #define DSP_3DO_HEADER
 
+unsigned int _dsp_Loop(void);
 
-	unsigned int _dsp_Loop();
+unsigned short  _dsp_ReadIMem(unsigned short addr);
+void  _dsp_WriteIMem(unsigned short addr, unsigned short val);
+void  _dsp_WriteMemory(unsigned short addr,unsigned short val);
+void  _dsp_SetRunning(bool val);
+void  _dsp_ARMwrite2sema4(unsigned int val);
+unsigned int _dsp_ARMread2sema4(void);
 
-	unsigned short __fastcall _dsp_ReadIMem(unsigned short addr);
-	void __fastcall _dsp_WriteIMem(unsigned short addr, unsigned short val);
-	void __fastcall _dsp_WriteMemory(unsigned short addr,unsigned short val);
-	void __fastcall _dsp_SetRunning(bool val);
-	void __fastcall _dsp_ARMwrite2sema4(unsigned int val);
-	unsigned int _dsp_ARMread2sema4(void);
+void _dsp_Init(void);
+void _dsp_Reset(void);
 
-	void _dsp_Init();
-	void _dsp_Reset();
-	
-
-        unsigned int _dsp_SaveSize();
-        void _dsp_Save(void *buff);
-        void _dsp_Load(void *buff);
-
+unsigned int _dsp_SaveSize(void);
+void _dsp_Save(void *buff);
+void _dsp_Load(void *buff);
 
 #endif 

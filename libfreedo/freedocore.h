@@ -94,7 +94,7 @@ enum ScalingAlgorithm
 #define EXT_GET_DISC_SIZE       15
 #define EXT_ON_SECTOR           16
 #define EXT_ARM_SYNC            17
-typedef void* (__stdcall *_ext_Interface)(int, void*);
+typedef void* (*_ext_Interface)(int, void*);
 
 #define FDP_FREEDOCORE_VERSION  0
 #define FDP_INIT                1    //set ext_interface
@@ -142,7 +142,7 @@ typedef void* (__stdcall *_ext_Interface)(int, void*);
 
 extern "C"
 {
-	FREEDOCORE_API void* __stdcall _freedo_Interface(int procedure, void *datum=0);
+	FREEDOCORE_API void* _freedo_Interface(int procedure, void *datum=0);
 };
 
 #ifdef __MSVC__

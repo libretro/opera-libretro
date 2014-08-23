@@ -144,7 +144,7 @@ void _3do_InternalFrame(int cicles)
 	}
 }
 
-void __fastcall _3do_Frame(VDLFrame *frame, bool __scipframe=false)
+void _3do_Frame(VDLFrame *frame, bool __scipframe=false)
 {
 	int i,cnt=0;
 
@@ -261,7 +261,7 @@ int sdf=0;
 int unknownflag11=0;
 int jw=0;
 int cnbfix=0;
-FREEDOCORE_API void* __stdcall _freedo_Interface(int procedure, void *datum)
+FREEDOCORE_API void* _freedo_Interface(int procedure, void *datum)
 {
 	int line;
 	switch(procedure)

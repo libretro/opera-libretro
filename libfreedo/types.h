@@ -53,10 +53,6 @@ typedef  long double real80;
  #define NULL 0
 #endif
 
-#ifndef WIN32
-#define __fastcall __attribute__((__fastcall__))
-#define __stdcall 
-#endif
 //------------------Vector types-------------------------------------------
 
 #pragma pack(push,1)

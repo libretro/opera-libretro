@@ -26,19 +26,19 @@ Felix Lazarev
 
 #include "types.h"
 
-void __fastcall _qrz_Init();
+void  _qrz_Init(void);
 
-int __fastcall _qrz_VDCurrLine();
-int __fastcall _qrz_VDHalfFrame();
-int __fastcall _qrz_VDCurrOverline();
+int  _qrz_VDCurrLine(void);
+int  _qrz_VDHalfFrame(void);
+int  _qrz_VDCurrOverline(void);
 
-bool __fastcall _qrz_QueueVDL();
-bool __fastcall _qrz_QueueDSP();
-bool __fastcall _qrz_QueueTimer();
+bool  _qrz_QueueVDL(void);
+bool  _qrz_QueueDSP(void);
+bool  _qrz_QueueTimer(void);
 
-void __fastcall _qrz_PushARMCycles(unsigned int clks);
+void  _qrz_PushARMCycles(unsigned int clks);
 
-unsigned int _qrz_SaveSize();
+unsigned int _qrz_SaveSize(void);
 void _qrz_Save(void *buff);
 void _qrz_Load(void *buff);
 
