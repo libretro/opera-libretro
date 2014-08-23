@@ -30,7 +30,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-TARGET_NAME := 4DO
+TARGET_NAME := 4do
 
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
