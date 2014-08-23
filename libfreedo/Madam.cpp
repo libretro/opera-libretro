@@ -2502,7 +2502,7 @@ int Init_Line_Map()
 
 	if(VDX1616<0)
 	{
-		if(((XPOS1616)-((SPRHI-1)<<16)>>16)<0)
+		if((((XPOS1616) - ((SPRHI - 1) << 16)) >> 16) < 0)
 			TEXTURE_HI_LIM=(XPOS1616>>16)+1;
 		if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
 	}
@@ -2513,7 +2513,7 @@ int Init_Line_Map()
 	}
 	if(VDY1616<0)
 	{
-		if(((YPOS1616)-((SPRHI-1)<<16)>>16)<0)
+		if((((YPOS1616) - ((SPRHI - 1) << 16)) >> 16) < 0)
 			TEXTURE_HI_LIM=(YPOS1616>>16)+1;
 		if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
 	}
