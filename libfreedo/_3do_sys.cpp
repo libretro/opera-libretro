@@ -137,8 +137,8 @@ void _3do_InternalFrame(int cicles)
 		{
 			_clio_GenerateFiq(1<<1,0);
 			_madam_KeyPressed((unsigned char*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
-			curr_frame->srcw=320;
-			curr_frame->srch=240;
+			//curr_frame->srcw=320;
+			//curr_frame->srch=240;
 			if(!scipframe)curr_frame=(VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
 		}
 	}
@@ -249,7 +249,7 @@ void _3do_Read2048(void *buff)
 
 unsigned int _3do_DiscSize()
 {
-	return (uintptr_t)io_interface(EXT_GET_DISC_SIZE,NULL);
+	return (intptr_t)io_interface(EXT_GET_DISC_SIZE,NULL);
 }
 
 int __tex__scaler = 0;

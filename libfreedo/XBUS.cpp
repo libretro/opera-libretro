@@ -100,7 +100,7 @@ unsigned int _xbus_GetDataFIFO()
 
 	if(xdev[XBSEL])
 	{
-			return (uintptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
+			return (intptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
 	}
 	else
 		return 0;
@@ -113,7 +113,7 @@ unsigned int _xbus_GetPoll()
 
   if(XBSEL==0xf)
 	  res=POLF;
-  else if(xdev[XBSEL])res=(uintptr_t)(*xdev[XBSEL])(XBP_GET_POLL, NULL);
+  else if(xdev[XBSEL])res=(intptr_t)(*xdev[XBSEL])(XBP_GET_POLL, NULL);
   else res=0x30;
 
   if(XBSELH&0x80)
@@ -125,7 +125,7 @@ unsigned int _xbus_GetPoll()
 
 unsigned int _xbus_GetRes()
 {
-        if(xdev[XBSEL])return (uintptr_t)(*xdev[XBSEL])(XBP_RESERV, NULL);
+        if(xdev[XBSEL])return (intptr_t)(*xdev[XBSEL])(XBP_RESERV, NULL);
 	return 0;
 }
 
@@ -162,7 +162,7 @@ unsigned int _xbus_GetStatusFIFO()
 
 	if(xdev[XBSEL])
 	{
-			res=(uintptr_t)(*xdev[XBSEL])(XBP_GET_STATUS,NULL);
+			res=(intptr_t)(*xdev[XBSEL])(XBP_GET_STATUS,NULL);
 	}
 	else if(XBSEL==0xf)
 	{
@@ -262,7 +262,7 @@ unsigned int _xbus_SaveSize()
         for(i=0;i<15;i++)
         {
                 if(!xdev[i])continue;
-                tmp+=(uintptr_t)(*xdev[i])(XBP_GET_SAVESIZE,NULL);
+                tmp+= (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE,NULL);
         }
         return tmp;
 }
@@ -286,7 +286,7 @@ void _xbus_Save(void *buff)
                 {
                         (*xdev[i])(XBP_GET_SAVEDATA,&((unsigned char*)buff)[off]);
                         memcpy(&((unsigned char*)buff)[j+i*4],&off,4);
-                        off+=(uintptr_t)(*xdev[i])(XBP_GET_SAVESIZE,NULL);
+                        off += (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE, NULL);
                 }
         }
 }

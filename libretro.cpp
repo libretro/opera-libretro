@@ -249,7 +249,7 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_PUSH_SAMPLE:
       {
          //TODO: fix all this, not right
-         sampleBuffer[sampleCurrent] = (uintptr_t)data;
+         sampleBuffer[sampleCurrent] = *((unsigned int*)&data);
          sampleCurrent++;
          if(sampleCurrent > TEMP_BUFFER_SIZE)
          {
@@ -300,7 +300,7 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_GET_DISC_SIZE:
          return (void *)(intptr_t)fsReadDiscSize();
       case EXT_ON_SECTOR:
-         currentSector = (intptr_t)data;
+         currentSector = *((int*)&data);
          break;
       case EXT_ARM_SYNC:
          //printf("fdcCallback EXT_ARM_SYNC\n");
