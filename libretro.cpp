@@ -252,7 +252,10 @@ static void *fdcCallback(int procedure, void *data)
          sampleBuffer[sampleCurrent] = *((unsigned int*)&data);
          sampleCurrent++;
          if(sampleCurrent > TEMP_BUFFER_SIZE)
+         {
             sampleCurrent = 0;
+            audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
+         }
          break;
       }
       case EXT_GET_PBUSLEN:
@@ -564,5 +567,4 @@ void retro_run(void)
    fver2=fver1;
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
-   audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
 }
