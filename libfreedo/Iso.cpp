@@ -24,6 +24,7 @@ Felix Lazarev
 // Iso.cpp: implementation of the CIso class.
 //
 //////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 #include "freedoconfig.h"
 #include <memory.h>
 #include "IsoXBUS.h"

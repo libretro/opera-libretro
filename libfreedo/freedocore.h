@@ -24,6 +24,8 @@ Felix Lazarev
 #ifndef __3DO_SYSTEM_HEADER_DEFINITION
 #define __3DO_SYSTEM_HEADER_DEFINITION
 
+#include "types.h"
+
 //------------------------------------------------------------------------------
 #pragma pack(push,1)
 

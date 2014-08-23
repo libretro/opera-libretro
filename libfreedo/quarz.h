@@ -24,6 +24,8 @@ Felix Lazarev
 #ifndef QUARZ_3DO_HEADER_DEFINTION
 #define QUARZ_3DO_HEADER_DEFINTION
 
+#include "types.h"
+
 void __fastcall _qrz_Init();
 
 int __fastcall _qrz_VDCurrLine();

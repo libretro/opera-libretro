@@ -24,10 +24,10 @@ Felix Lazarev
 
 #include "quarz.h"
 #include "types.h"
-#include "clio.h"
+#include "Clio.h"
 #include "vdlp.h"
 #include "XBUS.h"
-#include "madam.h"
+#include "Madam.h"
 #include "stdafx.h"
 
 int ARM_CLOCK=12500000;

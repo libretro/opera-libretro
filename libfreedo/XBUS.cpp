@@ -24,7 +24,7 @@ Felix Lazarev
 // XBUS.cpp: implementation of the CXBUS class.
 //
 //////////////////////////////////////////////////////////////////////
-
+#include <stdint.h>
 #include "freedoconfig.h"
 //#include "astring.h"
 #include "XBUS.h"

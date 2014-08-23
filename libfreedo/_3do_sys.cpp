@@ -21,6 +21,7 @@ John Sammons
 Felix Lazarev
 */
 
+#include <stdint.h>
 #include "freedoconfig.h"
 #include "freedocore.h"
 #include "stdafx.h"

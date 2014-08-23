@@ -53,8 +53,9 @@ typedef  long double real80;
  #define NULL 0
 #endif
 
-#ifdef __GNUC__
- #define __fastcall __attribute__((__fastcall__))
+#ifndef WIN32
+#define __fastcall __attribute__((__fastcall__))
+#define __stdcall 
 #endif
 //------------------Vector types-------------------------------------------
 
