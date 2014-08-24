@@ -47,6 +47,8 @@ static char biosPath[PATH_MAX];
 static void *nvramCopy;
 static VDLFrame *frame;
 
+extern int HightResMode;
+
 FILE *fcdrom;
 static int currentSector;
 static bool isSwapFrameSignaled;
@@ -67,7 +69,16 @@ static retro_environment_t environ_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 
-void retro_set_environment(retro_environment_t cb) { environ_cb = cb; }
+void retro_set_environment(retro_environment_t cb)
+{
+   static const struct retro_variable vars[] = {
+      { "4do_high_resolution", "High Resolution (restart); disabled|enabled" },
+      { NULL, NULL },
+   };
+
+   environ_cb = cb;
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+}
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { audio_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
@@ -115,7 +126,7 @@ static int fsOpenIso(const char *path)
    return 1;
 }
 
-static int fsCloseIso()
+static int fsCloseIso(void)
 {
 	fclose(fcdrom);
 	return 1;
@@ -130,7 +141,7 @@ static int fsReadBlock(void *buffer, int sector)
 	return 1;
 }
 
-static char *fsReadSize()
+static char *fsReadSize(void)
 {
    char *buffer = (char *)malloc(sizeof(char) * 4);
    rewind(fcdrom);
@@ -141,7 +152,7 @@ static char *fsReadSize()
    return buffer;
 }
 
-static unsigned int fsReadDiscSize()
+static unsigned int fsReadDiscSize(void)
 {
    unsigned int size;
    char sectorZero[2048];
@@ -156,27 +167,24 @@ static unsigned int fsReadDiscSize()
    return size;
 }
 
-void initVideo()
+void initVideo(void)
 {
-   if(videoBuffer)
+   if (!videoBuffer)
+      videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
+   else
       free(videoBuffer);
 
-   //TODO core option or always enable if CPU hit isn't too high?
-   /*
-   extern int HightResMode;
-   HightResMode = 1;
-   videoWidth = 640;
-   videoHeight = 480;
-   */
-   videoWidth = 320;
-   videoHeight = 240;
-   videoBuffer = (uint32_t*)malloc(videoWidth * videoHeight * 4);
-   frame = (VDLFrame*)malloc(sizeof(VDLFrame));
+   if (!frame)
+      frame = (VDLFrame*)malloc(sizeof(VDLFrame));
+   else
+      free(frame);
+
    memset(frame, 0, sizeof(VDLFrame));
-   fver2=fver1=0;
+
+   fver2 = fver1 = 0;
 }
 
-void initNVRAM()
+void initNVRAM(void)
 {
    nvramCopy = malloc(65536/2);
    memset(nvramCopy, 0, 65536/2);
@@ -310,7 +318,7 @@ static void *fdcCallback(int procedure, void *data)
    return (void*)0;
 }
 
-static void update_input()
+static void update_input(void)
 {
    if (!input_poll_cb)
       return;
@@ -439,6 +447,34 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)code;
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var;
+
+   var.key = "4do_high_resolution";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "enabled"))
+      {
+         HightResMode = 1;
+         videoWidth = 640;
+         videoHeight = 480;
+      }
+      else if (!strcmp(var.value, "disabled"))
+      {
+         videoWidth = 320;
+         videoHeight = 240;
+      }
+   }
+   else
+   {
+      videoWidth = 320;
+      videoHeight = 240;
+   }
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
     enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -482,6 +518,7 @@ bool retro_load_game(const struct retro_game_info *info)
        
        // Initialize libfreedo
        initNVRAM();
+       check_variables();
        initVideo();
        _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 
@@ -548,10 +585,14 @@ void retro_reset(void)
 
 void retro_run(void)
 {
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
    update_input();
 
    _freedo_Interface(FDP_DO_EXECFRAME, frame); // FDP_DO_EXECFRAME_MT ?
-   
+
    if(isSwapFrameSignaled)
    {
       if(fver2==fver1)
