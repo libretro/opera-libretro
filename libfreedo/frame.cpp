@@ -33,46 +33,46 @@ void Get_Frame_Bitmap(
 	int* resultingWidth,
 	int* resultingHeight)
 {
-	unsigned char* destPtr = (unsigned char*)destinationBitmap;
-	VDLFrame* framePtr     = (VDLFrame*)sourceFrame;
+   unsigned char* destPtr = (unsigned char*)destinationBitmap;
+   VDLFrame* framePtr     = (VDLFrame*)sourceFrame;
 
-	for (int i = 0; i < copyHeight; i++)
-	{
-		VDLLine* linePtr = (VDLLine*)&framePtr->lines[i];
-		short* srcPtr = (short*)linePtr;
-		bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
-		for (int pix = 0; pix < copyWidth; pix++)
-		{
-			unsigned char bPart = 0;
-			unsigned char gPart = 0;
-			unsigned char rPart = 0;
-			if (*srcPtr == 0)
-			{
-				bPart = (unsigned char)(linePtr->xBACKGROUND & 0x1F);
-				gPart = (unsigned char)((linePtr->xBACKGROUND >> 5) & 0x1F);
-				rPart = (unsigned char)((linePtr->xBACKGROUND >> 10) & 0x1F);
-			}
-			else if (allowFixedClut && (*srcPtr & 0x8000) > 0)
-			{
-				bPart = FIXED_CLUTB[(*srcPtr) & 0x1F];
-				gPart = FIXED_CLUTG[((*srcPtr) >> 5) & 0x1F];
-				rPart = FIXED_CLUTR[(*srcPtr) >> 10 & 0x1F];
-			}
-			else
-			{
-				bPart = (unsigned char)(linePtr->xCLUTB[(*srcPtr) & 0x1F]);
-				gPart = linePtr->xCLUTG[((*srcPtr) >> 5) & 0x1F];
-				rPart = linePtr->xCLUTR[(*srcPtr) >> 10 & 0x1F];
-			}
-			*destPtr++ = bPart;
-			*destPtr++ = gPart;
-			*destPtr++ = rPart;
+   for (int i = 0; i < copyHeight; i++)
+   {
+      VDLLine* linePtr = (VDLLine*)&framePtr->lines[i];
+      short* srcPtr = (short*)linePtr;
+      bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
+      for (int pix = 0; pix < copyWidth; pix++)
+      {
+         unsigned char bPart = 0;
+         unsigned char gPart = 0;
+         unsigned char rPart = 0;
+         if (*srcPtr == 0)
+         {
+            bPart = (unsigned char)(linePtr->xBACKGROUND & 0x1F);
+            gPart = (unsigned char)((linePtr->xBACKGROUND >> 5) & 0x1F);
+            rPart = (unsigned char)((linePtr->xBACKGROUND >> 10) & 0x1F);
+         }
+         else if (allowFixedClut && (*srcPtr & 0x8000) > 0)
+         {
+            bPart = FIXED_CLUTB[(*srcPtr) & 0x1F];
+            gPart = FIXED_CLUTG[((*srcPtr) >> 5) & 0x1F];
+            rPart = FIXED_CLUTR[(*srcPtr) >> 10 & 0x1F];
+         }
+         else
+         {
+            bPart = (unsigned char)(linePtr->xCLUTB[(*srcPtr) & 0x1F]);
+            gPart = linePtr->xCLUTG[((*srcPtr) >> 5) & 0x1F];
+            rPart = linePtr->xCLUTR[(*srcPtr) >> 10 & 0x1F];
+         }
+         *destPtr++ = bPart;
+         *destPtr++ = gPart;
+         *destPtr++ = rPart;
 
          destPtr++;
          srcPtr++;
-		}
-	}
+      }
+   }
 
-	*resultingWidth = copyWidth;
-	*resultingHeight = copyHeight;
+   *resultingWidth = copyWidth;
+   *resultingHeight = copyHeight;
 }

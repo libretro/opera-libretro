@@ -28,64 +28,61 @@ Felix Lazarev
 
 class BitReaderBig
 {
-protected:
-	uint32 buf;
-	uint32 point;
-	int32 bitpoint;
-	int32 bitset;
+   protected:
+      uint32 buf;
+      uint32 point;
+      int32 bitpoint;
+      int32 bitset;
 
-public:
-	BitReaderBig()
-	{
-		buf=0;
-		bitset=1;
-		point=0;
-		bitpoint=0;
-	};
-	BitReaderBig(uint32 buff)
-	{
-		buf=buff;
-		point=0;
-		bitpoint=0;
-		bitset=1;
-	};
-	void AttachBuffer(uint32 buff)
-	{
-		buf=buff;
-		point=0;
-		bitpoint=0;
-	};
-	void SetBitRate(uint8 bits)
-	{
-		bitset=bits;
-		if(bitset>32)bitset=32;
-		if(!bitset)bitset=1;
-	};
-	
-	void SetPosition(uint32 bytepos, uint8 bitpos)
-	{
-		point=bytepos;
-		bitpoint=bitpos;
-	};
-	
-	void SetPos(uint32 bitpos){SetPosition(bitpos>>3,bitpos&7);};
+   public:
+      BitReaderBig()
+      {
+         buf=0;
+         bitset=1;
+         point=0;
+         bitpoint=0;
+      };
+      BitReaderBig(uint32 buff)
+      {
+         buf=buff;
+         point=0;
+         bitpoint=0;
+         bitset=1;
+      };
+      void AttachBuffer(uint32 buff)
+      {
+         buf=buff;
+         point=0;
+         bitpoint=0;
+      };
+      void SetBitRate(uint8 bits)
+      {
+         bitset=bits;
+         if(bitset>32)bitset=32;
+         if(!bitset)bitset=1;
+      };
 
-	uint32 GetBytePose(){return point;};
-	
-	uint32 Read();
-	uint32 Read(uint8 bits);
+      void SetPosition(uint32 bytepos, uint8 bitpos)
+      {
+         point=bytepos;
+         bitpoint=bitpos;
+      };
 
-	void Skip(uint32 bits)
-	{
-		bits+=bitpoint;
-		point+=(bits>>3);
-		bitpoint=bits&7;
-	};
-	
-	
+      void SetPos(uint32 bitpos){SetPosition(bitpos>>3,bitpos&7);};
+
+      uint32 GetBytePose(){return point;};
+
+      uint32 Read();
+      uint32 Read(uint8 bits);
+
+      void Skip(uint32 bits)
+      {
+         bits+=bitpoint;
+         point+=(bits>>3);
+         bitpoint=bits&7;
+      };
+
+
 };
-
-
-
 
 #endif
