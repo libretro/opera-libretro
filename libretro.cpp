@@ -43,7 +43,7 @@ typedef struct{
 
 inputState internal_input_state[6];
 
-const char *biosPath;
+static char biosPath[PATH_MAX];
 static void *nvramCopy;
 static VDLFrame *frame;
 
@@ -458,6 +458,7 @@ bool retro_load_game(const struct retro_game_info *info)
     full_path = info->path;
     const char *system_directory_c = NULL;
 
+    *biosPath = '\0';
     if (fsOpenIso(full_path))
     {
        environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
@@ -477,7 +478,7 @@ bool retro_load_game(const struct retro_game_info *info)
                 log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
           }
           else
-             biosPath = bios_file_path.c_str();
+             strcpy(biosPath, bios_file_path.c_str());
        }
        
        // Initialize libfreedo
