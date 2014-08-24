@@ -171,7 +171,8 @@ void initVideo()
    videoWidth = 320;
    videoHeight = 240;
    videoBuffer = (uint32_t*)malloc(videoWidth * videoHeight * 4);
-   frame = new VDLFrame;
+   frame = (VDLFrame*)malloc(sizeof(VDLFrame));
+   memset(frame, 0, sizeof(VDLFrame));
    fver2=fver1=0;
 }
 
@@ -180,8 +181,6 @@ void initNVRAM()
    nvramCopy = malloc(65536/2);
    memset(nvramCopy, 0, 65536/2);
    memcpy(nvramCopy, nvramhead, sizeof(nvramhead));
-   frame = (VDLFrame*)malloc(sizeof(VDLFrame));
-   memset(frame, 0, sizeof(VDLFrame));
 }
 
 // Input helper functions
@@ -251,7 +250,7 @@ static void *fdcCallback(int procedure, void *data)
          //TODO: fix all this, not right
          sampleBuffer[sampleCurrent] = *((unsigned int*)&data);
          sampleCurrent++;
-         if(sampleCurrent > TEMP_BUFFER_SIZE)
+         if(sampleCurrent >= TEMP_BUFFER_SIZE)
          {
             sampleCurrent = 0;
             audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
