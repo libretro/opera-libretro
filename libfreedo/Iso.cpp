@@ -261,7 +261,7 @@ unsigned int cdrom_Device::GetStatusFifo()
 		res=Status[0];
 		StatusLen--;
 		if(StatusLen>0)
-			memcpy(Status,Status+1,StatusLen);
+			memmove(Status,Status+1,StatusLen);
 		else
 		{
 				Poll&=~POLST;
@@ -1169,7 +1169,7 @@ void cdrom_Device::ClearDataPoll(unsigned int len)
 		{
 			DataLen-=len;
 			if(DataLen>0)
-				memcpy(Data,Data+4,len);
+                memmove(Data,Data+4,len);
 			else
 			{
 				Poll&=~POLDT;
@@ -1270,7 +1270,7 @@ unsigned int cdrom_Device::GedWord()
 		{
 			DataLen--;
 			if(DataLen>0)
-				memcpy(Data,Data+1,DataLen);
+				memmove(Data,Data+1,DataLen);
 			else
 			{
 				Poll&=~POLDT;
@@ -1278,7 +1278,7 @@ unsigned int cdrom_Device::GedWord()
 			}
 			DataLen--;
 			if(DataLen>0)
-				memcpy(Data,Data+1,DataLen);
+				memmove(Data,Data+1,DataLen);
 			else
 			{
 				Poll&=~POLDT;
@@ -1286,7 +1286,7 @@ unsigned int cdrom_Device::GedWord()
 			}
 			DataLen--;
 			if(DataLen>0)
-				memcpy(Data,Data+1,DataLen);
+				memmove(Data,Data+1,DataLen);
 			else
 			{
 				Poll&=~POLDT;
@@ -1297,7 +1297,7 @@ unsigned int cdrom_Device::GedWord()
 		{
 			//DataLen-=4;
 			{
-				memcpy(Data,Data+4,DataLen-4);
+				memmove(Data,Data+4,DataLen-4);
 				DataLen-=4;
 			}
 
