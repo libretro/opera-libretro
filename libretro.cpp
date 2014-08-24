@@ -250,7 +250,7 @@ static void *fdcCallback(int procedure, void *data)
          //TODO: fix all this, not right
          sampleBuffer[sampleCurrent] = *((unsigned int*)&data);
          sampleCurrent++;
-         if(sampleCurrent > TEMP_BUFFER_SIZE)
+         if(sampleCurrent >= TEMP_BUFFER_SIZE)
          {
             sampleCurrent = 0;
             audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
