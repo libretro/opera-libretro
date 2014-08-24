@@ -464,12 +464,14 @@ static void check_variables(void)
       }
       else if (!strcmp(var.value, "disabled"))
       {
+         HightResMode = 0;
          videoWidth = 320;
          videoHeight = 240;
       }
    }
    else
    {
+      HightResMode = 0;
       videoWidth = 320;
       videoHeight = 240;
    }
