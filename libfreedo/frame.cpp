@@ -33,25 +33,12 @@ void Get_Frame_Bitmap(
 	int* resultingWidth,
 	int* resultingHeight)
 {
-	float maxCropPercent = allowCrop ? .25f : 0;
-	int maxCropTall = (int)(copyHeight * maxCropPercent);
-	int maxCropWide = (int)(copyWidth * maxCropPercent);
-
-	bitmapCrop->top = maxCropTall;
-	bitmapCrop->left = maxCropWide;
-	bitmapCrop->right = maxCropWide;
-	bitmapCrop->bottom = maxCropTall;
-
-	int pointlessAlphaByte = copyPointlessAlphaByte ? 1 : 0;
-
-	// Destination will be directly changed if there is no scaling algorithm.
-	// Otherwise we extract to a temporary buffer.
 	unsigned char* destPtr = (unsigned char*)destinationBitmap;
+	VDLFrame* framePtr     = (VDLFrame*)sourceFrame;
 
-	VDLFrame* framePtr = sourceFrame;
-	for (int line = 0; line < copyHeight; line++)
+	for (int i = 0; i < copyHeight; i++)
 	{
-		VDLLine* linePtr = &framePtr->lines[line];
+		VDLLine* linePtr = (VDLLine*)&framePtr->lines[i];
 		short* srcPtr = (short*)linePtr;
 		bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
 		for (int pix = 0; pix < copyWidth; pix++)
@@ -81,34 +68,11 @@ void Get_Frame_Bitmap(
 			*destPtr++ = gPart;
 			*destPtr++ = rPart;
 
-			destPtr += pointlessAlphaByte;
-			srcPtr++;
-
-			if (line < bitmapCrop->top)
-				if (!(rPart < 0xF && gPart < 0xF && bPart < 0xF))
-					bitmapCrop->top = line;
-
-			if (pix < bitmapCrop->left )
-				if (!(rPart < 0xF && gPart < 0xF && bPart < 0xF))
-					bitmapCrop->left = pix;
-
-			if (pix > copyWidth - bitmapCrop->right - 1)
-				if (!(rPart < 0xF && gPart < 0xF && bPart < 0xF))
-					bitmapCrop->right = copyWidth - pix - 1;
-
-			if (line > copyHeight - bitmapCrop->bottom - 1)
-				if (!(rPart < 0xF && gPart < 0xF && bPart < 0xF))
-					bitmapCrop->bottom = copyHeight - line - 1;
+         destPtr++;
+         srcPtr++;
 		}
 	}
 
-	int cropAdjust = 1;
-
-	bitmapCrop->top *= cropAdjust;
-	bitmapCrop->left *= cropAdjust;
-	bitmapCrop->right *= cropAdjust;
-	bitmapCrop->bottom *= cropAdjust;
-
-	*resultingWidth = copyWidth * cropAdjust;
-	*resultingHeight = copyHeight * cropAdjust;
+	*resultingWidth = copyWidth;
+	*resultingHeight = copyHeight;
 }
