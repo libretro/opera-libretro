@@ -38,7 +38,7 @@
 #define INPUTBUTTONDOWN  (1<<14)
 
 typedef struct{
-	int buttons; // buttons bitfield
+   int buttons; // buttons bitfield
 }inputState;
 
 inputState internal_input_state[6];
@@ -49,11 +49,9 @@ static VDLFrame *frame;
 
 extern int HightResMode;
 
-FILE *fcdrom;
+static FILE *fcdrom;
 static int currentSector;
 static bool isSwapFrameSignaled;
-
-static int fver1,fver2;
 
 static uint32_t *videoBuffer;
 static int videoWidth, videoHeight;
@@ -86,7 +84,7 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 // File/ISO helper functions
-unsigned char nvramhead[]=
+static const unsigned char nvramhead[]=
 {
    0x01,0x5a,0x5a,0x5a,0x5a,0x5a,0x02,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -101,7 +99,7 @@ unsigned char nvramhead[]=
    0,0,0,0x84,0,0,0x76,0x68,0,0,0,0x14
 };
 
-void fsReadBios(const char *biosFile, void *prom)
+static void fsReadBios(const char *biosFile, void *prom)
 {
    FILE *bios1;
    long fsize;
@@ -113,7 +111,7 @@ void fsReadBios(const char *biosFile, void *prom)
    rewind(bios1);
 
    readcount = fread(prom, 1, fsize, bios1);
-	fclose(bios1);
+   fclose(bios1);
 }
 
 static int fsOpenIso(const char *path)
@@ -121,15 +119,15 @@ static int fsOpenIso(const char *path)
    fcdrom = fopen(path, "rb");
 
    if(!fcdrom)
-	   return 0;
+      return 0;
 
    return 1;
 }
 
 static int fsCloseIso(void)
 {
-	fclose(fcdrom);
-	return 1;
+   fclose(fcdrom);
+   return 1;
 }
 
 static int fsReadBlock(void *buffer, int sector)
@@ -138,7 +136,7 @@ static int fsReadBlock(void *buffer, int sector)
    fread(buffer, 1, 2048, fcdrom);
    rewind(fcdrom);
 
-	return 1;
+   return 1;
 }
 
 static char *fsReadSize(void)
@@ -162,29 +160,23 @@ static unsigned int fsReadDiscSize(void)
 
    memcpy(&temp, ssize, 4);
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
-	   (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
+      (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
    //printf("disc size: %d sectors\n", size);
    return size;
 }
 
-void initVideo(void)
+static void initVideo(void)
 {
    if (!videoBuffer)
       videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
-   else
-      free(videoBuffer);
 
    if (!frame)
       frame = (VDLFrame*)malloc(sizeof(VDLFrame));
-   else
-      free(frame);
 
    memset(frame, 0, sizeof(VDLFrame));
-
-   fver2 = fver1 = 0;
 }
 
-void initNVRAM(void)
+static void initNVRAM(void)
 {
    nvramCopy = malloc(65536/2);
    memset(nvramCopy, 0, 65536/2);
@@ -296,7 +288,6 @@ static void *fdcCallback(int procedure, void *data)
          break;
       case EXT_FRAMETRIGGER_MT:
       {
-         isSwapFrameSignaled = true;
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       }
@@ -324,7 +315,7 @@ static void update_input(void)
       return;
 
    input_poll_cb();
-   
+
    // Can possibly support up to 6 players but is currently set for 2
    for (unsigned i = 0; i < 2; i++)
    {
@@ -394,10 +385,10 @@ static struct retro_system_av_info g_av_info;
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-	info->library_name = "4DO";
-	info->library_version = "1.3.2.3";
-	info->need_fullpath = false;
-	info->valid_extensions = "iso";
+   info->library_name = "4DO";
+   info->library_version = "1.3.2.3";
+   info->need_fullpath = true;
+   info->valid_extensions = "iso";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -418,17 +409,17 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
    (void)device;
 }
 
-size_t retro_serialize_size(void) 
-{ 
+size_t retro_serialize_size(void)
+{
    //TODO
-	//return STATE_SIZE;
-	return 0;
+   //return STATE_SIZE;
+   return 0;
 }
 
 bool retro_serialize(void *data, size_t size)
 {
    //TODO
-	return false;
+   return false;
 }
 
 bool retro_unserialize(const void *data, size_t size)
@@ -479,53 +470,53 @@ static void check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
-    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-    {
-        if (log_cb)
-            log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
-        return false;
-    }
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   {
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
+      return false;
+   }
 
-    currentSector = 0;
-    sampleCurrent = 0;
-    memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
+   currentSector = 0;
+   sampleCurrent = 0;
+   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
-    const char *full_path;
-    full_path = info->path;
-    const char *system_directory_c = NULL;
+   const char *full_path;
+   full_path = info->path;
+   const char *system_directory_c = NULL;
 
-    *biosPath = '\0';
-    if (fsOpenIso(full_path))
-    {
-       environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
-       if (!system_directory_c)
-       {
-          if (log_cb)
-             log_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
-       }
-       else
-       {
-          std::string system_directory(system_directory_c);
-          std::string bios_file_path = system_directory + "/panafz10.bin";
-          std::ifstream bios_file(bios_file_path.c_str());
-          if (!bios_file.is_open())
-          {
-             if (log_cb)
-                log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
-          }
-          else
-             strcpy(biosPath, bios_file_path.c_str());
-       }
-       
-       // Initialize libfreedo
-       initNVRAM();
-       check_variables();
-       initVideo();
-       _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+   *biosPath = '\0';
+   if (fsOpenIso(full_path))
+   {
+      environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
+      if (!system_directory_c)
+      {
+         if (log_cb)
+            log_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
+      }
+      else
+      {
+         std::string system_directory(system_directory_c);
+         std::string bios_file_path = system_directory + "/panafz10.bin";
+         std::ifstream bios_file(bios_file_path.c_str());
+         if (!bios_file.is_open())
+         {
+            if (log_cb)
+               log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
+         }
+         else
+            strcpy(biosPath, bios_file_path.c_str());
+      }
 
-       return true;
-    }
+      // Initialize libfreedo
+      initNVRAM();
+      check_variables();
+      initVideo();
+      _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+
+      return true;
+   }
 
    return false;
 }
@@ -546,22 +537,22 @@ void retro_unload_game(void)
 
 unsigned retro_get_region(void)
 {
-    return RETRO_REGION_NTSC;
+   return RETRO_REGION_NTSC;
 }
 
 unsigned retro_api_version(void)
 {
-    return RETRO_API_VERSION;
+   return RETRO_API_VERSION;
 }
 
 void *retro_get_memory_data(unsigned id)
 {
-    return NULL;
+   return NULL;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-    return 0;
+   return 0;
 }
 
 void retro_init(void)
@@ -579,10 +570,30 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+   if (videoBuffer)
+      free(videoBuffer);
+
+   if (frame)
+      free(frame);
+
+   videoBuffer = NULL;
+   frame = NULL;
 }
 
 void retro_reset(void)
 {
+   _freedo_Interface(FDP_DESTROY, NULL);
+
+   currentSector = 0;
+
+   sampleCurrent = 0;
+   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
+
+   initNVRAM();
+   check_variables();
+   initVideo();
+
+   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 }
 
 void retro_run(void)
@@ -597,17 +608,10 @@ void retro_run(void)
 
    if(isSwapFrameSignaled)
    {
-      if(fver2==fver1)
-      {
-         isSwapFrameSignaled = false;
-         struct BitmapCrop bmpcrop;
-         ScalingAlgorithm sca;
-         int rw, rh;
-         Get_Frame_Bitmap((VDLFrame *)frame, videoBuffer, 0, &bmpcrop, videoWidth, videoHeight, false, true, false, sca, &rw, &rh);
-         fver1++;
-      }
+      isSwapFrameSignaled = false;
+      Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
+      video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
    }
-   fver2=fver1;
-
-   video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
+   else
+      video_cb(NULL, videoWidth, videoHeight, videoWidth << 2);
 }
