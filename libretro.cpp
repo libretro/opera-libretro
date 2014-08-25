@@ -49,7 +49,7 @@ static VDLFrame *frame;
 
 extern int HightResMode;
 
-FILE *fcdrom;
+static FILE *fcdrom;
 static int currentSector;
 static bool isSwapFrameSignaled;
 
@@ -84,7 +84,7 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 // File/ISO helper functions
-unsigned char nvramhead[]=
+static const unsigned char nvramhead[]=
 {
    0x01,0x5a,0x5a,0x5a,0x5a,0x5a,0x02,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -99,7 +99,7 @@ unsigned char nvramhead[]=
    0,0,0,0x84,0,0,0x76,0x68,0,0,0,0x14
 };
 
-void fsReadBios(const char *biosFile, void *prom)
+static void fsReadBios(const char *biosFile, void *prom)
 {
    FILE *bios1;
    long fsize;
@@ -165,7 +165,7 @@ static unsigned int fsReadDiscSize(void)
    return size;
 }
 
-void initVideo(void)
+static void initVideo(void)
 {
    if (!videoBuffer)
       videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
@@ -176,7 +176,7 @@ void initVideo(void)
    memset(frame, 0, sizeof(VDLFrame));
 }
 
-void initNVRAM(void)
+static void initNVRAM(void)
 {
    nvramCopy = malloc(65536/2);
    memset(nvramCopy, 0, 65536/2);
