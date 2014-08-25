@@ -292,7 +292,6 @@ static void *fdcCallback(int procedure, void *data)
          break;
       case EXT_FRAMETRIGGER_MT:
       {
-         isSwapFrameSignaled = true;
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       }
@@ -595,7 +594,8 @@ void retro_run(void)
    {
       isSwapFrameSignaled = false;
       Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
+      video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
    }
-
-   video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
+   else
+      video_cb(NULL, videoWidth, videoHeight, videoWidth << 2);
 }
