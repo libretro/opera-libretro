@@ -169,13 +169,9 @@ void initVideo(void)
 {
    if (!videoBuffer)
       videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
-   else
-      free(videoBuffer);
 
    if (!frame)
       frame = (VDLFrame*)malloc(sizeof(VDLFrame));
-   else
-      free(frame);
 
    memset(frame, 0, sizeof(VDLFrame));
 }
@@ -574,10 +570,30 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+   if (videoBuffer)
+      free(videoBuffer);
+
+   if (frame)
+      free(frame);
+
+   videoBuffer = NULL;
+   frame = NULL;
 }
 
 void retro_reset(void)
 {
+   _freedo_Interface(FDP_DESTROY, NULL);
+
+   currentSector = 0;
+
+   sampleCurrent = 0;
+   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
+
+   initNVRAM();
+   check_variables();
+   initVideo();
+
+   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 }
 
 void retro_run(void)
