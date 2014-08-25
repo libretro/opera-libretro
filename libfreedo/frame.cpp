@@ -22,16 +22,8 @@ void _frame_Init(void)
 void Get_Frame_Bitmap(
 	VDLFrame* sourceFrame,
 	void* destinationBitmap,
-	int destinationBitmapWidth,
-	BitmapCrop* bitmapCrop,
 	int copyWidth,
-	int copyHeight,
-	bool addBlackBorder,
-	bool copyPointlessAlphaByte,
-	bool allowCrop,
-	ScalingAlgorithm scalingAlgorithm,
-	int* resultingWidth,
-	int* resultingHeight)
+	int copyHeight)
 {
    unsigned char* destPtr = (unsigned char*)destinationBitmap;
 

@@ -53,8 +53,6 @@ FILE *fcdrom;
 static int currentSector;
 static bool isSwapFrameSignaled;
 
-static int fver1,fver2;
-
 static uint32_t *videoBuffer;
 static int videoWidth, videoHeight;
 //uintptr_t sampleBuffer[TEMP_BUFFER_SIZE];
@@ -180,8 +178,6 @@ void initVideo(void)
       free(frame);
 
    memset(frame, 0, sizeof(VDLFrame));
-
-   fver2 = fver1 = 0;
 }
 
 void initNVRAM(void)
@@ -597,17 +593,9 @@ void retro_run(void)
 
    if(isSwapFrameSignaled)
    {
-      if(fver2==fver1)
-      {
-         isSwapFrameSignaled = false;
-         struct BitmapCrop bmpcrop;
-         ScalingAlgorithm sca;
-         int rw, rh;
-         Get_Frame_Bitmap((VDLFrame *)frame, videoBuffer, 0, &bmpcrop, videoWidth, videoHeight, false, true, false, sca, &rw, &rh);
-         fver1++;
-      }
+      isSwapFrameSignaled = false;
+      Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
    }
-   fver2=fver1;
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
 }
