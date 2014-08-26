@@ -48,6 +48,9 @@ static void *nvramCopy;
 static VDLFrame *frame;
 
 extern int HightResMode;
+extern unsigned int _3do_SaveSize();
+extern void _3do_Save(void *buff);
+extern bool _3do_Load(void *buff);
 
 static FILE *fcdrom;
 static int currentSector;
@@ -411,21 +414,19 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 
 size_t retro_serialize_size(void)
 {
-   //TODO
-   //return STATE_SIZE;
-   return 0;
+   return _3do_SaveSize();
 }
 
 bool retro_serialize(void *data, size_t size)
 {
-   //TODO
-   return false;
+   _3do_Save(data);
+   return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-   //TODO
-   return false;
+   _3do_Load((void*)data);
+   return true;
 }
 
 void retro_cheat_reset(void)
