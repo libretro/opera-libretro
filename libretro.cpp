@@ -44,13 +44,13 @@ typedef struct{
 inputState internal_input_state[6];
 
 static char biosPath[PATH_MAX];
-static void *nvramCopy;
 static VDLFrame *frame;
 
 extern int HightResMode;
 extern unsigned int _3do_SaveSize();
 extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
+extern void* Getp_NVRAM();
 
 static FILE *fcdrom;
 static int currentSector;
@@ -85,22 +85,6 @@ void retro_set_audio_sample(retro_audio_sample_t cb) { audio_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
-
-// File/ISO helper functions
-static const unsigned char nvramhead[]=
-{
-   0x01,0x5a,0x5a,0x5a,0x5a,0x5a,0x02,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0x6e,0x76,0x72,0x61,0x6d,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0xff,0xff,0xff,0xff,0,0,0,1,
-   0,0,0x80,0,0xff,0xff,0xff,0xfe,0,0,0,0,0,0,0,1,
-   0,0,0,0,0,0,0,0x84,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0x85,0x5a,2,0xb6,0,0,0,0x98,0,0,0,0x98,
-   0,0,0,0x14,0,0,0,0x14,0x7A,0xa5,0x65,0xbd,0,0,0,0x84,
-   0,0,0,0x84,0,0,0x76,0x68,0,0,0,0x14
-};
 
 static void fsReadBios(const char *biosFile, void *prom)
 {
@@ -179,13 +163,6 @@ static void initVideo(void)
    memset(frame, 0, sizeof(VDLFrame));
 }
 
-static void initNVRAM(void)
-{
-   nvramCopy = malloc(65536/2);
-   memset(nvramCopy, 0, 65536/2);
-   memcpy(nvramCopy, nvramhead, sizeof(nvramhead));
-}
-
 // Input helper functions
 static int CheckDownButton(int deviceNumber,int button)
 {
@@ -238,10 +215,7 @@ static void *fdcCallback(int procedure, void *data)
          break;
       }
       case EXT_READ_NVRAM:
-         memcpy(data, nvramCopy, NVRAM_SIZE);
-         break;
       case EXT_WRITE_NVRAM:
-         // ?
          break;
       case EXT_SWAPFRAME:
       {
@@ -511,7 +485,6 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       // Initialize libfreedo
-      initNVRAM();
       check_variables();
       initVideo();
       _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
@@ -548,12 +521,18 @@ unsigned retro_api_version(void)
 
 void *retro_get_memory_data(unsigned id)
 {
-   return NULL;
+   if (id != RETRO_MEMORY_SAVE_RAM)
+      return NULL;
+
+   return Getp_NVRAM();
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-   return 0;
+   if (id != RETRO_MEMORY_SAVE_RAM)
+      return 0;
+
+   return NVRAM_SIZE;
 }
 
 void retro_init(void)
@@ -590,7 +569,6 @@ void retro_reset(void)
    sampleCurrent = 0;
    memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
-   initNVRAM();
    check_variables();
    initVideo();
 
