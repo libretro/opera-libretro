@@ -145,12 +145,10 @@ else ifeq ($(NO_GCC), 1)
 WARNINGS :=
 else
 WARNINGS := -Wall \
-	-Wno-narrowing \
 	-Wno-sign-compare \
 	-Wno-unused-variable \
 	-Wno-unused-function \
 	-Wno-uninitialized \
-	-Wno-unused-result \
 	-Wno-strict-aliasing \
 	-Wno-overflow \
 	-fno-strict-overflow
