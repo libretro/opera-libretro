@@ -30,6 +30,7 @@ Felix Lazarev
 #include "stdafx.h"
 
 #include <memory.h>
+#include <string.h>
 
 int ARM_CLOCK=12500000;
 int THE_ARM_CLOCK=0;

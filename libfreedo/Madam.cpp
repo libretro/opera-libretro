@@ -528,13 +528,10 @@ unsigned int pSource;
 #define	ENGBFETCH	mregs[0x5b8]
 #define ENGBLEN		mregs[0x5bc]
 #define PAL_EXP		(&mregs[0x5d0])
-#define CHAR_BIT  (8)
-
-
 
 int FLOAT1612(int a)
 {
-   return a<<4;
+   return a << 4;
 }
 
 //////////////////////////////////////////////////////////////////////

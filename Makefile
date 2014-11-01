@@ -104,28 +104,12 @@ else
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
    LDFLAGS += -static-libgcc -static-libstdc++ -lwinmm
 endif
-4DO_DIR := libfreedo
 
-4DO_SOURCES := $(4DO_DIR)/_3do_sys.cpp \
-	$(4DO_DIR)/arm.cpp \
-	$(4DO_DIR)/bitop.cpp \
-	$(4DO_DIR)/Clio.cpp \
-	$(4DO_DIR)/DiagPort.cpp \
-	$(4DO_DIR)/DSP.cpp \
-	$(4DO_DIR)/frame.cpp \
-	$(4DO_DIR)/Iso.cpp \
-	$(4DO_DIR)/Madam.cpp \
-	$(4DO_DIR)/quarz.cpp \
-	$(4DO_DIR)/SPORT.cpp \
-	$(4DO_DIR)/vdlp.cpp \
-	$(4DO_DIR)/XBUS.cpp
+CORE_DIR := .
 
-LIBRETRO_SOURCES := libretro.cpp
+include $(CORE_DIR)/Makefile.common
 
-SOURCES_C :=
-
-SOURCES := $(LIBRETRO_SOURCES) $(4DO_SOURCES)
-OBJECTS := $(SOURCES:.cpp=.o) $(SOURCES_C:.c=.o)
+OBJECTS := $(SOURCES_CXX:.cpp=.o) $(SOURCES_C:.c=.o)
 
 all: $(TARGET)
 
@@ -137,7 +121,7 @@ endif
 
 LDFLAGS += $(fpic) -lz $(SHARED)
 FLAGS += $(fpic) 
-FLAGS += -I. -Ilibfreedo
+FLAGS += $(INCFLAGS)
 
 ifeq ($(OLD_GCC), 1)
 WARNINGS := -Wall
