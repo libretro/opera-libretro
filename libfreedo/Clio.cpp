@@ -659,10 +659,17 @@ void HandleDMA(unsigned int val)
             b0=_xbus_GetDataFIFO();
             //st=CXBUS::GetPoll();
 
+#ifdef MSB_FIRST
+            _mem_write8(trg,b3);
+            _mem_write8(trg+1,b2);
+            _mem_write8(trg+2,b1);
+            _mem_write8(trg+3,b0);
+#else
             _mem_write8(trg,b0);
             _mem_write8(trg+1,b1);
             _mem_write8(trg+2,b2);
             _mem_write8(trg+3,b3);
+#endif
 
             trg+=4;
             len-=4;
@@ -693,10 +700,17 @@ void HandleDMA(unsigned int val)
             b0=_xbus_GetDataFIFO();
             //st=CXBUS::GetPoll();
 
+#ifdef MSB_FIRST
+            _mem_write8(trg,b3);
+            _mem_write8(trg+1,b2);
+            _mem_write8(trg+2,b1);
+            _mem_write8(trg+3,b0);
+#else
             _mem_write8(trg,b0);
             _mem_write8(trg+1,b1);
             _mem_write8(trg+2,b2);
             _mem_write8(trg+3,b3);
+#endif
 
             trg+=4;
             len-=4;
@@ -777,7 +791,11 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
 
       if( (FIFOI[channel].StartLen-PTRI[channel])>0 )
       {
+#ifdef MSB_FIRST
+         val=_mem_read16( ((FIFOI[channel].StartAdr+PTRI[channel])) );
+#else
          val=_mem_read16( ((FIFOI[channel].StartAdr+PTRI[channel])^2) );
+#endif
          PTRI[channel]+=2;
       }
       else
@@ -788,7 +806,11 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
          {
             FIFOI[channel].StartAdr=FIFOI[channel].NextAdr;
             FIFOI[channel].StartLen=FIFOI[channel].NextLen;
+#ifdef MSB_FIRST
+            val=_mem_read16(((FIFOI[channel].StartAdr+PTRI[channel]))); //get the value!!!
+#else
             val=_mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])^2)); //get the value!!!
+#endif
             PTRI[channel]+=2;
          }
          else
@@ -824,7 +846,11 @@ void  _clio_EOFIFO(unsigned short channel, unsigned short val)
 
       if( (FIFOO[channel].StartLen-PTRO[channel])>0 )
       {
+#ifdef MSB_FIRST
+         _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])),val);
+#else
          _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])^2),val);
+#endif
          PTRO[channel]+=2;
       }
       else
@@ -850,7 +876,11 @@ unsigned short  _clio_EIFIFONI(unsigned short channel)
 {
    unsigned int base;
    base=0x400+(channel*16);
+#ifdef MSB_FIRST
+   return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])));
+#else
    return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])^2));
+#endif
 }
 
 unsigned short   _clio_GetEIFIFOStat(unsigned char channel)

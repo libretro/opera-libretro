@@ -825,7 +825,11 @@ void LoadPLUT(unsigned int pnt,int n)
 {
    int i;
    for(i=0;i<n;i++)
+#ifdef MSB_FIRST
+      PLUT[i]=_mem_read16((((pnt>>1)+i))<<1);
+#else
       PLUT[i]=_mem_read16((((pnt>>1)+i)^1)<<1);
+#endif
 }
 
 int CCBCOUNTER;
@@ -1224,7 +1228,11 @@ void  mwriteh(unsigned int addr, unsigned short val)
    addr&=0x3fffff;
 #endif
    CELCYCLES+=2;
+#ifdef MSB_FIRST
+   _mem_write16((addr),val);
+#else
    _mem_write16((addr^2),val);
+#endif
    //exteraclocker();
 }
 
@@ -1235,7 +1243,11 @@ unsigned short  mreadh(unsigned int addr)
 #endif
    CELCYCLES+=1;
    //exteraclocker();
+#ifdef MSB_FIRST
+   return _mem_read16((addr));
+#else
    return _mem_read16((addr^2));
+#endif
 }
 
 unsigned int  readPLUTDATA(unsigned int offset)
