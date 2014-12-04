@@ -308,63 +308,64 @@ static void update_input(void)
 
    input_poll_cb();
 
+
    // Can possibly support up to 6 players but is currently set for 2
    for (unsigned i = 0; i < 2; i++)
    {
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
-         internal_input_state[i].buttons|=INPUTBUTTONUP;
+         internal_input_state[i].buttons |= INPUTBUTTONUP;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONUP;
+         internal_input_state[i].buttons &= ~INPUTBUTTONUP;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))
-         internal_input_state[i].buttons|=INPUTBUTTONDOWN;
+         internal_input_state[i].buttons |= INPUTBUTTONDOWN;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONDOWN;
+         internal_input_state[i].buttons &= ~INPUTBUTTONDOWN;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))
-         internal_input_state[i].buttons|=INPUTBUTTONLEFT;
+         internal_input_state[i].buttons |= INPUTBUTTONLEFT;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONLEFT;
+         internal_input_state[i].buttons &= ~INPUTBUTTONLEFT;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
-         internal_input_state[i].buttons|=INPUTBUTTONRIGHT;
+         internal_input_state[i].buttons |= INPUTBUTTONRIGHT;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONRIGHT;
+         internal_input_state[i].buttons &= ~INPUTBUTTONRIGHT;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
-         internal_input_state[i].buttons|=INPUTBUTTONA;
+         internal_input_state[i].buttons |= INPUTBUTTONA;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONA;
+         internal_input_state[i].buttons &= ~INPUTBUTTONA;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
-         internal_input_state[i].buttons|=INPUTBUTTONB;
+         internal_input_state[i].buttons |= INPUTBUTTONB;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONB;
+         internal_input_state[i].buttons &= ~INPUTBUTTONB;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
-         internal_input_state[i].buttons|=INPUTBUTTONC;
+         internal_input_state[i].buttons |= INPUTBUTTONC;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONC;
+         internal_input_state[i].buttons &= ~INPUTBUTTONC;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L))
-         internal_input_state[i].buttons|=INPUTBUTTONL;
+         internal_input_state[i].buttons |= INPUTBUTTONL;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONL;
+         internal_input_state[i].buttons &= ~INPUTBUTTONL;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
-         internal_input_state[i].buttons|=INPUTBUTTONR;
+         internal_input_state[i].buttons |= INPUTBUTTONR;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONR;
+         internal_input_state[i].buttons &= ~INPUTBUTTONR;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START))
-         internal_input_state[i].buttons|=INPUTBUTTONP;
+         internal_input_state[i].buttons |= INPUTBUTTONP;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONP;
+         internal_input_state[i].buttons &= ~INPUTBUTTONP;
 
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
-         internal_input_state[i].buttons|=INPUTBUTTONX;
+         internal_input_state[i].buttons |= INPUTBUTTONX;
       else
-         internal_input_state[i].buttons&=~INPUTBUTTONX;
+         internal_input_state[i].buttons &= ~INPUTBUTTONX;
    }
 }
 
@@ -467,6 +468,36 @@ bool retro_load_game(const struct retro_game_info *info)
          log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
       return false;
    }
+
+   struct retro_input_descriptor desc[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "C" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,     "A" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "L" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "R" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,    "X (Stop)" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,    "P (Play/Pause)" },
+
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "C" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,     "A" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "L" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "R" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,    "X (Stop)" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,    "P (Play/Pause)" },
+
+      { 0 },
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    currentSector = 0;
    sampleCurrent = 0;
