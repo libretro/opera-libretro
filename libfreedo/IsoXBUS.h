@@ -124,6 +124,10 @@ enum MEI_CDROM_Error_Codes {
 #define Address_Abs_MSF   1
 #define Address_Track_MSF 2
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #pragma pack(push,1)
 //drive specific
 //disc data
@@ -156,7 +160,7 @@ struct DISCStc{
    unsigned char  lasttrk;
    unsigned char  discid;
    unsigned char  sesmsf[3]; //BIN form
-   TOCEntry DiscTOC[100];
+   struct TOCEntry DiscTOC[100];
 };
 
 struct cdrom_Device
@@ -173,11 +177,15 @@ struct cdrom_Device
       unsigned char Command[7];
       char STATCYC;
       int Requested;
-      MEI_CDROM_Error_Codes MEIStatus;
-      DISCStc DISC;
+      unsigned int MEIStatus;
+      struct DISCStc DISC;
       unsigned int curr_sector;
 };
 
-extern cdrom_Device *isodrive;
+extern struct cdrom_Device *isodrive;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 
