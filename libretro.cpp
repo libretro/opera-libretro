@@ -18,6 +18,7 @@
 #include "libretro.h"
 
 #include "freedocore.h"
+#include "IsoXBUS.h"
 #include "frame.h"
 
 #define TEMP_BUFFER_SIZE 512
@@ -599,6 +600,10 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+   if (isodrive)
+      free(isodrive);
+   isodrive = NULL;
+
    if (videoBuffer)
       free(videoBuffer);
 

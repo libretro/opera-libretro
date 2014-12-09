@@ -30,322 +30,90 @@
 #include "IsoXBUS.h"
 #include "types.h"
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
-#define STATDELAY 100
-#define REQSIZE	2048
-enum MEI_CDROM_Error_Codes {
-   MEI_CDROM_no_error = 0x00,
-   MEI_CDROM_recv_retry = 0x01,
-   MEI_CDROM_recv_ecc = 0x02,
-   MEI_CDROM_not_ready = 0x03,
-   MEI_CDROM_toc_error = 0x04,
-   MEI_CDROM_unrecv_error = 0x05,
-   MEI_CDROM_seek_error = 0x06,
-   MEI_CDROM_track_error = 0x07,
-   MEI_CDROM_ram_error = 0x08,
-   MEI_CDROM_diag_error = 0x09,
-   MEI_CDROM_focus_error = 0x0A,
-   MEI_CDROM_clv_error = 0x0B,
-   MEI_CDROM_data_error = 0x0C,
-   MEI_CDROM_address_error = 0x0D,
-   MEI_CDROM_cdb_error = 0x0E,
-   MEI_CDROM_end_address = 0x0F,
-   MEI_CDROM_mode_error = 0x10,
-   MEI_CDROM_media_changed = 0x11,
-   MEI_CDROM_hard_reset = 0x12,
-   MEI_CDROM_rom_error = 0x13,
-   MEI_CDROM_cmd_error = 0x14,
-   MEI_CDROM_disc_out = 0x15,
-   MEI_CDROM_hardware_error = 0x16,
-   MEI_CDROM_illegal_request = 0x17
-};
-
-
-#define POLSTMASK	0x01
-#define POLDTMASK	0x02
-#define POLMAMASK	0x04
-#define POLREMASK	0x08
-#define POLST		0x10
-#define POLDT		0x20
-#define POLMA		0x40
-#define POLRE		0x80
-
-#define CDST_TRAY  0x80
-#define CDST_DISC  0x40
-#define CDST_SPIN  0x20
-#define CDST_ERRO  0x10
-#define CDST_2X    0x02
-#define CDST_RDY   0x01
-#define CDST_TRDISC 0xC0
-#define CDST_OK    CDST_RDY|CDST_TRAY|CDST_DISC|CDST_SPIN
-
-//medium specific
-#define CD_CTL_PREEMPHASIS      0x01
-#define CD_CTL_COPY_PERMITTED   0x02
-#define CD_CTL_DATA_TRACK       0x04
-#define CD_CTL_FOUR_CHANNEL     0x08
-#define CD_CTL_QMASK            0xF0
-#define CD_CTL_Q_NONE           0x00
-#define CD_CTL_Q_POSITION       0x10
-#define CD_CTL_Q_MEDIACATALOG   0x20
-#define CD_CTL_Q_ISRC           0x30
-
-#define MEI_DISC_DA_OR_CDROM    0x00
-#define MEI_DISC_CDI            0x10
-#define MEI_DISC_CDROM_XA       0x20
-
-#define CDROM_M1_D              2048
-#define CDROM_DA                2352
-#define CDROM_DA_PLUS_ERR       2353
-#define CDROM_DA_PLUS_SUBCODE   2448
-#define CDROM_DA_PLUS_BOTH      2449
-
-//medium specific
-//drive specific
-#define MEI_CDROM_SINGLE_SPEED  0x00
-#define MEI_CDROM_DOUBLE_SPEED  0x80
-
-#define MEI_CDROM_DEFAULT_RECOVERY         0x00
-#define MEI_CDROM_CIRC_RETRIES_ONLY        0x01
-#define MEI_CDROM_BEST_ATTEMPT_RECOVERY    0x20
-
-#define Address_Blocks    0
-#define Address_Abs_MSF   1
-#define Address_Track_MSF 2
-
-#pragma pack(push,1)
-//drive specific
-//disc data
-struct TOCEntry{
-   unsigned char res0;
-   unsigned char CDCTL;
-   unsigned char TRKNUM;
-   unsigned char res1;
-   unsigned char mm;
-   unsigned char ss;
-   unsigned char ff;
-   unsigned char res2;
-};
-
-//disc data
-struct DISCStc{
-   unsigned char curabsmsf[3]; //BIN form
-   unsigned char curtrack;
-   unsigned char nextmsf[3]; //BIN form
-   unsigned char tempmsf[3]; //BIN form
-   int  tempblk;
-   int  templba;
-   unsigned char currenterror;
-   unsigned char currentxbus;
-   unsigned int  currentoffset;
-   unsigned int  currentblocksize;
-   unsigned char currentspeed;
-   unsigned char  totalmsf[3];//BIN form
-   unsigned char  firsttrk;
-   unsigned char  lasttrk;
-   unsigned char  discid;
-   unsigned char  sesmsf[3]; //BIN form
-   TOCEntry DiscTOC[100];
-};
-
-class cdrom_Device
-{
-   private:
-      unsigned char Poll;
-      unsigned char XbusStatus;
-      unsigned char StatusLen;
-      int  DataLen;
-      int  DataPtr;
-      unsigned int olddataptr;
-      unsigned char CmdPtr;
-      unsigned char Status[256];
-      unsigned char Data[REQSIZE];
-      unsigned char Command[7];
-      char STATCYC;
-      int Requested;
-      MEI_CDROM_Error_Codes MEIStatus;
-      DISCStc DISC;
-      unsigned int curr_sector;
-
-   public:
-
-      void Init();
-
-      unsigned int GetStatusFifo();
-      void  SendCommand(unsigned char val);
-      unsigned int GetPoll();
-      bool TestFIQ();
-      void SetPoll(unsigned int val);
-      unsigned int GetDataFifo();
-      void DoCommand();
-      unsigned char BCD2BIN(unsigned char in);
-      unsigned char BIN2BCD(unsigned char in);
-      void MSF2BLK();
-      void BLK2MSF();
-      void LBA2MSF();
-      void MSF2LBA();
-      unsigned char * GetDataPtr();
-      unsigned int GetDataLen();
-      void ClearDataPoll(unsigned int len);
-      bool InitCD();
-      unsigned char  *  GetBytes(unsigned int len);
-      unsigned int GedWord();
-};
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 #pragma pack(pop)
 
 extern unsigned int _3do_DiscSize();
 extern void _3do_Read2048(void *buff);
 extern void _3do_OnSector(unsigned int sector);
 
-void cdrom_Device::Init()
+void LBA2MSF(cdrom_Device *cd)
 {
-   unsigned int filesize;
+   cd->DISC.templba += 150;
+   cd->DISC.tempmsf[0] = cd->DISC.templba/(60*75);
+   cd->DISC.templba %= (60*75);
+   cd->DISC.tempmsf[1] = cd->DISC.templba/75;
+   cd->DISC.tempmsf[2] = cd->DISC.templba%75;
+}
 
-   filesize=150;
-   DataPtr=0;
+void cdrom_Init(cdrom_Device *cd)
+{
+   unsigned int filesize = 150;
 
-   XbusStatus=0;
+   cd->DataPtr=0;
+   cd->XbusStatus=0;
    //XBPOLL=POLSTMASK|POLDTMASK|POLMAMASK|POLREMASK;
-   Poll=0xf;
-   XbusStatus|=CDST_TRAY; //Inject the disc
-   XbusStatus|=CDST_RDY;
-   XbusStatus|=CDST_DISC;
-   XbusStatus|=CDST_SPIN;
-   MEIStatus=MEI_CDROM_no_error;
+   cd->Poll=0xf;
+   cd->XbusStatus |= CDST_TRAY; //Inject the disc
+   cd->XbusStatus |= CDST_RDY;
+   cd->XbusStatus |= CDST_DISC;
+   cd->XbusStatus |= CDST_SPIN;
+   cd->MEIStatus = MEI_CDROM_no_error;
 
-   DISC.firsttrk=1;
-   DISC.lasttrk=1;
-   DISC.curabsmsf[0]=0;
-   DISC.curabsmsf[1]=2;
-   DISC.curabsmsf[2]=0;
+   cd->DISC.firsttrk = 1;
+   cd->DISC.lasttrk = 1;
+   cd->DISC.curabsmsf[0] = 0;
+   cd->DISC.curabsmsf[1] = 2;
+   cd->DISC.curabsmsf[2] = 0;
 
-   DISC.DiscTOC[1].CDCTL=CD_CTL_DATA_TRACK|CD_CTL_Q_NONE;//|CD_CTL_COPY_PERMITTED;
-   DISC.DiscTOC[1].TRKNUM=1;
-   DISC.DiscTOC[1].mm=0;
-   DISC.DiscTOC[1].ss=2;
-   DISC.DiscTOC[1].ff=0;
+   cd->DISC.DiscTOC[1].CDCTL=CD_CTL_DATA_TRACK|CD_CTL_Q_NONE;//|CD_CTL_COPY_PERMITTED;
+   cd->DISC.DiscTOC[1].TRKNUM = 1;
+   cd->DISC.DiscTOC[1].mm = 0;
+   cd->DISC.DiscTOC[1].ss = 2;
+   cd->DISC.DiscTOC[1].ff = 0;
 
-   DISC.firsttrk=1;
-   DISC.lasttrk=1;
-   DISC.discid=MEI_DISC_DA_OR_CDROM;
+   cd->DISC.firsttrk=1;
+   cd->DISC.lasttrk=1;
+   cd->DISC.discid = MEI_DISC_DA_OR_CDROM;
 
-   DISC.templba=filesize;
-   LBA2MSF();
-   DISC.totalmsf[0]=DISC.tempmsf[0];
-   DISC.totalmsf[1]=DISC.tempmsf[1];
-   DISC.totalmsf[2]=DISC.tempmsf[2];
+   cd->DISC.templba = filesize;
+   LBA2MSF(cd);
+   cd->DISC.totalmsf[0] = cd->DISC.tempmsf[0];
+   cd->DISC.totalmsf[1] = cd->DISC.tempmsf[1];
+   cd->DISC.totalmsf[2] = cd->DISC.tempmsf[2];
 
-   DISC.templba=filesize-150;
-   LBA2MSF();
-   DISC.sesmsf[0]=DISC.tempmsf[0];
-   DISC.sesmsf[1]=DISC.tempmsf[1];
-   DISC.sesmsf[2]=DISC.tempmsf[2];
+   cd->DISC.templba = filesize-150;
+   LBA2MSF(cd);
+   cd->DISC.sesmsf[0] = cd->DISC.tempmsf[0];
+   cd->DISC.sesmsf[1] = cd->DISC.tempmsf[1];
+   cd->DISC.sesmsf[2] = cd->DISC.tempmsf[2];
 
-
-   STATCYC=STATDELAY;
+   cd->STATCYC = STATDELAY;
 }
 
-unsigned int cdrom_Device::GetStatusFifo()
+unsigned int GetStatusFifo(cdrom_Device *cd)
 {
-   unsigned int res;
-   res=0;
-   if(StatusLen>0)
+   unsigned int res = 0;
+
+   if(cd->StatusLen > 0)
    {
-      res=Status[0];
-      StatusLen--;
-      if(StatusLen>0)
-         memmove(Status,Status+1,StatusLen);
+      res = cd->Status[0];
+      cd->StatusLen--;
+      if (cd->StatusLen>0)
+         memmove(cd->Status, cd->Status + 1, cd->StatusLen);
       else
-      {
-         Poll&=~POLST;
-      }
+         cd->Poll &= ~POLST;
    }
    return res;
-
 }
 
-void  cdrom_Device::SendCommand(unsigned char val)
+void MSF2LBA(cdrom_Device *cd)
 {
-   if (CmdPtr<7)
-   {
-      Command[CmdPtr]=(unsigned char)val;
-      CmdPtr++;
-
-   }
-   if((CmdPtr>=7) || (Command[0]==0x8))
-   {
-
-      //Poll&=~0x80; ???
-      DoCommand();
-      CmdPtr=0;
-   }
+   cd->DISC.templba = (cd->DISC.tempmsf[0] * 60 + cd->DISC.tempmsf[1]) * 75 + cd->DISC.tempmsf[2] - 150;
+   if (cd->DISC.templba<0)
+      cd->DISC.templba=0;
 }
 
-unsigned int cdrom_Device::GetPoll()
-{
-   return Poll;
-}
-
-bool cdrom_Device::TestFIQ()
-{
-   if(((Poll&POLST) && (Poll&POLSTMASK)) || ((Poll&POLDT) && (Poll&POLDTMASK)))
-   {
-      return true;
-   }
-   return false;
-}
-
-void cdrom_Device::SetPoll(unsigned int val)
-{
-   Poll&=0xF0;
-   val&=0xf;
-   Poll|=val;
-}
-
-unsigned int cdrom_Device::GetDataFifo()
-{
-   unsigned int res;
-   res=0;
-   //int i;
-
-   if(DataLen>0)
-   {
-      res=(unsigned char)Data[DataPtr];
-      DataLen--;
-      DataPtr++;
-
-      if(DataLen==0)
-      {
-         DataPtr=0;
-         if(Requested)
-         {
-            _3do_OnSector(curr_sector++);
-            _3do_Read2048(Data);
-            Requested--;
-            DataLen=REQSIZE;
-         }
-         else
-         {
-            Poll&=~POLDT;
-            Requested=0;
-            DataLen=0;
-            DataPtr=0;
-         }
-
-      }
-   }
-
-   return res;
-}
-
-void cdrom_Device::DoCommand()
+void DoCommand(cdrom_Device *cd)
 {
    int i;
 
@@ -353,14 +121,14 @@ void cdrom_Device::DoCommand()
      Data[i]=0;
 
      DataLen=0;*/
-   StatusLen=0;
+   cd->StatusLen=0;
 
+   cd->Poll &= ~POLST;
+   cd->Poll &= ~POLDT;
+   cd->XbusStatus &= ~CDST_ERRO;
+   cd->XbusStatus &= ~CDST_RDY;
 
-   Poll&=~POLST;
-   Poll&=~POLDT;
-   XbusStatus&=~CDST_ERRO;
-   XbusStatus&=~CDST_RDY;
-   switch(Command[0])
+   switch(cd->Command[0])
    {
       case 0x1:
          //seek
@@ -377,27 +145,27 @@ void cdrom_Device::DoCommand()
          //opera status request = 0
          //status 4 bytes
          //xx xx xx XS  (xs=xbus status)
-         if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC))
          {
-            XbusStatus|=CDST_SPIN;
-            XbusStatus|=CDST_RDY;
-            MEIStatus=MEI_CDROM_no_error;
+            cd->XbusStatus |= CDST_SPIN;
+            cd->XbusStatus |= CDST_RDY;
+            cd->MEIStatus = MEI_CDROM_no_error;
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus |= CDST_ERRO;
+            cd->XbusStatus &= ~CDST_RDY;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
 
          }
 
-         Poll|=POLST; //status is valid
+         cd->Poll |= POLST; //status is valid
 
-         StatusLen=2;
-         Status[0]=0x2;
-         //Status[1]=0x0;
-         //Status[2]=0x0;
-         Status[1]=XbusStatus;
+         cd->StatusLen=2;
+         cd->Status[0]=0x2;
+         //cd->Status[1]=0x0;
+         //cd->Status[2]=0x0;
+         cd->Status[1] = cd->XbusStatus;
 
 
          break;
@@ -406,28 +174,28 @@ void cdrom_Device::DoCommand()
          //opera status request = 0 // not used in opera
          //status 4 bytes
          //xx xx xx XS  (xs=xbus status)
-         if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC))
          {
-            XbusStatus&=~CDST_SPIN;
-            XbusStatus|=CDST_RDY;
-            MEIStatus=MEI_CDROM_no_error;
+            cd->XbusStatus &= ~CDST_SPIN;
+            cd->XbusStatus |= CDST_RDY;
+            cd->MEIStatus=MEI_CDROM_no_error;
 
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus|=CDST_RDY;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus|=CDST_ERRO;
+            cd->XbusStatus|=CDST_RDY;
+            cd->MEIStatus=MEI_CDROM_recv_ecc;
 
          }
 
-         Poll|=POLST; //status is valid
+         cd->Poll|=POLST; //status is valid
 
-         StatusLen=2;
-         Status[0]=0x3;
-         //Status[1]=0x0;
-         //Status[2]=0x0;
-         Status[1]=XbusStatus;
+         cd->StatusLen=2;
+         cd->Status[0]=0x3;
+         //cd->Status[1]=0x0;
+         //cd->Status[2]=0x0;
+         cd->Status[1] = cd->XbusStatus;
 
          break;
       case 0x4:
@@ -450,21 +218,21 @@ void cdrom_Device::DoCommand()
          //emulation ---
          // Execute EJECT command;
          // Check Sense, update PollRegister (if medium present)
-         XbusStatus&=~CDST_TRAY;
-         XbusStatus&=~CDST_DISC;
-         XbusStatus&=~CDST_SPIN;
-         XbusStatus&=~CDST_2X;
-         XbusStatus&=~CDST_ERRO;
-         XbusStatus|=CDST_RDY;
-         Poll|=POLST; //status is valid
-         Poll&=~POLMA;
-         MEIStatus=MEI_CDROM_no_error;
+         cd->XbusStatus&=~CDST_TRAY;
+         cd->XbusStatus&=~CDST_DISC;
+         cd->XbusStatus&=~CDST_SPIN;
+         cd->XbusStatus&=~CDST_2X;
+         cd->XbusStatus&=~CDST_ERRO;
+         cd->XbusStatus|=CDST_RDY;
+         cd->Poll|=POLST; //status is valid
+         cd->Poll&=~POLMA;
+         cd->MEIStatus=MEI_CDROM_no_error;
 
-         StatusLen=2;
-         Status[0]=0x6;
-         //Status[1]=0x0;
-         //Status[2]=0x0;
-         Status[1]=XbusStatus;
+         cd->StatusLen=2;
+         cd->Status[0]=0x6;
+         //cd->Status[1]=0x0;
+         //cd->Status[2]=0x0;
+         cd->Status[1]=cd->XbusStatus;
 
          /*	ClearCDB();
             CDB[0]=0x1b;
@@ -491,14 +259,14 @@ void cdrom_Device::DoCommand()
          //status 4 bytes
          //xx xx xx XS
          //
-         StatusLen=33;
-         Status[0]=0x8;
+         cd->StatusLen=33;
+         cd->Status[0]=0x8;
          for(i=1;i<32;i++)
-            Status[i]=0;
-         Status[32]=XbusStatus;
+            cd->Status[i]=0;
+         cd->Status[32]=cd->XbusStatus;
 
-         XbusStatus|=CDST_RDY;
-         MEIStatus=MEI_CDROM_no_error;
+         cd->XbusStatus|=CDST_RDY;
+         cd->MEIStatus=MEI_CDROM_no_error;
 
 
          break;
@@ -515,8 +283,8 @@ void cdrom_Device::DoCommand()
 
          //	if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
          //	{
-         XbusStatus|=CDST_RDY;
-         MEIStatus=MEI_CDROM_no_error;
+         cd->XbusStatus |= CDST_RDY;
+         cd->MEIStatus = MEI_CDROM_no_error;
 
          //CDMode[Command[1]]=Command[2];
          //	}
@@ -526,14 +294,11 @@ void cdrom_Device::DoCommand()
          //		XbusStatus&=~CDST_RDY;
          //	}
 
-         Poll|=POLST; //status is valid
+         cd->Poll |= POLST; //status is valid
 
-         StatusLen=2;
-         Status[0]=0x9;
-         Status[1]=XbusStatus;
-
-
-
+         cd->StatusLen=2;
+         cd->Status[0]=0x9;
+         cd->Status[1] = cd->XbusStatus;
          break;
       case 0x0a:
          // reset
@@ -551,17 +316,15 @@ void cdrom_Device::DoCommand()
          //returns data
          //flush all internal buffer
          //1+31+1
-         XbusStatus|=CDST_RDY;
-         StatusLen=33;
-         Status[0]=0xb;
+         cd->XbusStatus|=CDST_RDY;
+         cd->StatusLen=33;
+         cd->Status[0]=0xb;
          for(i=1;i<32;i++)
-            Status[i]=0;
-         Status[32]=XbusStatus;
+            cd->Status[i]=0;
+         cd->Status[32] = cd->XbusStatus;
 
-         //XbusStatus|=CDST_RDY;
-         MEIStatus=MEI_CDROM_no_error;
-
-
+         //cd->XbusStatus|=CDST_RDY;
+         cd->MEIStatus=MEI_CDROM_no_error;
 
          break;
       case 0x10:
@@ -581,32 +344,32 @@ void cdrom_Device::DoCommand()
 
 
          //olddataptr=DataLen;
-         if((XbusStatus&CDST_TRAY)&&(XbusStatus&CDST_DISC)&&(XbusStatus&CDST_SPIN))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC) && (cd->XbusStatus & CDST_SPIN))
          {
-            XbusStatus|=CDST_RDY;
-            //CDMode[Command[1]]=Command[2];
-            StatusLen=2;
-            Status[0]=0x10;
-            //Status[1]=0x0;
-            //Status[2]=0x0;
-            Status[1]=XbusStatus;
+            cd->XbusStatus |= CDST_RDY;
+            //cd->CDMode[Command[1]] = cd->Command[2];
+            cd->StatusLen = 2;
+            cd->Status[0] = 0x10;
+            //cd->Status[1]=0x0;
+            //cd->Status[2]=0x0;
+            cd->Status[1] = cd->XbusStatus;
 
-            //if(Command[6]==Address_Abs_MSF)
+            //if(cd->Command[6] == Address_Abs_MSF)
             {
-               DISC.curabsmsf[0]=(Command[1]);
-               DISC.curabsmsf[1]=(Command[2]);
-               DISC.curabsmsf[2]=(Command[3]);
-               DISC.tempmsf[0]=DISC.curabsmsf[0];
-               DISC.tempmsf[1]=DISC.curabsmsf[1];
-               DISC.tempmsf[2]=DISC.curabsmsf[2];
-               MSF2LBA();
+               cd->DISC.curabsmsf[0] = (cd->Command[1]);
+               cd->DISC.curabsmsf[1] = (cd->Command[2]);
+               cd->DISC.curabsmsf[2] = (cd->Command[3]);
+               cd->DISC.tempmsf[0] = cd->DISC.curabsmsf[0];
+               cd->DISC.tempmsf[1] = cd->DISC.curabsmsf[1];
+               cd->DISC.tempmsf[2] = cd->DISC.curabsmsf[2];
+               MSF2LBA(cd);
 
 
                //if(fiso!=NULL)
                //	fseek(fiso,DISC.templba*2048+iso_off_from_begin,SEEK_SET);
                {
-                  curr_sector=DISC.templba;
-                  _3do_OnSector(DISC.templba);
+                  cd->curr_sector = cd->DISC.templba;
+                  _3do_OnSector(cd->DISC.templba);
                }
                //fseek(fiso,DISC.templba*2048,SEEK_SET);
                //fseek(fiso,DISC.templba*2336,SEEK_SET);
@@ -616,37 +379,35 @@ void cdrom_Device::DoCommand()
 
 
 
-            olddataptr=(Command[5]<<8)+Command[6];
-            //olddataptr=olddataptr*2048; //!!!
-            Requested=olddataptr;
+            cd->olddataptr = (cd->Command[5] << 8) + cd->Command[6];
+            //cd->olddataptr = cd->olddataptr*2048; //!!!
+            cd->Requested = cd->olddataptr;
 
-
-            if(Requested)
+            if (cd->Requested)
             {
-               _3do_OnSector(curr_sector++);
-               _3do_Read2048(Data);
-               DataLen=REQSIZE;
-               Requested--;
+               _3do_OnSector(cd->curr_sector++);
+               _3do_Read2048(cd->Data);
+               cd->DataLen = REQSIZE;
+               cd->Requested--;
             }
-            else DataLen=0;
+            else
+               cd->DataLen=0;
 
-            Poll|=POLDT;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_no_error;
-
-
+            cd->Poll |= POLDT;
+            cd->Poll |= POLST;
+            cd->MEIStatus = MEI_CDROM_no_error;
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
-            Poll|=POLST; //status is valid
-            StatusLen=2;
-            Status[0]=0x10;
-            //Status[1]=0x0;
-            //Status[2]=0x0;
-            Status[1]=XbusStatus;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus|=CDST_ERRO;
+            cd->XbusStatus&=~CDST_RDY;
+            cd->Poll|=POLST; //status is valid
+            cd->StatusLen=2;
+            cd->Status[0]=0x10;
+            //cd->Status[1]=0x0;
+            //cd->Status[2]=0x0;
+            cd->Status[1] = cd->XbusStatus;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
 
          }
 
@@ -658,14 +419,14 @@ void cdrom_Device::DoCommand()
          //MKE =2
          // status 4 bytes
          // 80 AA 55 XS
-         XbusStatus|=CDST_RDY;
-         StatusLen=4;
-         Status[0]=0x80;
-         Status[1]=0xaa;
-         Status[2]=0x55;
-         Status[3]=XbusStatus;
-         Poll|=POLST;
-         MEIStatus=MEI_CDROM_no_error;
+         cd->XbusStatus |= CDST_RDY;
+         cd->StatusLen = 4;
+         cd->Status[0]=0x80;
+         cd->Status[1]=0xaa;
+         cd->Status[2]=0x55;
+         cd->Status[3] = cd->XbusStatus;
+         cd->Poll|=POLST;
+         cd->MEIStatus=MEI_CDROM_no_error;
 
 
          break;
@@ -682,20 +443,20 @@ void cdrom_Device::DoCommand()
          //66
          //77
          //88   Current Status //TEST
-         Status[0]=0x82;
-         Status[1]=MEIStatus;
-         Status[2]=MEIStatus;
-         Status[3]=MEIStatus;
-         Status[4]=MEIStatus;
-         Status[5]=MEIStatus;
-         Status[6]=MEIStatus;
-         Status[7]=MEIStatus;
-         Status[8]=MEIStatus;
-         XbusStatus|=CDST_RDY;
-         Status[9]=XbusStatus;
-         //Status[9]=XbusStatus; // 1 == disc present
-         StatusLen=10;
-         Poll|=POLST;
+         cd->Status[0]=0x82;
+         cd->Status[1] = cd->MEIStatus;
+         cd->Status[2] = cd->MEIStatus;
+         cd->Status[3] = cd->MEIStatus;
+         cd->Status[4] = cd->MEIStatus;
+         cd->Status[5] = cd->MEIStatus;
+         cd->Status[6] = cd->MEIStatus;
+         cd->Status[7] = cd->MEIStatus;
+         cd->Status[8] = cd->MEIStatus;
+         cd->XbusStatus|=CDST_RDY;
+         cd->Status[9] = cd->XbusStatus;
+         //cd->Status[9] = cd->XbusStatus; // 1 == disc present
+         cd->StatusLen=10;
+         cd->Poll |= POLST;
          //Poll|=0x80; //MDACC
 
 
@@ -707,24 +468,24 @@ void cdrom_Device::DoCommand()
          //status 12 bytes (3 words)
          //MEI text + XS
          //00 M E I 1 01 00 00 00 00 00 XS
-         XbusStatus|=CDST_RDY;
-         StatusLen=12;
-         Status[0]=0x83;
-         Status[1]=0x00;//manufacture id
-         Status[2]=0x10;//10
-         Status[3]=0x00;//MANUFACTURE NUM
-         Status[4]=0x01;//01
-         Status[5]=00;
-         Status[6]=00;
-         Status[7]=0;//REVISION NUMBER:
-         Status[8]=0;
-         Status[9]=0x00;//FLAG BYTES
-         Status[10]=0x00;
-         Status[11]=XbusStatus;//DEV.DRIVER SIZE
-         //Status[11]=XbusStatus;
-         //Status[12]=XbusStatus;
-         Poll|=POLST;
-         MEIStatus=MEI_CDROM_no_error;
+         cd->XbusStatus|=CDST_RDY;
+         cd->StatusLen=12;
+         cd->Status[0]=0x83;
+         cd->Status[1]=0x00;//manufacture id
+         cd->Status[2]=0x10;//10
+         cd->Status[3]=0x00;//MANUFACTURE NUM
+         cd->Status[4]=0x01;//01
+         cd->Status[5]=00;
+         cd->Status[6]=00;
+         cd->Status[7]=0;//REVISION NUMBER:
+         cd->Status[8]=0;
+         cd->Status[9]=0x00;//FLAG BYTES
+         cd->Status[10]=0x00;
+         cd->Status[11] = cd->XbusStatus;//DEV.DRIVER SIZE
+         //cd->Status[11] = cd->XbusStatus;
+         //cd->Status[12] = cd->XbusStatus;
+         cd->Poll|=POLST;
+         cd->MEIStatus=MEI_CDROM_no_error;
 
          break;
       case 0x84:
@@ -735,29 +496,26 @@ void cdrom_Device::DoCommand()
          //xx S1 S2 XS
          //xx xx nn XS
          //
-         StatusLen=4;
-         Status[0]=0x0;
-         Status[1]=0x0;
-         Status[2]=0x0;
+         cd->StatusLen = 4;
+         cd->Status[0] = 0x0;
+         cd->Status[1] = 0x0;
+         cd->Status[2] = 0x0;
 
-         if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC))
          {
-            XbusStatus|=CDST_RDY;
+            cd->XbusStatus |= CDST_RDY;
             //CDMode[Command[1]]=Command[2];
-            //Status[2]=CDMode[Command[1]];
+            //cd->Status[2] = CDMode[Command[1]];
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
+            cd->XbusStatus |= CDST_ERRO;
+            cd->XbusStatus &= ~CDST_RDY;
          }
 
-         Poll|=POLST; //status is valid
+         cd->Poll|=POLST; //status is valid
 
-         Status[3]=XbusStatus;
-
-
-
+         cd->Status[3] = cd->XbusStatus;
          break;
       case 0x85:
          //read capacity
@@ -772,32 +530,32 @@ void cdrom_Device::DoCommand()
          //44 ??
          //55 ??
          //66 ??
-         if((XbusStatus&CDST_TRAY)&&(XbusStatus&CDST_DISC)&&(XbusStatus&CDST_SPIN))
+         if((cd->XbusStatus&CDST_TRAY) && (cd->XbusStatus&CDST_DISC)&&(cd->XbusStatus&CDST_SPIN))
          {
-            StatusLen=8;//CMD+status+DRVSTAT
-            Status[0]=0x85;
-            Status[1]=0;
-            Status[2]=DISC.totalmsf[0]; //min
-            Status[3]=DISC.totalmsf[1]; //sec
-            Status[4]=DISC.totalmsf[2]; //fra
-            Status[5]=0x00;
-            Status[6]=0x00;
-            XbusStatus|=CDST_RDY;
-            Status[7]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_no_error;
+            cd->StatusLen=8;//CMD+status+DRVSTAT
+            cd->Status[0]=0x85;
+            cd->Status[1]=0;
+            cd->Status[2]= cd->DISC.totalmsf[0]; //min
+            cd->Status[3]= cd->DISC.totalmsf[1]; //sec
+            cd->Status[4]= cd->DISC.totalmsf[2]; //fra
+            cd->Status[5]=0x00;
+            cd->Status[6]=0x00;
+            cd->XbusStatus|=CDST_RDY;
+            cd->Status[7]= cd->XbusStatus;
+            cd->Poll|=POLST;
+            cd->MEIStatus=MEI_CDROM_no_error;
 
 
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
-            StatusLen=2;//CMD+status+DRVSTAT
-            Status[0]=0x85;
-            Status[1]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus |= CDST_ERRO;
+            cd->XbusStatus &= ~CDST_RDY;
+            cd->StatusLen = 2;//CMD+status+DRVSTAT
+            cd->Status[0] = 0x85;
+            cd->Status[1] = cd->XbusStatus;
+            cd->Poll |= POLST;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
 
          }
 
@@ -831,36 +589,34 @@ void cdrom_Device::DoCommand()
          //99 ss run trk
          //aa ff run trk
 
-         if((XbusStatus&CDST_TRAY)&&(XbusStatus&CDST_DISC)&&(XbusStatus&CDST_SPIN))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC) && (cd->XbusStatus & CDST_SPIN))
          {
-            StatusLen=12;//CMD+status+DRVSTAT
-            Status[0]=0x87;
-            Status[1]=0;//DISC.totalmsf[0]; //min
-            Status[2]=0; //sec
-            Status[3]=0; //fra
-            Status[4]=0;
-            Status[5]=0;
-            XbusStatus|=CDST_RDY;
-            Status[6]=0x0;
-            Status[7]=0x0;
-            Status[8]=0x0;
-            Status[9]=0x0;
-            Status[10]=0x0;
-            Status[11]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_no_error;
-
-
+            cd->StatusLen=12;//CMD+status+DRVSTAT
+            cd->Status[0]=0x87;
+            cd->Status[1]=0;//DISC.totalmsf[0]; //min
+            cd->Status[2]=0; //sec
+            cd->Status[3]=0; //fra
+            cd->Status[4]=0;
+            cd->Status[5]=0;
+            cd->XbusStatus|=CDST_RDY;
+            cd->Status[6]=0x0;
+            cd->Status[7]=0x0;
+            cd->Status[8]=0x0;
+            cd->Status[9]=0x0;
+            cd->Status[10]=0x0;
+            cd->Status[11] = cd->XbusStatus;
+            cd->Poll|=POLST;
+            cd->MEIStatus=MEI_CDROM_no_error;
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
-            StatusLen=2;//CMD+status+DRVSTAT
-            Status[0]=0x85;
-            Status[1]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus|=CDST_ERRO;
+            cd->XbusStatus&=~CDST_RDY;
+            cd->StatusLen=2;//CMD+status+DRVSTAT
+            cd->Status[0]=0x85;
+            cd->Status[1] = cd->XbusStatus;
+            cd->Poll |= POLST;
+            cd->MEIStatus=MEI_CDROM_recv_ecc;
 
          }
 
@@ -898,36 +654,34 @@ void cdrom_Device::DoCommand()
          // 8a 00 00 00 00 00 00
          //status 10 bytes
          //????? which code???
-         if((XbusStatus&CDST_TRAY)&&(XbusStatus&CDST_DISC)&&(XbusStatus&CDST_SPIN))
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC) && (cd->XbusStatus & CDST_SPIN))
          {
-            StatusLen=12;//CMD+status+DRVSTAT
-            Status[0]=0x8a;
-            Status[1]=0;//DISC.totalmsf[0]; //min
-            Status[2]=0; //sec
-            Status[3]=0; //fra
-            Status[4]=0;
-            Status[5]=0;
-            XbusStatus|=CDST_RDY;
-            Status[6]=0x0;
-            Status[7]=0x0;
-            Status[8]=0x0;
-            Status[9]=0x0;
-            Status[10]=0x0;
-            Status[11]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_no_error;
-
-
+            cd->StatusLen=12;//CMD+status+DRVSTAT
+            cd->Status[0]=0x8a;
+            cd->Status[1]=0;//DISC.totalmsf[0]; //min
+            cd->Status[2]=0; //sec
+            cd->Status[3]=0; //fra
+            cd->Status[4]=0;
+            cd->Status[5]=0;
+            cd->XbusStatus|=CDST_RDY;
+            cd->Status[6]=0x0;
+            cd->Status[7]=0x0;
+            cd->Status[8]=0x0;
+            cd->Status[9]=0x0;
+            cd->Status[10]=0x0;
+            cd->Status[11] = cd->XbusStatus;
+            cd->Poll|=POLST;
+            cd->MEIStatus=MEI_CDROM_no_error;
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus&=~CDST_RDY;
-            StatusLen=2;//CMD+status+DRVSTAT
-            Status[0]=0x85;
-            Status[1]=XbusStatus;
-            Poll|=POLST;
-            MEIStatus=MEI_CDROM_recv_ecc;
+            cd->XbusStatus|=CDST_ERRO;
+            cd->XbusStatus&=~CDST_RDY;
+            cd->StatusLen=2;//CMD+status+DRVSTAT
+            cd->Status[0] = 0x85;
+            cd->Status[1] = cd->XbusStatus;
+            cd->Poll |= POLST;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
 
          }
 
@@ -951,29 +705,29 @@ void cdrom_Device::DoCommand()
          //66= frames
 
 
-         StatusLen=8;//6+1 + 1 for what?
-         Status[0]=0x8b;
-         if(XbusStatus&(CDST_TRAY|CDST_DISC|CDST_SPIN))
+         cd->StatusLen = 8;//6+1 + 1 for what?
+         cd->Status[0] = 0x8b;
+         if(cd->XbusStatus&(CDST_TRAY|CDST_DISC|CDST_SPIN))
          {
-            Status[1]=DISC.discid;
-            Status[2]=DISC.firsttrk;
-            Status[3]=DISC.lasttrk;
-            Status[4]=DISC.totalmsf[0]; //minutes
-            Status[5]=DISC.totalmsf[1]; //seconds
-            XbusStatus|=CDST_RDY;
-            Status[6]=DISC.totalmsf[2]; //frames
-            MEIStatus=MEI_CDROM_no_error;
-            Status[7]=XbusStatus;
+            cd->Status[1] = cd->DISC.discid;
+            cd->Status[2] = cd->DISC.firsttrk;
+            cd->Status[3] = cd->DISC.lasttrk;
+            cd->Status[4] = cd->DISC.totalmsf[0]; //minutes
+            cd->Status[5] = cd->DISC.totalmsf[1]; //seconds
+            cd->XbusStatus |= CDST_RDY;
+            cd->Status[6] = cd->DISC.totalmsf[2]; //frames
+            cd->MEIStatus = MEI_CDROM_no_error;
+            cd->Status[7] = cd->XbusStatus;
          }
          else
          {
-            StatusLen=2;//6+1 + 1 for what?
-            XbusStatus|=CDST_ERRO;
-            MEIStatus=MEI_CDROM_recv_ecc;
-            Status[1]=XbusStatus;
+            cd->StatusLen=2;//6+1 + 1 for what?
+            cd->XbusStatus|=CDST_ERRO;
+            cd->MEIStatus=MEI_CDROM_recv_ecc;
+            cd->Status[1] = cd->XbusStatus;
          }
 
-         Poll|=POLST; //status is valid
+         cd->Poll |= POLST; //status is valid
 
          break;
       case 0x8c:
@@ -992,36 +746,33 @@ void cdrom_Device::DoCommand()
          //66=seconds;
          //77=frames;
          //88=reserved7;
-         StatusLen=10;//CMD+status+DRVSTAT
-         Status[0]=0x8c;
-         if(XbusStatus&(CDST_TRAY|CDST_DISC|CDST_SPIN))
+         cd->StatusLen = 10;//CMD+status+DRVSTAT
+         cd->Status[0] = 0x8c;
+
+         if(cd->XbusStatus & (CDST_TRAY|CDST_DISC|CDST_SPIN))
          {
-            Status[1]=DISC.DiscTOC[Command[2]].res0;
-            Status[2]=DISC.DiscTOC[Command[2]].CDCTL;
-            Status[3]=DISC.DiscTOC[Command[2]].TRKNUM;
-            Status[4]=DISC.DiscTOC[Command[2]].res1;
-            Status[5]=DISC.DiscTOC[Command[2]].mm; //min
-            XbusStatus|=CDST_RDY;
-            Status[6]=DISC.DiscTOC[Command[2]].ss; //sec
-            Status[7]=DISC.DiscTOC[Command[2]].ff; //frames
-            Status[8]=DISC.DiscTOC[Command[2]].res2;
-            MEIStatus=MEI_CDROM_no_error;
-            Status[9]=XbusStatus;
+            cd->Status[1] = cd->DISC.DiscTOC[cd->Command[2]].res0;
+            cd->Status[2] = cd->DISC.DiscTOC[cd->Command[2]].CDCTL;
+            cd->Status[3] = cd->DISC.DiscTOC[cd->Command[2]].TRKNUM;
+            cd->Status[4] = cd->DISC.DiscTOC[cd->Command[2]].res1;
+            cd->Status[5] = cd->DISC.DiscTOC[cd->Command[2]].mm; //min
+            cd->XbusStatus |= CDST_RDY;
+            cd->Status[6] = cd->DISC.DiscTOC[cd->Command[2]].ss; //sec
+            cd->Status[7] = cd->DISC.DiscTOC[cd->Command[2]].ff; //frames
+            cd->Status[8] = cd->DISC.DiscTOC[cd->Command[2]].res2;
+            cd->MEIStatus = MEI_CDROM_no_error;
+            cd->Status[9] = cd->XbusStatus;
 
          }
          else
          {
-            StatusLen=2;
-            XbusStatus|=CDST_ERRO;
-            MEIStatus=MEI_CDROM_recv_ecc;
-            Status[1]=XbusStatus;
+            cd->StatusLen = 2;
+            cd->XbusStatus |= CDST_ERRO;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
+            cd->Status[1] = cd->XbusStatus;
          }
 
-         Poll|=POLST;
-
-
-
-
+         cd->Poll |= POLST;
          break;
       case 0x8d:
          //read session information
@@ -1037,62 +788,56 @@ void cdrom_Device::DoCommand()
          //55=rfu1; //ignore
          //66=rfu2  //ignore
 
-         StatusLen=8;//CMD+status+DRVSTAT
-         Status[0]=0x8d;
-         if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
+         cd->StatusLen = 8;//CMD+status+DRVSTAT
+         cd->Status[0] = 0x8d;
+         if((cd->XbusStatus & CDST_TRAY) && (cd->XbusStatus & CDST_DISC))
          {
-            Status[1]=0x00;
-            Status[2]=0x0;//DISC.sesmsf[0];//min
-            Status[3]=0x2;//DISC.sesmsf[1];//sec
-            Status[4]=0x0;//DISC.sesmsf[2];//fra
-            Status[5]=0x00;
-            XbusStatus|=CDST_RDY;
-            Status[6]=0x00;
-            Status[7]=XbusStatus;
-            MEIStatus=MEI_CDROM_no_error;
+            cd->Status[1] = 0x00;
+            cd->Status[2] = 0x0;//DISC.sesmsf[0];//min
+            cd->Status[3] = 0x2;//DISC.sesmsf[1];//sec
+            cd->Status[4] = 0x0;//DISC.sesmsf[2];//fra
+            cd->Status[5] = 0x00;
+            cd->XbusStatus |= CDST_RDY;
+            cd->Status[6] = 0x00;
+            cd->Status[7] = cd->XbusStatus;
+            cd->MEIStatus = MEI_CDROM_no_error;
 
          }
          else
          {
-            StatusLen=2;//CMD+status+DRVSTAT
-            XbusStatus|=CDST_ERRO;
-            Status[1]=XbusStatus;
-            MEIStatus=MEI_CDROM_recv_ecc;
-
+            cd->StatusLen = 2;//CMD+status+DRVSTAT
+            cd->XbusStatus |= CDST_ERRO;
+            cd->Status[1] = cd->XbusStatus;
+            cd->MEIStatus = MEI_CDROM_recv_ecc;
          }
 
-
-         Poll|=POLST;
-
-
-
-
+         cd->Poll|=POLST;
          break;
       case 0x8e:
          //read device driver
          break;
       case 0x93:
          //?????
-         StatusLen=4;
-         Status[0]=0x0;
-         Status[1]=0x0;
-         Status[2]=0x0;
+         cd->StatusLen=4;
+         cd->Status[0]=0x0;
+         cd->Status[1]=0x0;
+         cd->Status[2]=0x0;
 
-         if((XbusStatus&CDST_TRAY) && (XbusStatus&CDST_DISC))
+         if((cd->XbusStatus&CDST_TRAY) && (cd->XbusStatus & CDST_DISC))
          {
-            XbusStatus|=CDST_RDY;
+            cd->XbusStatus|=CDST_RDY;
             //CDMode[Command[1]]=Command[2];
             //			Status[2]=CDMode[Command[1]];
          }
          else
          {
-            XbusStatus|=CDST_ERRO;
-            XbusStatus|=CDST_RDY;
+            cd->XbusStatus|=CDST_ERRO;
+            cd->XbusStatus|=CDST_RDY;
          }
 
-         Poll|=POLST; //status is valid
+         cd->Poll |= POLST; //status is valid
 
-         Status[3]=XbusStatus;
+         cd->Status[3] = cd->XbusStatus;
 
          break;
       default:
@@ -1101,94 +846,126 @@ void cdrom_Device::DoCommand()
          //CDebug::DPrint(str);
          break;
    }
-
 }
 
-unsigned char cdrom_Device::BCD2BIN(unsigned char in)
+void  SendCommand(cdrom_Device *cd, unsigned char val)
 {
-   return ((in>>4)*10+(in&0x0F));
-}
-
-unsigned char cdrom_Device::BIN2BCD(unsigned char in)
-{
-   return((in/10)<<4)|(in%10);
-}
-
-void cdrom_Device::MSF2BLK()
-{
-
-
-   DISC.tempblk=(DISC.tempmsf[0] * 60 + DISC.tempmsf[1]) * 75 + DISC.tempmsf[2] - 150;
-   if (DISC.tempblk<0)
-      DISC.tempblk=0; //??
-
-}
-
-void cdrom_Device::BLK2MSF()
-{
-   unsigned int mm;
-   DISC.tempmsf[0]=(DISC.tempblk+150) / (60*75);
-   mm= (DISC.tempblk+150)%(60*75);
-   DISC.tempmsf[1]=mm/75;
-   DISC.tempmsf[2]=mm%75;
-}
-
-
-void cdrom_Device::LBA2MSF()
-{
-   DISC.templba+=150;
-   DISC.tempmsf[0]=DISC.templba/(60*75);
-   DISC.templba%=(60*75);
-   DISC.tempmsf[1]=DISC.templba/75;
-   DISC.tempmsf[2]=DISC.templba%75;
-}
-
-void cdrom_Device::MSF2LBA()
-{
-   DISC.templba=(DISC.tempmsf[0] * 60 + DISC.tempmsf[1]) * 75 + DISC.tempmsf[2] - 150;
-   if(DISC.templba<0)
-      DISC.templba=0;
-
-}
-
-unsigned char * cdrom_Device::GetDataPtr()
-{
-   return Data;
-}
-
-unsigned int cdrom_Device::GetDataLen()
-{
-   return DataLen;
-}
-
-void cdrom_Device::ClearDataPoll(unsigned int len)
-{
-   if((int)len<=DataLen)
+   if (cd->CmdPtr < 7)
    {
-      if(DataLen>0)
+      cd->Command[cd->CmdPtr] = (unsigned char)val;
+      cd->CmdPtr++;
+   }
+
+   if((cd->CmdPtr >= 7) || (cd->Command[0] == 0x8))
+   {
+      //Poll&=~0x80; ???
+      DoCommand(cd);
+      cd->CmdPtr=0;
+   }
+}
+
+bool TestFIQ(cdrom_Device *cd)
+{
+   if(((cd->Poll & POLST) && (cd->Poll & POLSTMASK)) ||
+         ((cd->Poll & POLDT) && (cd->Poll & POLDTMASK)))
+      return true;
+   return false;
+}
+
+void SetPoll(cdrom_Device *cd, unsigned int val)
+{
+   cd->Poll &= 0xF0;
+   val &= 0xf;
+   cd->Poll |= val;
+}
+
+unsigned int GetDataFifo(cdrom_Device *cd)
+{
+   unsigned int res = 0;
+   //int i;
+
+   if(cd->DataLen > 0)
+   {
+      res= (unsigned char)cd->Data[cd->DataPtr];
+      cd->DataLen--;
+      cd->DataPtr++;
+
+      if (cd->DataLen==0)
       {
-         DataLen-=len;
-         if(DataLen>0)
-            memmove(Data,Data+4,len);
+         cd->DataPtr=0;
+
+         if(cd->Requested)
+         {
+            _3do_OnSector(cd->curr_sector++);
+            _3do_Read2048(cd->Data);
+            cd->Requested--;
+            cd->DataLen = REQSIZE;
+         }
          else
          {
-            Poll&=~POLDT;
+            cd->Poll &= ~POLDT;
+            cd->Requested = 0;
+            cd->DataLen = 0;
+            cd->DataPtr = 0;
          }
+
+      }
+   }
+
+   return res;
+}
+
+
+unsigned char BCD2BIN(unsigned char in)
+{
+   return ((in >> 4) * 10 + (in & 0x0F));
+}
+
+unsigned char BIN2BCD(unsigned char in)
+{
+   return ((in / 10)<<4) | (in % 10);
+}
+
+void MSF2BLK(cdrom_Device *cd)
+{
+   cd->DISC.tempblk = (cd->DISC.tempmsf[0] * 60 + cd->DISC.tempmsf[1]) * 75 + cd->DISC.tempmsf[2] - 150;
+   if (cd->DISC.tempblk<0)
+      cd->DISC.tempblk=0; //??
+}
+
+void BLK2MSF(cdrom_Device *cd)
+{
+   unsigned int mm;
+   cd->DISC.tempmsf[0] = (cd->DISC.tempblk+150) / (60*75);
+   mm= (cd->DISC.tempblk + 150) % (60*75);
+   cd->DISC.tempmsf[1] = mm / 75;
+   cd->DISC.tempmsf[2] = mm % 75;
+}
+
+
+void ClearDataPoll(cdrom_Device *cd, unsigned int len)
+{
+   if((int)len <= cd->DataLen)
+   {
+      if(cd->DataLen > 0)
+      {
+         cd->DataLen -= len;
+         if (cd->DataLen > 0)
+            memmove(cd->Data,cd->Data + 4,len);
+         else
+            cd->Poll &= ~POLDT;
       }
    }
    else
-   {
-      Poll&=~POLDT;
-
-   }
+      cd->Poll &= ~POLDT;
 }
 
-bool cdrom_Device::InitCD()
+bool InitCD(cdrom_Device *cd)
 {
    unsigned int filesize=0;
 
    //fseek(fiso,0,SEEK_END);
-   curr_sector=0;
+   cd->curr_sector=0;
    _3do_OnSector(0);
    //filesize=800000000;//ftell(fiso);
 
@@ -1198,110 +975,97 @@ bool cdrom_Device::InitCD()
    //sprintf(str,"FILESIZE=0x%x\n",filesize);
    //CDebug::DPrint(str);
 
-   XbusStatus=0;
+   cd->XbusStatus=0;
    //XBPOLL=POLSTMASK|POLDTMASK|POLMAMASK|POLREMASK;
-   Poll=0xf;
-   XbusStatus|=CDST_TRAY; //Inject the disc
-   XbusStatus|=CDST_RDY;
-   XbusStatus|=CDST_DISC;
-   XbusStatus|=CDST_SPIN;
+   cd->Poll=0xf;
+   cd->XbusStatus|=CDST_TRAY; //Inject the disc
+   cd->XbusStatus|=CDST_RDY;
+   cd->XbusStatus|=CDST_DISC;
+   cd->XbusStatus|=CDST_SPIN;
 
-   MEIStatus=MEI_CDROM_no_error;
+   cd->MEIStatus=MEI_CDROM_no_error;
 
-   DISC.firsttrk=1;
-   DISC.lasttrk=1;
-   DISC.curabsmsf[0]=0;
-   DISC.curabsmsf[1]=2;
-   DISC.curabsmsf[2]=0;
+   cd->DISC.firsttrk=1;
+   cd->DISC.lasttrk=1;
+   cd->DISC.curabsmsf[0]=0;
+   cd->DISC.curabsmsf[1]=2;
+   cd->DISC.curabsmsf[2]=0;
 
-   DISC.DiscTOC[1].CDCTL=CD_CTL_DATA_TRACK|CD_CTL_Q_NONE;//|CD_CTL_COPY_PERMITTED;
-   DISC.DiscTOC[1].TRKNUM=1;
-   DISC.DiscTOC[1].mm=0;
-   DISC.DiscTOC[1].ss=2;
-   DISC.DiscTOC[1].ff=0;
+   cd->DISC.DiscTOC[1].CDCTL = CD_CTL_DATA_TRACK|CD_CTL_Q_NONE;//|CD_CTL_COPY_PERMITTED;
+   cd->DISC.DiscTOC[1].TRKNUM=1;
+   cd->DISC.DiscTOC[1].mm=0;
+   cd->DISC.DiscTOC[1].ss=2;
+   cd->DISC.DiscTOC[1].ff=0;
 
-   DISC.firsttrk=1;
-   DISC.lasttrk=1;
-   DISC.discid=MEI_DISC_DA_OR_CDROM;
+   cd->DISC.firsttrk = 1;
+   cd->DISC.lasttrk  = 1;
+   cd->DISC.discid   = MEI_DISC_DA_OR_CDROM;
 
-   DISC.templba=filesize;
-   LBA2MSF();
-   DISC.totalmsf[0]=DISC.tempmsf[0];
-   DISC.totalmsf[1]=DISC.tempmsf[1];
-   DISC.totalmsf[2]=DISC.tempmsf[2];
+   cd->DISC.templba=filesize;
+   LBA2MSF(cd);
+   cd->DISC.totalmsf[0] = cd->DISC.tempmsf[0];
+   cd->DISC.totalmsf[1] = cd->DISC.tempmsf[1];
+   cd->DISC.totalmsf[2] = cd->DISC.tempmsf[2];
 
    //sprintf(str,"##ISO M=0x%x  S=0x%x  F=0x%x\n",DISC.totalmsf[0],DISC.totalmsf[1],DISC.totalmsf[2]);
    //CDebug::DPrint(str);
 
-
-   DISC.templba=filesize-150;
-   LBA2MSF();
-   DISC.sesmsf[0]=DISC.tempmsf[0];
-   DISC.sesmsf[1]=DISC.tempmsf[1];
-   DISC.sesmsf[2]=DISC.tempmsf[2];
+   cd->DISC.templba = filesize-150;
+   LBA2MSF(cd);
+   cd->DISC.sesmsf[0] = cd->DISC.tempmsf[0];
+   cd->DISC.sesmsf[1] = cd->DISC.tempmsf[1];
+   cd->DISC.sesmsf[2] = cd->DISC.tempmsf[2];
    return false;
 }
 
-unsigned char  *  cdrom_Device::GetBytes(unsigned int len)
+unsigned int GedWord(cdrom_Device *cd)
 {
-   //unsigned char * retmem;
+   unsigned int res = 0;
 
-   //retmem=Data;
-   (void)len;
-
-   return Data;
-}
-
-unsigned int cdrom_Device::GedWord()
-{
-   unsigned int res;
-   res=0;
-
-
-   if(DataLen>0)
+   if(cd->DataLen > 0)
    {
       //res=(unsigned char)Data[0];
       //res
-      res=(Data[0]<<24)+(Data[1]<<16)+(Data[2]<<8)+Data[3];
-      if(DataLen<3)
+      res=(cd->Data[0]<<24) + (cd->Data[1]<<16) + (cd->Data[2]<<8) + cd->Data[3];
+      if(cd->DataLen<3)
       {
-         DataLen--;
-         if(DataLen>0)
-            memmove(Data,Data+1,DataLen);
+         cd->DataLen--;
+         if(cd->DataLen>0)
+            memmove(cd->Data,cd->Data+1,cd->DataLen);
          else
          {
-            Poll&=~POLDT;
-            DataLen=0;
+            cd->Poll &= ~POLDT;
+            cd->DataLen=0;
          }
-         DataLen--;
-         if(DataLen>0)
-            memmove(Data,Data+1,DataLen);
+         cd->DataLen--;
+         if(cd->DataLen>0)
+            memmove(cd->Data,cd->Data+1,cd->DataLen);
          else
          {
-            Poll&=~POLDT;
-            DataLen=0;
+            cd->Poll&=~POLDT;
+            cd->DataLen=0;
          }
-         DataLen--;
-         if(DataLen>0)
-            memmove(Data,Data+1,DataLen);
+         cd->DataLen--;
+         if(cd->DataLen > 0)
+            memmove(cd->Data,cd->Data+1,cd->DataLen);
          else
          {
-            Poll&=~POLDT;
-            DataLen=0;
+            cd->Poll&=~POLDT;
+            cd->DataLen=0;
          }
       }
       else
       {
          //DataLen-=4;
          {
-            memmove(Data,Data+4,DataLen-4);
-            DataLen-=4;
+            memmove(cd->Data,cd->Data+4,cd->DataLen-4);
+            cd->DataLen-=4;
          }
 
-         if(DataLen<=0)
+         if(cd->DataLen<=0)
          {
-            DataLen=0;
-            Poll&=~POLDT;
+            cd->DataLen=0;
+            cd->Poll &= ~POLDT;
          }
       }
 
@@ -1311,7 +1075,7 @@ unsigned int cdrom_Device::GedWord()
 }
 
 //plugins----------------------------------------------------------------------------------
-cdrom_Device isodrive;
+cdrom_Device *isodrive;
 
 void* _xbplug_MainDevice(int proc, void* data)
 {
@@ -1320,27 +1084,28 @@ void* _xbplug_MainDevice(int proc, void* data)
    switch(proc)
    {
       case XBP_INIT:
-         isodrive.Init();
+         isodrive = (cdrom_Device*)calloc(1, sizeof(*isodrive));
+         cdrom_Init(isodrive);
          return (void*)true;
       case XBP_RESET:
-         isodrive.Init();
+         cdrom_Init(isodrive);
          if(_3do_DiscSize())
-            isodrive.InitCD();
+            InitCD(isodrive);
          break;
       case XBP_SET_COMMAND:
-         isodrive.SendCommand((intptr_t)data);
+         SendCommand(isodrive, (intptr_t)data);
          break;
       case XBP_FIQ:
-         return (void*)isodrive.TestFIQ();
+         return (void*)TestFIQ(isodrive);
       case XBP_GET_DATA:
-         return (void*)isodrive.GetDataFifo();
+         return (void*)GetDataFifo(isodrive);
       case XBP_GET_STATUS:
-         return (void*)isodrive.GetStatusFifo();
+         return (void*)GetStatusFifo(isodrive);
       case XBP_SET_POLL:
-         isodrive.SetPoll((intptr_t)data);
+         SetPoll(isodrive, (intptr_t)data);
          break;
       case XBP_GET_POLL:
-         return (void*)isodrive.GetPoll();
+         return (void*)isodrive->Poll;
       case XBP_DESTROY:
          break;
       case XBP_GET_SAVESIZE:
