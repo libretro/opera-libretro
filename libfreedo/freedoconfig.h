@@ -24,6 +24,8 @@ Felix Lazarev
 #ifndef FREEDOCONFIG_H
 #define FREEDOCONFIG_H
 
+#include <boolean.h>
+
 #ifdef __MSVC__
 	//#include <stdafx.h>
 	#include <windows.h>

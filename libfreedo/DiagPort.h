@@ -28,9 +28,17 @@ Felix Lazarev
 #ifndef _DIAG_PORT_HEADER_DEFINITION_
 #define _DIAG_PORT_HEADER_DEFINITION_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void _diag_Init(int testcode);
 
 unsigned int  _diag_Get(void);
 void _diag_Send(unsigned int val);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

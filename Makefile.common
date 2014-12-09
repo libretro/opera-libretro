@@ -6,7 +6,6 @@ SOURCES_CXX := $(4DO_DIR)/_3do_sys.cpp \
 	$(4DO_DIR)/arm.cpp \
 	$(4DO_DIR)/bitop.cpp \
 	$(4DO_DIR)/Clio.cpp \
-	$(4DO_DIR)/DiagPort.cpp \
 	$(4DO_DIR)/DSP.cpp \
 	$(4DO_DIR)/frame.cpp \
 	$(4DO_DIR)/Iso.cpp \
@@ -17,4 +16,4 @@ SOURCES_CXX := $(4DO_DIR)/_3do_sys.cpp \
 	$(4DO_DIR)/XBUS.cpp \
 	$(CORE_DIR)/libretro.cpp
 
-SOURCES_C :=
+SOURCES_C := $(4DO_DIR)/DiagPort.c
