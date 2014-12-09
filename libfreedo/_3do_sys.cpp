@@ -234,8 +234,9 @@ bool _3do_Load(void *buff)
 }
 
 
-//------------------------------------------------------------------------------
+#ifdef DEBUG_CORE
 extern uint32 *profiling;
+#endif
 
 void _3do_OnSector(unsigned int sector)
 {
@@ -300,7 +301,11 @@ void* _freedo_Interface(int procedure, void *datum)
       case FDP_GETP_ROMS:
          return Getp_ROMS();
       case FDP_GETP_PROFILE:
+#ifdef DEBUG_CORE
          return profiling;
+#else
+         return 0;
+#endif
       case FDP_FREEDOCORE_VERSION:
          return (void*)0x20008;
       case FDP_SET_ARMCLOCK:

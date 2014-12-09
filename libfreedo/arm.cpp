@@ -120,11 +120,11 @@ const static uint16 cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>fla
 
 #pragma pack(push,1)
 
+#ifdef DEBUG_CORE
 uint32 *profiling;
 uint32 *profiling2;
 uint32 *profiling3;
-
-
+#endif
 
 struct ARM_CoreState
 {
@@ -556,6 +556,7 @@ unsigned char * _arm_Init()
 
    MAS_Access_Exept=false;
 
+#ifdef DEBUG_CORE
    profiling=new uint32[(1024*1024*3)>>2];
    memset(profiling,0,RAMSIZE);
 
@@ -564,6 +565,7 @@ unsigned char * _arm_Init()
 
    profiling3=new uint32[(1024*1024*3)>>2];
    memset(profiling3,0,RAMSIZE);
+#endif
 
    CYCLES=0;
    for(i=0;i<16;i++)
@@ -603,9 +605,11 @@ void _arm_Destroy()
 {
    io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
 
+#ifdef DEBUG_CORE
    delete []profiling;
    delete []profiling2;
    delete []profiling3;
+#endif
    delete []pNVRam;
    delete []pRom;
    delete []pRam;
