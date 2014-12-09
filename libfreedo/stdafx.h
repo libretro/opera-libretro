@@ -20,7 +20,4 @@ extern int HightResMode;
 extern int jw;
 extern int cnbfix;
 
-#define DEBUG_CORE
-
-
 #endif

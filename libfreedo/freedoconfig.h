@@ -44,7 +44,6 @@ Felix Lazarev
 	extern bool __temporalfixes;
 	extern int HightResMode;
 	#define RESSCALE        HightResMode
-	#define DEBUG_CORE
 	#define _T(a) (a)
 #endif
 
