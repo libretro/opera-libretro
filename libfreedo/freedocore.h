@@ -125,9 +125,15 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FIX_BIT_TIMING_7        (0x00000040)
 #define FIX_BIT_GRAPHICS_STEP_Y (0x00080000) // Preserve Y coordinate rather than X between CELs.
 
+#ifdef __cplusplus
 extern "C"
 {
-	void* _freedo_Interface(int procedure, void *datum=0);
+#endif
+
+void* _freedo_Interface(int procedure, void *datum);
+
+#ifdef __cplusplus
 };
+#endif
 
 #endif
