@@ -53,24 +53,4 @@ typedef  long double real80;
  #define NULL 0
 #endif
 
-//------------------Vector types-------------------------------------------
-
-#pragma pack(push,1)
-template <class T> struct point2d { T x,y; };
-template <class T> struct sprite{ point2d<T> ul,dr; };
-#pragma pack(pop)
-//---------------------------------------------------------------------------
-//--------------------resources------------------------------------------------
-#pragma pack(push,1)
-struct imgdata
-{
-#define IMDT_BMP32      0
-#define IMDT_BMP24      1
-        uint32 pref;    //0xf - type,....
-        uint32 w,h,d;
-        uint32 data[1];
-};
-#pragma pack(pop)
-//----------------------------------------------------------------------------
-
 #endif
