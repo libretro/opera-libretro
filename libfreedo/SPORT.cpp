@@ -27,12 +27,9 @@ Felix Lazarev
 
 #include "freedoconfig.h"
 #include "SPORT.h"
-#include "arm.h"
 #include <memory.h>
 
 #include "freedocore.h"
-
-extern _ext_Interface  io_interface;
 
 static unsigned int gSPORTCOLOR;
 static unsigned int gSPORTSOURCE=0;
@@ -139,6 +136,4 @@ void _sport_WriteAccess(unsigned int index, unsigned int mask)
       gSPORTCOLOR=mask;
       return;
    }
-
-   // io_interface(EXT_DEBUG_PRINT,(void*)str.print("::::SPORT:::: Unknown write, Index=0x%8.8X, Mask=0x%8.8X",index, mask).CStr());
 }
