@@ -20,19 +20,20 @@ void _frame_Init(void)
 }
 
 void Get_Frame_Bitmap(
-	VDLFrame* sourceFrame,
+	struct VDLFrame* sourceFrame,
 	void* destinationBitmap,
 	int copyWidth,
 	int copyHeight)
 {
+   int i, pix;
    unsigned char* destPtr = (unsigned char*)destinationBitmap;
 
-   for (int i = 0; i < copyHeight; i++)
+   for (i = 0; i < copyHeight; i++)
    {
-      VDLLine* linePtr = (VDLLine*)&sourceFrame->lines[i];
+      struct VDLLine* linePtr = (struct VDLLine*)&sourceFrame->lines[i];
       short* srcPtr = (short*)linePtr;
       bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
-      for (int pix = 0; pix < copyWidth; pix++)
+      for (pix = 0; pix < copyWidth; pix++)
       {
          if (*srcPtr == 0)
          {
