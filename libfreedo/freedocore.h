@@ -42,7 +42,7 @@ struct VDLLine
 };
 struct VDLFrame
 {
-	VDLLine lines[240*4];
+	struct VDLLine lines[240*4];
 	unsigned int srcw,srch;
 };
 
@@ -56,10 +56,10 @@ struct BitmapCrop
 
 struct GetFrameBitmapParams
 {
-	VDLFrame* sourceFrame;
+	struct VDLFrame* sourceFrame;
 	void* destinationBitmap;
 	int destinationBitmapWidthPixels;
-	BitmapCrop* bitmapCrop;
+	struct BitmapCrop* bitmapCrop;
 	int copyWidthPixels;
 	int copyHeightPixels;
 	bool addBlackBorder;

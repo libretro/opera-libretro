@@ -11,9 +11,9 @@ SOURCES_CXX := $(4DO_DIR)/_3do_sys.cpp \
 	$(4DO_DIR)/Iso.cpp \
 	$(4DO_DIR)/Madam.cpp \
 	$(4DO_DIR)/quarz.cpp \
-	$(4DO_DIR)/SPORT.cpp \
 	$(4DO_DIR)/vdlp.cpp \
 	$(4DO_DIR)/XBUS.cpp \
 	$(CORE_DIR)/libretro.cpp
 
-SOURCES_C := $(4DO_DIR)/DiagPort.c
+SOURCES_C := $(4DO_DIR)/DiagPort.c \
+	$(4DO_DIR)/SPORT.c

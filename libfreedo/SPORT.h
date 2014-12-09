@@ -28,6 +28,10 @@ Felix Lazarev
 #ifndef	SPORT_3DO_HEADER
 #define  SPORT_3DO_HEADER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void _sport_Init(unsigned char *vmem);
 
 int _sport_SetSource(unsigned int index);
@@ -37,5 +41,9 @@ void _sport_WriteAccess(unsigned int index, unsigned int mask);
 unsigned int _sport_SaveSize();
 void _sport_Save(void *buff);
 void _sport_Load(void *buff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 
