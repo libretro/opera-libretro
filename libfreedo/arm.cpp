@@ -27,22 +27,16 @@
 //////////////////////////////////////////////////////////////////////
 #include "freedoconfig.h"
 #include "arm.h"
-#include "XBUS.h"
-#include "vdlp.h"
 #include "Madam.h"
 #include "Clio.h"
 #include "DiagPort.h"
 #include "SPORT.h"
 #include "stdafx.h"
 
-#ifdef _WIN32
-//#include <mem.h>
-#else
+#ifndef _WIN32
 #include <memory.h>
 #endif
 
-
-#include "types.h"
 #include "freedocore.h"
 
 extern _ext_Interface  io_interface;
