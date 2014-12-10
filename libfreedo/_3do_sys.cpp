@@ -55,7 +55,8 @@ __inline uint32 _bswap(uint32 x)
 
 
 extern void* _xbplug_MainDevice(int proc, void* data);
-int _3do_Init()
+
+int _3do_Init(void)
 {
    unsigned char *Memory;
    unsigned char *rom;
@@ -111,9 +112,9 @@ int _3do_Init()
    return 0;
 }
 
-
 VDLFrame *curr_frame;
 bool scipframe;
+
 void _3do_InternalFrame(int cicles)
 {
    int line;
@@ -127,33 +128,36 @@ void _3do_InternalFrame(int cicles)
    {
       line=_qrz_VDCurrLine();
       _clio_UpdateVCNT(line, _qrz_VDHalfFrame());
-      if(!scipframe)_vdl_DoLineNew(line,curr_frame);
-      if(line==16 && scipframe) io_interface(EXT_FRAMETRIGGER_MT,NULL);
+      if(!scipframe)
+         _vdl_DoLineNew(line,curr_frame);
+      if(line==16 && scipframe)
+         io_interface(EXT_FRAMETRIGGER_MT,NULL);
+
       if(line==_clio_v0line())
-      {
          _clio_GenerateFiq(1<<0,0);
-      }
+
       if(line==_clio_v1line())
       {
          _clio_GenerateFiq(1<<1,0);
          _madam_KeyPressed((unsigned char*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
-         if(!scipframe)curr_frame=(VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
+         if(!scipframe)
+            curr_frame = (VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
       }
    }
 }
 
-void _3do_Frame(VDLFrame *frame, bool __scipframe=false)
+void _3do_Frame(VDLFrame *frame, bool __scipframe)
 {
-   int i,cnt=0;
+   int i   = 0;
+   int cnt = 0;
 
-   curr_frame=frame;
-   scipframe=__scipframe;
+   curr_frame = frame;
+   scipframe = __scipframe;
 
-   for(i=0;i<(12500000/60);)
+   do
    {
-
       if(Get_madam_FSM()==FSM_INPROCESS)
       {
          _madam_HandleCEL();
@@ -162,10 +166,14 @@ void _3do_Frame(VDLFrame *frame, bool __scipframe=false)
       }
 
       cnt+=_arm_Execute();
-      if(cnt>>4){_3do_InternalFrame(cnt);i+=cnt;cnt=0;}
 
-   }
-
+      if(cnt >> 4)
+      {
+         _3do_InternalFrame(cnt);
+         i += cnt;
+         cnt = 0;
+      }
+   }while(i < (12500000/60));
 }
 
 void _3do_Destroy()
@@ -174,10 +182,10 @@ void _3do_Destroy()
    _xbus_Destroy();
 }
 
-unsigned int _3do_SaveSize()
+unsigned int _3do_SaveSize(void)
 {
-   unsigned int tmp;
-   tmp=_arm_SaveSize();
+   unsigned int tmp=_arm_SaveSize();
+
    tmp+=_vdl_SaveSize();
    tmp+=_dsp_SaveSize();
    tmp+=_clio_SaveSize();
@@ -188,6 +196,7 @@ unsigned int _3do_SaveSize()
    tmp+=16*4;
    return tmp;
 }
+
 void _3do_Save(void *buff)
 {
    unsigned char *data=(unsigned char*)buff;
@@ -277,7 +286,7 @@ void* _freedo_Interface(int procedure, void *datum)
          _3do_Destroy();
          break;
       case FDP_DO_EXECFRAME:
-         _3do_Frame((VDLFrame*)datum);
+         _3do_Frame((VDLFrame*)datum, false);
          break;
       case FDP_DO_EXECFRAME_MT:
          _3do_Frame((VDLFrame*)datum, true);

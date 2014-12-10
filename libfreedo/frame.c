@@ -2,8 +2,6 @@
 #include "freedocore.h"
 #include "frame.h"
 
-//#include "hqx.h"
-
 unsigned char FIXED_CLUTR[32];
 unsigned char FIXED_CLUTG[32];
 unsigned char FIXED_CLUTB[32];
