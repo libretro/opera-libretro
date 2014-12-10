@@ -31,7 +31,7 @@
 
 #pragma pack(pop)
 
-extern unsigned int _3do_DiscSize();
+extern unsigned int _3do_DiscSize(void);
 extern void _3do_Read2048(void *buff);
 extern void _3do_OnSector(unsigned int sector);
 
