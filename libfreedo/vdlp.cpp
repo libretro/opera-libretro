@@ -31,8 +31,6 @@ Felix Lazarev
 #include "arm.h"
 #include <memory.h>
 
-#include "freedocore.h"
-
 extern _ext_Interface  io_interface;
 
 /* === VDL Palette data === */

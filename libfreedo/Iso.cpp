@@ -25,10 +25,9 @@
 //
 //////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#include "freedoconfig.h"
+#include <stdlib.h>
 #include <memory.h>
 #include "IsoXBUS.h"
-#include "types.h"
 
 #pragma pack(pop)
 
@@ -916,15 +915,9 @@ unsigned int GetDataFifo(cdrom_Device *cd)
 }
 
 
-unsigned char BCD2BIN(unsigned char in)
-{
-   return ((in >> 4) * 10 + (in & 0x0F));
-}
+#define BCD2BIN(in) (((in >> 4) * 10 + (in & 0x0F)))
 
-unsigned char BIN2BCD(unsigned char in)
-{
-   return ((in / 10)<<4) | (in % 10);
-}
+#define BIN2BCD(in) (((in / 10)<<4) | (in % 10))
 
 void MSF2BLK(cdrom_Device *cd)
 {
@@ -1079,8 +1072,8 @@ cdrom_Device *isodrive;
 
 void* _xbplug_MainDevice(int proc, void* data)
 {
-   uint32 tmp;
-   //void* xfisonew;
+   uint32_t tmp;
+
    switch(proc)
    {
       case XBP_INIT:
@@ -1109,7 +1102,7 @@ void* _xbplug_MainDevice(int proc, void* data)
       case XBP_DESTROY:
          break;
       case XBP_GET_SAVESIZE:
-         tmp=sizeof(cdrom_Device);
+         tmp = sizeof(cdrom_Device);
          return (void*)tmp;
       case XBP_GET_SAVEDATA:
          memcpy(data,&isodrive,sizeof(cdrom_Device));

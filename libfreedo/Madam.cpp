@@ -34,8 +34,6 @@ Felix Lazarev
 #include "bitop.h"
 BitReaderBig bitoper;
 
-#include "freedocore.h"
-
 extern _ext_Interface  io_interface;
 
 /* === CCB control word flags === */

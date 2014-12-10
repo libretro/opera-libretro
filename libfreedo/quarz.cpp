@@ -22,11 +22,8 @@ Felix Lazarev
 */
 
 #include "quarz.h"
-#include "types.h"
 #include "Clio.h"
 #include "vdlp.h"
-#include "XBUS.h"
-#include "Madam.h"
 #include "stdafx.h"
 
 #include <memory.h>

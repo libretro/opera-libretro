@@ -25,7 +25,6 @@ Felix Lazarev
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "freedoconfig.h"
 #include "DSP.h"
 #include "Clio.h"
 
@@ -930,9 +929,7 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
          //printf("#DSP read EIFifo status 0x%4.4X\n",addr&0x0f);
          if(CPUSupply[addr&0xf])
             return 2;
-         else
-            return _clio_GetEIFIFOStat(addr&0xf);
-         //return CPUSupply[addr-0xd0]||CClio::GetEIFIFOStat(addr-0xd0);
+         return _clio_GetEIFIFOStat(addr&0xf);
          break;
 
       case 0xe0:

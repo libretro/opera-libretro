@@ -25,7 +25,6 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "freedoconfig.h"
 #include "Clio.h"
 #include "Madam.h"
 #include "XBUS.h"

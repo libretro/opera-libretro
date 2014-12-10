@@ -25,7 +25,6 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "freedoconfig.h"
 #include "DiagPort.h"
 
 static unsigned short SNDDebugFIFO0;
