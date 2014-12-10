@@ -83,14 +83,16 @@ static CLIODatum clio;
 #define FIFOO clio.FIFOO
 
 #include <memory.h>
-unsigned int _clio_SaveSize()
+unsigned int _clio_SaveSize(void)
 {
    return sizeof(CLIODatum);
 }
+
 void _clio_Save(void *buff)
 {
    memcpy(buff,&clio,sizeof(CLIODatum));
 }
+
 void _clio_Load(void *buff)
 {
    memcpy(&clio,buff,sizeof(CLIODatum));
@@ -101,19 +103,19 @@ void _clio_Load(void *buff)
 #define RLDADR Mregs[base+8]
 #define RLDLEN Mregs[base+0xc]
 
-extern int fastrand();
+extern int fastrand(void);
 
-int _clio_v0line()
+int _clio_v0line(void)
 {
    return cregs[8]&0x7ff;
 }
 
-int _clio_v1line()
+int _clio_v1line(void)
 {
    return cregs[12]&0x7ff;
 }
 
-bool _clio_NeedFIQ()
+bool _clio_NeedFIQ(void)
 {
    if( (cregs[0x40]&cregs[0x48]) || (cregs[0x60]&cregs[0x68]) ) return true;
    return false;
@@ -122,9 +124,10 @@ bool _clio_NeedFIQ()
 void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
 {
 
-   cregs[0x40]|=reason1;
-   cregs[0x60]|=reason2;
-   if(cregs[0x60])	cregs[0x40]|=0x80000000;	// irq31 if exist irq32 and high
+   cregs[0x40] |= reason1;
+   cregs[0x60] |= reason2;
+   if(cregs[0x60])
+      cregs[0x40] |= 0x80000000;	// irq31 if exist irq32 and high
 
    //if( (cregs[0x40]&cregs[0x48]) || (cregs[0x60]&cregs[0x68]) ) _arm_SetFIQ();
    /////////////
@@ -156,8 +159,9 @@ int _clio_Poke(unsigned int addr, unsigned int val)
    {
       if(addr==0x40)
       {
-         cregs[0x40]|=val;
-         if(cregs[0x60]) cregs[0x40]|=0x80000000;
+         cregs[0x40] |= val;
+         if(cregs[0x60])
+            cregs[0x40] |= 0x80000000;
          //if(cregs[0x40]&cregs[0x48]) _arm_SetFIQ();
          return 0;
       }
@@ -466,43 +470,25 @@ unsigned int _clio_Peek(unsigned int addr)
    {
       addr&=~4;	// By read 40 and 44, 48 and 4c, 60 and 64, 68 and 6c same
       if(addr==0x40)
-      {
          return cregs[0x40];
-      }
       else if(addr==0x48)
-      {
          return cregs[0x48]|0x80000000;
-      }
       else if(addr==0x60)
-      {
          return cregs[0x60];
-      }
       else if(addr==0x68)
-      {
          return cregs[0x68];
-      }
       return 0; // for skip warning C4715
    }
    else if(addr==0x204)
-   {
       return cregs[0x200];
-   }
    else if(addr==0x20c)
-   {
       return cregs[0x208];
-   }
    else if(addr==0x308)
-   {
       return cregs[0x304];
-   }
    else if (addr==0x414)
-   {
       return 0x4000; //TO CHECK!!! requested by CDROMDIPIR
-   }
    else if((addr>=0x500) && (addr<0x540))
-   {
       return _xbus_GetRes();
-   }
    else if((addr>=0x540) && (addr<0x580))
    {
 #ifdef DBGXBUS
@@ -512,17 +498,11 @@ unsigned int _clio_Peek(unsigned int addr)
       return _xbus_GetPoll();
    }
    else if((addr>=0x580) && (addr<0x5c0))
-   {
       return _xbus_GetStatusFIFO();
-   }
    else if((addr>=0x5c0) && (addr<0x600))
-   {
       return _xbus_GetDataFIFO();
-   }
    else if(addr==0x0)
-   {
       return 0x02020000;
-   }
    else if((addr>=0x3800)&&(addr<=0x3bff))//0x0340 3800 … 0x0340 3BFF
    {
       //2DSPW per 1ARMW
@@ -541,19 +521,13 @@ unsigned int _clio_Peek(unsigned int addr)
       return (_dsp_ReadIMem(DSPA));
    }
    else if(addr==0x17F0)
-   {
       return fastrand();
-   }
    else if(addr==0x17D0)//Read DSP/ARM Semaphore
-   {
       return _dsp_ARMread2sema4();
-   }
    else if(addr>=0x100 && addr<=0x7c)
-   {
       return cregs[addr]&0xffff;
-   }
-   else
-      return cregs[addr];
+
+   return cregs[addr];
 }
 
 void _clio_UpdateVCNT(int line, int halfframe)
@@ -573,7 +547,7 @@ void _clio_ClearTimers(uint32 v204, uint32 v20c)
    (void) v204;
    (void) v20c;
 }
-void _clio_DoTimers()
+void _clio_DoTimers(void)
 {
    unsigned int timer;
    unsigned short counter;
@@ -613,7 +587,7 @@ void _clio_DoTimers()
    }
 }
 
-unsigned int _clio_GetTimerDelay()
+unsigned int _clio_GetTimerDelay(void)
 {
    return cregs[0x220];
 }
@@ -834,47 +808,40 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
 
 void  _clio_EOFIFO(unsigned short channel, unsigned short val)
 {
+   unsigned int base = 0x500 + (channel * 16);
+   unsigned int mask = 1 << (channel + 16);
 
-   unsigned int base;
-   unsigned int mask;
-   base=0x500+(channel*16);
-   mask=1<<(channel+16);
+   /* Channel disabled? */
+   if(FIFOO[channel].StartAdr == 0)
+      return;
 
-   if(FIFOO[channel].StartAdr!=0)//channel enabled
+   if( (FIFOO[channel].StartLen-PTRO[channel])>0 )
    {
-
-      if( (FIFOO[channel].StartLen-PTRO[channel])>0 )
-      {
 #ifdef MSB_FIRST
-         _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])),val);
+      _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])),val);
 #else
-         _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])^2),val);
+      _mem_write16(((FIFOO[channel].StartAdr+PTRO[channel])^2),val);
 #endif
-         PTRO[channel]+=2;
+      PTRO[channel] += 2;
+   }
+   else
+   {
+      PTRO[channel]=0;
+      _clio_GenerateFiq(1<<(channel+12),0);//generate fiq
+
+      if(FIFOO[channel].NextAdr!=0) //reload enabled?
+      {
+         FIFOO[channel].StartAdr=FIFOO[channel].NextAdr;
+         FIFOO[channel].StartLen=FIFOO[channel].NextLen;
       }
       else
-      {
-         PTRO[channel]=0;
-         _clio_GenerateFiq(1<<(channel+12),0);//generate fiq
-         if(FIFOO[channel].NextAdr!=0) //reload enabled?
-         {
-            FIFOO[channel].StartAdr=FIFOO[channel].NextAdr;
-            FIFOO[channel].StartLen=FIFOO[channel].NextLen;
-         }
-         else
-         {
-            FIFOO[channel].StartAdr=0;
-         }
-      }
+         FIFOO[channel].StartAdr = 0;
    }
-
-
 }
 
 unsigned short  _clio_EIFIFONI(unsigned short channel)
 {
-   unsigned int base;
-   base=0x400+(channel*16);
+   unsigned int base = 0x400 + (channel * 16);
 #ifdef MSB_FIRST
    return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])));
 #else
@@ -884,9 +851,7 @@ unsigned short  _clio_EIFIFONI(unsigned short channel)
 
 unsigned short   _clio_GetEIFIFOStat(unsigned char channel)
 {
-   unsigned int mask;
-
-   mask=1<<channel;
+   unsigned int mask = 1 << channel;
    //if(cregs[0x304]&mask)//channel enabled
    if( FIFOI[channel].StartAdr!=0 )
    {
@@ -899,8 +864,7 @@ unsigned short   _clio_GetEIFIFOStat(unsigned char channel)
 
 unsigned short   _clio_GetEOFIFOStat(unsigned char channel)
 {
-   unsigned int mask;
-   mask=1<<(channel+16);
+   unsigned int mask = 1 << (channel + 16);
    //if(cregs[0x304]&mask)//channel enabled
    if( FIFOO[channel].StartAdr!=0 )
       return 1;
@@ -910,41 +874,43 @@ unsigned short   _clio_GetEOFIFOStat(unsigned char channel)
 
 void _clio_SetFIFO(unsigned int adr, unsigned int val)
 {
-   if((adr&0x500)==0x400)
+   if( (adr&0x500) == 0x400)
    {
 
-      switch (adr&0xf)
+      switch (adr & 0xf)
       {
-         case 0: FIFOI[(adr>>4)&0xf].StartAdr=val;
-                 FIFOI[(adr>>4)&0xf].NextAdr=0;//see patent WO09410641A1, 46.25
+         case 0:
+            FIFOI[(adr>>4)&0xf].StartAdr=val;
+            FIFOI[(adr>>4)&0xf].NextAdr=0;//see patent WO09410641A1, 46.25
+#ifdef FIFODBG
+            sprintf(str,"SetInFIFO chan=%x StartAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
+#endif
+            break;
+         case 4:
+            FIFOI[(adr>>4)&0xf].StartLen=val+4;
+            if(val==0)
+               FIFOI[(adr>>4)&0xf].StartLen=0;
 
+            FIFOI[(adr>>4)&0xf].NextLen=0;//see patent WO09410641A1, 46.25
 #ifdef FIFODBG
-                 sprintf(str,"SetInFIFO chan=%x StartAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
+            sprintf(str,"SetInFIFO chan=%x StartLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
 #endif
-                 return;
-         case 4: FIFOI[(adr>>4)&0xf].StartLen=val+4;
-                 if(val==0)
-                    FIFOI[(adr>>4)&0xf].StartLen=0;
-
-                 FIFOI[(adr>>4)&0xf].NextLen=0;//see patent WO09410641A1, 46.25
+            break;
+         case 8:
+            FIFOI[(adr>>4)&0xf].NextAdr=val;
 #ifdef FIFODBG
-                 sprintf(str,"SetInFIFO chan=%x StartLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
+            sprintf(str,"SetInFIFO chan=%x NextAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
 #endif
-                 return;
-         case 8: FIFOI[(adr>>4)&0xf].NextAdr=val;
-#ifdef FIFODBG
-                 sprintf(str,"SetInFIFO chan=%x NextAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
-#endif
-                 return;
+            break;
          case 0xc:
-                 if(val!=0)
-                    FIFOI[(adr>>4)&0xf].NextLen=val+4;
-                 else
-                    FIFOI[(adr>>4)&0xf].NextLen=0;
+            if(val != 0)
+               FIFOI[(adr>>4)&0xf].NextLen=val+4;
+            else
+               FIFOI[(adr>>4)&0xf].NextLen=0;
 #ifdef FIFODBG
-                 sprintf(str,"SetInFIFO chan=%x NextLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
+            sprintf(str,"SetInFIFO chan=%x NextLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
 #endif
-                 return;
+            break;
       }
    }
    else
@@ -953,25 +919,29 @@ void _clio_SetFIFO(unsigned int adr, unsigned int val)
       sprintf(str,"SetOutFIFO chan=%x addr=%x var=%x\n",(adr>>4)&0xf,val,adr&0xf);
       CDebug::DPrint(str);
 #endif
-      switch (adr&0xf)
+      switch (adr & 0xf)
       {
-         case 0: FIFOO[(adr>>4)&0xf].StartAdr=val;return;
-         case 4: FIFOO[(adr>>4)&0xf].StartLen=val+4;return;
-         case 8: FIFOO[(adr>>4)&0xf].NextAdr=val;return;
-         case 0xc:FIFOO[(adr>>4)&0xf].NextLen=val+4;return;
+         case 0:
+            FIFOO[(adr>>4)&0xf].StartAdr=val;
+            break;
+         case 4:
+            FIFOO[(adr>>4)&0xf].StartLen=val+4;
+            break;
+         case 8:
+            FIFOO[(adr>>4)&0xf].NextAdr=val;
+            break;
+         case 0xc:
+            FIFOO[(adr>>4)&0xf].NextLen=val+4;
+            break;
       }
-
    }
 }
 
-
-
-void _clio_Reset()
+void _clio_Reset(void)
 {
    int i;
-   for(i=0;i<65536;i++)
+   for(i = 0;i < 65536; i++)
       cregs[i]=0;
-
 }
 
 unsigned int _clio_FIFOStruct(unsigned int addr)

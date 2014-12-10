@@ -27,6 +27,9 @@ Felix Lazarev
 
 #include "DSP.h"
 #include "Clio.h"
+#include "freedocore.h"
+
+#include <memory.h>
 
 #if 0 //20 bit ALU
 #define ALUSIZEMASK 0xFFFFf000
@@ -206,16 +209,17 @@ struct DSPDatum
 
 static DSPDatum dsp;
 
-#include <memory.h>
 
-unsigned int _dsp_SaveSize()
+unsigned int _dsp_SaveSize(void)
 {
    return sizeof(DSPDatum);
 }
+
 void _dsp_Save(void *buff)
 {
    memcpy(buff,&dsp,sizeof(DSPDatum));
 }
+
 void _dsp_Load(void *buff)
 {
    memcpy(&dsp,buff,sizeof(DSPDatum));
@@ -233,15 +237,14 @@ void _dsp_Load(void *buff)
 #define g_seed dsp.g_seed
 #define CPUSupply dsp.CPUSupply
 
-int fastrand()
+int fastrand(void)
 {
    g_seed=69069*g_seed+1;
    return g_seed & 0xFFFF;
 }
 
-void _dsp_Init()
+void _dsp_Init(void)
 {
-
    int a,c;
    ITAG inst;
    unsigned int i;
@@ -380,7 +383,7 @@ void _dsp_Init()
    for(i=0;i<16;i++) CPUSupply[i]=0;
 }
 
-void _dsp_Reset()
+void _dsp_Reset(void)
 {
    dregs.DSPPCNT=dregs.DSPPRLD;
    dregs.PC=0;
@@ -389,7 +392,6 @@ void _dsp_Reset()
    flags.nOP_MASK=~0;
 }
 
-#include "freedocore.h"
 extern _ext_Interface  io_interface;
 void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
 {
@@ -424,9 +426,7 @@ void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
 
 }
 
-
-
-unsigned int _dsp_Loop()
+unsigned int _dsp_Loop(void)
 {
    unsigned int AOP, BOP;	//1st & 2nd operand
    unsigned int Y;			//accumulator
