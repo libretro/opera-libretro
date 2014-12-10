@@ -232,5 +232,6 @@ void  _qrz_PushARMCycles(unsigned int clks)
    qrz_AccVDL+=arm*(VDL_CLOCK);
 
    //if(Get_madam_FSM()!=FSM_INPROCESS)
-   if(_clio_GetTimerDelay())qrz_TCount+=arm*((timers)/(_clio_GetTimerDelay()));//clks<<1;
+   if(_clio_GetTimerDelay())
+      qrz_TCount += arm*((timers)/(_clio_GetTimerDelay()));//clks<<1;
 }

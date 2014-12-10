@@ -578,9 +578,7 @@ unsigned int _dsp_Loop()
             }
 
             if((inst.aif.ALU==3)||(inst.aif.ALU==5)) // ACSBU signal
-            {
                BOP=Flags.Carry<<16;
-            }
             else
             {
                switch(inst.aif.MUXB)
@@ -813,9 +811,10 @@ unsigned short  RegBase(unsigned int reg)
    unsigned short res;
    unsigned char twi,x,y;
 
-   reg&=0xf;
-   x=(reg>>2)&1;
-   y=(reg>>3)&1;
+   reg &= 0xf;
+   x    = (reg >> 2) & 1;
+   y    = (reg >> 3) & 1;
+
    switch(flags.RMAP)
    {
       case 0:
@@ -837,9 +836,10 @@ unsigned short  RegBase(unsigned int reg)
          twi=x|y;
          break;
    }
-   res=(reg&7);
-   res|=twi<<8;
-   res|=(reg>>3)<<9;
+
+   res =  (reg&7);
+   res |= twi << 8;
+   res |= (reg >> 3) << 9;
 
    ////printf("RegSel=0x%X\n",res);
    return res;
@@ -1023,7 +1023,6 @@ void  _dsp_SetRunning(bool val)
 {
    flags.Running= val;
 }
-
 
 void  _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,I of DSP
 {
