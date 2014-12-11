@@ -75,7 +75,8 @@ void _xbus_SetCommandFIFO(unsigned int val)
    if(xdev[XBSEL])
    {
       (*xdev[XBSEL])(XBP_SET_COMMAND,(void*)val);
-      if((*xdev[XBSEL])(XBP_FIQ,NULL)) _clio_GenerateFiq(4,0);
+      if((*xdev[XBSEL])(XBP_FIQ,NULL))
+         _clio_GenerateFiq(4,0);
    }
    else if(XBSEL==0xf)
    {
@@ -142,11 +143,9 @@ void ExecuteCommandF(void)
       STDEVF[11]=0x01;
       POLDEVF|=POLST;
    }
-   if(((POLDEVF&POLST) && (POLDEVF&POLSTMASK)) || ((POLDEVF&POLDT) && (POLDEVF&POLDTMASK)))
-   {
-      _clio_GenerateFiq(4,0);
-   }
 
+   if(((POLDEVF&POLST) && (POLDEVF&POLSTMASK)) || ((POLDEVF&POLDT) && (POLDEVF&POLDTMASK)))
+      _clio_GenerateFiq(4,0);
 }
 
 unsigned int _xbus_GetStatusFIFO()
@@ -154,9 +153,7 @@ unsigned int _xbus_GetStatusFIFO()
    unsigned int res=0;
 
    if(xdev[XBSEL])
-   {
       res=(intptr_t)(*xdev[XBSEL])(XBP_GET_STATUS,NULL);
-   }
    else if(XBSEL==0xf)
    {
       if(STLENF>0)
@@ -165,13 +162,12 @@ unsigned int _xbus_GetStatusFIFO()
          STLENF--;
          if(STLENF>0)
          {
-            for(int i=0;i<STLENF;i++)
-               STDEVF[i]=STDEVF[i+1];
+            int i;
+            for(i = 0; i < STLENF; i++)
+               STDEVF[i] = STDEVF[i+1];
          }
          else
-         {
             POLDEVF&=~POLST;
-         }
       }
       return res;
    }
@@ -210,10 +206,8 @@ void _xbus_Init(_xbus_device zero_dev)
 
    POLF=0xf;
 
-   for(i=0;i<15;i++)
-   {
-      xdev[i]=NULL;
-   }
+   for(i = 0; i < 15; i++)
+      xdev[i] = NULL;
 
    _xbus_Attach(zero_dev);
 }
@@ -246,7 +240,7 @@ void _xbus_DevEject(int dev)
 	(*xdev[dev])(XBP_RESET,NULL);
 }
 
-void _xbus_Destroy()
+void _xbus_Destroy(void)
 {
    int i;
    for(i=0; i < 16; i++)
@@ -266,7 +260,8 @@ unsigned int _xbus_SaveSize()
    tmp+=16*4;
    for(i=0;i<15;i++)
    {
-      if(!xdev[i])continue;
+      if(!xdev[i])
+         continue;
       tmp+= (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE,NULL);
    }
    return tmp;
@@ -308,16 +303,13 @@ void _xbus_Load(void *buff)
    for(i=0;i<15;i++)
    {
       memcpy(&offd,&((unsigned char*)buff)[j+i*4],4);
-      if(xdev[i])
-      {
-         if(!offd)
-         {
-            (*xdev[i])(XBP_RESET,NULL);
-         }
-         else
-         {
-            (*xdev[i])(XBP_SET_SAVEDATA,&((unsigned char*)buff)[offd]);
-         }
-      }
+
+      if(!xdev[i])
+         continue;
+
+      if(!offd)
+         (*xdev[i])(XBP_RESET,NULL);
+      else
+         (*xdev[i])(XBP_SET_SAVEDATA,&((unsigned char*)buff)[offd]);
    }
 }

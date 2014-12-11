@@ -98,7 +98,7 @@ struct VDLDatum
 static VDLDatum vdl;
 static unsigned char * vram;
 
-unsigned int _vdl_SaveSize()
+unsigned int _vdl_SaveSize(void)
 {
    return sizeof(VDLDatum);
 }
@@ -128,16 +128,17 @@ void _vdl_Load(void *buff)
 
 
 unsigned int vmreadw(unsigned int addr);
-//static AString str;
 
 void _vdl_ProcessVDL( unsigned int addr)
 {
    HEADVDL=addr;
 
+#if 0
    if((addr&0xfff00000)!=0x200000)
    {
       //io_interface(EXT_DEBUG_PRINT,(void*)str.print("!!!!VDLP!!!! VDLP code out of VRAM boundaries!!! 0x%8.8X",addr).CStr());
    }
+#endif
 }
 
 static const unsigned int HOWMAYPIXELEXPECTPERLINE[8] =
@@ -149,11 +150,11 @@ bool doloadclut=false;
 
 __inline void VDLExec(void)
 {
-   unsigned int NEXTVDL,tmp;
+   int i;
+   unsigned int NEXTVDL;
    unsigned char ifgnorflag=0;
+   unsigned int tmp = vmreadw(CURRENTVDL);
 
-
-   tmp=vmreadw(CURRENTVDL);
    if(tmp==0) // End of list
    {
       linedelay=511;
@@ -178,7 +179,7 @@ __inline void VDLExec(void)
       CURRENTVDL+=16;
 
       int nmcmd=CLUTDMA.dmaw.numword;	//nmcmd-=4;?
-      for(int i=0; i<nmcmd; i++)
+      for(i = 0; i < nmcmd; i++)
       {
          int cmd=vmreadw(CURRENTVDL);
          CURRENTVDL+=4;
@@ -187,6 +188,7 @@ __inline void VDLExec(void)
          {	//color value
 
             unsigned int coloridx=(cmd&VDL_PEN_MASK)>>VDL_PEN_SHIFT;
+
             if((cmd&VDL_RGBCTL_MASK)==VDL_FULLRGB)
             {
                CLUTR[coloridx]=(cmd&VDL_R_MASK)>>VDL_R_SHIFT;
@@ -222,25 +224,28 @@ __inline void VDLExec(void)
          }
          else if((unsigned int)cmd==0xffffffff)
          {
-            if(ifgnorflag)continue;
-            for(unsigned int j=0;j<32;j++)
-            {
+            unsigned int j;
+            if (ifgnorflag)
+               continue;
+            for(j = 0;j < 32; j++)
                CLUTB[j]=CLUTG[j]=CLUTR[j]=((j&0x1f)<<3)|((j>>2)&7);
-            }
          }
+#if 0
          else if((cmd&0xff000000)!=0xE1000000 && (cmd&0xC0000000)!=VDL_CONTROL)
          {
             //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("::::VDLP:::: Unknown opcode... Comm=0x%8.8X",cmd).CStr());
          }
-
+#endif
       }//for(i<nmcmd)
       CURRENTVDL=NEXTVDL;
 
       MODULO=HOWMAYPIXELEXPECTPERLINE[CLUTDMA.dmaw.modulo];
+#if 0
       if(MODULO!=320)
       {
          // io_interface(EXT_DEBUG_PRINT,(void*)str.print("::::VDLP:::: Nonstandard modulo... W=%d, DMAWORD=0x%8.8X",MODULO, CLUTDMA.raw).CStr());
       }
+#endif
       doloadclut=((linedelay=CLUTDMA.dmaw.lines)!=0);
    }
 }
@@ -254,7 +259,6 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
 {
    int y,i;
    int line=line2x&0x7ff;
-
 
    if(line==0)
    {
@@ -271,7 +275,6 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
 
    if((y>=0) && (y<240))  // 256???
    {
-
       if(CLUTDMA.dmaw.enadma)
       {
          if(RESSCALE)
@@ -300,15 +303,14 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
             dst=frame->lines[y].line;
             src=(unsigned int*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
             i=320;
-            while(i--)*dst++=*(unsigned short*)(src++);
+            while(i--)
+               *dst++=*(unsigned short*)(src++);
          }
          memcpy(frame->lines[(y<<RESSCALE)].xCLUTB,CLUTB,32);
          memcpy(frame->lines[(y<<RESSCALE)].xCLUTG,CLUTG,32);
          memcpy(frame->lines[(y<<RESSCALE)].xCLUTR,CLUTR,32);
          if(RESSCALE)
-         {
             memcpy(frame->lines[(y<<RESSCALE)+1].xCLUTB,frame->lines[(y<<RESSCALE)].xCLUTB,32*3);
-         }
       }
       frame->lines[(y<<RESSCALE)].xOUTCONTROLL=OUTCONTROLL;
       frame->lines[(y<<RESSCALE)].xCLUTDMA=CLUTDMA.raw;
@@ -347,6 +349,7 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
 
 void _vdl_Init(unsigned char *vramstart)
 {
+   unsigned int i;
    vram = vramstart;
 
    static const unsigned int StartupVDL[]=
@@ -366,13 +369,13 @@ void _vdl_Init(unsigned char *vramstart)
    };
    HEADVDL=0xB0000;
 
-   for(unsigned int i=0;i<(sizeof(StartupVDL)/4);i++)
+   for(i = 0;i < (sizeof(StartupVDL)/4); i++)
       _mem_write32(HEADVDL+i*4+1024*1024*2,StartupVDL[i]);
 
    //memcpy(vram+HEADVDL, StartupVDL, sizeof(StartupVDL));
 
 
-   for(unsigned int i=0;i<32;i++)
+   for(i = 0; i < 32; i++)
       CLUTB[i] = CLUTG[i] = CLUTR[i] = ((i&0x1f)<<3) | ((i>>2)&7);
 }
 
