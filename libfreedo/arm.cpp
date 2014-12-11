@@ -171,11 +171,22 @@ void mwritew(unsigned int addr,unsigned int val);
 #define gFIQ	arm.nFIQ
 #define gSecondROM	arm.SecondROM
 
-void* Getp_NVRAM(){return pNVRam;};
-void* Getp_ROMS(){return pRom;};
-void* Getp_RAMS(){return pRam;};
+void* Getp_NVRAM(void)
+{
+   return pNVRam;
+}
 
-unsigned int _arm_SaveSize()
+void* Getp_ROMS(void)
+{
+   return pRom;
+}
+
+void* Getp_RAMS(void)
+{
+   return pRam;
+}
+
+unsigned int _arm_SaveSize(void)
 {
    return sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2+NVRAMSIZE;
 }
@@ -227,8 +238,7 @@ __inline void load(unsigned int rn, unsigned int val)
    RON_USER[rn]=val;
 }
 
-
-void ARM_RestUserRONS()
+void ARM_RestUserRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -265,7 +275,7 @@ void ARM_RestUserRONS()
    }
 }
 
-void ARM_RestFiqRONS()
+void ARM_RestFiqRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -302,7 +312,7 @@ void ARM_RestFiqRONS()
    }
 }
 
-void ARM_RestIrqRONS()
+void ARM_RestIrqRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -341,7 +351,7 @@ void ARM_RestIrqRONS()
    }
 }
 
-void ARM_RestSvcRONS()
+void ARM_RestSvcRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -380,7 +390,7 @@ void ARM_RestSvcRONS()
    }
 }
 
-void ARM_RestAbtRONS()
+void ARM_RestAbtRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -419,7 +429,7 @@ void ARM_RestAbtRONS()
    }
 }
 
-void ARM_RestUndRONS()
+void ARM_RestUndRONS(void)
 {
    switch(arm_mode_table[(CPSR&0x1f)])
    {
@@ -490,10 +500,12 @@ void SelectROM(int n)
 
 void _arm_SetCPSR(unsigned int a)
 {
+#if 0
    if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
    {
       //!!Exeption!!
    }
+#endif
    a|=0x10;
    ARM_Change_ModeSafe(a);
    CPSR=a&0xf00000df;
@@ -502,10 +514,12 @@ void _arm_SetCPSR(unsigned int a)
 
 __inline void SETM(unsigned int a)
 {
+#if 0
    if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
    {
       //!!Exeption!!
    }
+#endif
    a|=0x10;
    ARM_Change_ModeSafe(a);
    CPSR=(CPSR&0xffffffe0)|(a & 0x1F);
@@ -540,11 +554,12 @@ __inline uint32 _bswap(uint32 x)
 
 __inline uint32 _rotr(uint32 val, uint32 shift)
 {
-   if(!shift)return val;
-   return (val>>shift)|(val<<(32-shift));
+   if (shift)
+      return (val>>shift)|(val<<(32-shift));
+   return val;
 }
 
-unsigned char * _arm_Init()
+unsigned char * _arm_Init(void)
 {
    int i;
 
@@ -595,7 +610,7 @@ unsigned char * _arm_Init()
    return (unsigned char *)pRam;
 }
 
-void _arm_Destroy()
+void _arm_Destroy(void)
 {
    io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
 
@@ -609,7 +624,7 @@ void _arm_Destroy()
    delete []pRam;
 }
 
-void _arm_Reset()
+void _arm_Reset(void)
 {
    int i;
    gSecondROM=0;
@@ -640,6 +655,7 @@ void _arm_Reset()
 int addrr=0;
 int vall=0;
 int inuse=0;
+
 void ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 {
    unsigned short x=opc&0xffff;
@@ -703,12 +719,19 @@ void ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
          if(list&1)
          {
             tmp=mreadw(base_comp);
-            if(tmp==0xF1000&&i==0x1&&RON_USER[2]!=0xF0000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1)){tmp+=0x1000;}
+            if (tmp==0xF1000&&i==0x1&&RON_USER[2]!=0xF0000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
+            {
+               tmp+=0x1000;
+            }
             //if(i==0x1&&tmp==0xF1000&&RON_USER[0]==RON_USER[i]){tmp+=0x1000;cnbfix=1;}
-            if(inuse==1&&base_comp&0x1FFFFF){ 
-               if(base_comp==addrr) inuse=0;   
-               if(tmp!=vall){
-                  if(tmp==0xEFE54&&i==0x4&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))tmp-=0xF;
+            if(inuse==1&&base_comp&0x1FFFFF)
+            {
+               if(base_comp==addrr)
+                  inuse=0;   
+               if(tmp!=vall)
+               {
+                  if(tmp==0xEFE54&&i==0x4&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
+                     tmp-=0xF;
                   //if(tmp==0xF1014)tmp=0x25000;
                }}
             RON_USER[i]=tmp;
@@ -819,16 +842,14 @@ void  bdt_core(unsigned int opc)
 
    if(opc&(1<<20))	//memory or register?
    {
-      if(opc&0x8000)CYCLES-=SCYCLE+NCYCLE;
+      if(opc&0x8000)
+         CYCLES-=SCYCLE+NCYCLE;
 
       ldm_accur(opc,base,rn_ind);
 
    }
    else //из регистра в память
-   {
       stm_accur(opc,base,rn_ind);
-   }
-
 }
 
 //------------------------------math SWI------------------------------------------------
@@ -837,6 +858,7 @@ typedef struct TagArg
    unsigned int Type;
    unsigned int Arg;
 } TagItem;
+
 void decode_swi(unsigned int i)
 {
 
@@ -1185,7 +1207,8 @@ unsigned int calcbits(unsigned int num)
 {
    unsigned int retval;
 
-   if(!num)return 1;
+   if(!num)
+      return 1;
 
    if(num>>16)
    {
@@ -1231,13 +1254,17 @@ const bool is_logic[]={
    true,true,true,true
 };
 
-int _arm_Execute()
+int _arm_Execute(void)
 {
    uint32 cmd,pc_tmp;
    bool isexeption=false;
    //for(; CYCLES>0; CYCLES-=SCYCLE)
    {   
-      if(REG_PC==0x94D60&&RON_USER[0]==0x113000&&RON_USER[1]==0x113000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1)){REG_PC=0x9E9CC; cnbfix=1;}
+      if(REG_PC==0x94D60&&RON_USER[0]==0x113000&&RON_USER[1]==0x113000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
+      {
+         REG_PC=0x9E9CC;
+         cnbfix=1;
+      }
       cmd=mreadw(REG_PC);
 
 #ifdef DEBUG_CORE
@@ -1253,7 +1280,8 @@ int _arm_Execute()
       REG_PC+=4;
 
       CYCLES=-SCYCLE;
-      if(cmd==0xE5101810&&CPSR==0x80000093)isexeption=true;
+      if(cmd==0xE5101810&&CPSR==0x80000093)
+         isexeption=true;
       //	if(REG_PC==0x9E9F0){isexeption=true; RON_USER[5]=0xE2998; fix=1;}
       if(((cond_flags_cross[(((uint32)cmd)>>28)]>>((CPSR)>>28))&1)&&isexeption==false)
       {
@@ -1374,10 +1402,7 @@ int _arm_Execute()
 
 
                   if(ARM_ALU_Exec(cmd, (cmd>>20)&0x1f ,op1,op2,&RON_USER[(cmd>>12)&0xf]))
-                  {
                      break;
-                  }
-
 
                   if(((cmd>>12)&0xf)==0xf) //destination = pc, take care of cpsr
                   {
@@ -1445,26 +1470,25 @@ Undefine:
 
                   }
                   else
-                  {
                      oper2=(cmd&0xfff);
-                  }
 
 
                   tbas=base=RON_USER[((cmd>>16)&0xf)];
 
 
-                  if(!(cmd&(1<<23))) oper2=0-oper2;
+                  if(!(cmd&(1<<23)))
+                     oper2=0-oper2;
 
-                  if(cmd&(1<<24)) tbas=base=base+oper2;
-                  else base=base+oper2;
+                  if(cmd&(1<<24))
+                     tbas=base=base+oper2;
+                  else
+                     base=base+oper2;
 
 
                   if(cmd&(1<<20)) //load
                   {
                      if(cmd&(1<<22))//bytes
-                     {
                         val=mreadb(tbas)&0xff;
-                     }
                      else //words/halfwords
                      {
                         val=mreadw(tbas);
@@ -1473,9 +1497,7 @@ Undefine:
                      }
 
                      if(((cmd>>12)&0xf)==0xf)
-                     {
                         CYCLES-=SCYCLE+NCYCLE;   // +1S+1N if R15 load
-                     }
 
                      CYCLES-=NCYCLE+ICYCLE;  // +1N+1I
                      REG_PC=pc_tmp;
@@ -1574,8 +1596,6 @@ Undefine:
 
       }	//condition
 
-
-
       if(!ISF && _clio_NeedFIQ()/*gFIQ*/)
       {
 
@@ -1600,7 +1620,8 @@ Undefine:
 void _mem_write8(unsigned int addr, unsigned char val)
 {
    pRam[addr]=val;
-   if(addr<0x200000 || !RESSCALE) return;
+   if(addr<0x200000 || !RESSCALE)
+      return;
    pRam[addr+1024*1024]=val;
    pRam[addr+2*1024*1024]=val;
    pRam[addr+3*1024*1024]=val;
@@ -1715,23 +1736,15 @@ unsigned int mreadw(unsigned int addr)
 
    addr&=~3;
 
-
-
    if (addr<0x00300000) //dram1&dram2&vram
-   {
       return _mem_read32(addr);
-   }
 
    if (!((index=(addr^0x03300000)) & ~0xFFFFF)) //madam
-   {
       return _madam_Peek(index);
-   }
 
 
    if (!((index=(addr^0x03400000)) & ~0xFFFFF)) //clio
-   {
       return _clio_Peek(index);
-   }
 
    if (!((index=(addr^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
    {
@@ -1753,9 +1766,7 @@ unsigned int mreadw(unsigned int addr)
    if (!((index=(addr^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
    {
       if(index & 0x80000) //if (addr>=0x03180000)
-      {
          return _diag_Get();
-      }
       else if(index & 0x40000)       //else if ((addr>=0x03140000) && (addr<0x03180000))
       {
          val=(unsigned int)pNVRam[(index>>2)&32767];
@@ -1799,10 +1810,12 @@ void mwriteb(unsigned int addr, unsigned int val)
          return;
       }
    }
+#if 0
    else if (!((index=(addr^0x03000003)) & ~0xFFFFF)) //rom
    {
       return;
    }
+#endif
 
    //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WritetByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr,val).CStr());
 
@@ -1816,17 +1829,12 @@ unsigned int mreadb(unsigned int addr)
    int index; // for avoid bad compiler optimization
 
    if (addr<0x00300000) //dram1&dram2&vram
-   {
       return _mem_read8(addr^3);
-   }
    else if (!((index=(addr^0x03000003)) & ~0xFFFFF)) //rom
    {
-      if(!gSecondROM) // 2nd rom
-      {
-         return pRom[index];
-      }
-      else
+      if(gSecondROM) // 2nd rom
          return pRom[index+1024*1024];
+      return pRom[index];
    }
    else if (!((index=(addr^0x03100003)) & ~0xFFFFF)) //NVRAM
    {
@@ -1900,9 +1908,6 @@ unsigned int rreadusr(unsigned int n)
    }
    return 0;
 }
-
-
-
 
 unsigned int ReadIO(unsigned int addr)
 {
