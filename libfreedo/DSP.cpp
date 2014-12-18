@@ -25,6 +25,7 @@ Felix Lazarev
 //
 //////////////////////////////////////////////////////////////////////
 
+#include <string.h>
 #include "DSP.h"
 #include "Clio.h"
 #include "freedocore.h"
