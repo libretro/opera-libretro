@@ -1,0 +1,10 @@
+Package: com.libretro.4do
+Name: 4DO
+Depends: 
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Libretro iOS core of 4DO
+Maintainer: libretro
+Author: libretro
+Section: System
+Tag: role::developer
