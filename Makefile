@@ -130,7 +130,7 @@ else
 FLAGS += -O3 -DNDEBUG
 endif
 
-LDFLAGS += $(fpic) -lz $(SHARED)
+LDFLAGS += $(fpic) $(SHARED)
 FLAGS += $(fpic) 
 FLAGS += $(INCFLAGS)
 
