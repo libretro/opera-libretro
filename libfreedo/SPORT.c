@@ -24,10 +24,10 @@ Felix Lazarev
 // SPORT.cpp: implementation of the SPORT class.
 //
 //////////////////////////////////////////////////////////////////////
+#include <string.h>
 
 #include "freedoconfig.h"
 #include "SPORT.h"
-#include <memory.h>
 
 static unsigned int gSPORTCOLOR;
 static unsigned int gSPORTSOURCE=0;

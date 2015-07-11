@@ -24,12 +24,12 @@ Felix Lazarev
 // VDLP.cpp: implementation of the CVDLP class.
 //
 //////////////////////////////////////////////////////////////////////
+#include <string.h>
 
 #include "freedoconfig.h"
 
 #include "vdlp.h"
 #include "arm.h"
-#include <memory.h>
 
 extern _ext_Interface  io_interface;
 

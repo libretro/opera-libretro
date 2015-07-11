@@ -21,6 +21,8 @@ John Sammons
 Felix Lazarev
 */
 
+#include <math.h>
+#include <string.h>
 
 #include "stdafx.h"
 #include "freedoconfig.h"
@@ -28,8 +30,6 @@ Felix Lazarev
 #include "Clio.h"
 #include "vdlp.h"
 #include "arm.h"
-#include <math.h>
-#include <memory.h>
 
 #include "bitop.h"
 BitReaderBig bitoper;

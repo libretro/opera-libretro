@@ -44,7 +44,7 @@ typedef struct{
 
 inputState internal_input_state[6];
 
-static char biosPath[PATH_MAX];
+static char biosPath[1024];
 static VDLFrame *frame;
 
 extern int HightResMode;

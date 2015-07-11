@@ -30,8 +30,6 @@ Felix Lazarev
 #include "Clio.h"
 #include "freedocore.h"
 
-#include <memory.h>
-
 #if 0 //20 bit ALU
 #define ALUSIZEMASK 0xFFFFf000
 #else //32 bit ALU

@@ -21,13 +21,12 @@ John Sammons
 Felix Lazarev
 */
 
+#include <string.h>
+
 #include "quarz.h"
 #include "Clio.h"
 #include "vdlp.h"
 #include "stdafx.h"
-
-#include <memory.h>
-#include <string.h>
 
 int ARM_CLOCK=12500000;
 int THE_ARM_CLOCK=0;

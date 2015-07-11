@@ -25,6 +25,8 @@
 // CPU.cpp: implementation of the CCPU class.
 //
 //////////////////////////////////////////////////////////////////////
+#include <string.h>
+
 #include "freedoconfig.h"
 #include "arm.h"
 #include "Madam.h"
@@ -32,10 +34,6 @@
 #include "DiagPort.h"
 #include "SPORT.h"
 #include "stdafx.h"
-
-#ifndef _WIN32
-#include <memory.h>
-#endif
 
 #include "freedocore.h"
 

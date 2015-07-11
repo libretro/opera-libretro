@@ -25,6 +25,8 @@ Felix Lazarev
 //
 //////////////////////////////////////////////////////////////////////
 #include <stdint.h>
+#include <string.h>
+
 #include "freedoconfig.h"
 #include "XBUS.h"
 #include "Clio.h"
@@ -266,8 +268,6 @@ unsigned int _xbus_SaveSize()
    }
    return tmp;
 }
-
-#include <memory.h>
 
 void _xbus_Save(void *buff)
 {
