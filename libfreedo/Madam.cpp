@@ -784,10 +784,10 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
                      Rez1T=(double)((Rez1T*M)/65536.0/65536.0); // y * n/z
 
                   }
-                  return;
+                  break;
                default:
                   //io_interface(EXT_DEBUG_PRINT,(void*)str.print("??? Unknown cmd MADAM[0x7FC]==0x%x\n", val).CStr());
-                  return;
+                  break;
             }
             break;
          case 0x130:
@@ -800,9 +800,8 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
             mregs[addr]=val;
             break;
       }
-
-
 }
+
 unsigned int OFFSET;
 unsigned int temp1;
 unsigned int Flag;

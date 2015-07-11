@@ -846,7 +846,6 @@ unsigned short  RegBase(unsigned int reg)
 
 unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
 {
-
    unsigned short val;
 
    //	addr&=0x3ff;
@@ -855,27 +854,21 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
       case 0xea:
          dregs.NOISE=fastrand();
          return dregs.NOISE;
-         break;
       case 0xeb:
          //printf("#DSP read AudioOutStatus (0x%4.4X)\n",dregs.AudioOutStatus);
          return dregs.AudioOutStatus;
-         break;
       case 0xec:
          //printf("#DSP read Sema4Status: 0x%4.4X\n",dregs.Sema4Status);
          return dregs.Sema4Status;
-         break;
       case 0xed:
          //printf("#DSP read Sema4Data: 0x%4.4X\n",dregs.Sema4Data);
          return dregs.Sema4Data;
-         break;
       case 0xee:
          //printf("#DSP read PC (0x%4.4X)\n",dregs.PC);
          return dregs.PC;
-         break;
       case 0xef:
          //printf("#DSP read DSPPCNT (0x%4.4X)\n",dregs.DSPPCNT); //?? 0x4000 always
          return dregs.DSPPCNT;
-         break;
       case 0xf0:	case 0xf1:	case 0xf2:	case 0xf3:
       case 0xf4:	case 0xf5:	case 0xf6:	case 0xf7:
       case 0xf8:	case 0xf9:	case 0xfa:	case 0xfb:
@@ -899,7 +892,6 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
            fclose(flo);
            }*/
          return val;
-         break;
       case 0x70:	case 0x71:	case 0x72:	case 0x73:
       case 0x74:	case 0x75:	case 0x76:	case 0x77:
       case 0x78:	case 0x79:	case 0x7a:	case 0x7b:
@@ -910,10 +902,7 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
             //printf("#DSP read from CPU!!! chan=0x%x\n",addr&0x0f);
             return IMem[addr];
          }
-         else
-            return _clio_EIFIFONI(addr&0x0f);
-         break;
-
+         return _clio_EIFIFONI(addr&0x0f);
       case 0xd0:	case 0xd1:	case 0xd2:	case 0xd3:
       case 0xd4:	case 0xd5:	case 0xd6:	case 0xd7:
       case 0xd8:	case 0xd9:	case 0xda:	case 0xdb:
@@ -929,30 +918,20 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
          if(CPUSupply[addr&0xf])
             return 2;
          return _clio_GetEIFIFOStat(addr&0xf);
-         break;
-
       case 0xe0:
       case 0xe1:
       case 0xe2:
       case 0xe3:
-
          //printf("#DSP read EOFifo status 0x%4.4X\n",addr&0x0f);
-
          return _clio_GetEOFIFOStat(addr&0x0f);
-         break;
-
-
       default:
          //printf("#EIRead 0x%3.3X>=0x%4.4X\n",addr, IMem[addr&0x7f]);
          addr-=0x100;
          if((addr<0x200))
-         {
             return IMem[addr|0x100];
-         }
-         else
-            return IMem[addr&0x7f];
    }
 
+   return IMem[addr&0x7f];
 }
 
 void  iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I)
@@ -1098,29 +1077,24 @@ unsigned short  _dsp_ReadIMem(unsigned short addr) //CPU reads from EO,I of DSP
       case 0x3eb:
          //printf("#ARM read AudioOutStatus (0x%4.4X)\n",dregs.AudioOutStatus);
          return dregs.AudioOutStatus;
-         break;
       case 0x3ec:
          //printf("#Arm read Sema4Status = 0x%4.4X\n",dregs.Sema4Status);
          return dregs.Sema4Status;
-         break;
       case 0x3ed:
          //printf("#Arm read Sema4Data = 0x%4.4X\n",dregs.Sema4Status);
          return dregs.Sema4Data;
-         break;
       case 0x3ee:
          //printf("#ARM read dregs.INT (0x%04X)\n",dregs.INT);
          return dregs.INT;
-         break;
       case 0x3ef:
          //printf("#ARM read DSPPRLD (0x%4.4X)\n",dregs.DSPPRLD);
          return dregs.DSPPRLD;
-         break;
       default:
          //	printf("#Arm read IMem[0x%3.3X]=0x%4.4X\n",addr, IMem[addr]);
-         return IMem[addr];
          break;
-
    }
+
+   return IMem[addr];
 
 }
 
