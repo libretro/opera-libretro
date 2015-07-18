@@ -881,7 +881,7 @@ int _madam_HandleCEL(void)
          NEXTCCB+=CURRENTCCB+4;
          NEXTCCB&=0xffffff;
       }
-      if((NEXTCCB==0))
+      if(NEXTCCB == 0)
          NCCBF=1;
       if((NEXTCCB>>20)>2)
          NCCBF=1;
