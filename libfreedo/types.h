@@ -28,6 +28,8 @@ Copyright (C) 2007-2008 Maxim Grishin (http://altmer.arts-union.ru)
 #ifndef TYPES_HEAD_DEFINITION
 #define TYPES_HEAD_DEFINITION
 
+#include <stdint.h>
+
 typedef  unsigned int uint32;
 typedef  unsigned char uint8;
 typedef  unsigned short uint16;
@@ -43,14 +45,6 @@ typedef  signed long long int64;
 	#ifndef __int64
 		typedef  signed long long __int64;
 	#endif
-#endif
-
-typedef  float real32;
-typedef  double real64;
-typedef  long double real80;
-
-#ifndef NULL
- #define NULL 0
 #endif
 
 #endif
