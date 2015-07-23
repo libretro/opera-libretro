@@ -109,7 +109,7 @@ else ifeq ($(platform), psp1)
 	CXX = psp-g++$(EXE_EXT)
 	AR = psp-ar$(EXE_EXT)
    STATIC_LINKING = 1
-	FLAGS += -G0 -DLSB_FIRST
+	FLAGS += -G0
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
