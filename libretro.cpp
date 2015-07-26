@@ -103,16 +103,16 @@ static const unsigned char nvram_header[] =
 
 static void fsReadBios(const char *biosFile, void *prom)
 {
-   FILE *bios1;
    long fsize;
    int readcount;
 
-   bios1 = fopen(biosFile, "rb");
+   FILE *bios1 = fopen(biosFile, "rb");
    fseek(bios1, 0, SEEK_END);
    fsize = ftell(bios1);
    rewind(bios1);
-
    readcount = fread(prom, 1, fsize, bios1);
+   (void)readcount;
+
    fclose(bios1);
 }
 

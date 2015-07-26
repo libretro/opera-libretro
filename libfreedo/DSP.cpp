@@ -326,6 +326,8 @@ void _dsp_Init(void)
          unsigned int raw;
       } Flags;
 
+      (void)MD0;
+
       for(inst.raw=0xA000; inst.raw<=0xFFFF; inst.raw+=1024)
          for(Flags.Zero=0;Flags.Zero<2;Flags.Zero++)
             for(Flags.Nega=0;Flags.Nega<2;Flags.Nega++)
@@ -396,6 +398,10 @@ void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
 {
    bool MULT1_RQST_L,MULT2_RQST_L,ALU1_RQST_L,ALU2_RQST_L,BS_RQST_L;
    int NUMBER_OPERANDS=0, cnt=0;
+
+   (void)MULT1_RQST_L;
+   (void)MULT2_RQST_L;
+   (void)BS_RQST_L;
 
    if( ((nrc&0x300)==0x300 || (nrc&0xC00)==0xC00) && !(opmask&0x10) )
    {MULT1_RQST_L=true;cnt++;}

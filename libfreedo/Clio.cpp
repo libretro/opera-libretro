@@ -752,12 +752,12 @@ void _clio_Init(int ResetReson)
 }
 unsigned short  _clio_EIFIFO(unsigned short channel)
 {
-   unsigned int val,base,mask;
+   unsigned int val;
+   unsigned base = 0x400+(channel*16);
+   unsigned mask = 1<<channel;
 
-
-
-   base=0x400+(channel*16);
-   mask=1<<channel;
+   (void)base;
+   (void)mask;
 
    if(FIFOI[channel].StartAdr!=0)//channel enabled
    {
