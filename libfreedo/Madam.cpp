@@ -542,13 +542,15 @@ static int QUICK_DIVIDE_LBOUND = 0;
 
 static short quickDivide_lookups[QUICK_DIVIDE_CACHE_SIZE][QUICK_DIVIDE_CACHE_SIZE];
 
-void quickDivide_init()
+static void quickDivide_init(void)
 {
+   int a, b;
+
    QUICK_DIVIDE_UBOUND	= (QUICK_DIVIDE_CACHE_SIZE / 2) - 1;
    QUICK_DIVIDE_LBOUND	= -(QUICK_DIVIDE_CACHE_SIZE / 2);
-   for (int a = QUICK_DIVIDE_LBOUND; a <= QUICK_DIVIDE_UBOUND; a++)
+   for (a = QUICK_DIVIDE_LBOUND; a <= QUICK_DIVIDE_UBOUND; a++)
    {
-      for (int b = QUICK_DIVIDE_LBOUND; b <= QUICK_DIVIDE_UBOUND; b++)
+      for (b = QUICK_DIVIDE_LBOUND; b <= QUICK_DIVIDE_UBOUND; b++)
       {
          if (b == 0)
             quickDivide_lookups[a - QUICK_DIVIDE_LBOUND][b - QUICK_DIVIDE_LBOUND] = 0;
@@ -558,17 +560,14 @@ void quickDivide_init()
    }
 }
 
-int __inline quickDivide(int a, int b)
+static inline int quickDivide(int a, int b)
 {
    if (a >= QUICK_DIVIDE_LBOUND 
          && a <= QUICK_DIVIDE_UBOUND 
          && b >= QUICK_DIVIDE_LBOUND 
          && b <= QUICK_DIVIDE_UBOUND)
-   {
       return quickDivide_lookups[a - QUICK_DIVIDE_LBOUND][b - QUICK_DIVIDE_LBOUND];
-   }
-   else
-      return a / b;
+   return a / b;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -595,26 +594,33 @@ unsigned int  _madam_Peek(unsigned int addr)
    {
       switch(_madam_FSM)
       {
-         case FSM_IDLE:return 0x0;
-         case FSM_SUSPENDED:return 0x30;
-         case FSM_INPROCESS:return 0x10;
+         case FSM_IDLE:
+            return 0x0;
+         case FSM_SUSPENDED:
+            return 0x30;
+         case FSM_INPROCESS:
+            return 0x10;
       }
    }
+#if 0
    if(addr>=0x580 && addr<0x5A0)
    {
       //sprintf(str,"CLUT - MADAM Read madam[0x%X]\n",addr);
       //CDebug::DPrint(str);
    }
+#endif
    return mregs[addr];
 }
 
 
 void  _madam_Poke(unsigned int addr, unsigned int val)
 {
+#if 0
    if(addr>0x2ff && addr<0x400)
    {
       //  io_interface(EXT_DEBUG_PRINT,(void*)str.print("MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val).CStr());
    }
+#endif
    /*
       if(addr==0x13c)
       {
@@ -2347,11 +2353,13 @@ bool QuardCCWTest(int wdt)
    return false;
 }
 
-__inline int __abs(int val)
+static inline int __abs(int val)
 {
-   if(val>0)return val;
+   if(val>0)
+      return val;
    return -val;
 }
+
 int TestInitVisual(int packed)
 {
    int xpoints[4],ypoints[4];
@@ -2641,8 +2649,7 @@ int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int yc
    return 0;
 }
 
-
-__inline uint16 readPIX(uint32 src, int i, int j)
+static inline uint16 readPIX(uint32 src, int i, int j)
 {
    src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
    if(RESSCALE)
@@ -2650,7 +2657,7 @@ __inline uint16 readPIX(uint32 src, int i, int j)
    return *((uint16*)&Mem[src^2]);
 }
 
-__inline void writePIX(uint32 src, int i, int j, uint16 pix)
+static inline void writePIX(uint32 src, int i, int j, uint16 pix)
 {
    src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
    if(RESSCALE)
@@ -2703,8 +2710,7 @@ int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int y
    return 0;
 }
 
-
-__inline int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
+static inline int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
 {
    if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0)
       return CCB_ACCW;

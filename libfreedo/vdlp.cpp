@@ -148,7 +148,7 @@ static const unsigned int HOWMAYPIXELEXPECTPERLINE[8] =
 
 bool doloadclut=false;
 
-__inline void VDLExec(void)
+static inline void VDLExec(void)
 {
    int i;
    unsigned int NEXTVDL;
@@ -250,7 +250,7 @@ __inline void VDLExec(void)
    }
 }
 
-__inline uint32 VRAMOffEval(uint32 addr, uint32 line)
+static inline uint32 VRAMOffEval(uint32 addr, uint32 line)
 {
    return ((((~addr)&2)<<(18+RESSCALE))+((addr>>2)<<1)+1024*512*line)<<RESSCALE;
 }

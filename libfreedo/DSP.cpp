@@ -394,7 +394,9 @@ void _dsp_Reset(void)
 }
 
 extern _ext_Interface  io_interface;
-void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
+
+#if _DEBUG
+static void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
 {
    bool MULT1_RQST_L,MULT2_RQST_L,ALU1_RQST_L,ALU2_RQST_L,BS_RQST_L;
    int NUMBER_OPERANDS=0, cnt=0;
@@ -430,6 +432,7 @@ void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
    if(NUMBER_OPERANDS<cnt)io_interface(EXT_DEBUG_PRINT,(void*)">>>DSP NUM_OPS_CONFLICT!!!\n");
 
 }
+#endif
 
 unsigned int _dsp_Loop(void)
 {

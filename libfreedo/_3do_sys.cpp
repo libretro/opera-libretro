@@ -48,16 +48,16 @@ extern void* Getp_RAMS();
 extern int ARM_CLOCK;
 extern int THE_ARM_CLOCK;
 
-__inline uint32 _bswap(uint32 x)
+static inline uint32_t _bswap(uint32 x)
 {
    return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
 }
-
 
 extern void* _xbplug_MainDevice(int proc, void* data);
 
 int _3do_Init(void)
 {
+   unsigned i;
    unsigned char *Memory;
    unsigned char *rom;
 
@@ -65,7 +65,8 @@ int _3do_Init(void)
 
    io_interface(EXT_READ_ROMS,Getp_ROMS());
    rom=(unsigned char*)Getp_ROMS();
-   for(int i=(1024*1024*2)-4;i>=0;i-=4) *(int *)(rom+i)=_bswap(*(int *)(rom+i));
+   for(i= (1024*1024*2)-4; i >= 0; i -= 4)
+      *(int *)(rom+i) =_bswap(*(int *)(rom+i));
 
    _vdl_Init(Memory+0x200000);   // Visible only VRAM to it
    _sport_Init(Memory+0x200000);  // Visible only VRAM to it
