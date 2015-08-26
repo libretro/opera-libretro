@@ -15,9 +15,9 @@
 
 #include "libretro.h"
 
-#include "freedocore.h"
-#include "IsoXBUS.h"
-#include "frame.h"
+#include "libfreedo/freedocore.h"
+#include "libfreedo/IsoXBUS.h"
+#include "libfreedo/frame.h"
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
@@ -301,14 +301,14 @@ static void *fdcCallback(int procedure, void *data)
 
 static void update_input(void)
 {
+   unsigned i;
    if (!input_poll_cb)
       return;
 
    input_poll_cb();
 
-
-   // Can possibly support up to 6 players but is currently set for 2
-   for (unsigned i = 0; i < 2; i++)
+   /* Can possibly support up to 6 players but is currently set for 2 */
+   for (i = 0; i < 2; i++)
    {
       if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
          internal_input_state[i].buttons |= INPUTBUTTONUP;

@@ -656,7 +656,8 @@ void HandleDMA(unsigned int val)
 
 void _clio_Init(int ResetReson)
 {
-   for(int i=0;i<32768;i++)
+   unsigned i;
+   for(i = 0; i < 32768; i++)
       cregs[i]=0;
 
    //cregs[8]=240;
