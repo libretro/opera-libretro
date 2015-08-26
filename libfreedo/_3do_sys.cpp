@@ -57,7 +57,7 @@ extern void* _xbplug_MainDevice(int proc, void* data);
 
 int _3do_Init(void)
 {
-   unsigned i;
+   int i;
    unsigned char *Memory;
    unsigned char *rom;
 
