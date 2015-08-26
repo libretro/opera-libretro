@@ -888,7 +888,7 @@ static __inline void ARM_SET_CV_sub(uint32_t rd, uint32_t op1, uint32_t op2)
 }
 
 
-bool ARM_ALU_Exec(uint32_t inst, uint8_t opc, uint32_t op1, uint32_t op2, uint32_t *Rd)
+static INLINE bool ARM_ALU_Exec(uint32_t inst, uint8_t opc, uint32_t op1, uint32_t op2, uint32_t *Rd)
 {
    switch(opc)
    {
@@ -1183,7 +1183,7 @@ void ARM_SWAP(uint32_t cmd)
    }
 }
 
-unsigned int calcbits(unsigned int num)
+static INLINE unsigned int calcbits(unsigned int num)
 {
    unsigned int retval;
 
