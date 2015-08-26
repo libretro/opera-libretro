@@ -46,7 +46,7 @@ static char biosPath[1024];
 static struct VDLFrame *frame;
 
 extern int HightResMode;
-extern unsigned int _3do_SaveSize();
+extern unsigned int _3do_SaveSize(void);
 extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
 extern void* Getp_NVRAM();
@@ -57,7 +57,6 @@ static bool isSwapFrameSignaled;
 
 static uint32_t *videoBuffer;
 static int videoWidth, videoHeight;
-//uintptr_t sampleBuffer[TEMP_BUFFER_SIZE];
 static int32_t sampleBuffer[TEMP_BUFFER_SIZE];
 static unsigned int sampleCurrent;
 
@@ -103,8 +102,8 @@ static void fsReadBios(const char *biosFile, void *prom)
 {
    long fsize;
    int readcount;
-
    FILE *bios1 = fopen(biosFile, "rb");
+
    fseek(bios1, 0, SEEK_END);
    fsize = ftell(bios1);
    rewind(bios1);
@@ -155,8 +154,7 @@ static unsigned int fsReadDiscSize(void)
    unsigned int size;
    char sectorZero[2048];
    unsigned int temp;
-   char *ssize;
-   ssize = fsReadSize();
+   char *ssize = fsReadSize();
 
    memcpy(&temp, ssize, 4);
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
@@ -181,8 +179,7 @@ static int CheckDownButton(int deviceNumber,int button)
 {
    if(internal_input_state[deviceNumber].buttons&button)
       return 1;
-   else
-      return 0;
+   return 0;
 }
 
 static char CalculateDeviceLowByte(int deviceNumber)
