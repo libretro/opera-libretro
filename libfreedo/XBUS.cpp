@@ -104,14 +104,12 @@ unsigned int _xbus_GetDataFIFO()
 
 unsigned int _xbus_GetPoll()
 {
-   unsigned int res;
+   unsigned int res = 0x30;
 
    if(XBSEL==0xf)
-      res=POLF;
+      res = POLF;
    else if(xdev[XBSEL])
       res = (intptr_t)(*xdev[XBSEL])(XBP_GET_POLL, NULL);
-   else
-      res = 0x30;
 
    if(XBSELH&0x80)
       res &= 0xf;
@@ -179,7 +177,8 @@ unsigned int _xbus_GetStatusFIFO()
 
 void _xbus_SetDataFIFO(unsigned int val)
 {
-   if(xdev[XBSEL])(*xdev[XBSEL])(XBP_SET_DATA,(void*)val);
+   if(xdev[XBSEL])
+      (*xdev[XBSEL])(XBP_SET_DATA,(void*)val);
 }
 
 void _xbus_SetPoll(unsigned int val)
@@ -255,7 +254,7 @@ void _xbus_Destroy(void)
    }
 }
 
-unsigned int _xbus_SaveSize()
+unsigned int _xbus_SaveSize(void)
 {
    unsigned int tmp=sizeof(XBUSDatum);
    int i;

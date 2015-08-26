@@ -30,7 +30,9 @@ uint32 BitReaderBig::Read()
    const static uint8 mas[]={0,1,3,7,15,31,63,127,255};
    uint32 retval=0;
    int32 bitcnt=bitset;
-   if(!buf)return retval;
+   if(!buf)
+      return retval;
+
    if((8-bitpoint)>bitset)
    {
       retval=_mem_read8(buf+(point^3));
@@ -39,12 +41,14 @@ uint32 BitReaderBig::Read()
       bitpoint+=bitset;
       return retval;
    }
+
    if(bitpoint)
    {
       retval=_mem_read8(buf+(point^3))&mas[8-bitpoint];
       point++;
       bitcnt-=8-bitpoint;
    }
+
    while(bitcnt>=8)
    {
       retval<<=8;
@@ -52,11 +56,13 @@ uint32 BitReaderBig::Read()
       point++;
       bitcnt-=8;
    }
+
    if(bitcnt)
    {
       retval<<=bitcnt;
       retval|=_mem_read8(buf+(point^3))>>(8-bitcnt);
    }
+
    bitpoint=bitcnt;
 
    return retval;

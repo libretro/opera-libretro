@@ -112,12 +112,6 @@ const static uint16 cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>fla
 
 #pragma pack(push,1)
 
-#ifdef DEBUG_CORE
-uint32 *profiling;
-uint32 *profiling2;
-uint32 *profiling3;
-#endif
-
 struct ARM_CoreState
 {
    //console memories------------------------
@@ -563,17 +557,6 @@ unsigned char * _arm_Init(void)
 
    MAS_Access_Exept=false;
 
-#ifdef DEBUG_CORE
-   profiling=new uint32[(1024*1024*3)>>2];
-   memset(profiling,0,RAMSIZE);
-
-   profiling2=new uint32[(1024*1024*3)>>2];
-   memset(profiling2,0,RAMSIZE);
-
-   profiling3=new uint32[(1024*1024*3)>>2];
-   memset(profiling3,0,RAMSIZE);
-#endif
-
    CYCLES=0;
    for(i=0;i<16;i++)
       RON_USER[i]=0;
@@ -612,11 +595,6 @@ void _arm_Destroy(void)
 {
    io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
 
-#ifdef DEBUG_CORE
-   delete []profiling;
-   delete []profiling2;
-   delete []profiling3;
-#endif
    delete []pNVRam;
    delete []pRom;
    delete []pRam;
@@ -825,18 +803,13 @@ void stm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 
 void  bdt_core(unsigned int opc)
 {
-   unsigned int base,rn_ind;
+   unsigned int base;
+   unsigned int rn_ind=(opc>>16)&0xf;
 
-   //unsigned short list=opc&0xffff;
-
-   //decode_mrt(opc);
-   //return;
-
-   rn_ind=(opc>>16)&0xf;
-
-   if(rn_ind==0xf)base=RON_USER[rn_ind]+8;
-   else base=RON_USER[rn_ind];
-
+   if(rn_ind==0xf)
+      base=RON_USER[rn_ind]+8;
+   else
+      base=RON_USER[rn_ind];
 
    if(opc&(1<<20))	//memory or register?
    {
@@ -1125,17 +1098,23 @@ uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
             if(shift>32) ARM_SET_C(0);
             else ARM_SET_C(((value<<(shift-1))&0x80000000)>>31);
          }
-         else return value;
-         if(shift>31)return 0;
+         else
+            return value;
+         if(shift>31)
+            return 0;
          return value<<shift;
       case 1:
          if(shift)
          {
-            if(shift>32) ARM_SET_C(0);
-            else ARM_SET_C((value>>(shift-1))&1);
+            if(shift>32)
+               ARM_SET_C(0);
+            else
+               ARM_SET_C((value>>(shift-1))&1);
          }
-         else return value;
-         if(shift>31)return 0;
+         else
+            return value;
+         if(shift>31)
+            return 0;
          return value>>shift;
       case 2:
          if(shift)
@@ -1143,8 +1122,10 @@ uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
             if(shift>32) ARM_SET_C((((signed int)value)>>31)&1);
             else ARM_SET_C((((signed int)value)>>(shift-1))&1);
          }
-         else return value;
-         if(shift>31)return (((signed int)value)>>31);
+         else
+            return value;
+         if(shift>31)
+            return (((signed int)value)>>31);
          return ((signed int)value)>>shift;
       case 3:
          if(shift)
@@ -1159,7 +1140,8 @@ uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
                ARM_SET_C((value>>31)&1);
             }
          }
-         else return value;
+         else
+            return value;
          return _rotr(value, shift);
       case 4:
          tmp=ARM_GET_C<<31;
@@ -1265,13 +1247,6 @@ int _arm_Execute(void)
       }
       cmd=mreadw(REG_PC);
 
-#ifdef DEBUG_CORE
-      if(REG_PC<0x00300000)
-      {
-         profiling[REG_PC>>2]++;
-      }
-#endif
-
       curr_pc=REG_PC;
 
 
@@ -1283,21 +1258,17 @@ int _arm_Execute(void)
       //	if(REG_PC==0x9E9F0){isexeption=true; RON_USER[5]=0xE2998; fix=1;}
       if(((cond_flags_cross[(((uint32)cmd)>>28)]>>((CPSR)>>28))&1)&&isexeption==false)
       {
-         /*                                                                                                if(jw==0) { char jj[90]; 
-                                                                                                           int ssss=((cond_flags_cross[(((uint32)cmd)>>28)]>>((CPSR)>>28))&1);
-                                                                                                           sprintf(jj, "ssss=0x%X, cmd=0x%X, (cmd>>24)&0xf=0x%X, CPSR=0x%X", ssss, cmd, (cmd>>24)&0xf, CPSR);
-                                                                                                           io_interface(EXT_DEBUG_PRINT,(void*)jj); jw=10000; }*/
          switch((cmd>>24)&0xf)  //разбор типа команды
          {
             case 0x0:	//Multiply
 
                if ((cmd & ARM_MUL_MASK) == ARM_MUL_SIGN)
                {
-                  unsigned int res;
-
-                  res=((calcbits(RON_USER[(cmd>>8)&0xf])+5)>>1)-1;
-                  if(res>16)CYCLES-=16;
-                  else CYCLES-=res;
+                  unsigned int res = ((calcbits(RON_USER[(cmd>>8)&0xf])+5)>>1)-1;
+                  if(res>16)
+                     CYCLES-=16;
+                  else
+                     CYCLES-=res;
 
                   if(((cmd>>16)&0xf)==(cmd&0xf))
                   {
@@ -1562,12 +1533,8 @@ Undefine:
             case 0xa:	//BRANCH
             case 0xb:
                if(cmd&(1<<24))
-               {
                   RON_USER[14]=REG_PC;
-               }
                REG_PC+=(((cmd&0xffffff)|((cmd&0x800000)?0xff000000:0))<<2)+4;
-
-
 
                CYCLES-=SCYCLE+NCYCLE; //2S+1N
 
@@ -1916,5 +1883,3 @@ void WriteIO(unsigned int addr, unsigned int val)
 {
    mwritew(addr,val);
 }
-
-
