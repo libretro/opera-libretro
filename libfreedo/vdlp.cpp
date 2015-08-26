@@ -21,17 +21,14 @@ John Sammons
 Felix Lazarev
 */
 
-// VDLP.cpp: implementation of the CVDLP class.
-//
-//////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 #include <string.h>
-
-#include "freedoconfig.h"
 
 #include "vdlp.h"
 #include "arm.h"
 
 extern _ext_Interface  io_interface;
+extern int HightResMode;
 
 /* === VDL Palette data === */
 #define VDL_CONTROL     0x80000000
@@ -252,7 +249,7 @@ static inline void VDLExec(void)
 
 static inline uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
 {
-   return ((((~addr)&2)<<(18+RESSCALE))+((addr>>2)<<1)+1024*512*line)<<RESSCALE;
+   return ((((~addr)&2)<<(18+HightResMode))+((addr>>2)<<1)+1024*512*line)<<HightResMode;
 }
 
 void _vdl_DoLineNew(int line2x, VDLFrame *frame)
@@ -277,7 +274,7 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
    {
       if(CLUTDMA.dmaw.enadma)
       {
-         if(RESSCALE)
+         if(HightResMode)
          {
             unsigned short *dst1,*dst2;
             unsigned int *src1,*src2,*src3,*src4;
@@ -306,20 +303,20 @@ void _vdl_DoLineNew(int line2x, VDLFrame *frame)
             while(i--)
                *dst++=*(unsigned short*)(src++);
          }
-         memcpy(frame->lines[(y<<RESSCALE)].xCLUTB,CLUTB,32);
-         memcpy(frame->lines[(y<<RESSCALE)].xCLUTG,CLUTG,32);
-         memcpy(frame->lines[(y<<RESSCALE)].xCLUTR,CLUTR,32);
-         if(RESSCALE)
-            memcpy(frame->lines[(y<<RESSCALE)+1].xCLUTB,frame->lines[(y<<RESSCALE)].xCLUTB,32*3);
+         memcpy(frame->lines[(y<<HightResMode)].xCLUTB,CLUTB,32);
+         memcpy(frame->lines[(y<<HightResMode)].xCLUTG,CLUTG,32);
+         memcpy(frame->lines[(y<<HightResMode)].xCLUTR,CLUTR,32);
+         if(HightResMode)
+            memcpy(frame->lines[(y<<HightResMode)+1].xCLUTB,frame->lines[(y<<HightResMode)].xCLUTB,32*3);
       }
-      frame->lines[(y<<RESSCALE)].xOUTCONTROLL=OUTCONTROLL;
-      frame->lines[(y<<RESSCALE)].xCLUTDMA=CLUTDMA.raw;
-      frame->lines[(y<<RESSCALE)].xBACKGROUND=BACKGROUND;
-      if(RESSCALE)
+      frame->lines[(y<<HightResMode)].xOUTCONTROLL=OUTCONTROLL;
+      frame->lines[(y<<HightResMode)].xCLUTDMA=CLUTDMA.raw;
+      frame->lines[(y<<HightResMode)].xBACKGROUND=BACKGROUND;
+      if(HightResMode)
       {
-         frame->lines[(y<<RESSCALE)+1].xOUTCONTROLL=OUTCONTROLL;
-         frame->lines[(y<<RESSCALE)+1].xCLUTDMA=CLUTDMA.raw;
-         frame->lines[(y<<RESSCALE)+1].xBACKGROUND=BACKGROUND;
+         frame->lines[(y<<HightResMode)+1].xOUTCONTROLL=OUTCONTROLL;
+         frame->lines[(y<<HightResMode)+1].xCLUTDMA=CLUTDMA.raw;
+         frame->lines[(y<<HightResMode)+1].xBACKGROUND=BACKGROUND;
       }
 
    } // //if((y>=0) && (y<240))

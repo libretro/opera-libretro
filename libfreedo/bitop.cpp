@@ -21,7 +21,7 @@ John Sammons
 Felix Lazarev
 */
 
-#include "freedoconfig.h"
+#include <stdint.h>
 #include "bitop.h"
 #include "arm.h"
 

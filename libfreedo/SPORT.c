@@ -21,18 +21,17 @@ John Sammons
 Felix Lazarev
 */
 
-// SPORT.cpp: implementation of the SPORT class.
-//
-//////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 #include <string.h>
 
-#include "freedoconfig.h"
 #include "SPORT.h"
 
 static unsigned int gSPORTCOLOR;
 static unsigned int gSPORTSOURCE=0;
 static unsigned int gSPORTDESTINATION=0;
 static unsigned char* VRAM;
+
+extern int HightResMode;
 
 unsigned int _sport_SaveSize(void)
 {
@@ -91,7 +90,7 @@ void _sport_WriteAccess(unsigned int index, unsigned int mask)
             ((unsigned int*)VRAM)[index+i]=tmp;
          }
       }
-      if(!RESSCALE)
+      if(!HightResMode)
          return;
       memcpy(&((unsigned int*)VRAM)[index+1024*256], &((unsigned int*)VRAM)[index], 2048);
       memcpy(&((unsigned int*)VRAM)[index+2*1024*256], &((unsigned int*)VRAM)[index], 2048);
@@ -106,7 +105,7 @@ void _sport_WriteAccess(unsigned int index, unsigned int mask)
       if(mask == 0xFFFFffff)
       {
          memcpy(&((unsigned int*)VRAM)[gSPORTDESTINATION],&((unsigned int*)VRAM)[gSPORTSOURCE],512*4);
-         if(!RESSCALE)
+         if(!HightResMode)
             return;
          memcpy(&((unsigned int*)VRAM)[gSPORTDESTINATION+1024*256], &((unsigned int*)VRAM)[gSPORTSOURCE+1024*256], 2048);
          memcpy(&((unsigned int*)VRAM)[gSPORTDESTINATION+2*1024*256], &((unsigned int*)VRAM)[gSPORTSOURCE+2*1024*256], 2048);
@@ -121,7 +120,7 @@ void _sport_WriteAccess(unsigned int index, unsigned int mask)
             tmp=((tmp^ctmp)&mask)^ctmp;
             ((unsigned int*)VRAM)[gSPORTDESTINATION+i]=tmp;
          }
-         if(!RESSCALE)
+         if(!HightResMode)
             return;
          memcpy(&((unsigned int*)VRAM)[gSPORTDESTINATION+1024*256], &((unsigned int*)VRAM)[gSPORTDESTINATION], 2048);
          memcpy(&((unsigned int*)VRAM)[gSPORTDESTINATION+2*1024*256], &((unsigned int*)VRAM)[gSPORTDESTINATION], 2048);

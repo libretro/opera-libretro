@@ -21,10 +21,10 @@ John Sammons
 Felix Lazarev
 */
 
-#include <math.h>
+#include <stdint.h>
 #include <string.h>
+#include <math.h>
 
-#include "freedoconfig.h"
 #include "Madam.h"
 #include "Clio.h"
 #include "vdlp.h"
@@ -35,6 +35,7 @@ BitReaderBig bitoper;
 
 extern _ext_Interface  io_interface;
 
+extern int HightResMode;
 extern int sf;
 extern int sdf;
 extern int unknownflag11;
@@ -2653,16 +2654,16 @@ int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int yc
 
 static inline uint16_t readPIX(uint32_t src, int i, int j)
 {
-   src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
-   if(RESSCALE)
+   src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+   if(HightResMode)
       return *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
    return *((uint16_t*)&Mem[src^2]);
 }
 
 static inline void writePIX(uint32_t src, int i, int j, uint16_t pix)
 {
-   src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
-   if(RESSCALE)
+   src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+   if(HightResMode)
       *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
    else
       *((uint16_t*)&Mem[src^2])=pix;
@@ -2726,19 +2727,19 @@ int  TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int
    unsigned int pixel;
    unsigned int curr=-1, next;
 
-   xA>>=(16-RESSCALE);
-   xB>>=(16-RESSCALE);
-   xC>>=(16-RESSCALE);
-   xD>>=(16-RESSCALE);
-   yA>>=(16-RESSCALE);
-   yB>>=(16-RESSCALE);
-   yC>>=(16-RESSCALE);
-   yD>>=(16-RESSCALE);
+   xA>>=(16-HightResMode);
+   xB>>=(16-HightResMode);
+   xC>>=(16-HightResMode);
+   xD>>=(16-HightResMode);
+   yA>>=(16-HightResMode);
+   yB>>=(16-HightResMode);
+   yC>>=(16-HightResMode);
+   yD>>=(16-HightResMode);
 
    if((xA)==(xB) && (xB)==(xC) && (xC)==(xD)) return 0;
 
-   maxxt=((CLIPXVAL+1)<<RESSCALE);
-   maxyt=((CLIPYVAL+1)<<RESSCALE);
+   maxxt=((CLIPXVAL+1)<<HightResMode);
+   maxyt=((CLIPYVAL+1)<<HightResMode);
 
    if(HDX1616<0 && HDDX1616<0)
    {

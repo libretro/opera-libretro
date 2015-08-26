@@ -22,12 +22,9 @@
  */
 
 
-// CPU.cpp: implementation of the CCPU class.
-//
-//////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 #include <string.h>
 
-#include "freedoconfig.h"
 #include "arm.h"
 #include "Madam.h"
 #include "Clio.h"
@@ -38,6 +35,7 @@
 
 extern int fixmode;
 extern int cnbfix;
+extern int HightResMode;
 
 extern _ext_Interface  io_interface;
 
@@ -1587,7 +1585,7 @@ Undefine:
 void _mem_write8(unsigned int addr, unsigned char val)
 {
    pRam[addr]=val;
-   if(addr<0x200000 || !RESSCALE)
+   if(addr<0x200000 || !HightResMode)
       return;
    pRam[addr+1024*1024]=val;
    pRam[addr+2*1024*1024]=val;
@@ -1596,7 +1594,7 @@ void _mem_write8(unsigned int addr, unsigned char val)
 void  _mem_write16(unsigned int addr, unsigned short val)
 {
    *((unsigned short*)&pRam[addr])=val;
-   if(addr<0x200000 || !RESSCALE) return;
+   if(addr<0x200000 || !HightResMode) return;
    *((unsigned short*)&pRam[addr+1024*1024])=val;
    *((unsigned short*)&pRam[addr+2*1024*1024])=val;
    *((unsigned short*)&pRam[addr+3*1024*1024])=val;
@@ -1604,7 +1602,7 @@ void  _mem_write16(unsigned int addr, unsigned short val)
 void _mem_write32(unsigned int addr, unsigned int val)
 {
    *((unsigned int*)&pRam[addr])=val;
-   if(addr<0x200000 || !RESSCALE) return;
+   if(addr<0x200000 || !HightResMode) return;
    *((unsigned int*)&pRam[addr+1024*1024])=val;
    *((unsigned int*)&pRam[addr+2*1024*1024])=val;
    *((unsigned int*)&pRam[addr+3*1024*1024])=val;

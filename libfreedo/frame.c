@@ -1,4 +1,6 @@
-#include "freedoconfig.h"
+#include <stdint.h>
+#include "boolean.h"
+
 #include "freedocore.h"
 #include "frame.h"
 

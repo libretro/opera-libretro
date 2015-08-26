@@ -22,7 +22,7 @@
  */
 
 #include <stdint.h>
-#include "freedoconfig.h"
+#include <stdlib.h>
 #include "freedocore.h"
 #include "arm.h"
 #include "vdlp.h"
