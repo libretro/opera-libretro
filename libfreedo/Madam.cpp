@@ -24,7 +24,6 @@ Felix Lazarev
 #include <math.h>
 #include <string.h>
 
-#include "stdafx.h"
 #include "freedoconfig.h"
 #include "Madam.h"
 #include "Clio.h"
@@ -35,6 +34,12 @@ Felix Lazarev
 BitReaderBig bitoper;
 
 extern _ext_Interface  io_interface;
+
+extern int sf;
+extern int sdf;
+extern int unknownflag11;
+extern int fixmode;
+extern int speedfixes;
 
 /* === CCB control word flags === */
 #define CCB_SKIP        0x80000000

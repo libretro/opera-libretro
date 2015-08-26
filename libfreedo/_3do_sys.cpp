@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include "freedoconfig.h"
 #include "freedocore.h"
-#include "stdafx.h"
 #include "arm.h"
 #include "vdlp.h"
 #include "DSP.h"

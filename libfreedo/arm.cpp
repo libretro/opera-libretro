@@ -33,9 +33,11 @@
 #include "Clio.h"
 #include "DiagPort.h"
 #include "SPORT.h"
-#include "stdafx.h"
 
 #include "freedocore.h"
+
+extern int fixmode;
+extern int cnbfix;
 
 extern _ext_Interface  io_interface;
 

@@ -31,17 +31,17 @@
 #include "XBUS.h"
 #include "arm.h"
 #include "DSP.h"
-#include "stdafx.h"
 
-#define DECREMENT	0x1
-#define RELOAD		0x2
-#define CASCADE		0x4
-#define FLABLODE	0x8
+#define DECREMENT    0x1
+#define RELOAD       0x2
+#define CASCADE      0x4
+#define FLABLODE     0x8
 
+#define RELOAD_VAL   0x10
+
+extern int jw;
 
 void HandleDMA(unsigned int val);
-
-#define RELOAD_VAL 0x10
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

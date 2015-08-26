@@ -26,14 +26,22 @@ Felix Lazarev
 #include "quarz.h"
 #include "Clio.h"
 #include "vdlp.h"
-#include "stdafx.h"
+
+//#define NTSC_CLOCK      12270000        //818*500(строк)  //15  √ц
+//#define PAL_CLOCK       14750000        //944*625(строк)  //15625 √ц
+
+#define SND_CLOCK       44100
 
 int ARM_CLOCK=12500000;
 int THE_ARM_CLOCK=0;
+
 extern _ext_Interface  io_interface;
-#define SND_CLOCK       44100
-//#define NTSC_CLOCK      12270000        //818*500(строк)  //15  √ц
-//#define PAL_CLOCK       14750000        //944*625(строк)  //15625 √ц
+
+extern int sdf;
+extern int sf;
+extern int unknownflag11;
+extern int speedfixes;
+extern int fixmode;
 
 #pragma pack(push,1)
 struct QDatum
