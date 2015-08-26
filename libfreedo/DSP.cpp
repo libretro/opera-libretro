@@ -59,14 +59,17 @@ int  OperandLoaderNWB(void);
 //////////////////////////////////////////////////////////////////////
 #pragma pack(push,1)
 
-struct CIFTAG{
+struct CIFTAG
+{
    unsigned int	BCH_ADDR	:10;
    unsigned int	FLAG_MASK	:2;
    unsigned int	FLGSEL		:1;
    unsigned int	MODE		:2;
    unsigned int	PAD			:1;
 };
-struct BRNTAG{
+
+struct BRNTAG
+{
    unsigned int	BCH_ADDR:10;
    unsigned int	FLAGM0	:1;
    unsigned int	FLAGM1	:1;
@@ -75,13 +78,16 @@ struct BRNTAG{
    unsigned int	MODE1  :1;
    unsigned int	AC		:1;
 };
-struct BRNBITS {
+
+struct BRNBITS
+{
    unsigned int	BCH_ADDR:10;
    unsigned int	bits	:5;
    unsigned int	AC		:1;
 };
 
-struct AIFTAG{
+struct AIFTAG
+{
    unsigned int	BS			:4;
    unsigned int	ALU			:4;
    unsigned int	MUXB		:2;
@@ -90,19 +96,25 @@ struct AIFTAG{
    unsigned int	NUMOPS		:2;
    signed int		PAD			:1;
 };
-struct IOFTAG{
+
+struct IOFTAG
+{
    signed int		IMMEDIATE	:13;
    signed int		JUSTIFY		:1;
    unsigned int	TYPE		:2;
 };
-struct NROFTAG{
+
+struct NROFTAG
+{
    unsigned int	OP_ADDR		:10;
    signed int		DI			:1;
    unsigned int	WB1			:1;
    unsigned int	PAD			:1;
    unsigned int	TYPE		:3;
 };
-struct R2OFTAG{
+
+struct R2OFTAG
+{
    unsigned int	R1			:4;
    signed int		R1_DI		:1;
    unsigned int	R2			:4;
@@ -112,7 +124,9 @@ struct R2OFTAG{
    unsigned int	WB2			:1;
    unsigned int	TYPE		:3;
 };
-struct R3OFTAG{
+
+struct R3OFTAG
+{
    unsigned int	R1			:4;
    signed int		R1_DI		:1;
    unsigned int	R2			:4;
@@ -122,7 +136,8 @@ struct R3OFTAG{
    unsigned int	TYPE		:1;
 };
 
-union ITAG{
+union ITAG
+{
    unsigned int raw;
    AIFTAG	aif;
    CIFTAG	cif;
@@ -208,7 +223,6 @@ struct DSPDatum
 
 static DSPDatum dsp;
 
-
 unsigned int _dsp_SaveSize(void)
 {
    return sizeof(DSPDatum);
@@ -238,7 +252,7 @@ void _dsp_Load(void *buff)
 
 int fastrand(void)
 {
-   g_seed=69069*g_seed+1;
+   g_seed = 69069 * g_seed + 1;
    return g_seed & 0xFFFF;
 }
 
@@ -251,11 +265,13 @@ void _dsp_Init(void)
    g_seed=0xa5a5a5a5;
    //FRAMES=0;
    for(a=0;a<16;a++)
+   {
       for(c=0;c<8;c++)
       {
          flags.RMAP=c;
          REGCONV[c][a]=RegBase(a);
       }
+   }
 
    for(inst.raw=0;inst.raw<0x8000;inst.raw++)
    {
@@ -277,6 +293,7 @@ void _dsp_Init(void)
             flags.req.rq.ALU2=1;
             break;
       }
+
       switch(inst.aif.MUXB)
       {
          case 1:
@@ -380,8 +397,12 @@ void _dsp_Init(void)
    _dsp_Reset();
 
    dregs.Sema4Status = 0; //?? 8-CPU last, 4-DSP last, 2-CPU ACK, 1 DSP ACK ??
-   for( i=0;i<sizeof(NMem)/sizeof(NMem[0]);i++) NMem[i]=0x8380; //SLEEP
-   for(i=0;i<16;i++) CPUSupply[i]=0;
+
+   for( i=0; i < sizeof(NMem)/sizeof(NMem[0]); i++)
+      NMem[i]=0x8380; //SLEEP
+
+   for(i=0;i<16;i++)
+      CPUSupply[i]=0;
 }
 
 void _dsp_Reset(void)
@@ -548,7 +569,7 @@ unsigned int _dsp_Loop(void)
                   break;
             }//switch((inst.raw>>7)&255) //special
          }
-         else //if(inst.aif.PAD)
+         else
          {
             //ALU instruction
 
@@ -783,12 +804,8 @@ unsigned int _dsp_Loop(void)
 
             //now write back. (assuming in WRITEBACK there is an address where to write
             if(flags.WRITEBACK)
-            {
                iwriteh(flags.WRITEBACK,((signed int)Y)>>16);
-            }
-
-            //fin :)
-         }//else //if(inst.aif.PAD)
+         }
 
       }while(Work);//big while!!!
 
@@ -845,12 +862,7 @@ unsigned short  RegBase(unsigned int reg)
          break;
    }
 
-   res =  (reg&7);
-   res |= twi << 8;
-   res |= (reg >> 3) << 9;
-
-   ////printf("RegSel=0x%X\n",res);
-   return res;
+   return ((reg & 7) | (twi << 8) | (reg >> 3) << 9);
 }
 
 unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
@@ -949,60 +961,50 @@ void  iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I
    addr&=0x3ff;
    switch(addr)
    {
-      case 0x3eb: dregs.AudioOutStatus=val;
-                  //if(val&0x8000)
-                  //	dregs.DSPPRLD=568;
-                  break;
-      case 0x3ec: // DSP write to Sema4ACK
-                  //printf("#DSP write Sema4ACK=0x%4.4X\n",val);
-                  dregs.Sema4Status|=0x1;
-                  //printf("#DSP write Sema4Status=0x%4.4X\n",val);
-                  break;
-      case 0x3ed: dregs.Sema4Data=val;
-                  //printf("#DSP write Sema4Data=0x%4.4X\n",val);
-                  dregs.Sema4Status=0x4;  // DSP write to Sema4Data
-                  //printf("Sema4Status set to 0x%4.4X\n",dregs.Sema4Status);
-                  break;
-      case 0x3ee: dregs.INT=val;
-                  flags.GenFIQ=true;
-                  break;
-      case 0x3ef: dregs.DSPPRLD=val;
-                  //if(val>0)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL > 0");
-                  //else if(val==567)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 567");
-                  //else io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 0");
-                  break;
+      case 0x3eb:
+         dregs.AudioOutStatus=val;
+         break;
+      case 0x3ec:
+         /* DSP write to Sema4ACK */
+         dregs.Sema4Status|=0x1;
+         break;
+      case 0x3ed:
+         dregs.Sema4Data=val;
+         dregs.Sema4Status=0x4;  // DSP write to Sema4Data
+         break;
+      case 0x3ee:
+         dregs.INT=val;
+         flags.GenFIQ=true;
+         break;
+      case 0x3ef:
+         dregs.DSPPRLD=val;
+         //if(val>0)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL > 0");
+         //else if(val==567)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 567");
+         //else io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 0");
+         break;
       case 0x3f0:
       case 0x3f1:
       case 0x3f2:
       case 0x3f3:
-                  _clio_EOFIFO(addr&0x0f,val);
-                  break;
+         _clio_EOFIFO(addr&0x0f,val);
+         break;
       case 0x3fd:
-                  //FLUSH EOFIFO
-                  break;
+         //FLUSH EOFIFO
+         break;
       case 0x3fe: // DAC Left channel
       case 0x3ff: // DAC Right channel
-                  IMem[addr]=val;
-                  break;
+         IMem[addr]=val;
+         break;
       default:
-                  if(addr<0x100)
-                  {	//printf("#OPUS !!!DPC=0x%3.3X write to r/o == addr 0x%3.3X , val 0x%4.4X\n",dregs.PC,addr,val);
-                     return;
-                  }
-                  //printf("#EOWRITE 0x%3.3X<=0x%4.4X\n",addr,val);
+         if(addr<0x100)
+            return;
 
-                  /*if( (addr>=0x310) && (addr<0x3eb))
-                    printf("# UnEmulated registers write addr=0x%3.3X, pc=0x%3.3X\n",addr,dregs.PC);
-                    */
-
-                  addr-=0x100;
-                  if(addr<0x200)
-                  {
-                     IMem[addr|0x100]=val;
-                  }
-                  else
-                     IMem[addr+0x100]=val;
-                  return;
+         addr-=0x100;
+         if(addr<0x200)
+            IMem[addr | 0x100]=val;
+         else
+            IMem[addr + 0x100]=val;
+         break;
    }
 }
 
@@ -1013,59 +1015,20 @@ void  _dsp_SetRunning(bool val)
 
 void  _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,I of DSP
 {
-   switch(addr)
+   if (addr >= 0x70 && addr <= 0x7c)
    {
-      /*case 0xea:
-        case 0x6a:
-        dregs.NOISE=val;
-        break;
-        case 0xeb:
-        case 0x6b:
-        dregs.AudioOutStatus=val;
-        break;
-        case 0xec:
-        case 0x6c:
-      //printf("#Arm write Sema4ACK=0x%4.4X\n",val);
-      dregs.Sema4Status |= 0x2;
-      break;
-      case 0xed:
-      case 0x6d:
-      dregs.Sema4Data=val; // ARM write to Sema4Data
-      dregs.Sema4Status = 0x8;
-      //printf("#Arm write Sema4Data=0x%4.4X\n",val);
-      //printf("#Sema4Status set to 0x%4.4X\n",dregs.Sema4Status);
-      break;
-      case 0xee:
-      //io_interface(EXT_DEBUG_PRINT,(void*)">>>DSP PC WRITED 0xEE!!!\n");
-      case 0x6e:
-      dregs.PC=val;
-      //io_interface(EXT_DEBUG_PRINT,(void*)">>>DSP PC WRITED 0x6E!!!\n");
-      break;
-      case 0xef:
-      case 0x6f:
-      dregs.DSPPCNT=val;
-      break;*/
-
-      case 0x70:	case 0x71:	case 0x72:	case 0x73:
-      case 0x74:	case 0x75:	case 0x76:	case 0x77:
-      case 0x78:	case 0x79:	case 0x7a:	case 0x7b:
-      case 0x7c:
-         CPUSupply[addr-0x70]=1;
-         //printf("# Coeff ARM write=0x%3.3X, val=0x%4.4X\n",addr,val);
-         IMem[addr&0x7f]=val;
-         io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP FIFO DIRECT!!!\n");
-         break;
-
-
-      default:
-         //if( (addr>=0x0) && (addr<0x6f))
-         //	printf("# Coeff ARM write=0x%3.3X, val=0x%4.4X\n",addr,val);
-
-         if(!(addr&0x80))IMem[addr&0x7f]=val;
-         else io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP HZ!!!\n");
-         break;
+      CPUSupply[addr-0x70]=1;
+      //printf("# Coeff ARM write=0x%3.3X, val=0x%4.4X\n",addr,val);
+      IMem[addr&0x7f]=val;
+      io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP FIFO DIRECT!!!\n");
    }
-
+   else
+   {
+      if(!(addr&0x80))
+         IMem[addr&0x7f]=val;
+      else
+         io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP HZ!!!\n");
+   }
 }
 
 void  _dsp_ARMwrite2sema4(unsigned int val)
@@ -1084,25 +1047,20 @@ unsigned short  _dsp_ReadIMem(unsigned short addr) //CPU reads from EO,I of DSP
    switch(addr)
    {
       case 0x3eb:
-         //printf("#ARM read AudioOutStatus (0x%4.4X)\n",dregs.AudioOutStatus);
          return dregs.AudioOutStatus;
       case 0x3ec:
-         //printf("#Arm read Sema4Status = 0x%4.4X\n",dregs.Sema4Status);
          return dregs.Sema4Status;
       case 0x3ed:
-         //printf("#Arm read Sema4Data = 0x%4.4X\n",dregs.Sema4Status);
          return dregs.Sema4Data;
       case 0x3ee:
-         //printf("#ARM read dregs.INT (0x%04X)\n",dregs.INT);
          return dregs.INT;
       case 0x3ef:
-         //printf("#ARM read DSPPRLD (0x%4.4X)\n",dregs.DSPPRLD);
          return dregs.DSPPRLD;
       default:
-         //	printf("#Arm read IMem[0x%3.3X]=0x%4.4X\n",addr, IMem[addr]);
          break;
    }
 
+   //	printf("#Arm read IMem[0x%3.3X]=0x%4.4X\n",addr, IMem[addr]);
    return IMem[addr];
 
 }
@@ -1249,18 +1207,21 @@ int  OperandLoaderNWB(void)
          Operand=ireadh(       operand.nrof.OP_ADDR);
 
 
-   }else if(!(operand.nrof.TYPE&4))  // case 0..3
+   }
+   else if(!(operand.nrof.TYPE&4))  // case 0..3
    {
       if(operand.r3of.R3_DI) // ???
          Operand=ireadh(ireadh(REGCONV[REGi][operand.r3of.R3]^RBASEx4));
       else
          Operand=ireadh(       REGCONV[REGi][operand.r3of.R3]^RBASEx4 );
-   }else if ((operand.nrof.TYPE&6)==6)
+   }
+   else if ((operand.nrof.TYPE&6)==6)
    {
       //case 6: and case 7:  immediate format
       Operand=operand.iof.IMMEDIATE<<(operand.iof.JUSTIFY&3);
 
-   }else if(operand.nrof.TYPE==5)
+   }
+   else if(operand.nrof.TYPE==5)
    { //if(operand.r2of.NUMREGS) ignore... It's right?
       if(operand.r2of.R1_DI)
          Operand=ireadh(ireadh(REGCONV[REGi][operand.r2of.R1]^RBASEx4));
