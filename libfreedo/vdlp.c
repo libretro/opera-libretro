@@ -24,6 +24,8 @@ Felix Lazarev
 #include <stdint.h>
 #include <string.h>
 
+#include <retro_inline.h>
+
 #include "vdlp.h"
 #include "arm.h"
 
@@ -145,7 +147,7 @@ static const unsigned int HOWMAYPIXELEXPECTPERLINE[8] =
 
 bool doloadclut=false;
 
-static inline void VDLExec(void)
+static INLINE void VDLExec(void)
 {
    int i;
    unsigned int NEXTVDL;
@@ -247,7 +249,7 @@ static inline void VDLExec(void)
    }
 }
 
-static inline uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
+static INLINE uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
 {
    return ((((~addr)&2)<<(18+HightResMode))+((addr>>2)<<1)+1024*512*line)<<HightResMode;
 }

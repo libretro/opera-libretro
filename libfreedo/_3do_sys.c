@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <boolean.h>
+#include <retro_inline.h>
 
 #include "freedocore.h"
 #include "arm.h"
@@ -45,7 +46,7 @@ extern void* Getp_RAMS();
 extern int ARM_CLOCK;
 extern int THE_ARM_CLOCK;
 
-static inline uint32_t _bswap(uint32_t x)
+static INLINE uint32_t _bswap(uint32_t x)
 {
    return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
 }

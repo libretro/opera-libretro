@@ -25,6 +25,8 @@ Felix Lazarev
 #include <string.h>
 #include <math.h>
 
+#include <retro_inline.h>
+
 #include "Madam.h"
 #include "Clio.h"
 #include "vdlp.h"
@@ -570,7 +572,7 @@ static void quickDivide_init(void)
    }
 }
 
-static inline int quickDivide(int a, int b)
+static INLINE int quickDivide(int a, int b)
 {
    if (a >= QUICK_DIVIDE_LBOUND 
          && a <= QUICK_DIVIDE_UBOUND 
@@ -2364,7 +2366,7 @@ bool QuardCCWTest(int wdt)
    return false;
 }
 
-static inline int __abs(int val)
+static INLINE int __abs(int val)
 {
    if(val>0)
       return val;
@@ -2660,7 +2662,7 @@ int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int yc
    return 0;
 }
 
-static inline uint16_t readPIX(uint32_t src, int i, int j)
+static INLINE uint16_t readPIX(uint32_t src, int i, int j)
 {
    src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
    if(HightResMode)
@@ -2668,7 +2670,7 @@ static inline uint16_t readPIX(uint32_t src, int i, int j)
    return *((uint16_t*)&Mem[src^2]);
 }
 
-static inline void writePIX(uint32_t src, int i, int j, uint16_t pix)
+static INLINE void writePIX(uint32_t src, int i, int j, uint16_t pix)
 {
    src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
    if(HightResMode)
@@ -2721,7 +2723,7 @@ int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int y
    return 0;
 }
 
-static inline int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
+static INLINE int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
 {
    if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0)
       return CCB_ACCW;
