@@ -64,17 +64,8 @@ struct GetFrameBitmapParams
 	bool addBlackBorder;
 	bool copyPointlessAlphaByte;
 	bool allowCrop;
-	int scalingAlgorithm;
 	int resultingWidth;
 	int resultingHeight;
-};
-
-enum ScalingAlgorithm
-{
-	None = 0,
-	HQ2X = 1,
-	HQ3X = 2,
-	HQ4X = 3
 };
 
 #pragma pack(pop)
