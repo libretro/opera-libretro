@@ -41,8 +41,6 @@
 
 void HandleDMA(unsigned int val);
 
-//#define FIFODBG
-
 #define RELOAD_VAL 0x10
 
 //////////////////////////////////////////////////////////////////////
@@ -123,38 +121,22 @@ bool _clio_NeedFIQ(void)
 
 void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
 {
-
    cregs[0x40] |= reason1;
    cregs[0x60] |= reason2;
    if(cregs[0x60])
       cregs[0x40] |= 0x80000000;	// irq31 if exist irq32 and high
-
-   //if( (cregs[0x40]&cregs[0x48]) || (cregs[0x60]&cregs[0x68]) ) _arm_SetFIQ();
-   /////////////
-#ifdef DBGFIQ
-   sprintf(str,"FIQ accepted 0x%8.8X 0x%8.8X 0x%8.8X 0x%8.8X\n",reason1,reason2,CClio::Peek(0x48),CClio::Peek(0x68));
-   CDebug::DPrint(str);
-   if( (cregs[0x40]&cregs[0x48]) || (cregs[0x60]&cregs[0x68]) )
-   {
-      sprintf(str,"!!!FIQ decision taken\n");
-      CDebug::DPrint(str);
-   }
-#endif
-   /////////////
 }
 
 #include "freedocore.h"
 extern _ext_Interface  io_interface;
-//extern AString str;
 void _clio_SetTimers(uint32 v200, uint32 v208);
 void _clio_ClearTimers(uint32 v204, uint32 v20c);
+
 int _clio_Poke(unsigned int addr, unsigned int val)
 {
    int base;
    int i;
 
-   //if(addr==0x200 || addr==0x204 || addr==0x208 || addr==0x20c || (addr>=0x100 && addr<=0x17c) || addr==0x220)io_interface(EXT_DEBUG_PRINT,(void*)str.print("CLIO Write[0x%X] = 0x%8.8X",addr,val).CStr());
-   //if(addr==0x34 || addr==0x30)io_interface(EXT_DEBUG_PRINT,(void*)str.print("CLIO Write[0x%X] = 0x%8.8X",addr,val).CStr());
    if( (addr& ~0x2C) == 0x40 ) // 0x40..0x4C, 0x60..0x6C case
    {
       if(addr==0x40)
@@ -183,16 +165,18 @@ int _clio_Poke(unsigned int addr, unsigned int val)
          cregs[0x48]|=0x80000000; // always one for irq31
          return 0;
       }
-      /*else if(addr==0x50)
-        {
-        cregs[0x50]|=val&0x3fff0000;
-        return 0;
-        }
-        else if(addr==0x54)
-        {
-        cregs[0x50]&=~val;
-        return 0;
-        } */
+#if 0
+      else if(addr==0x50)
+      {
+         cregs[0x50]|=val&0x3fff0000;
+         return 0;
+      }
+      else if(addr==0x54)
+      {
+         cregs[0x50]&=~val;
+         return 0;
+      } 
+#endif
       else if(addr==0x60)
       {
          cregs[0x60]|=val;
@@ -229,8 +213,10 @@ int _clio_Poke(unsigned int addr, unsigned int val)
       cregs[0x84]=val&0xf;
       SelectROM((val&4)? 1:0 );
       return 0;
-   }else if(addr==0x300)
-   {	//clear down the fifos and stop them
+   }
+   else if(addr==0x300)
+   {
+      //clear down the fifos and stop them
       base=0;
       cregs[0x304]&=~val;
 
@@ -250,30 +236,28 @@ int _clio_Poke(unsigned int addr, unsigned int val)
          }
 
       }
+
+      for(i=0;i<4;i++)
       {
-         for(i=0;i<4;i++)
+         if(val&(1<<(i+16)))
          {
-            if(val&(1<<(i+16)))
-            {
-               base=0x500+(i<<4);
-               RLDADR=CURADR=0;
-               RLDLEN=CURLEN=0;
-               _clio_SetFIFO(base,0);
-               _clio_SetFIFO(base+4,0);
-               _clio_SetFIFO(base+8,0);
-               _clio_SetFIFO(base+0xc,0);
+            base=0x500+(i<<4);
+            RLDADR=CURADR=0;
+            RLDLEN=CURLEN=0;
+            _clio_SetFIFO(base,0);
+            _clio_SetFIFO(base+4,0);
+            _clio_SetFIFO(base+8,0);
+            _clio_SetFIFO(base+0xc,0);
 
-               val&=~(1<<(i+16));
-               PTRO[i]=0;
-
-            }
+            val&=~(1<<(i+16));
+            PTRO[i]=0;
 
          }
 
       }
 
-      return 0;
 
+      return 0;
    }
    else if(addr==0x304) // Dma Starter!!!!! P/A !!!! need to create Handler.
    {
@@ -294,11 +278,9 @@ int _clio_Poke(unsigned int addr, unsigned int val)
    {
       if(val&0x800)
          return 0;
-      else
-      {
-         cregs[0x400]=val;
-         return 0;
-      }
+
+      cregs[0x400]=val;
+      return 0;
    }
    else if((addr>=0x500) && (addr<0x540))
    {
@@ -308,10 +290,6 @@ int _clio_Poke(unsigned int addr, unsigned int val)
    }
    else if((addr>=0x540) && (addr<0x580))
    {
-#ifdef DBGXBUS
-      sprintf(str,"XBPC : 0x%8.8x :",RegRead(15));
-      CDebug::DPrint(str);
-#endif
       _xbus_SetPoll(val);
       return 0;
    }
@@ -435,10 +413,9 @@ int _clio_Poke(unsigned int addr, unsigned int val)
       cregs[addr]=val&0xffff;
       return 0;
    }
-   //		 char jj[90];
-   //             sprintf(jj, "addr=%X, val=0x%8.8X", addr, val,);
-   //if(jw==0&&addr==0x128){io_interface(EXT_DEBUG_PRINT,(void*)jj); jw=100000;} 
-   if(addr==0x128&&val==0x0)jw=17000000;//val=1;
+
+   if(addr==0x128&&val==0x0)
+      jw=17000000;//val=1;
 
    cregs[addr]=val;
    return 0;
@@ -448,17 +425,6 @@ int _clio_Poke(unsigned int addr, unsigned int val)
 
 unsigned int _clio_Peek(unsigned int addr)
 {
-
-#ifdef DBGCLIO
-   val=CClio::Peek(index);
-   if(index!=0x34)
-   {
-      sprintf(str,"0x%8.8X : CLIO Read clio[0x%X] = 0x%8.8X\n",RegRead(15),index,val);
-      CDebug::DPrint(str);
-   }
-   return val;
-#endif
-
    //if(addr>0x600) // ???????  DSP debug
    //{
    //	printf("#CLIO:PEEK (0x%4.4X)\n",addr);
@@ -491,10 +457,6 @@ unsigned int _clio_Peek(unsigned int addr)
       return _xbus_GetRes();
    else if((addr>=0x540) && (addr<0x580))
    {
-#ifdef DBGXBUS
-      sprintf(str,"XBPC : 0x%8.8x :",RegRead(15));
-      CDebug::DPrint(str);
-#endif
       return _xbus_GetPoll();
    }
    else if((addr>=0x580) && (addr<0x5c0))
@@ -536,17 +498,18 @@ void _clio_UpdateVCNT(int line, int halfframe)
    cregs[0x34]=(halfframe<<11)+line;
 }
 
-
 void _clio_SetTimers(uint32 v200, uint32 v208)
 {
    (void) v200;
    (void) v208;
 }
+
 void _clio_ClearTimers(uint32 v204, uint32 v20c)
 {
    (void) v204;
    (void) v20c;
 }
+
 void _clio_DoTimers(void)
 {
    unsigned int timer;
@@ -620,17 +583,9 @@ void HandleDMA(unsigned int val)
          while(len>=0)
          {
             b3=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-            //ptr++;
-
             b2=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-
             b1=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-
             b0=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);
@@ -661,17 +616,9 @@ void HandleDMA(unsigned int val)
          while(len>=0)
          {
             b3=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-            //ptr++;
-
             b2=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-
             b1=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
-
             b0=_xbus_GetDataFIFO();
-            //st=CXBUS::GetPoll();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);
@@ -705,36 +652,6 @@ void HandleDMA(unsigned int val)
 
       return;
    }//XBDMA transfer
-#ifdef FIFODBG
-   else
-   {
-
-      sprintf(str,"_Fifo304 inChan=");
-      CDebug::DPrint(str);
-
-      for(i=0;i<13;i++)
-      {
-         if(val&(1<<i))
-         {
-            sprintf(str,"%d ",i);
-            CDebug::DPrint(str);
-         }
-
-      }
-      sprintf(str,"outChan=");
-      CDebug::DPrint(str);
-      for(i=0;i<4;i++)
-      {
-         if(val&(1<<(i+16)))
-         {
-            sprintf(str,"%d ",i);
-            CDebug::DPrint(str);
-         }
-      }
-      sprintf(str,"\n");
-      CDebug::DPrint(str);
-   }
-#endif
 }
 
 void _clio_Init(int ResetReson)
@@ -752,7 +669,6 @@ void _clio_Init(int ResetReson)
 }
 unsigned short  _clio_EIFIFO(unsigned short channel)
 {
-   unsigned int val;
    unsigned base = 0x400+(channel*16);
    unsigned mask = 1<<channel;
 
@@ -761,6 +677,7 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
 
    if(FIFOI[channel].StartAdr!=0)//channel enabled
    {
+      unsigned int val;
 
       if( (FIFOI[channel].StartLen-PTRI[channel])>0 )
       {
@@ -792,18 +709,16 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
             val=0;
          }
       }
-   }
-   else
-   {
-      val=0;
-      // JMK SEZ: What is this? It was commented out along with this whole "else"
-      //          block, but I had to bring this else block back from the dead
-      //          in order to initialize val appropriately.
 
-      // _clio_GenerateFiq(1<<(channel+16),0);
+      return val;
    }
 
-   return val;
+   // JMK SEZ: What is this? It was commented out along with this whole "else"
+   //          block, but I had to bring this else block back from the dead
+   //          in order to initialize val appropriately.
+
+   // _clio_GenerateFiq(1<<(channel+16),0);
+   return 0;
 }
 
 void  _clio_EOFIFO(unsigned short channel, unsigned short val)
@@ -882,9 +797,6 @@ void _clio_SetFIFO(unsigned int adr, unsigned int val)
          case 0:
             FIFOI[(adr>>4)&0xf].StartAdr=val;
             FIFOI[(adr>>4)&0xf].NextAdr=0;//see patent WO09410641A1, 46.25
-#ifdef FIFODBG
-            sprintf(str,"SetInFIFO chan=%x StartAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
-#endif
             break;
          case 4:
             FIFOI[(adr>>4)&0xf].StartLen=val+4;
@@ -892,33 +804,20 @@ void _clio_SetFIFO(unsigned int adr, unsigned int val)
                FIFOI[(adr>>4)&0xf].StartLen=0;
 
             FIFOI[(adr>>4)&0xf].NextLen=0;//see patent WO09410641A1, 46.25
-#ifdef FIFODBG
-            sprintf(str,"SetInFIFO chan=%x StartLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
-#endif
             break;
          case 8:
             FIFOI[(adr>>4)&0xf].NextAdr=val;
-#ifdef FIFODBG
-            sprintf(str,"SetInFIFO chan=%x NextAdr=%x\n",(adr>>4)&0xf,val);CDebug::DPrint(str);
-#endif
             break;
          case 0xc:
             if(val != 0)
                FIFOI[(adr>>4)&0xf].NextLen=val+4;
             else
                FIFOI[(adr>>4)&0xf].NextLen=0;
-#ifdef FIFODBG
-            sprintf(str,"SetInFIFO chan=%x NextLen=%x\n",(adr>>4)&0xf,val+4);CDebug::DPrint(str);
-#endif
             break;
       }
    }
    else
    {
-#ifdef FIFODBG
-      sprintf(str,"SetOutFIFO chan=%x addr=%x var=%x\n",(adr>>4)&0xf,val,adr&0xf);
-      CDebug::DPrint(str);
-#endif
       switch (adr & 0xf)
       {
          case 0:
@@ -948,44 +847,31 @@ unsigned int _clio_FIFOStruct(unsigned int addr)
 {
    if((addr&0x500)==0x400)
    {
-      //printf("SetOutFIFO chan=%x addr=%x var=%x\n",(adr>>4)&0xf,val,adr&0xf);
       switch (addr&0xf)
       {
          case 0:
-#ifdef FIFODBG
-            sprintf(str,"_GetInFIFO chan=%x StartAdr=%x\n",(addr>>4)&0xf,FIFOI[(addr>>4)&0xf].StartAdr+PTRI[(addr>>4)&0xf]);CDebug::DPrint(str);
-#endif
             return FIFOI[(addr>>4)&0xf].StartAdr+PTRI[(addr>>4)&0xf];
          case 4:
-#ifdef FIFODBG
-            sprintf(str,"_GetInFIFO chan=%x StartLen=%x\n",(addr>>4)&0xf,FIFOI[(addr>>4)&0xf].StartLen-PTRI[(addr>>4)&0xf]);CDebug::DPrint(str);
-#endif
             return FIFOI[(addr>>4)&0xf].StartLen-PTRI[(addr>>4)&0xf];
          case 8:
-#ifdef FIFODBG
-            sprintf(str,"_GetInFIFO chan=%x NextAdr=%x\n",(addr>>4)&0xf,FIFOI[(addr>>4)&0xf].NextAdr);CDebug::DPrint(str);
-#endif
             return FIFOI[(addr>>4)&0xf].NextAdr;
          case 0xc:
-#ifdef FIFODBG
-            sprintf(str,"_GetInFIFO chan=%x NextLen=%x\n",(addr>>4)&0xf,FIFOI[(addr>>4)&0xf].NextLen);CDebug::DPrint(str);
-#endif
             return FIFOI[(addr>>4)&0xf].NextLen;
       }
    }
-   else
-   {
-      //printf("SetInFIFO chan=%x addr=%x var=%x\n",(adr>>4)&0xf,val,adr&0xf);
-      switch (addr&0xf)
-      {
-         case 0: return FIFOO[(addr>>4)&0xf].StartAdr+PTRO[(addr>>4)&0xf];
-         case 4: return FIFOO[(addr>>4)&0xf].StartLen-PTRO[(addr>>4)&0xf];
-         case 8: return FIFOO[(addr>>4)&0xf].NextAdr;
-         case 0xc:return FIFOO[(addr>>4)&0xf].NextLen;
-      }
 
+   switch (addr&0xf)
+   {
+      case 0:
+         return FIFOO[(addr>>4)&0xf].StartAdr+PTRO[(addr>>4)&0xf];
+      case 4:
+         return FIFOO[(addr>>4)&0xf].StartLen-PTRO[(addr>>4)&0xf];
+      case 8:
+         return FIFOO[(addr>>4)&0xf].NextAdr;
+      case 0xc:
+         return FIFOO[(addr>>4)&0xf].NextLen;
    }
 
-   return 0; // ??? it's possible?
+   return 0;
 
 }
