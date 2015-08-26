@@ -26,6 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <boolean.h>
+#include <retro_inline.h>
+
 #include "arm.h"
 #include "Madam.h"
 #include "Clio.h"
