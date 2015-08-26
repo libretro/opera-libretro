@@ -1672,10 +1672,8 @@ void  DrawPackedCel_New()
       for(currentrow=0;currentrow<(TEXTURE_HI_LIM);currentrow++)
       {
 
-         //Initbitoper.Read(start,300);
          bitoper.AttachBuffer(start);
          offset=bitoper.Read(offsetl<<3);
-         //bitoper.Read(offsetl<<3);
 
          //BITCALC=((offset+2)<<2)<<5;
          lastaddr=start+((offset+2)<<2);
@@ -1696,10 +1694,9 @@ void  DrawPackedCel_New()
          while(!eor)//while not end of row
          {
 
-            type=bitoper.Read(2);//bitoper.Read(2);
+            type=bitoper.Read(2);
             if( (int)(bitoper.GetBytePose()+start) >= (lastaddr))type=0;
 
-            //pixcount=bitoper.Read(6)+1;
             pixcount=bitoper.Read(6)+1;
 
             if(scipw)
@@ -1710,8 +1707,8 @@ void  DrawPackedCel_New()
                   scipw-=(pixcount);
                   if(HDX1616)xcur+=HDX1616*(pixcount);
                   if(HDY1616)ycur+=HDY1616*(pixcount);
-                  if(type==1)bitoper.Skip(bpp*pixcount);//bitoper.Skip(bpp*(pixcount));
-                  else if(type==3)bitoper.Skip(bpp);//bitoper.Skip(bpp);
+                  if(type==1)bitoper.Skip(bpp*pixcount);
+                  else if(type==3)bitoper.Skip(bpp);
                   continue;
                }
                else
@@ -1719,7 +1716,7 @@ void  DrawPackedCel_New()
                   if(HDX1616)xcur+=HDX1616*(scipw);
                   if(HDY1616)ycur+=HDY1616*(scipw);
                   pixcount-=scipw;
-                  if(type==1)bitoper.Skip(bpp*scipw);//bitoper.Skip(bpp*scipw);
+                  if(type==1)bitoper.Skip(bpp*scipw);
                   scipw=0;
                }
             }
