@@ -23,6 +23,7 @@
 
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "arm.h"
@@ -136,7 +137,7 @@ struct ARM_CoreState
 };
 #pragma pack(pop)
 
-static ARM_CoreState arm;
+static struct ARM_CoreState arm;
 static int CYCLES;	//cycle counter
 
 //forward decls
@@ -180,14 +181,14 @@ void* Getp_RAMS(void)
 
 unsigned int _arm_SaveSize(void)
 {
-   return sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2+NVRAMSIZE;
+   return sizeof(struct ARM_CoreState) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE;
 }
 void _arm_Save(void *buff)
 {
-   memcpy(buff,&arm,sizeof(ARM_CoreState));
-   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState),pRam,RAMSIZE);
-   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
-   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
+   memcpy(buff,&arm,sizeof(struct ARM_CoreState));
+   memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState),pRam,RAMSIZE);
+   memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
+   memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
 }
 
 void _arm_Load(void *buff)
@@ -195,10 +196,10 @@ void _arm_Load(void *buff)
    uint8_t *tRam=pRam;
    uint8_t *tRom=pRom;
    uint8_t *tNVRam=pNVRam;
-   memcpy(&arm,buff,sizeof(ARM_CoreState));
-   memcpy(tRam,((uint8_t*)buff)+sizeof(ARM_CoreState),RAMSIZE);
-   memcpy(tRom,((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE,ROMSIZE*2);
-   memcpy(tNVRam,((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
+   memcpy(&arm,buff,sizeof(struct ARM_CoreState));
+   memcpy(tRam,((uint8_t*)buff)+sizeof(struct ARM_CoreState),RAMSIZE);
+   memcpy(tRom,((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE,ROMSIZE*2);
+   memcpy(tNVRam,((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
 
    memcpy(tRam+3*1024*1024,tRam+2*1024*1024, 1024*1024);
    memcpy(tRam+4*1024*1024,tRam+2*1024*1024, 1024*1024);
@@ -571,9 +572,9 @@ unsigned char * _arm_Init(void)
       RON_CASH[i]=RON_FIQ[i]=0;
 
    gSecondROM=0;
-   pRam=new uint8_t[RAMSIZE+1024*1024*16];
-   pRom=new uint8_t[ROMSIZE*2];
-   pNVRam=new uint8_t[NVRAMSIZE];
+   pRam   = malloc(RAMSIZE+1024*1024*16 * sizeof(uint8_t));
+   pRom   = malloc(ROMSIZE*2 * sizeof(uint8_t));
+   pNVRam = malloc(NVRAMSIZE * sizeof(uint8_t));
 
    memset( pRam, 0, RAMSIZE+1024*1024*16);
    memset( pRom, 0, ROMSIZE*2);
@@ -595,9 +596,9 @@ void _arm_Destroy(void)
 {
    io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
 
-   delete []pNVRam;
-   delete []pRom;
-   delete []pRam;
+   free(pNVRam);
+   free(pRom);
+   free(pRam);
 }
 
 void _arm_Reset(void)
@@ -1236,8 +1237,12 @@ const bool is_logic[]={
 
 int _arm_Execute(void)
 {
+   uint32_t op2,op1;
+   uint8_t shift;
+   uint8_t shtype;
    uint32_t cmd,pc_tmp;
    bool isexeption=false;
+
    //for(; CYCLES>0; CYCLES-=SCYCLE)
    {   
       if(REG_PC==0x94D60&&RON_USER[0]==0x113000&&RON_USER[1]==0x113000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
@@ -1311,79 +1316,78 @@ int _arm_Execute(void)
                }
             case 0x2:	//ALU
             case 0x3:
-               uint32_t op2,op1;
-               //uint8_t tmp;
-               uint8_t shift,shtype;
-
-               if((cmd&0x2000090)!=0x90)
                {
-                  /////////////////////////////////////////////SHIFT
-                  pc_tmp=REG_PC;
-                  REG_PC+=4;
-                  if (cmd&(1<<25))
+
+                  if((cmd&0x2000090)!=0x90)
                   {
-                     op2=cmd&0xff;
-                     if(((cmd>>7)&0x1e))
+                     /////////////////////////////////////////////SHIFT
+                     pc_tmp=REG_PC;
+                     REG_PC+=4;
+                     if (cmd&(1<<25))
                      {
-                        op2=_rotr(op2, (cmd>>7)&0x1e);
-                        //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
-                     }
-                     op1=RON_USER[(cmd>>16)&0xf];
-                  }
-                  else
-                  {
-                     shtype=(cmd>>5)&0x3;
-                     if(cmd&(1<<4))
-                     {
-                        shift=((cmd>>8)&0xf);
-                        shift=(RON_USER[shift])&0xff;
-                        REG_PC+=4;
-                        op2=RON_USER[cmd&0xf];
+                        op2=cmd&0xff;
+                        if(((cmd>>7)&0x1e))
+                        {
+                           op2=_rotr(op2, (cmd>>7)&0x1e);
+                           //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
+                        }
                         op1=RON_USER[(cmd>>16)&0xf];
-                        CYCLES-=ICYCLE;
                      }
                      else
                      {
-                        shift=(cmd>>7)&0x1f;
-
-                        if(!shift)
+                        shtype=(cmd>>5)&0x3;
+                        if(cmd&(1<<4))
                         {
-                           if(shtype)
-                           {
-                              if(shtype==3)shtype++;
-                              else shift=32;
-                           }
+                           shift=((cmd>>8)&0xf);
+                           shift=(RON_USER[shift])&0xff;
+                           REG_PC+=4;
+                           op2=RON_USER[cmd&0xf];
+                           op1=RON_USER[(cmd>>16)&0xf];
+                           CYCLES-=ICYCLE;
                         }
-                        op2=RON_USER[cmd&0xf];
-                        op1=RON_USER[(cmd>>16)&0xf];
+                        else
+                        {
+                           shift=(cmd>>7)&0x1f;
+
+                           if(!shift)
+                           {
+                              if(shtype)
+                              {
+                                 if(shtype==3)shtype++;
+                                 else shift=32;
+                              }
+                           }
+                           op2=RON_USER[cmd&0xf];
+                           op1=RON_USER[(cmd>>16)&0xf];
+                        }
+
+
+                        //if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) op2=ARM_SHIFT_SC(op2, shift, shtype);
+                        //else
+                        op2=ARM_SHIFT_NSC(op2, shift, shtype);
+
                      }
 
+                     REG_PC=pc_tmp;
 
-                     //if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) op2=ARM_SHIFT_SC(op2, shift, shtype);
-                     //else
-                     op2=ARM_SHIFT_NSC(op2, shift, shtype);
-
-                  }
-
-                  REG_PC=pc_tmp;
-
-                  if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) ARM_SET_C(carry_out);
+                     if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) ARM_SET_C(carry_out);
 
 
-                  if(ARM_ALU_Exec(cmd, (cmd>>20)&0x1f ,op1,op2,&RON_USER[(cmd>>12)&0xf]))
-                     break;
+                     if(ARM_ALU_Exec(cmd, (cmd>>20)&0x1f ,op1,op2,&RON_USER[(cmd>>12)&0xf]))
+                        break;
 
-                  if(((cmd>>12)&0xf)==0xf) //destination = pc, take care of cpsr
-                  {
-                     if(cmd&(1<<20))
+                     if(((cmd>>12)&0xf)==0xf) //destination = pc, take care of cpsr
                      {
-                        _arm_SetCPSR(SPSR[arm_mode_table[MODE]]);
+                        if(cmd&(1<<20))
+                        {
+                           _arm_SetCPSR(SPSR[arm_mode_table[MODE]]);
+                        }
+
+                        CYCLES-=ICYCLE+NCYCLE;
+
                      }
-
-                     CYCLES-=ICYCLE+NCYCLE;
-
+                     break;
                   }
-                  break;
                }
             case 0x6:	//Undefined
             case 0x7:

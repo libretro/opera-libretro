@@ -30,13 +30,21 @@ Felix Lazarev
 
 #include "freedocore.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void _vdl_Init(unsigned char *vramstart);
 void _vdl_ProcessVDL( unsigned int addr);
 
-void _vdl_DoLineNew(int line, VDLFrame *frame);
+void _vdl_DoLineNew(int line, struct VDLFrame *frame);
 
-unsigned int _vdl_SaveSize();
+unsigned int _vdl_SaveSize(void);
 void _vdl_Save(void *buff);
 void _vdl_Load(void *buff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

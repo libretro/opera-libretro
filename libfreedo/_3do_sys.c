@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <boolean.h>
+
 #include "freedocore.h"
 #include "arm.h"
 #include "vdlp.h"
@@ -34,10 +36,6 @@
 #include "XBUS.h"
 #include "DiagPort.h"
 #include "quarz.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 _ext_Interface  io_interface;
 
@@ -112,7 +110,7 @@ int _3do_Init(void)
    return 0;
 }
 
-VDLFrame *curr_frame;
+struct VDLFrame *curr_frame;
 bool scipframe;
 
 void _3do_InternalFrame(int cicles)
@@ -143,12 +141,12 @@ void _3do_InternalFrame(int cicles)
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!scipframe)
-            curr_frame = (VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
+            curr_frame = (struct VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
       }
    }
 }
 
-void _3do_Frame(VDLFrame *frame, bool __scipframe)
+void _3do_Frame(struct VDLFrame *frame, bool __scipframe)
 {
    int i   = 0;
    int cnt = 0;
@@ -281,14 +279,14 @@ void* _freedo_Interface(int procedure, void *datum)
          _3do_Destroy();
          break;
       case FDP_DO_EXECFRAME:
-         _3do_Frame((VDLFrame*)datum, false);
+         _3do_Frame((struct VDLFrame*)datum, false);
          break;
       case FDP_DO_EXECFRAME_MT:
-         _3do_Frame((VDLFrame*)datum, true);
+         _3do_Frame((struct VDLFrame*)datum, true);
          break;
       case FDP_DO_FRAME_MT:
          line=0;
-         while(line<256)_vdl_DoLineNew(line++,(VDLFrame*)datum);
+         while(line<256)_vdl_DoLineNew(line++,(struct VDLFrame*)datum);
          break;
       case FDP_GET_SAVE_SIZE:
          return (void*)_3do_SaveSize();

@@ -28,6 +28,10 @@ Felix Lazarev
 #ifndef ARM_3DO_HEADER
 #define ARM_3DO_HEADER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int _arm_Execute(void);
 void _arm_Reset(void);
 void _arm_Destroy(void);
@@ -49,5 +53,8 @@ unsigned int _arm_SaveSize(void);
 void _arm_Save(void *buff);
 void _arm_Load(void *buff);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

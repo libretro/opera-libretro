@@ -26,48 +26,28 @@ Felix Lazarev
 
 #include <stdint.h>
 
-class BitReaderBig
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct BitReaderBig
 {
-   protected:
-      uint32_t buf;
-      uint32_t point;
-      int32_t bitpoint;
-      int32_t bitset;
-
-   public:
-      BitReaderBig()
-      {
-         buf=0;
-         bitset=1;
-         point=0;
-         bitpoint=0;
-      };
-      void AttachBuffer(uint32_t buff)
-      {
-         buf=buff;
-         point=0;
-         bitpoint=0;
-      };
-      void SetBitRate(uint8_t bits)
-      {
-         bitset=bits;
-         if(bitset>32)bitset=32;
-         if(!bitset)bitset=1;
-      };
-
-      uint32_t GetBytePose(){return point;};
-
-      uint32_t Read();
-      uint32_t Read(uint8_t bits);
-
-      void Skip(uint32_t bits)
-      {
-         bits+=bitpoint;
-         point+=(bits>>3);
-         bitpoint=bits&7;
-      };
-
-
+   uint32_t buf;
+   uint32_t point;
+   int32_t bitpoint;
+   int32_t bitset;
 };
+
+uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits);
+
+void BitReaderBig_AttachBuffer(struct BitReaderBig *bit, uint32_t buff);
+
+void BitReaderBig_SetBitRate(struct BitReaderBig *bit, uint8_t bits);
+
+void BitReaderBig_Skip(struct BitReaderBig *bit, uint32_t bits);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

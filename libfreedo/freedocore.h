@@ -26,6 +26,8 @@ Felix Lazarev
 
 #include <stdint.h>
 
+#include <boolean.h>
+
 #pragma pack(push,1)
 
 struct VDLLine

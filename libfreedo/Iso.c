@@ -27,6 +27,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <boolean.h>
+
 #include "IsoXBUS.h"
 
 #pragma pack(pop)
@@ -35,7 +38,7 @@ extern unsigned int _3do_DiscSize(void);
 extern void _3do_Read2048(void *buff);
 extern void _3do_OnSector(unsigned int sector);
 
-void LBA2MSF(cdrom_Device *cd)
+void LBA2MSF(struct cdrom_Device *cd)
 {
    cd->DISC.templba += 150;
    cd->DISC.tempmsf[0] = cd->DISC.templba/(60*75);
@@ -44,7 +47,7 @@ void LBA2MSF(cdrom_Device *cd)
    cd->DISC.tempmsf[2] = cd->DISC.templba%75;
 }
 
-void cdrom_Init(cdrom_Device *cd)
+void cdrom_Init(struct cdrom_Device *cd)
 {
    unsigned int filesize = 150;
 
@@ -89,7 +92,7 @@ void cdrom_Init(cdrom_Device *cd)
    cd->STATCYC = STATDELAY;
 }
 
-unsigned int GetStatusFifo(cdrom_Device *cd)
+unsigned int GetStatusFifo(struct cdrom_Device *cd)
 {
    unsigned int res = 0;
 
@@ -105,14 +108,14 @@ unsigned int GetStatusFifo(cdrom_Device *cd)
    return res;
 }
 
-void MSF2LBA(cdrom_Device *cd)
+void MSF2LBA(struct cdrom_Device *cd)
 {
    cd->DISC.templba = (cd->DISC.tempmsf[0] * 60 + cd->DISC.tempmsf[1]) * 75 + cd->DISC.tempmsf[2] - 150;
    if (cd->DISC.templba<0)
       cd->DISC.templba=0;
 }
 
-void DoCommand(cdrom_Device *cd)
+void DoCommand(struct cdrom_Device *cd)
 {
    int i;
 
@@ -847,7 +850,7 @@ void DoCommand(cdrom_Device *cd)
    }
 }
 
-void  SendCommand(cdrom_Device *cd, unsigned char val)
+void  SendCommand(struct cdrom_Device *cd, unsigned char val)
 {
    if (cd->CmdPtr < 7)
    {
@@ -863,7 +866,7 @@ void  SendCommand(cdrom_Device *cd, unsigned char val)
    }
 }
 
-bool TestFIQ(cdrom_Device *cd)
+bool TestFIQ(struct cdrom_Device *cd)
 {
    if(((cd->Poll & POLST) && (cd->Poll & POLSTMASK)) ||
          ((cd->Poll & POLDT) && (cd->Poll & POLDTMASK)))
@@ -871,14 +874,14 @@ bool TestFIQ(cdrom_Device *cd)
    return false;
 }
 
-void SetPoll(cdrom_Device *cd, unsigned int val)
+void SetPoll(struct cdrom_Device *cd, unsigned int val)
 {
    cd->Poll &= 0xF0;
    val &= 0xf;
    cd->Poll |= val;
 }
 
-unsigned int GetDataFifo(cdrom_Device *cd)
+unsigned int GetDataFifo(struct cdrom_Device *cd)
 {
    unsigned int res = 0;
    //int i;
@@ -919,14 +922,14 @@ unsigned int GetDataFifo(cdrom_Device *cd)
 
 #define BIN2BCD(in) (((in / 10)<<4) | (in % 10))
 
-void MSF2BLK(cdrom_Device *cd)
+void MSF2BLK(struct cdrom_Device *cd)
 {
    cd->DISC.tempblk = (cd->DISC.tempmsf[0] * 60 + cd->DISC.tempmsf[1]) * 75 + cd->DISC.tempmsf[2] - 150;
    if (cd->DISC.tempblk<0)
       cd->DISC.tempblk=0; //??
 }
 
-void BLK2MSF(cdrom_Device *cd)
+void BLK2MSF(struct cdrom_Device *cd)
 {
    unsigned int mm;
    cd->DISC.tempmsf[0] = (cd->DISC.tempblk+150) / (60*75);
@@ -936,7 +939,7 @@ void BLK2MSF(cdrom_Device *cd)
 }
 
 
-void ClearDataPoll(cdrom_Device *cd, unsigned int len)
+void ClearDataPoll(struct cdrom_Device *cd, unsigned int len)
 {
    if((int)len <= cd->DataLen)
    {
@@ -953,7 +956,7 @@ void ClearDataPoll(cdrom_Device *cd, unsigned int len)
       cd->Poll &= ~POLDT;
 }
 
-bool InitCD(cdrom_Device *cd)
+bool InitCD(struct cdrom_Device *cd)
 {
    unsigned int filesize=0;
 
@@ -1011,7 +1014,7 @@ bool InitCD(cdrom_Device *cd)
    return false;
 }
 
-unsigned int GedWord(cdrom_Device *cd)
+unsigned int GedWord(struct cdrom_Device *cd)
 {
    unsigned int res = 0;
 
@@ -1068,7 +1071,7 @@ unsigned int GedWord(cdrom_Device *cd)
 }
 
 //plugins----------------------------------------------------------------------------------
-cdrom_Device *isodrive;
+struct cdrom_Device *isodrive;
 
 void* _xbplug_MainDevice(int proc, void* data)
 {
@@ -1077,7 +1080,7 @@ void* _xbplug_MainDevice(int proc, void* data)
    switch(proc)
    {
       case XBP_INIT:
-         isodrive = (cdrom_Device*)calloc(1, sizeof(*isodrive));
+         isodrive = (struct cdrom_Device*)calloc(1, sizeof(*isodrive));
          cdrom_Init(isodrive);
          return (void*)true;
       case XBP_RESET:
@@ -1102,13 +1105,13 @@ void* _xbplug_MainDevice(int proc, void* data)
       case XBP_DESTROY:
          break;
       case XBP_GET_SAVESIZE:
-         tmp = sizeof(cdrom_Device);
+         tmp = sizeof(struct cdrom_Device);
          return (void*)tmp;
       case XBP_GET_SAVEDATA:
-         memcpy(data,&isodrive,sizeof(cdrom_Device));
+         memcpy(data, &isodrive, sizeof(struct cdrom_Device));
          break;
       case XBP_SET_SAVEDATA:
-         memcpy(&isodrive,data,sizeof(cdrom_Device));
+         memcpy(&isodrive, data, sizeof(struct cdrom_Device));
          return (void*)1;
    };
 

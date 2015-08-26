@@ -54,21 +54,21 @@ struct QDatum
 };
 #pragma pack(pop)
 
-static QDatum quarz;
+static struct QDatum quarz;
 
 unsigned int _qrz_SaveSize(void)
 {
-   return sizeof(QDatum);
+   return sizeof(struct QDatum);
 }
 
 void _qrz_Save(void *buff)
 {
-   memcpy(buff,&quarz,sizeof(QDatum));
+   memcpy(buff,&quarz,sizeof(struct QDatum));
 }
 
 void _qrz_Load(void *buff)
 {
-   memcpy(&quarz,buff,sizeof(QDatum));
+   memcpy(&quarz,buff,sizeof(struct QDatum));
 }
 
 #define qrz_AccARM quarz.qrz_AccARM

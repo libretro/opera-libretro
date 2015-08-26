@@ -31,7 +31,7 @@ Felix Lazarev
 #include "arm.h"
 
 #include "bitop.h"
-BitReaderBig bitoper;
+struct BitReaderBig bitoper;
 
 extern _ext_Interface  io_interface;
 
@@ -276,17 +276,18 @@ struct res16btag{
    unsigned short	r:5;
    unsigned short	p:1;
 };
+
 union pdeco{
    unsigned int	raw;
-   cp1btag	c1b;
-   cp2btag	c2b;
-   cp4btag	c4b;
-   cp6btag	c6b;
-   cp8btag	c8b;
-   cp16btag	c16b;
-   up8btag	u8b;
-   up16btag	u16b;
-   res16btag	r16b;
+   struct cp1btag	c1b;
+   struct cp2btag	c2b;
+   struct cp4btag	c4b;
+   struct cp6btag	c6b;
+   struct cp8btag	c8b;
+   struct cp16btag	c16b;
+   struct up8btag	u8b;
+   struct up16btag	u16b;
+   struct res16btag	r16b;
 };
 
 struct avtag
@@ -297,10 +298,13 @@ struct avtag
    unsigned char dv3:2;
    unsigned char pad:3;
 };
-union AVS{
-   avtag avsignal;
+
+union AVS
+{
+   struct avtag avsignal;
    unsigned int raw;
 };
+
 struct pixctag
 {
    unsigned char	dv2:1;
@@ -314,7 +318,7 @@ struct pixctag
 
 union	PXC
 {
-   pixctag	meaning;
+   struct pixctag	meaning;
    unsigned int raw;
 };
 
@@ -333,7 +337,7 @@ struct MADAMDatum
    unsigned int _madam_FSM;
 };
 #pragma pack(pop)
-static MADAMDatum madam;
+static struct MADAMDatum madam;
 
 unsigned int Get_madam_FSM(void)
 {
@@ -347,17 +351,17 @@ void Set_madam_FSM(unsigned int val)
 
 unsigned int _madam_SaveSize(void)
 {
-   return sizeof(MADAMDatum);
+   return sizeof(struct MADAMDatum);
 }
 
 void _madam_Save(void *buff)
 {
-   memcpy(buff,&madam,sizeof(MADAMDatum));
+   memcpy(buff,&madam,sizeof(struct MADAMDatum));
 }
 
 void _madam_Load(void *buff)
 {
-   memcpy(&madam,buff,sizeof(MADAMDatum));
+   memcpy(&madam,buff,sizeof(struct MADAMDatum));
 }
 
 #define mregs madam.mregs
@@ -542,7 +546,7 @@ int FLOAT1612(int a)
 // Quick divide helper
 //////////////////////////////////////////////////////////////////////
 
-const int QUICK_DIVIDE_CACHE_SIZE = 512;
+#define QUICK_DIVIDE_CACHE_SIZE 512
 static int QUICK_DIVIDE_UBOUND = 0;
 static int QUICK_DIVIDE_LBOUND = 0;
 
@@ -1138,6 +1142,8 @@ void _madam_Init(unsigned char *memory)
    CELCYCLES=0;
    Mem=memory;
 
+   bitoper.bitset = 1;
+
    quickDivide_init();
 
    MAPPING=1;
@@ -1168,7 +1174,7 @@ void _madam_Init(unsigned char *memory)
 
    for(i=0;i<256;i++)
    {
-      pdeco	pix1,pix2;
+      union pdeco	pix1,pix2;
       unsigned short pres, resamv;
 
       pix1.raw=i;
@@ -1185,7 +1191,7 @@ void _madam_Init(unsigned char *memory)
    }
    for(i=0;i<(8*8*8);i++)
    {
-      pdeco pix1;
+      union pdeco pix1;
 
       pix1.raw=i<<5;
       MAPc16bAMV[i]=(pix1.c16b.mr<<6)+(pix1.c16b.mg<<3)+pix1.c16b.mb;
@@ -1264,7 +1270,7 @@ unsigned int  readPLUTDATA(unsigned int offset)
 
 unsigned int  PDEC(unsigned int pixel, unsigned short * amv)
 {
-   pdeco	pix1,pix2;
+   union pdeco	pix1,pix2;
    unsigned short resamv,pres;
 
    pix1.raw=pixel;
@@ -1450,10 +1456,10 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
 
 unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 {
-   AVS AV;
-   PXC pixc;
+   union AVS AV;
+   union PXC pixc;
 
-   pdeco	input1,out,pix1;
+   union pdeco	input1,out,pix1;
 
    // Set PMODE according to the values set up in the CCBFLAGS word.
    // (This merely uses masks here because it's faster).
@@ -1558,7 +1564,7 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
    // Use this to render magenta for testing.
    if (false)
    {
-   pdeco fakeColor;
+   union pdeco fakeColor;
    fakeColor.r16b.r = 0x1b;
    fakeColor.r16b.g = 0x00;
    fakeColor.r16b.b = 0x1b;
@@ -1672,8 +1678,8 @@ void  DrawPackedCel_New()
       for(currentrow=0;currentrow<(TEXTURE_HI_LIM);currentrow++)
       {
 
-         bitoper.AttachBuffer(start);
-         offset=bitoper.Read(offsetl<<3);
+         BitReaderBig_AttachBuffer(&bitoper, start);
+         offset = BitReaderBig_Read(&bitoper, offsetl << 3);
 
          //BITCALC=((offset+2)<<2)<<5;
          lastaddr=start+((offset+2)<<2);
@@ -1694,10 +1700,10 @@ void  DrawPackedCel_New()
          while(!eor)//while not end of row
          {
 
-            type=bitoper.Read(2);
-            if( (int)(bitoper.GetBytePose()+start) >= (lastaddr))type=0;
+            type= BitReaderBig_Read(&bitoper, 2);
+            if( (int)(bitoper.point + start) >= (lastaddr))type=0;
 
-            pixcount=bitoper.Read(6)+1;
+            pixcount = BitReaderBig_Read(&bitoper, 6)+1;
 
             if(scipw)
             {
@@ -1707,8 +1713,10 @@ void  DrawPackedCel_New()
                   scipw-=(pixcount);
                   if(HDX1616)xcur+=HDX1616*(pixcount);
                   if(HDY1616)ycur+=HDY1616*(pixcount);
-                  if(type==1)bitoper.Skip(bpp*pixcount);
-                  else if(type==3)bitoper.Skip(bpp);
+                  if(type==1)
+                     BitReaderBig_Skip(&bitoper, bpp*pixcount);
+                  else if(type==3)
+                     BitReaderBig_Skip(&bitoper, bpp);
                   continue;
                }
                else
@@ -1716,7 +1724,8 @@ void  DrawPackedCel_New()
                   if(HDX1616)xcur+=HDX1616*(scipw);
                   if(HDY1616)ycur+=HDY1616*(scipw);
                   pixcount-=scipw;
-                  if(type==1)bitoper.Skip(bpp*scipw);
+                  if(type==1)
+                     BitReaderBig_Skip(&bitoper, bpp*scipw);
                   scipw=0;
                }
             }
@@ -1735,7 +1744,7 @@ void  DrawPackedCel_New()
                case 1: //PACK_LITERAL
                   for(pix=0;pix<pixcount;pix++)
                   {
-                     CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                      if(!pproj.Transparent)
                      {
                         //TexelDraw_Line(CURPIX, LAMV, xcur, ycur, 1);
@@ -1758,7 +1767,7 @@ void  DrawPackedCel_New()
 
                   break;
                case 3: //PACK_REPEAT
-                  CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(CURPIX>32300&&CURPIX<33500&&(CURPIX>32760||CURPIX<32750)){
                      if(speedfixes>=0&&sdf==0&&speedfixes<=200001&&unknownflag11==0)speedfixes=200000;}
                   if(unknownflag11>0&&sdf==0&&CURPIX<30000&&CURPIX>29000) speedfixes=-200000;
@@ -1792,8 +1801,8 @@ void  DrawPackedCel_New()
       for(currentrow=0;currentrow<SPRHI;currentrow++)
       {
 
-         bitoper.AttachBuffer(start);
-         offset=bitoper.Read(offsetl<<3);
+         BitReaderBig_AttachBuffer(&bitoper, start);
+         offset = BitReaderBig_Read(&bitoper, offsetl<<3);
 
          BITCALC=((offset+2)<<2)<<5;
          lastaddr=start+((offset+2)<<2);
@@ -1808,10 +1817,11 @@ void  DrawPackedCel_New()
          while(!eor)//while not end of row
          {
 
-            type=bitoper.Read(2);
-            if( (bitoper.GetBytePose()+start) >= (lastaddr))type=0;
+            type = BitReaderBig_Read(&bitoper, 2);
+            if( (bitoper.point +start) >= (lastaddr))
+               type=0;
 
-            int __pix=bitoper.Read(6)+1;
+            int __pix= BitReaderBig_Read(&bitoper, 6)+1;
             switch(type)
             {
                case 0: //end of row
@@ -1821,7 +1831,7 @@ void  DrawPackedCel_New()
                   while(__pix)
                   {
                      __pix--;
-                     CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
                      if(!pproj.Transparent)
                      {
@@ -1847,7 +1857,7 @@ void  DrawPackedCel_New()
 
                   break;
                case 3: //PACK_REPEAT
-                  CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(!pproj.Transparent)
                   {
 
@@ -1875,8 +1885,8 @@ void  DrawPackedCel_New()
       for(currentrow=0;currentrow<SPRHI;currentrow++)
       {
 
-         bitoper.AttachBuffer(start);
-         offset=bitoper.Read(offsetl<<3);
+         BitReaderBig_AttachBuffer(&bitoper, start);
+         offset = BitReaderBig_Read(&bitoper, offsetl<<3);
 
          BITCALC=((offset+2)<<2)<<5;
          lastaddr=start+((offset+2)<<2);
@@ -1900,10 +1910,10 @@ void  DrawPackedCel_New()
          while(!eor)//while not end of row
          {
 
-            type=bitoper.Read(2);
-            if( (bitoper.GetBytePose()+start) >= (lastaddr))type=0;
+            type= BitReaderBig_Read(&bitoper, 2);
+            if( (bitoper.point + start) >= (lastaddr))type=0;
 
-            int __pix=bitoper.Read(6)+1;
+            int __pix= BitReaderBig_Read(&bitoper, 6)+1;
 
             switch(type)
             {
@@ -1914,7 +1924,7 @@ void  DrawPackedCel_New()
 
                   while(__pix)
                   {
-                     CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                      __pix--;
                      //   if(speedfixes>=0&&speedfixes<=100001) speedfixes=300000;
                      if(!pproj.Transparent)
@@ -1940,7 +1950,7 @@ void  DrawPackedCel_New()
 
                   break;
                case 3: //PACK_REPEAT
-                  CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(speedfixes>=0&&speedfixes<200001&&((CURPIX>10000&&CURPIX<11000)&&sdf==0/*||(CURPIX>10500&&CURPIX<10650)*/))speedfixes=200000;//(CURPIX>10450&&CURPIX<10470)
                   if(!pproj.Transparent)
                   {
@@ -2028,12 +2038,13 @@ void  DrawLiteralCel_New()
       for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
       {
 
-         bitoper.AttachBuffer(PDATA);
+         BitReaderBig_AttachBuffer(&bitoper, PDATA);
          BITCALC=((offset+2)<<2)<<5;
          xcur=xvert+TEXTURE_WI_START*HDX1616;
          ycur=yvert+TEXTURE_WI_START*HDY1616;
-         bitoper.Skip(bpp*(((PRE0>>24)&0xf)));
-         if(TEXTURE_WI_START)bitoper.Skip(bpp*(TEXTURE_WI_START));
+         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+         if(TEXTURE_WI_START)
+            BitReaderBig_Skip(&bitoper, bpp*(TEXTURE_WI_START));
 
          xvert+=VDX1616;
          yvert+=VDY1616;
@@ -2041,7 +2052,7 @@ void  DrawLiteralCel_New()
 
          for(j=TEXTURE_WI_START;j<SPRWI;j++)
          {
-            CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
             if(!pproj.Transparent)
             {
@@ -2072,19 +2083,19 @@ void  DrawLiteralCel_New()
       for(i=0;i<SPRHI;i++)
       {
 
-         bitoper.AttachBuffer(PDATA);
+         BitReaderBig_AttachBuffer(&bitoper, PDATA);
          BITCALC=((offset+2)<<2)<<5;
          xcur=xvert;
          ycur=yvert;
          xvert+=VDX1616;
          yvert+=VDY1616;
-         bitoper.Skip(bpp*(((PRE0>>24)&0xf)));
+         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
 
 
          for(j=0;j<SPRWI;j++)
          {
 
-            CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
 
             if(!pproj.Transparent)
@@ -2106,7 +2117,7 @@ void  DrawLiteralCel_New()
       SPRWI-=((PRE0>>24)&0xf);
       for(i=0;i<SPRHI;i++)
       {
-         bitoper.AttachBuffer(PDATA);
+         BitReaderBig_AttachBuffer(&bitoper, PDATA);
          BITCALC=((offset+2)<<2)<<5;
 
          xcur=xvert;
@@ -2119,7 +2130,7 @@ void  DrawLiteralCel_New()
          HDX1616+=HDDX1616;
          HDY1616+=HDDY1616;
 
-         bitoper.Skip(bpp*(((PRE0>>24)&0xf)));
+         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
 
 
          xdown=xvert;
@@ -2128,7 +2139,7 @@ void  DrawLiteralCel_New()
          for(j=0;j<SPRWI;j++)
          {
 
-            CURPIX=PDEC(bitoper.Read(bpp),&LAMV);
+            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
             if(!pproj.Transparent)
             {

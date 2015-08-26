@@ -28,6 +28,12 @@ Felix Lazarev
 #ifndef DSP_3DO_HEADER
 #define DSP_3DO_HEADER
 
+#include <boolean.h>
+
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 unsigned int _dsp_Loop(void);
 
 unsigned short  _dsp_ReadIMem(unsigned short addr);
@@ -43,5 +49,9 @@ void _dsp_Reset(void);
 unsigned int _dsp_SaveSize(void);
 void _dsp_Save(void *buff);
 void _dsp_Load(void *buff);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif 

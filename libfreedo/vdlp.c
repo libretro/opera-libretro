@@ -72,7 +72,7 @@ struct cdmaw
 union CDMW
 {
    unsigned int raw;
-   cdmaw  dmaw;
+   struct cdmaw  dmaw;
 };
 
 struct VDLDatum
@@ -87,27 +87,27 @@ struct VDLDatum
    unsigned int CURRENTBMP;
    unsigned int PREVIOUSBMP;
    unsigned int OUTCONTROLL;
-   CDMW CLUTDMA;
+   union CDMW CLUTDMA;
    int linedelay;
 };
 #pragma pack(pop)
 
-static VDLDatum vdl;
+static struct VDLDatum vdl;
 static unsigned char * vram;
 
 unsigned int _vdl_SaveSize(void)
 {
-   return sizeof(VDLDatum);
+   return sizeof(struct VDLDatum);
 }
 
 void _vdl_Save(void *buff)
 {
-   memcpy(buff,&vdl,sizeof(VDLDatum));
+   memcpy(buff,&vdl,sizeof(struct VDLDatum));
 }
 
 void _vdl_Load(void *buff)
 {
-   memcpy(&vdl,buff,sizeof(VDLDatum));
+   memcpy(&vdl,buff,sizeof(struct VDLDatum));
 }
 
 #define CLUTB vdl.CLUTB
@@ -252,7 +252,7 @@ static inline uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
    return ((((~addr)&2)<<(18+HightResMode))+((addr>>2)<<1)+1024*512*line)<<HightResMode;
 }
 
-void _vdl_DoLineNew(int line2x, VDLFrame *frame)
+void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
 {
    int y,i;
    int line=line2x&0x7ff;

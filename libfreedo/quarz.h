@@ -26,6 +26,12 @@ Felix Lazarev
 
 #include <stdint.h>
 
+#include <boolean.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void  _qrz_Init(void);
 
 int  _qrz_VDCurrLine(void);
@@ -41,6 +47,10 @@ void  _qrz_PushARMCycles(unsigned int clks);
 unsigned int _qrz_SaveSize(void);
 void _qrz_Save(void *buff);
 void _qrz_Load(void *buff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
  

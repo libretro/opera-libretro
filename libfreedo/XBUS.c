@@ -53,7 +53,7 @@ struct XBUSDatum
 #define CmdF xbus.CmdF
 #define CmdPtrF xbus.CmdPtrF
 
-static XBUSDatum xbus;
+static struct XBUSDatum xbus;
 static _xbus_device xdev[16];
 
 #define POLSTMASK	0x01
@@ -252,7 +252,7 @@ void _xbus_Destroy(void)
 
 unsigned int _xbus_SaveSize(void)
 {
-   unsigned int tmp=sizeof(XBUSDatum);
+   unsigned int tmp=sizeof(struct XBUSDatum);
    int i;
    tmp+=16*4;
    for(i=0;i<15;i++)
@@ -267,8 +267,8 @@ unsigned int _xbus_SaveSize(void)
 void _xbus_Save(void *buff)
 {
    int i,off,j,tmp;
-   memcpy(buff,&xbus,sizeof(XBUSDatum));
-   j=off=sizeof(XBUSDatum);
+   memcpy(buff,&xbus,sizeof(struct XBUSDatum));
+   j=off=sizeof(struct XBUSDatum);
    off+=16*4;
 
    for(i=0;i<15;i++)
@@ -291,7 +291,7 @@ void _xbus_Load(void *buff)
 {
    int i,offd;
 
-   int j=sizeof(XBUSDatum);
+   int j=sizeof(struct XBUSDatum);
 
    memcpy(&xbus,buff,j);
 

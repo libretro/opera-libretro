@@ -32,6 +32,10 @@ Felix Lazarev
 #define FSM_INPROCESS 2
 #define FSM_SUSPENDED 3
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned int Get_madam_FSM(void);
 void Set_madam_FSM(unsigned int val);
 
@@ -50,8 +54,8 @@ unsigned int _madam_SaveSize(void);
 void _madam_Save(void *buff);
 void _madam_Load(void *buff);
 
-//void _madam_PrepToRendering(void);
-//bool _madam_VRAMBusy(unsigned int addr, int size);
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

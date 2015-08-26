@@ -139,14 +139,14 @@ struct R3OFTAG
 union ITAG
 {
    unsigned int raw;
-   AIFTAG	aif;
-   CIFTAG	cif;
-   IOFTAG	iof;
-   NROFTAG	nrof;
-   R2OFTAG	r2of;
-   R3OFTAG	r3of;
-   BRNTAG	branch;
-   BRNBITS br;
+   struct AIFTAG	aif;
+   struct CIFTAG	cif;
+   struct IOFTAG	iof;
+   struct NROFTAG	nrof;
+   struct R2OFTAG	r2of;
+   struct R3OFTAG	r3of;
+   struct BRNTAG	branch;
+   struct BRNBITS br;
 };
 
 struct RQFTAG{
@@ -162,12 +162,12 @@ struct RQFTAG{
 union _requnion
 {
    unsigned char raw;
-   RQFTAG	rq;
+   struct RQFTAG	rq;
 };
 
 struct __INSTTRAS
 {
-   _requnion req;
+   union _requnion req;
    char BS;		// 4+1 bits
 }; // only for ALU command
 
@@ -182,8 +182,9 @@ struct REGSTAG{
    short AUDCNT;
    unsigned short INT;//0x3ee
 };
-struct INTAG{
 
+struct INTAG
+{
    signed short MULT1;
    signed short MULT2;
 
@@ -197,7 +198,7 @@ struct INTAG{
 
    unsigned short WRITEBACK;
 
-   _requnion	req;
+   union _requnion	req;
 
    bool Running;
    bool GenFIQ;
@@ -207,35 +208,35 @@ struct INTAG{
 struct DSPDatum
 {
    unsigned int RBASEx4;
-   __INSTTRAS INSTTRAS[0x8000];
+   struct __INSTTRAS INSTTRAS[0x8000];
    unsigned short REGCONV[8][16];
    bool BRCONDTAB[32][32];
    unsigned short NMem[2048];
    unsigned short IMem[1024];
    int REGi;
-   REGSTAG dregs;
-   INTAG flags;
+   struct REGSTAG dregs;
+   struct INTAG flags;
    unsigned int g_seed;
    bool CPUSupply[16];
 };
 
 #pragma pack(pop)
 
-static DSPDatum dsp;
+static struct DSPDatum dsp;
 
 unsigned int _dsp_SaveSize(void)
 {
-   return sizeof(DSPDatum);
+   return sizeof(struct DSPDatum);
 }
 
 void _dsp_Save(void *buff)
 {
-   memcpy(buff,&dsp,sizeof(DSPDatum));
+   memcpy(buff,&dsp,sizeof(struct DSPDatum));
 }
 
 void _dsp_Load(void *buff)
 {
-   memcpy(&dsp,buff,sizeof(DSPDatum));
+   memcpy(&dsp,buff,sizeof(struct DSPDatum));
 }
 
 #define RBASEx4 dsp.RBASEx4
@@ -259,7 +260,7 @@ int fastrand(void)
 void _dsp_Init(void)
 {
    int a,c;
-   ITAG inst;
+   union ITAG inst;
    unsigned int i;
 
    g_seed=0xa5a5a5a5;
@@ -491,7 +492,7 @@ unsigned int _dsp_Loop(void)
       Work=true;
       do
       {
-         ITAG inst;
+         union ITAG inst;
 
          inst.raw=NMem[dregs.PC++];
          //DSPCYCLES++;
@@ -1078,7 +1079,7 @@ void  OperandLoader(int Requests)
    unsigned short OperandPool[6]; // c'mon -- 5 is real maximum
    unsigned short GWRITEBACK;
 
-   ITAG operand;
+   union ITAG operand;
 
    flags.WRITEBACK=0;
 
@@ -1195,7 +1196,7 @@ int  OperandLoaderNWB(void)
 {
    int Operand;
 
-   ITAG operand;
+   union ITAG operand;
 
    operand.raw=NMem[dregs.PC++];
    if(operand.nrof.TYPE==4)

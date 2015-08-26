@@ -28,6 +28,12 @@ Felix Lazarev
 #ifndef	CLIO_3DO_HEADER
 #define CLIO_3DO_HEADER
 
+#include <boolean.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int _clio_v0line(void);
 int _clio_v1line(void);
 bool _clio_NeedFIQ(void);
@@ -54,5 +60,9 @@ unsigned int _clio_GetTimerDelay(void);
 unsigned int _clio_SaveSize(void);
 void _clio_Save(void *buff);
 void _clio_Load(void *buff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

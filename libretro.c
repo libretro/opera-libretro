@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <fstream>
-#include <sstream>
 #include <string.h>
 
 #ifdef _MSC_VER
@@ -45,7 +43,7 @@ typedef struct{
 inputState internal_input_state[6];
 
 static char biosPath[1024];
-static VDLFrame *frame;
+static struct VDLFrame *frame;
 
 extern int HightResMode;
 extern unsigned int _3do_SaveSize();
@@ -173,9 +171,9 @@ static void initVideo(void)
       videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
 
    if (!frame)
-      frame = (VDLFrame*)malloc(sizeof(VDLFrame));
+      frame = (struct VDLFrame*)malloc(sizeof(struct VDLFrame));
 
-   memset(frame, 0, sizeof(VDLFrame));
+   memset(frame, 0, sizeof(struct VDLFrame));
 }
 
 // Input helper functions
@@ -516,16 +514,27 @@ bool retro_load_game(const struct retro_game_info *info)
       }
       else
       {
-         std::string system_directory(system_directory_c);
-         std::string bios_file_path = system_directory + "/panafz10.bin";
-         std::ifstream bios_file(bios_file_path.c_str());
-         if (!bios_file.is_open())
+#ifdef _WIN32
+         char slash = '\\';
+#else
+         char slash = '/';
+#endif
+         char bios_path[1024];
+         FILE *fp;
+         sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
+
+         fp = fopen(bios_path, "rb");
+
+         if (fp)
+         {
+            fclose(fp);
+            strcpy(biosPath, bios_path);
+         }
+         else
          {
             if (log_cb)
                log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
          }
-         else
-            strcpy(biosPath, bios_file_path.c_str());
       }
 
       // Initialize libfreedo

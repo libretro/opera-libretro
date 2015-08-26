@@ -63,14 +63,14 @@ struct CLIODatum
    int DSPA;
    int PTRI[13];
    int PTRO[4];
-   FIFOt FIFOI[13];
-   FIFOt FIFOO[4];
+   struct FIFOt FIFOI[13];
+   struct FIFOt FIFOO[4];
 };
 #pragma pack(pop)
 
 static unsigned int * Mregs;
 
-static CLIODatum clio;
+static struct CLIODatum clio;
 
 #define cregs clio.cregs
 #define DSPW1 clio.DSPW1
@@ -83,17 +83,17 @@ static CLIODatum clio;
 
 unsigned int _clio_SaveSize(void)
 {
-   return sizeof(CLIODatum);
+   return sizeof(struct CLIODatum);
 }
 
 void _clio_Save(void *buff)
 {
-   memcpy(buff,&clio,sizeof(CLIODatum));
+   memcpy(buff,&clio,sizeof(struct CLIODatum));
 }
 
 void _clio_Load(void *buff)
 {
-   memcpy(&clio,buff,sizeof(CLIODatum));
+   memcpy(&clio,buff,sizeof(struct CLIODatum));
 }
 
 #define CURADR Mregs[base]
