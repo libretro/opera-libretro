@@ -646,11 +646,7 @@ void retro_run(void)
    _freedo_Interface(FDP_DO_EXECFRAME, frame); // FDP_DO_EXECFRAME_MT ?
 
    if(isSwapFrameSignaled)
-   {
-      isSwapFrameSignaled = false;
       Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
-      video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
-   }
-   else
-      video_cb(NULL, videoWidth, videoHeight, videoWidth << 2);
+   video_cb(isSwapFrameSignaled ? videoBuffer : NULL, videoWidth, videoHeight, videoWidth << 2);
+   isSwapFrameSignaled = false;
 }
