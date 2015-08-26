@@ -129,8 +129,8 @@ void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
 
 #include "freedocore.h"
 extern _ext_Interface  io_interface;
-void _clio_SetTimers(uint32 v200, uint32 v208);
-void _clio_ClearTimers(uint32 v204, uint32 v20c);
+void _clio_SetTimers(uint32_t v200, uint32_t v208);
+void _clio_ClearTimers(uint32_t v204, uint32_t v20c);
 
 int _clio_Poke(unsigned int addr, unsigned int val)
 {
@@ -498,13 +498,13 @@ void _clio_UpdateVCNT(int line, int halfframe)
    cregs[0x34]=(halfframe<<11)+line;
 }
 
-void _clio_SetTimers(uint32 v200, uint32 v208)
+void _clio_SetTimers(uint32_t v200, uint32_t v208)
 {
    (void) v200;
    (void) v208;
 }
 
-void _clio_ClearTimers(uint32 v204, uint32 v20c)
+void _clio_ClearTimers(uint32_t v204, uint32_t v20c)
 {
    (void) v204;
    (void) v20c;

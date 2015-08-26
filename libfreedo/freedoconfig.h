@@ -24,6 +24,7 @@ Felix Lazarev
 #ifndef FREEDOCONFIG_H
 #define FREEDOCONFIG_H
 
+#include <stdint.h>
 #include "boolean.h"
 
 #ifdef __MSVC__
@@ -48,8 +49,5 @@ Felix Lazarev
 	#define RESSCALE        HightResMode
 	#define _T(a) (a)
 #endif
-
-#include "types.h"
-
 
 #endif // FREEDOCONFIG_H

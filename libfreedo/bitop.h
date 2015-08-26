@@ -24,15 +24,15 @@ Felix Lazarev
 #ifndef BITOPCLASS_DEFINITION_HEADER
 #define BITOPCLASS_DEFINITION_HEADER
 
-#include "types.h"
+#include <stdint.h>
 
 class BitReaderBig
 {
    protected:
-      uint32 buf;
-      uint32 point;
-      int32 bitpoint;
-      int32 bitset;
+      uint32_t buf;
+      uint32_t point;
+      int32_t bitpoint;
+      int32_t bitset;
 
    public:
       BitReaderBig()
@@ -42,40 +42,40 @@ class BitReaderBig
          point=0;
          bitpoint=0;
       };
-      BitReaderBig(uint32 buff)
+      BitReaderBig(uint32_t buff)
       {
          buf=buff;
          point=0;
          bitpoint=0;
          bitset=1;
       };
-      void AttachBuffer(uint32 buff)
+      void AttachBuffer(uint32_t buff)
       {
          buf=buff;
          point=0;
          bitpoint=0;
       };
-      void SetBitRate(uint8 bits)
+      void SetBitRate(uint8_t bits)
       {
          bitset=bits;
          if(bitset>32)bitset=32;
          if(!bitset)bitset=1;
       };
 
-      void SetPosition(uint32 bytepos, uint8 bitpos)
+      void SetPosition(uint32_t bytepos, uint8_t bitpos)
       {
          point=bytepos;
          bitpoint=bitpos;
       };
 
-      void SetPos(uint32 bitpos){SetPosition(bitpos>>3,bitpos&7);};
+      void SetPos(uint32_t bitpos){SetPosition(bitpos>>3,bitpos&7);};
 
-      uint32 GetBytePose(){return point;};
+      uint32_t GetBytePose(){return point;};
 
-      uint32 Read();
-      uint32 Read(uint8 bits);
+      uint32_t Read();
+      uint32_t Read(uint8_t bits);
 
-      void Skip(uint32 bits)
+      void Skip(uint32_t bits)
       {
          bits+=bitpoint;
          point+=(bits>>3);

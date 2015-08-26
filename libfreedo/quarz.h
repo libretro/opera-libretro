@@ -24,7 +24,7 @@ Felix Lazarev
 #ifndef QUARZ_3DO_HEADER_DEFINTION
 #define QUARZ_3DO_HEADER_DEFINTION
 
-#include "types.h"
+#include <stdint.h>
 
 void  _qrz_Init(void);
 

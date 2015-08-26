@@ -38,11 +38,11 @@ extern _ext_Interface  io_interface;
 #pragma pack(push,1)
 struct QDatum
 {
-        uint32 qrz_AccARM;
-        uint32 qrz_AccDSP;
-        uint32 qrz_AccVDL;
-        uint32 qrz_TCount;
-        uint32 VDL_CLOCK, qrz_vdlline, VDL_HS,VDL_FS;
+   uint32_t qrz_AccARM;
+   uint32_t qrz_AccDSP;
+   uint32_t qrz_AccVDL;
+   uint32_t qrz_TCount;
+   uint32_t VDL_CLOCK, qrz_vdlline, VDL_HS,VDL_FS;
 };
 #pragma pack(pop)
 
@@ -126,7 +126,7 @@ bool  _qrz_QueueDSP(void)
 
 bool  _qrz_QueueTimer(void)
 {
-   //uint32 cnt=_clio_GetTimerDelay();
+   //uint32_t cnt=_clio_GetTimerDelay();
    if(qrz_TCount>>24)//=cnt)
    {
       qrz_TCount-=0x1000000;//cnt;
@@ -137,7 +137,7 @@ bool  _qrz_QueueTimer(void)
 
 void  _qrz_PushARMCycles(unsigned int clks)
 {
-   uint32 arm,cnt;
+   uint32_t arm,cnt;
    int timers=21000000; //default
    int sp=0;
    if(sdf>0)

@@ -713,12 +713,9 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
 #define Rez2 mregs[0x668]
 #define Rez3 mregs[0x66C]
 
-            //#define Nfrac16 ((__int64)mregs[0x680]<<32|(unsigned int)mregs[0x684])
-#define Nfrac16 (((__int64)mregs[0x680]<<32)|(unsigned int)mregs[0x684])
+#define Nfrac16 (((int64_t)mregs[0x680]<<32)|(unsigned int)mregs[0x684])
 
             // Matix engine
-
-
          case 0x7fc:
 
             mregs[0x7fc]=0; // Ours matrix engine already ready
@@ -2649,21 +2646,21 @@ int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int yc
    return 0;
 }
 
-static inline uint16 readPIX(uint32 src, int i, int j)
+static inline uint16_t readPIX(uint32_t src, int i, int j)
 {
    src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
    if(RESSCALE)
-      return *((uint16*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
-   return *((uint16*)&Mem[src^2]);
+      return *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
+   return *((uint16_t*)&Mem[src^2]);
 }
 
-static inline void writePIX(uint32 src, int i, int j, uint16 pix)
+static inline void writePIX(uint32_t src, int i, int j, uint16_t pix)
 {
    src+=XY2OFF((((j)>>(RESSCALE))<<2),(i>>RESSCALE),WMOD);
    if(RESSCALE)
-      *((uint16*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
+      *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
    else
-      *((uint16*)&Mem[src^2])=pix;
+      *((uint16_t*)&Mem[src^2])=pix;
 }
 
 

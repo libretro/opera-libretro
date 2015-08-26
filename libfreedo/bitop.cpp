@@ -25,11 +25,11 @@ Felix Lazarev
 #include "bitop.h"
 #include "arm.h"
 
-uint32 BitReaderBig::Read()
+uint32_t BitReaderBig::Read()
 {
-   const static uint8 mas[]={0,1,3,7,15,31,63,127,255};
-   uint32 retval=0;
-   int32 bitcnt=bitset;
+   const static uint8_t mas[]={0,1,3,7,15,31,63,127,255};
+   uint32_t retval=0;
+   int32_t bitcnt=bitset;
    if(!buf)
       return retval;
 
@@ -68,7 +68,7 @@ uint32 BitReaderBig::Read()
    return retval;
 }
 
-uint32 BitReaderBig::Read(uint8 bits)
+uint32_t BitReaderBig::Read(uint8_t bits)
 {
    SetBitRate(bits);
    return Read();

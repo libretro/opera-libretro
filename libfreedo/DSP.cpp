@@ -417,7 +417,7 @@ void _dsp_Reset(void)
 extern _ext_Interface  io_interface;
 
 #if _DEBUG
-static void _Arithmetic_Debug(uint16 nrc, uint16 opmask)
+static void _Arithmetic_Debug(uint16_t nrc, uint16_t opmask)
 {
    bool MULT1_RQST_L,MULT2_RQST_L,ALU1_RQST_L,ALU2_RQST_L,BS_RQST_L;
    int NUMBER_OPERANDS=0, cnt=0;

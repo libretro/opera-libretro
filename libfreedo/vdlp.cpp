@@ -250,7 +250,7 @@ static inline void VDLExec(void)
    }
 }
 
-static inline uint32 VRAMOffEval(uint32 addr, uint32 line)
+static inline uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
 {
    return ((((~addr)&2)<<(18+RESSCALE))+((addr>>2)<<1)+1024*512*line)<<RESSCALE;
 }

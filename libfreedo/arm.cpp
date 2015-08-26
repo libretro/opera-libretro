@@ -62,7 +62,7 @@ extern _ext_Interface  io_interface;
 #define ARM_MODE_UNK    0xff
 
 //static AString str;
-const static uint8 arm_mode_table[]=
+const static uint8_t arm_mode_table[]=
 {
    ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,
    ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,
@@ -81,7 +81,7 @@ const static uint8 arm_mode_table[]=
 
 //--------------------------Conditions-------------------------------------------
 //flags - N Z C V  -  31...28
-const static uint16 cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>flags)&1)  -- пример проверки
+const static uint16_t cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>flags)&1)  -- пример проверки
    0xf0f0, //EQ - Z set (equal)
    0x0f0f, //NE - Z clear (not equal)
    0xcccc, //CS - C set (unsigned higher or same)
@@ -115,20 +115,20 @@ const static uint16 cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>fla
 struct ARM_CoreState
 {
    //console memories------------------------
-   uint8 *Ram;//[RAMSIZE];
-   uint8 *Rom;//[ROMSIZE*2];
-   uint8 *NVRam;//[NVRAMSIZE];
+   uint8_t *Ram;//[RAMSIZE];
+   uint8_t *Rom;//[ROMSIZE*2];
+   uint8_t *NVRam;//[NVRAMSIZE];
 
    //ARM60 registers
-   uint32 USER[16];
-   uint32 CASH[7];
-   uint32 SVC[2];
-   uint32 ABT[2];
-   uint32 FIQ[7];
-   uint32 IRQ[2];
-   uint32 UND[2];
-   uint32 SPSR[6];
-   uint32 CPSR;
+   uint32_t USER[16];
+   uint32_t CASH[7];
+   uint32_t SVC[2];
+   uint32_t ABT[2];
+   uint32_t FIQ[7];
+   uint32_t IRQ[2];
+   uint32_t UND[2];
+   uint32_t SPSR[6];
+   uint32_t CPSR;
 
    bool nFIQ; //external interrupt
    bool SecondROM;	//ROM selector
@@ -185,20 +185,20 @@ unsigned int _arm_SaveSize(void)
 void _arm_Save(void *buff)
 {
    memcpy(buff,&arm,sizeof(ARM_CoreState));
-   memcpy(((uint8*)buff)+sizeof(ARM_CoreState),pRam,RAMSIZE);
-   memcpy(((uint8*)buff)+sizeof(ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
-   memcpy(((uint8*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
+   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState),pRam,RAMSIZE);
+   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
+   memcpy(((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
 }
 
 void _arm_Load(void *buff)
 {
-   uint8 *tRam=pRam;
-   uint8 *tRom=pRom;
-   uint8 *tNVRam=pNVRam;
+   uint8_t *tRam=pRam;
+   uint8_t *tRom=pRom;
+   uint8_t *tNVRam=pNVRam;
    memcpy(&arm,buff,sizeof(ARM_CoreState));
-   memcpy(tRam,((uint8*)buff)+sizeof(ARM_CoreState),RAMSIZE);
-   memcpy(tRom,((uint8*)buff)+sizeof(ARM_CoreState)+RAMSIZE,ROMSIZE*2);
-   memcpy(tNVRam,((uint8*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
+   memcpy(tRam,((uint8_t*)buff)+sizeof(ARM_CoreState),RAMSIZE);
+   memcpy(tRom,((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE,ROMSIZE*2);
+   memcpy(tNVRam,((uint8_t*)buff)+sizeof(ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
 
    memcpy(tRam+3*1024*1024,tRam+2*1024*1024, 1024*1024);
    memcpy(tRam+4*1024*1024,tRam+2*1024*1024, 1024*1024);
@@ -460,7 +460,7 @@ void ARM_RestUndRONS(void)
    }
 }
 
-void ARM_Change_ModeSafe(uint32 mode)
+void ARM_Change_ModeSafe(uint32_t mode)
 {
    switch(arm_mode_table[mode&0x1f])
    {
@@ -539,12 +539,12 @@ __inline void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 #define ISF  ((CPSR>>6)&1)
 
 
-__inline uint32 _bswap(uint32 x)
+__inline uint32_t _bswap(uint32_t x)
 {
    return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
 }
 
-__inline uint32 _rotr(uint32 val, uint32 shift)
+__inline uint32_t _rotr(uint32_t val, uint32_t shift)
 {
    if (shift)
       return (val>>shift)|(val<<(32-shift));
@@ -571,9 +571,9 @@ unsigned char * _arm_Init(void)
       RON_CASH[i]=RON_FIQ[i]=0;
 
    gSecondROM=0;
-   pRam=new uint8[RAMSIZE+1024*1024*16];
-   pRom=new uint8[ROMSIZE*2];
-   pNVRam=new uint8[NVRAMSIZE];
+   pRam=new uint8_t[RAMSIZE+1024*1024*16];
+   pRom=new uint8_t[ROMSIZE*2];
+   pNVRam=new uint8_t[NVRAMSIZE];
 
    memset( pRam, 0, RAMSIZE+1024*1024*16);
    memset( pRom, 0, ROMSIZE*2);
@@ -846,9 +846,9 @@ void decode_swi(unsigned int i)
 }
 
 
-uint32 carry_out=0;
+uint32_t carry_out=0;
 
-void ARM_SET_C(uint32 x)
+void ARM_SET_C(uint32_t x)
 {
    //old_C=(CPSR>>29)&1;
 
@@ -859,7 +859,7 @@ void ARM_SET_C(uint32 x)
 #define ARM_SET_N(x)    (CPSR=((CPSR&0x7fffffff)|((x)&0x80000000)))
 #define ARM_GET_C       ((CPSR>>29)&1)
 
-__inline void ARM_SET_ZN(uint32 val)
+__inline void ARM_SET_ZN(uint32_t val)
 {
    if(val)
       CPSR=((CPSR&0x3fffffff)|(val&0x80000000));
@@ -867,7 +867,7 @@ __inline void ARM_SET_ZN(uint32 val)
       CPSR=((CPSR&0x3fffffff)|0x40000000);
 }
 
-__inline void ARM_SET_CV(uint32 rd, uint32 op1, uint32 op2)
+__inline void ARM_SET_CV(uint32_t rd, uint32_t op1, uint32_t op2)
 {
    //old_C=(CPSR>>29)&1;
 
@@ -877,7 +877,7 @@ __inline void ARM_SET_CV(uint32 rd, uint32 op1, uint32 op2)
 
 }
 
-__inline void ARM_SET_CV_sub(uint32 rd, uint32 op1, uint32 op2)
+__inline void ARM_SET_CV_sub(uint32_t rd, uint32_t op1, uint32_t op2)
 {
    //old_C=(CPSR>>29)&1;
 
@@ -888,7 +888,7 @@ __inline void ARM_SET_CV_sub(uint32 rd, uint32 op1, uint32 op2)
 }
 
 
-bool ARM_ALU_Exec(uint32 inst, uint8 opc, uint32 op1, uint32 op2, uint32 *Rd)
+bool ARM_ALU_Exec(uint32_t inst, uint8_t opc, uint32_t op1, uint32_t op2, uint32_t *Rd)
 {
    switch(opc)
    {
@@ -1029,7 +1029,7 @@ bool ARM_ALU_Exec(uint32 inst, uint8 opc, uint32 op1, uint32 op2, uint32 *Rd)
 }
 
 
-uint32 ARM_SHIFT_NSC(uint32 value, uint8 shift, uint8 type)
+uint32_t ARM_SHIFT_NSC(uint32_t value, uint8_t shift, uint8_t type)
 {
    switch(type)
    {
@@ -1087,9 +1087,9 @@ uint32 ARM_SHIFT_NSC(uint32 value, uint8 shift, uint8 type)
    return 0;
 }
 
-uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
+uint32_t  ARM_SHIFT_SC(uint32_t value, uint8_t shift, uint8_t type)
 {
-   uint32 tmp;
+   uint32_t tmp;
    switch(type)
    {
       case 0:
@@ -1154,7 +1154,7 @@ uint32  ARM_SHIFT_SC(uint32 value, uint8 shift, uint8 type)
 
 
 
-void ARM_SWAP(uint32 cmd)
+void ARM_SWAP(uint32_t cmd)
 {
    unsigned int tmp, addr;
 
@@ -1236,7 +1236,7 @@ const bool is_logic[]={
 
 int _arm_Execute(void)
 {
-   uint32 cmd,pc_tmp;
+   uint32_t cmd,pc_tmp;
    bool isexeption=false;
    //for(; CYCLES>0; CYCLES-=SCYCLE)
    {   
@@ -1256,7 +1256,7 @@ int _arm_Execute(void)
       if(cmd==0xE5101810&&CPSR==0x80000093)
          isexeption=true;
       //	if(REG_PC==0x9E9F0){isexeption=true; RON_USER[5]=0xE2998; fix=1;}
-      if(((cond_flags_cross[(((uint32)cmd)>>28)]>>((CPSR)>>28))&1)&&isexeption==false)
+      if(((cond_flags_cross[(((uint32_t)cmd)>>28)]>>((CPSR)>>28))&1)&&isexeption==false)
       {
          switch((cmd>>24)&0xf)  //разбор типа команды
          {
@@ -1311,9 +1311,9 @@ int _arm_Execute(void)
                }
             case 0x2:	//ALU
             case 0x3:
-               uint32 op2,op1;
-               //uint8 tmp;
-               uint8 shift,shtype;
+               uint32_t op2,op1;
+               //uint8_t tmp;
+               uint8_t shift,shtype;
 
                if((cmd&0x2000090)!=0x90)
                {
@@ -1410,7 +1410,7 @@ Undefine:
                   unsigned int base,tbas;
                   unsigned int oper2;
                   unsigned int val, rora;
-                  //uint8	delta;
+                  //uint8_t	delta;
 
                   pc_tmp=REG_PC;
                   REG_PC+=4;
