@@ -25,29 +25,13 @@ Felix Lazarev
 #define FREEDOCONFIG_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "boolean.h"
 
-#ifdef __MSVC__
-	//#include <stdafx.h>
-	#include <windows.h>
-
-	#define __temporalfixes 0
-	#define RESSCALE  __tex__scaler
-
-	extern int __tex__scaler;
-
-#else
-	#include <stdlib.h>
-	#include <stdio.h>
-	#include <fcntl.h>
-	#include <unistd.h>
-
-
-
-	extern bool __temporalfixes;
-	extern int HightResMode;
-	#define RESSCALE        HightResMode
-	#define _T(a) (a)
-#endif
+extern bool __temporalfixes;
+extern int HightResMode;
+#define RESSCALE        HightResMode
+#define _T(a) (a)
 
 #endif // FREEDOCONFIG_H
