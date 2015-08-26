@@ -42,13 +42,6 @@ class BitReaderBig
          point=0;
          bitpoint=0;
       };
-      BitReaderBig(uint32_t buff)
-      {
-         buf=buff;
-         point=0;
-         bitpoint=0;
-         bitset=1;
-      };
       void AttachBuffer(uint32_t buff)
       {
          buf=buff;
@@ -61,14 +54,6 @@ class BitReaderBig
          if(bitset>32)bitset=32;
          if(!bitset)bitset=1;
       };
-
-      void SetPosition(uint32_t bytepos, uint8_t bitpos)
-      {
-         point=bytepos;
-         bitpoint=bitpos;
-      };
-
-      void SetPos(uint32_t bitpos){SetPosition(bitpos>>3,bitpos&7);};
 
       uint32_t GetBytePose(){return point;};
 
