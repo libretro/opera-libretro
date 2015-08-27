@@ -40,9 +40,9 @@
 
 _ext_Interface  io_interface;
 
-extern void* Getp_NVRAM();
-extern void* Getp_ROMS();
-extern void* Getp_RAMS();
+extern void* Getp_NVRAM(void);
+extern void* Getp_ROMS(void);
+extern void* Getp_RAMS(void);
 extern int ARM_CLOCK;
 extern int THE_ARM_CLOCK;
 
@@ -112,7 +112,7 @@ int _3do_Init(void)
 }
 
 struct VDLFrame *curr_frame;
-bool scipframe;
+bool skipframe;
 
 void _3do_InternalFrame(int cycles)
 {
@@ -126,9 +126,9 @@ void _3do_InternalFrame(int cycles)
    {
       line=_qrz_VDCurrLine();
       _clio_UpdateVCNT(line, _qrz_VDHalfFrame());
-      if(!scipframe)
+      if(!skipframe)
          _vdl_DoLineNew(line,curr_frame);
-      if(line==16 && scipframe)
+      if(line==16 && skipframe)
          io_interface(EXT_FRAMETRIGGER_MT,NULL);
 
       if(line==_clio_v0line())
@@ -140,19 +140,19 @@ void _3do_InternalFrame(int cycles)
          _madam_KeyPressed((unsigned char*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
-         if(!scipframe)
+         if(!skipframe)
             curr_frame = (struct VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
       }
    }
 }
 
-void _3do_Frame(struct VDLFrame *frame, bool __scipframe)
+void _3do_Frame(struct VDLFrame *frame, bool __skipframe)
 {
    int i   = 0;
    int cnt = 0;
 
    curr_frame = frame;
-   scipframe = __scipframe;
+   skipframe = __skipframe;
 
    do
    {
