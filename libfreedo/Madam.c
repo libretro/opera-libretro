@@ -462,7 +462,7 @@ unsigned int BITBUF;
 unsigned int CCBFLAGS,/*PLUTDATA*/PIXC,PRE0,PRE1,TARGETPROJ,SRCDATA,debug;
 int SPRWI,SPRHI;
 unsigned int PLUTF,PDATF,NCCBF;
-int CELCYCLES,__smallcicles;
+int CELCYCLES,__smallcycles;
 bool ADD;
 //static SDL_Event cpuevent;
 int BITCALC;
@@ -844,7 +844,7 @@ void LoadPLUT(unsigned int pnt,int n)
 int CCBCOUNTER;
 int _madam_HandleCEL(void)
 {
-   __smallcicles=CELCYCLES=0;
+   __smallcycles=CELCYCLES=0;
    if(NEXTCCB!=0)
       CCBCOUNTER=0;
    STATBITS|=SPRON;
@@ -1200,12 +1200,12 @@ void _madam_Init(unsigned char *memory)
    }
 }
 
-extern void _3do_InternalFrame(int cicles);
+extern void _3do_InternalFrame(int cycles);
 void exteraclocker()
 {
-   if((CELCYCLES-__smallcicles)>>7)
+   if((CELCYCLES-__smallcycles)>>7)
    {
-      __smallcicles=CELCYCLES;
+      __smallcycles=CELCYCLES;
       //_3do_InternalFrame(64);
    }
 }

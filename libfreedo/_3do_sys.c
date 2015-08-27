@@ -114,15 +114,14 @@ int _3do_Init(void)
 struct VDLFrame *curr_frame;
 bool scipframe;
 
-void _3do_InternalFrame(int cicles)
+void _3do_InternalFrame(int cycles)
 {
    int line;
-   _qrz_PushARMCycles(cicles);
+   _qrz_PushARMCycles(cycles);
    if(_qrz_QueueDSP())
-   {
       io_interface(EXT_PUSH_SAMPLE,(void*)_dsp_Loop());
-   }
-   if(_qrz_QueueTimer())_clio_DoTimers();
+   if(_qrz_QueueTimer())
+      _clio_DoTimers();
    if(_qrz_QueueVDL())
    {
       line=_qrz_VDCurrLine();
