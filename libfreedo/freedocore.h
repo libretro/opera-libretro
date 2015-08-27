@@ -25,22 +25,21 @@ Felix Lazarev
 #define __3DO_SYSTEM_HEADER_DEFINITION
 
 #include <stdint.h>
-
 #include <boolean.h>
 
 #pragma pack(push,1)
 
 struct VDLLine
-//VDLP Line - one VDLP line per patent
 {
-	unsigned short line[320*4];//,line2[320*2*16];
-	unsigned char xCLUTB[32];
-	unsigned char xCLUTG[32];
-	unsigned char xCLUTR[32];
-	unsigned int xOUTCONTROLL;
-	unsigned int xCLUTDMA;
-	unsigned int xBACKGROUND;
+	uint16_t line[320*4];
+	uint8_t xCLUTB[32];
+	uint8_t xCLUTG[32];
+	uint8_t xCLUTR[32];
+	uint32_t xOUTCONTROLL;
+	uint32_t xCLUTDMA;
+	uint32_t xBACKGROUND;
 };
+
 struct VDLFrame
 {
 	struct VDLLine lines[240*4];
