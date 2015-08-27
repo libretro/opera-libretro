@@ -354,9 +354,5 @@ void _vdl_Init(unsigned char *vramstart)
 
 unsigned int vmreadw(unsigned int addr)
 {
-   //unsigned int val;
-   //val=*(unsigned int*)(vram+(addr&0xfffff));
-   //return val;
-
    return _mem_read32((addr&0xfffff)+1024*1024*2);
 }

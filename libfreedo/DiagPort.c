@@ -21,10 +21,6 @@
  Felix Lazarev
  */
 
-// DiagPort.cpp: implementation of the DiagPort class.
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "DiagPort.h"
 
 static unsigned short SNDDebugFIFO0;
@@ -33,11 +29,6 @@ static unsigned short RCVDebugFIFO0;
 static unsigned short RCVDebugFIFO1;
 static unsigned short GetPTR;
 static unsigned short SendPTR;
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 
 void _diag_Send(unsigned int val)
 {
@@ -55,10 +46,7 @@ void _diag_Send(unsigned int val)
    SendPTR--;
 
    if(SendPTR==0)
-   {
       SendPTR=16;
-   }
-
 }
 
 unsigned int _diag_Get()

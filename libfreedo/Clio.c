@@ -21,10 +21,6 @@
  Felix Lazarev
  */
 
-// Clio.cpp: implementation of the CClio class.
-//
-//////////////////////////////////////////////////////////////////////
-
 #include <string.h>
 #include "Clio.h"
 #include "Madam.h"
@@ -204,12 +200,6 @@ int _clio_Poke(unsigned int addr, unsigned int val)
    }
    else if(addr==0x84)
    {
-      //temp=val&0xf0;
-      //temp=temp>>4;
-      //val&=0x0f;
-
-      //cregs[0x84]&=~temp;
-      //cregs[0x84]|=val;
       cregs[0x84]=val&0xf;
       SelectROM((val&4)? 1:0 );
       return 0;
@@ -261,12 +251,7 @@ int _clio_Poke(unsigned int addr, unsigned int val)
    }
    else if(addr==0x304) // Dma Starter!!!!! P/A !!!! need to create Handler.
    {
-
-      //if(val&0x00100000)
-      //{
       HandleDMA(val);
-      //	cregs[0x304]&=~0x00100000;
-      //}
       return 0;
    }
    else if(addr==0x308) //Dma Stopper!!!!
@@ -316,12 +301,6 @@ int _clio_Poke(unsigned int addr, unsigned int val)
       DSPW1=val>>16;
       DSPW2=val&0xffff;
       DSPA=(addr-0x1800)>>1;
-      //sprintf(str,"0x%8.8X : 2x1NWRITE 0x%3.3X 0x%4.4X\n",GetPC(),DSPA,DSPW1);
-      //CDebug::DPrint(str);
-      //sprintf(str,"0x%8.8X : 2x2NWRITE 0x%3.3X 0x%4.4X\n",GetPC(),DSPA+1,DSPW2);
-      //CDebug::DPrint(str);
-
-
       _dsp_WriteMemory(DSPA,DSPW1);
       _dsp_WriteMemory(DSPA+1,DSPW2);
       return 0;
@@ -331,12 +310,8 @@ int _clio_Poke(unsigned int addr, unsigned int val)
       addr&=~0x800;//mirrors
       DSPW1=val&0xffff;
       DSPA=(addr-0x2000)>>2;
-      //sprintf(str,"0x%8.8X : 1xNWRITE 0x%3.3X 0x%4.4X\n",GetPC(),DSPA,DSPW1);
-      //CDebug::DPrint(str);
-
       _dsp_WriteMemory(DSPA,DSPW1);
       return 0;
-      //DSPNRAMWrite 1 DSPW per 1ARMW
    }else if((addr>=0x3000)&&(addr<=0x33ff)) //0x0340 3000 … 0x0340 33FF
    {
       DSPA=(addr-0x3000)>>1;
@@ -345,23 +320,14 @@ int _clio_Poke(unsigned int addr, unsigned int val)
       DSPW2=val&0xffff;
       _dsp_WriteIMem(DSPA,DSPW1);
       _dsp_WriteIMem(DSPA+1,DSPW2);
-      /*	printf("#ARM 2IWRITE1 0x%3.3X<=0x%4.4X\n",DSPA,DSPW1);
-         printf("#ARM 2IWRITE2 0x%3.3X<=0x%4.4X\n",DSPA+1,DSPW2);
-         printf("#ARM word %8.8x\n-----------------------\n",val);*/
       return 0;
-      //DSPEIRam 2 DSPW per 1ARMW
    }else if((addr>=0x3400)&&(addr<=0x37ff))//0x0340 3400 … 0x0340 37FF
    {
       DSPA=(addr-0x3400)>>2;
       DSPA&=0xff;
-      //if(DSPA>0x6f)
-      //printf("##Strange coeff write -- 0x%3.3X<=0x%4.4X\n",DSPA,DSPW1);
       DSPW1=val&0xffff;
       _dsp_WriteIMem(DSPA,DSPW1);
-      /*	printf("#ARM IWRITE 0x%3.3X<=0x%4.4X\n",DSPA,DSPW1);
-         printf("#ARM word %8.8x\n-----------------------\n",val);*/
       return 0;
-      //DSPEIRam 1 DSPW per 1 ARMW
    }
    else if(addr==0x17E8)//Reset
    {
@@ -425,13 +391,6 @@ int _clio_Poke(unsigned int addr, unsigned int val)
 
 unsigned int _clio_Peek(unsigned int addr)
 {
-   //if(addr>0x600) // ???????  DSP debug
-   //{
-   //	printf("#CLIO:PEEK (0x%4.4X)\n",addr);
-   //}
-   //if(addr==0x200 || addr==0x204 || addr==0x208 || addr==0x20c || (addr>=0x100 && addr<=0x17c) || addr==0x220)io_interface(EXT_DEBUG_PRINT,(void*)str.print("CLIO Read[0x%X] = 0x%8.8X",addr,cregs[addr]).CStr());
-   //if(addr==0x34 || addr==0x30)io_interface(EXT_DEBUG_PRINT,(void*)str.print("CLIO Read[0x%X] = 0x%8.8X",addr,cregs[addr]).CStr());
-
    if( (addr& ~0x2C) == 0x40 ) // 0x40..0x4C, 0x60..0x6C case
    {
       addr&=~4;	// By read 40 and 44, 48 and 4c, 60 and 64, 68 and 6c same
@@ -564,16 +523,13 @@ void HandleDMA(unsigned int val)
    unsigned int ptr;
    unsigned char b0,b1,b2,b3;
 
-
    cregs[0x304]|=val;
    if(val&0x00100000)
    {
       cregs[0x304]&=~0x00100000;
       src=_madam_Peek(0x540);
-      //if(src&3)_3do_DPrint("Align Err!!! - see CLIO XBUS DMA");
       trg=src;
       len=_madam_Peek(0x544);
-      //if(len&3)_3do_DPrint("Overflow Err!!! - see CLIO XBUS DMA");
 
       cregs[0x400]&=~0x80;
 
@@ -604,8 +560,6 @@ void HandleDMA(unsigned int val)
             ptr+=4;
 
          }
-         //CCdRom::ClearDataPoll(CMadam::Peek(0x544));
-         //CCdRom::ClearDataPoll();
          cregs[0x400]|=0x80;
 
       }
@@ -637,17 +591,11 @@ void HandleDMA(unsigned int val)
             ptr+=4;
 
          }
-         //CCdRom::ClearDataPoll(CMadam::Peek(0x544));
-         //CCdRom::ClearDataPoll();
          cregs[0x400]|=0x80;
 
       }
       len=0xFFFFFFFC;
       _madam_Poke(0x544,len);
-      //event.type = SDL_USEREVENT;
-      //event.user.code = CREATEFIQ|29;
-      //SDL_PushEvent(&event);
-      //CFE::FE_PushEvent(&event);
       _clio_GenerateFiq(1<<29,0);
 
       return;
