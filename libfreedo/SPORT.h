@@ -38,7 +38,7 @@ int _sport_SetSource(unsigned int index);
 
 void _sport_WriteAccess(unsigned int index, unsigned int mask);
 
-unsigned int _sport_SaveSize();
+unsigned int _sport_SaveSize(void);
 void _sport_Save(void *buff);
 void _sport_Load(void *buff);
 

@@ -37,23 +37,23 @@ extern "C" {
 typedef void* (*_xbus_device)(int, void*);
 int _xbus_Attach(_xbus_device dev);
 
-void _xbus_DevLoad(int dev, const char * name);	//!!!
-void _xbus_DevEject(int dev);				//!!!
+void _xbus_DevLoad(int dev, const char * name);
+void _xbus_DevEject(int dev);
 
 void _xbus_Init(_xbus_device zero_dev);
-void _xbus_Destroy();
+void _xbus_Destroy(void);
 
 void _xbus_SetSEL(unsigned int val);
 void _xbus_SetPoll(unsigned int val);
 void _xbus_SetCommandFIFO(unsigned int val);
 void _xbus_SetDataFIFO(unsigned int val);
 
-unsigned int _xbus_GetStatusFIFO();
-unsigned int _xbus_GetRes();
-unsigned int _xbus_GetPoll();
-unsigned int _xbus_GetDataFIFO();
+unsigned int _xbus_GetStatusFIFO(void);
+unsigned int _xbus_GetRes(void);
+unsigned int _xbus_GetPoll(void);
+unsigned int _xbus_GetDataFIFO(void);
 
-unsigned int _xbus_SaveSize();
+unsigned int _xbus_SaveSize(void);
 void _xbus_Save(void *buff);
 void _xbus_Load(void *buff);
 

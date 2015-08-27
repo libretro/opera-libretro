@@ -44,7 +44,7 @@ void _madam_SetMapping(unsigned int flag);
 void _madam_Reset(void);
 unsigned int _madam_GetCELCycles(void);
 unsigned int * _madam_GetRegs(void);
-int _madam_HandleCEL(void);      //!!!~!
+int _madam_HandleCEL(void);
 void _madam_Init(unsigned char* memory);
 void _madam_KeyPressed(unsigned char* data, unsigned int num);
 void _madam_Poke(unsigned int addr, unsigned int val);

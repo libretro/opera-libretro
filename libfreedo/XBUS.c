@@ -91,14 +91,14 @@ void _xbus_SetCommandFIFO(unsigned int val)
    }
 }
 
-unsigned int _xbus_GetDataFIFO()
+unsigned int _xbus_GetDataFIFO(void)
 {
    if(xdev[XBSEL])
       return (intptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
    return 0;
 }
 
-unsigned int _xbus_GetPoll()
+unsigned int _xbus_GetPoll(void)
 {
    unsigned int res = 0x30;
 
@@ -144,7 +144,7 @@ void ExecuteCommandF(void)
       _clio_GenerateFiq(4,0);
 }
 
-unsigned int _xbus_GetStatusFIFO()
+unsigned int _xbus_GetStatusFIFO(void)
 {
    unsigned int res=0;
 
