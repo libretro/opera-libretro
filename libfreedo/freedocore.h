@@ -122,7 +122,7 @@ extern "C"
 {
 #endif
 
-void* _freedo_Interface(int procedure, void *datum);
+void _freedo_Interface(int procedure, void *datum);
 
 #ifdef __cplusplus
 };

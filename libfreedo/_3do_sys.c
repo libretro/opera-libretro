@@ -265,16 +265,18 @@ int unknownflag11=0;
 int jw=0;
 int cnbfix=0;
 
-void* _freedo_Interface(int procedure, void *datum)
+void _freedo_Interface(int procedure, void *datum)
 {
    int line;
+
    switch(procedure)
    {
       case FDP_INIT:
          sf=5000000;
          cnbfix=0;
          io_interface=(_ext_Interface)datum;
-         return (void*)_3do_Init();
+         _3do_Init();
+         break;
       case FDP_DESTROY:
          _3do_Destroy();
          break;
@@ -289,23 +291,26 @@ void* _freedo_Interface(int procedure, void *datum)
          while(line<256)_vdl_DoLineNew(line++,(struct VDLFrame*)datum);
          break;
       case FDP_GET_SAVE_SIZE:
-         return (void*)_3do_SaveSize();
+         _3do_SaveSize();
+         break;
       case FDP_DO_SAVE:
          _3do_Save(datum);
          break;
       case FDP_DO_LOAD:
          sf=0;
-         return (void*)_3do_Load(datum);
+         _3do_Load(datum);
+         break;
       case FDP_GETP_NVRAM:
-         return Getp_NVRAM();
+         Getp_NVRAM();
+         break;
       case FDP_GETP_RAMS:
-         return Getp_RAMS();
+         Getp_RAMS();
+         break;
       case FDP_GETP_ROMS:
-         return Getp_ROMS();
+         Getp_ROMS();
+         break;
       case FDP_GETP_PROFILE:
-         return 0;
-      case FDP_FREEDOCORE_VERSION:
-         return (void*)0x20008;
+         break;
       case FDP_SET_ARMCLOCK:
          THE_ARM_CLOCK=0;
          ARM_CLOCK=(intptr_t)datum;
@@ -333,6 +338,4 @@ void* _freedo_Interface(int procedure, void *datum)
          //			, &param->resultingHeight);
          //		break;
    };
-
-   return NULL;
 }

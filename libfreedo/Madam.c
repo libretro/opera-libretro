@@ -35,8 +35,6 @@ Felix Lazarev
 #include "bitop.h"
 struct BitReaderBig bitoper;
 
-extern _ext_Interface  io_interface;
-
 extern int HightResMode;
 extern int sf;
 extern int sdf;
@@ -627,12 +625,6 @@ unsigned int  _madam_Peek(unsigned int addr)
 
 void  _madam_Poke(unsigned int addr, unsigned int val)
 {
-#if 0
-   if(addr>0x2ff && addr<0x400)
-   {
-      //  io_interface(EXT_DEBUG_PRINT,(void*)str.print("MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val).CStr());
-   }
-#endif
    /*
       if(addr==0x13c)
       {
@@ -673,9 +665,7 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
             //_3do_DPrint(str.print("CLUT - MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val));
             mregs[addr]=val;
             return;
-
          case 0x0:
-            //	io_interface(EXT_KPRINT,(void*)val);
             return;
          case SPRSTRT:
             if(_madam_FSM==FSM_IDLE)
@@ -733,7 +723,6 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
             mregs[0x7fc]=0; // Ours matrix engine already ready
 
             static double Rez0T,Rez1T,Rez2T,Rez3T;
-            // io_interface(EXT_DEBUG_PRINT,(void*)str.print("MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val).CStr());
 
             switch(val) // Cmd
             {
@@ -780,16 +769,11 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
                      Rez2=Rez2T;
                      Rez3=Rez3T;
 
-                     double M;
+                     double M=Nfrac16;
 
                      Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
                      if(Rez2T!=0)
-                        M=Nfrac16/(double)Rez2T;          // n/z
-                     else
-                     {
-                        M=Nfrac16;
-                        //	io_interface(EXT_DEBUG_PRINT,(void*)"!!!Division by zero!!!\n");
-                     }
+                        M /= (double)Rez2T;          // n/z
 
                      Rez0T=(signed int)((M00*V0+M01*V1+M02*V2)/65536.0);
                      Rez1T=(signed int)((M10*V0+M11*V1+M12*V2)/65536.0);
@@ -801,7 +785,6 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
                   }
                   break;
                default:
-                  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("??? Unknown cmd MADAM[0x7FC]==0x%x\n", val).CStr());
                   break;
             }
             break;

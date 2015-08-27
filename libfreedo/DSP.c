@@ -415,8 +415,6 @@ void _dsp_Reset(void)
    flags.nOP_MASK=~0;
 }
 
-extern _ext_Interface  io_interface;
-
 #if _DEBUG
 static void _Arithmetic_Debug(uint16_t nrc, uint16_t opmask)
 {
@@ -449,10 +447,6 @@ static void _Arithmetic_Debug(uint16_t nrc, uint16_t opmask)
 
    NUMBER_OPERANDS=(nrc>>13)&3;
    if(!NUMBER_OPERANDS && (ALU1_RQST_L || ALU2_RQST_L) )NUMBER_OPERANDS=4;
-
-   //what if RQ is more than NUM_OPS????
-   if(NUMBER_OPERANDS<cnt)io_interface(EXT_DEBUG_PRINT,(void*)">>>DSP NUM_OPS_CONFLICT!!!\n");
-
 }
 #endif
 
@@ -979,9 +973,6 @@ void  iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I
          break;
       case 0x3ef:
          dregs.DSPPRLD=val;
-         //if(val>0)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL > 0");
-         //else if(val==567)io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 567");
-         //else io_interface(EXT_DEBUG_PRINT,(void*)"DSP_CNT_REL == 0");
          break;
       case 0x3f0:
       case 0x3f1:
@@ -1021,14 +1012,20 @@ void  _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,
       CPUSupply[addr-0x70]=1;
       //printf("# Coeff ARM write=0x%3.3X, val=0x%4.4X\n",addr,val);
       IMem[addr&0x7f]=val;
-      io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP FIFO DIRECT!!!\n");
+#if 0
+      printf(">>>ARM TO DSP FIFO DIRECT!!!\n");
+#endif
    }
    else
    {
       if(!(addr&0x80))
          IMem[addr&0x7f]=val;
       else
-         io_interface(EXT_DEBUG_PRINT,(void*)">>>ARM TO DSP HZ!!!\n");
+      {
+#if 0
+         printf(">>>ARM TO DSP HZ!!!\n");
+#endif
+      }
    }
 }
 

@@ -29,7 +29,6 @@ Felix Lazarev
 #include "vdlp.h"
 #include "arm.h"
 
-extern _ext_Interface  io_interface;
 extern int HightResMode;
 
 /* === VDL Palette data === */
@@ -131,13 +130,6 @@ unsigned int vmreadw(unsigned int addr);
 void _vdl_ProcessVDL( unsigned int addr)
 {
    HEADVDL=addr;
-
-#if 0
-   if((addr&0xfff00000)!=0x200000)
-   {
-      //io_interface(EXT_DEBUG_PRINT,(void*)str.print("!!!!VDLP!!!! VDLP code out of VRAM boundaries!!! 0x%8.8X",addr).CStr());
-   }
-#endif
 }
 
 static const unsigned int HOWMAYPIXELEXPECTPERLINE[8] =
@@ -213,13 +205,7 @@ static INLINE void VDLExec(void)
             if(ifgnorflag)continue;
             OUTCONTROLL=cmd;
 
-            //io_interface(EXT_DEBUG_PRINT,(void*)str.print("????VDLP???? Strange... DPComm=0x%8.8X",cmd).CStr());
-            /*if((OUTCONTROLL>>22)&7)
-              {
-              _3do_DPrint(str.print("????VDLP???? Strange... DPComm=0x%8.8X",cmd).CStr());
-              } */
             ifgnorflag=OUTCONTROLL&2;
-            //if(!ifgnorflag)break;
          }
          else if((unsigned int)cmd==0xffffffff)
          {
@@ -229,22 +215,10 @@ static INLINE void VDLExec(void)
             for(j = 0;j < 32; j++)
                CLUTB[j]=CLUTG[j]=CLUTR[j]=((j&0x1f)<<3)|((j>>2)&7);
          }
-#if 0
-         else if((cmd&0xff000000)!=0xE1000000 && (cmd&0xC0000000)!=VDL_CONTROL)
-         {
-            //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("::::VDLP:::: Unknown opcode... Comm=0x%8.8X",cmd).CStr());
-         }
-#endif
       }//for(i<nmcmd)
       CURRENTVDL=NEXTVDL;
 
       MODULO=HOWMAYPIXELEXPECTPERLINE[CLUTDMA.dmaw.modulo];
-#if 0
-      if(MODULO!=320)
-      {
-         // io_interface(EXT_DEBUG_PRINT,(void*)str.print("::::VDLP:::: Nonstandard modulo... W=%d, DMAWORD=0x%8.8X",MODULO, CLUTDMA.raw).CStr());
-      }
-#endif
       doloadclut=((linedelay=CLUTDMA.dmaw.lines)!=0);
    }
 }
