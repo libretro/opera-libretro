@@ -34,7 +34,7 @@ Felix Lazarev
 extern "C" {
 #endif
 
-void _vdl_Init(unsigned char *vramstart);
+void _vdl_Init(uint8_t *vramstart);
 void _vdl_ProcessVDL( unsigned int addr);
 
 void _vdl_DoLineNew(int line, struct VDLFrame *frame);

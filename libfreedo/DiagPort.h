@@ -28,6 +28,8 @@ Felix Lazarev
 #ifndef _DIAG_PORT_HEADER_DEFINITION_
 #define _DIAG_PORT_HEADER_DEFINITION_
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

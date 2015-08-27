@@ -48,9 +48,9 @@ Felix Lazarev
 
 #define WAVELET (11025)
 
-unsigned short RegBase(unsigned int reg);
-unsigned short ireadh(unsigned int addr);
-void iwriteh(unsigned int addr, unsigned short val);
+uint16_t RegBase(unsigned int reg);
+uint16_t ireadh(unsigned int addr);
+void iwriteh(unsigned int addr, uint16_t val);
 void OperandLoader(int Requests);
 int  OperandLoaderNWB(void);
 
@@ -173,30 +173,30 @@ struct __INSTTRAS
 
 struct REGSTAG{
    unsigned int PC;//0x0ee
-   unsigned short NOISE;//0x0ea
-   unsigned short AudioOutStatus;//audlock,lftfull,rgtfull -- 0x0eb//0x3eb
-   unsigned short Sema4Status;//0x0ec//0x3ec
-   unsigned short Sema4Data;//0x0ed//0x3ed
-   short DSPPCNT;//0x0ef
-   short DSPPRLD;//0x3ef
-   short AUDCNT;
-   unsigned short INT;//0x3ee
+   uint16_t NOISE;//0x0ea
+   uint16_t AudioOutStatus;//audlock,lftfull,rgtfull -- 0x0eb//0x3eb
+   uint16_t Sema4Status;//0x0ec//0x3ec
+   uint16_t Sema4Data;//0x0ed//0x3ed
+   int16_t DSPPCNT;//0x0ef
+   int16_t DSPPRLD;//0x3ef
+   int16_t AUDCNT;
+   uint16_t INT;//0x3ee
 };
 
 struct INTAG
 {
-   signed short MULT1;
-   signed short MULT2;
+   int16_t MULT1;
+   int16_t MULT2;
 
-   signed short ALU1;
-   signed short ALU2;
+   int16_t ALU1;
+   int16_t ALU2;
 
    int BS;
 
-   unsigned short RMAP;
-   unsigned short nOP_MASK;
+   uint16_t RMAP;
+   uint16_t nOP_MASK;
 
-   unsigned short WRITEBACK;
+   uint16_t WRITEBACK;
 
    union _requnion	req;
 
@@ -209,10 +209,10 @@ struct DSPDatum
 {
    unsigned int RBASEx4;
    struct __INSTTRAS INSTTRAS[0x8000];
-   unsigned short REGCONV[8][16];
+   uint16_t REGCONV[8][16];
    bool BRCONDTAB[32][32];
-   unsigned short NMem[2048];
-   unsigned short IMem[1024];
+   uint16_t NMem[2048];
+   uint16_t IMem[1024];
    int REGi;
    struct REGSTAG dregs;
    struct INTAG flags;
@@ -819,16 +819,16 @@ unsigned int _dsp_Loop(void)
    return ((IMem[0x3ff]<<16)|IMem[0x3fe]);
 }
 
-void  _dsp_WriteMemory(unsigned short addr, unsigned short val) //CPU writes NMEM of DSP
+void  _dsp_WriteMemory(uint16_t addr, uint16_t val) //CPU writes NMEM of DSP
 {
    //mwriteh(addr,val);
    //printf("#NWRITE 0x%3.3X<=0x%4.4X\n",addr,val);
    NMem[addr&0x3ff]=val;
 }
 
-unsigned short  RegBase(unsigned int reg)
+uint16_t  RegBase(unsigned int reg)
 {
-   unsigned short res;
+   uint16_t res;
    unsigned char twi,x,y;
 
    reg &= 0xf;
@@ -860,9 +860,9 @@ unsigned short  RegBase(unsigned int reg)
    return ((reg & 7) | (twi << 8) | (reg >> 3) << 9);
 }
 
-unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
+uint16_t  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
 {
-   unsigned short val;
+   uint16_t val;
 
    //	addr&=0x3ff;
    switch(addr)
@@ -950,9 +950,9 @@ unsigned short  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
    return IMem[addr&0x7f];
 }
 
-void  iwriteh(unsigned int addr, unsigned short val) //DSP IWRITE (includes EO,I)
+void  iwriteh(unsigned int addr, uint16_t val) //DSP IWRITE (includes EO,I)
 {
-   //unsigned short imem;
+   //uint16_t imem;
    addr&=0x3ff;
    switch(addr)
    {
@@ -1005,7 +1005,7 @@ void  _dsp_SetRunning(bool val)
    flags.Running= val;
 }
 
-void  _dsp_WriteIMem(unsigned short addr, unsigned short val)//CPU writes to EI,I of DSP
+void  _dsp_WriteIMem(uint16_t addr, uint16_t val)//CPU writes to EI,I of DSP
 {
    if (addr >= 0x70 && addr <= 0x7c)
    {
@@ -1039,7 +1039,7 @@ void  _dsp_ARMwrite2sema4(unsigned int val)
 }
 
 
-unsigned short  _dsp_ReadIMem(unsigned short addr) //CPU reads from EO,I of DSP
+uint16_t  _dsp_ReadIMem(uint16_t addr) //CPU reads from EO,I of DSP
 {
 
    switch(addr)
@@ -1073,8 +1073,8 @@ void  OperandLoader(int Requests)
 {
    int Operands;//total of operands
    int Ptr;
-   unsigned short OperandPool[6]; // c'mon -- 5 is real maximum
-   unsigned short GWRITEBACK;
+   uint16_t OperandPool[6]; // c'mon -- 5 is real maximum
+   uint16_t GWRITEBACK;
 
    union ITAG operand;
 

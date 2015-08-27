@@ -23,12 +23,12 @@
 
 #include "DiagPort.h"
 
-static unsigned short SNDDebugFIFO0;
-static unsigned short SNDDebugFIFO1;
-static unsigned short RCVDebugFIFO0;
-static unsigned short RCVDebugFIFO1;
-static unsigned short GetPTR;
-static unsigned short SendPTR;
+static uint16_t SNDDebugFIFO0;
+static uint16_t SNDDebugFIFO1;
+static uint16_t RCVDebugFIFO0;
+static uint16_t RCVDebugFIFO1;
+static uint16_t GetPTR;
+static uint16_t SendPTR;
 
 void _diag_Send(unsigned int val)
 {
@@ -51,15 +51,13 @@ void _diag_Send(unsigned int val)
 
 unsigned int _diag_Get()
 {
-   unsigned int val;
+   unsigned int val = 0;
 
    if(SendPTR!=16)
    {
       GetPTR=16;
       SendPTR=16;
    }
-
-   val=0;
 
    val=((RCVDebugFIFO0>>(GetPTR-1))&0x1);
    val|=((RCVDebugFIFO1>>(GetPTR-1))&0x1)<<0x1;

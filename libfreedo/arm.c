@@ -229,7 +229,7 @@ void _arm_Load(void *buff)
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-static __inline void load(unsigned int rn, unsigned int val)
+static INLINE void load(unsigned int rn, unsigned int val)
 {
    RON_USER[rn]=val;
 }
@@ -508,7 +508,7 @@ void _arm_SetCPSR(unsigned int a)
 }
 
 
-static __inline void SETM(unsigned int a)
+static INLINE void SETM(unsigned int a)
 {
 #if 0
    if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
@@ -522,12 +522,12 @@ static __inline void SETM(unsigned int a)
 }
 
 // This functions d'nt change mode bits, then need no update regcur
-static __inline void SETN(bool a) { CPSR=(CPSR&0x7fffffff)|((a?1<<31:0)); }
-static __inline void SETZ(bool a) { CPSR=(CPSR&0xbfffffff)|((a?1<<30:0)); }
-static __inline void SETC(bool a) { CPSR=(CPSR&0xdfffffff)|((a?1<<29:0)); }
-static __inline void SETV(bool a) { CPSR=(CPSR&0xefffffff)|((a?1<<28:0)); }
-static __inline void SETI(bool a) { CPSR=(CPSR&0xffffff7f)|((a?1<<7:0)); }
-static __inline void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
+static INLINE void SETN(bool a) { CPSR=(CPSR&0x7fffffff)|((a?1<<31:0)); }
+static INLINE void SETZ(bool a) { CPSR=(CPSR&0xbfffffff)|((a?1<<30:0)); }
+static INLINE void SETC(bool a) { CPSR=(CPSR&0xdfffffff)|((a?1<<29:0)); }
+static INLINE void SETV(bool a) { CPSR=(CPSR&0xefffffff)|((a?1<<28:0)); }
+static INLINE void SETI(bool a) { CPSR=(CPSR&0xffffff7f)|((a?1<<7:0)); }
+static INLINE void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 
 
 ///////////////////////////////////////////////////////////////
@@ -542,12 +542,7 @@ static __inline void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 #define ISI	 ((CPSR>>7)&1)
 #define ISF  ((CPSR>>6)&1)
 
-static __inline uint32_t _bswap(uint32_t x)
-{
-   return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
-}
-
-__inline uint32_t _rotr(uint32_t val, uint32_t shift)
+static INLINE uint32_t _rotr(uint32_t val, uint32_t shift)
 {
    if (shift)
       return (val>>shift)|(val<<(32-shift));
@@ -862,7 +857,7 @@ void ARM_SET_C(uint32_t x)
 #define ARM_SET_N(x)    (CPSR=((CPSR&0x7fffffff)|((x)&0x80000000)))
 #define ARM_GET_C       ((CPSR>>29)&1)
 
-static __inline void ARM_SET_ZN(uint32_t val)
+static INLINE void ARM_SET_ZN(uint32_t val)
 {
    if(val)
       CPSR=((CPSR&0x3fffffff)|(val&0x80000000));
@@ -870,7 +865,7 @@ static __inline void ARM_SET_ZN(uint32_t val)
       CPSR=((CPSR&0x3fffffff)|0x40000000);
 }
 
-static __inline void ARM_SET_CV(uint32_t rd, uint32_t op1, uint32_t op2)
+static INLINE void ARM_SET_CV(uint32_t rd, uint32_t op1, uint32_t op2)
 {
    //old_C=(CPSR>>29)&1;
 
@@ -880,7 +875,7 @@ static __inline void ARM_SET_CV(uint32_t rd, uint32_t op1, uint32_t op2)
 
 }
 
-static __inline void ARM_SET_CV_sub(uint32_t rd, uint32_t op1, uint32_t op2)
+static INLINE void ARM_SET_CV_sub(uint32_t rd, uint32_t op1, uint32_t op2)
 {
    //old_C=(CPSR>>29)&1;
 

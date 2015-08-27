@@ -78,9 +78,9 @@ union CDMW
 
 struct VDLDatum
 {
-   unsigned char CLUTB[32];
-   unsigned char CLUTG[32];
-   unsigned char CLUTR[32];
+   uint8_t CLUTB[32];
+   uint8_t CLUTG[32];
+   uint8_t CLUTR[32];
    unsigned int BACKGROUND;
    unsigned int HEADVDL;
    unsigned int MODULO;
@@ -94,7 +94,7 @@ struct VDLDatum
 #pragma pack(pop)
 
 static struct VDLDatum vdl;
-static unsigned char * vram;
+static uint8_t *vram;
 
 unsigned int _vdl_SaveSize(void)
 {
@@ -143,7 +143,7 @@ static INLINE void VDLExec(void)
 {
    int i;
    unsigned int NEXTVDL;
-   unsigned char ifgnorflag=0;
+   uint8_t ifgnorflag=0;
    unsigned int tmp = vmreadw(CURRENTVDL);
 
    if(tmp==0) // End of list
@@ -320,7 +320,7 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
 }
 
 
-void _vdl_Init(unsigned char *vramstart)
+void _vdl_Init(uint8_t *vramstart)
 {
    unsigned int i;
    vram = vramstart;

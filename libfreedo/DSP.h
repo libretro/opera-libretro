@@ -21,13 +21,10 @@ John Sammons
 Felix Lazarev
 */
 
-// DSP.h: interface for the CDSP class.
-//
-//////////////////////////////////////////////////////////////////////
-
 #ifndef DSP_3DO_HEADER
 #define DSP_3DO_HEADER
 
+#include <stdint.h>
 #include <boolean.h>
 
 #ifdef __cplusplus 
@@ -36,9 +33,9 @@ extern "C" {
 
 unsigned int _dsp_Loop(void);
 
-unsigned short  _dsp_ReadIMem(unsigned short addr);
-void  _dsp_WriteIMem(unsigned short addr, unsigned short val);
-void  _dsp_WriteMemory(unsigned short addr,unsigned short val);
+uint16_t  _dsp_ReadIMem(uint16_t addr);
+void  _dsp_WriteIMem(uint16_t addr, uint16_t val);
+void  _dsp_WriteMemory(uint16_t addr, uint16_t val);
 void  _dsp_SetRunning(bool val);
 void  _dsp_ARMwrite2sema4(unsigned int val);
 unsigned int _dsp_ARMread2sema4(void);
