@@ -542,12 +542,7 @@ static INLINE void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 #define ISI	 ((CPSR>>7)&1)
 #define ISF  ((CPSR>>6)&1)
 
-static INLINE uint32_t _rotr(uint32_t val, uint32_t shift)
-{
-   if (shift)
-      return (val>>shift)|(val<<(32-shift));
-   return val;
-}
+#define ROTR(val, shift) ((shift)) ? (((val) >> (shift)) | ((val) << (32 - (shift)))) : (val)
 
 unsigned char * _arm_Init(void)
 {
@@ -1077,7 +1072,7 @@ uint32_t ARM_SHIFT_NSC(uint32_t value, uint8_t shift, uint8_t type)
 
          shift&=31;
          if(shift==0)return value;
-         return _rotr(value, shift);
+         return ROTR(value, shift);
       case 4:
          carry_out=value&1;
          return (value>>1)|(ARM_GET_C<<31);
@@ -1140,7 +1135,7 @@ uint32_t  ARM_SHIFT_SC(uint32_t value, uint8_t shift, uint8_t type)
          }
          else
             return value;
-         return _rotr(value, shift);
+         return ROTR(value, shift);
       case 4:
          tmp=ARM_GET_C<<31;
          ARM_SET_C(value&1);
@@ -1325,7 +1320,7 @@ int _arm_Execute(void)
                         op2=cmd&0xff;
                         if(((cmd>>7)&0x1e))
                         {
-                           op2=_rotr(op2, (cmd>>7)&0x1e);
+                           op2= ROTR(op2, (cmd>>7)&0x1e);
                            //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
                         }
                         op1=RON_USER[(cmd>>16)&0xf];
@@ -1463,7 +1458,7 @@ Undefine:
                      {
                         val=mreadw(tbas);
                         rora=tbas&3;
-                        if((rora)) val=_rotr(val,rora*8);
+                        if((rora)) val = ROTR(val,rora*8);
                      }
 
                      if(((cmd>>12)&0xf)==0xf)
