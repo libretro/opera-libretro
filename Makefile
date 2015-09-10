@@ -113,6 +113,14 @@ else ifeq ($(platform), vita)
    STATIC_LINKING = 1
 	FLAGS += -DVITA
 
+# CTR (3DS)
+else ifeq ($(platform), ctr)
+	TARGET := $(TARGET_NAME)_libretro_ctr.a
+	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
+	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
+   STATIC_LINKING = 1
+   FLAGS += -D_3DS
+
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
