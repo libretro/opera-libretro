@@ -898,15 +898,6 @@ uint16_t  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
          }
          else
             val=_clio_EIFIFO(addr&0x0f);
-         //val=rand();
-         //printf("#DSP read EIFifo 0x%4.4X>=0x%4.4X\n",addr&0x0f,val);
-         /*FILE * flo;
-           flo=fopen("z:\\inp.raw","ab");
-           if(flo)
-           {
-           fwrite(&val,2,1,flo);
-           fclose(flo);
-           }*/
          return val;
       case 0x70:	case 0x71:	case 0x72:	case 0x73:
       case 0x74:	case 0x75:	case 0x76:	case 0x77:
