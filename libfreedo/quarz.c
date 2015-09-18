@@ -146,7 +146,7 @@ bool  _qrz_QueueTimer(void)
 void  _qrz_PushARMCycles(unsigned int clks)
 {
    uint32_t arm,cnt;
-   int timers=21000000; //default
+   int timers=21000000; /* default */
    int sp=0;
    if(sdf>0)
       sdf--;
@@ -225,7 +225,7 @@ void  _qrz_PushARMCycles(unsigned int clks)
 
    if((ARM_CLOCK-sp)!=THE_ARM_CLOCK)
    {   THE_ARM_CLOCK=(ARM_CLOCK-sp);
-      io_interface(EXT_ARM_SYNC,(void*)THE_ARM_CLOCK); //fix for working with 4do
+      io_interface(EXT_ARM_SYNC,(void*)THE_ARM_CLOCK); /* fix for working with 4do */
    }
    arm=(clks<<24)/(ARM_CLOCK-sp);
    qrz_AccARM+=arm*(ARM_CLOCK-sp);
@@ -238,7 +238,6 @@ void  _qrz_PushARMCycles(unsigned int clks)
    qrz_AccDSP+=arm*SND_CLOCK;
    qrz_AccVDL+=arm*(VDL_CLOCK);
 
-   //if(Get_madam_FSM()!=FSM_INPROCESS)
    if(_clio_GetTimerDelay())
-      qrz_TCount += arm*((timers)/(_clio_GetTimerDelay()));//clks<<1;
+      qrz_TCount += arm*((timers)/(_clio_GetTimerDelay()));
 }
