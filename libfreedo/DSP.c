@@ -314,7 +314,7 @@ void _dsp_Init(void)
 
    }
    {
-      bool MD0, MD1, MD2, MD3;
+      bool MD1, MD2, MD3;
       bool STAT0, STAT1;
       bool NSTAT0, NSTAT1;
       bool TDCARE0, TDCARE1;
@@ -344,8 +344,6 @@ void _dsp_Init(void)
          unsigned int raw;
       } Flags;
 
-      (void)MD0;
-
       for(inst.raw=0xA000; inst.raw<=0xFFFF; inst.raw+=1024)
          for(Flags.Zero=0;Flags.Zero<2;Flags.Zero++)
             for(Flags.Nega=0;Flags.Nega<2;Flags.Nega++)
@@ -354,7 +352,6 @@ void _dsp_Init(void)
                      for(fExact=0;fExact<2;fExact++)
                      {
 
-                        MD0=!inst.branch.MODE1 && !inst.branch.MODE0;
                         MD1=!inst.branch.MODE1 && inst.branch.MODE0;
                         MD2=inst.branch.MODE1 && !inst.branch.MODE0;
                         MD3=inst.branch.MODE1 && inst.branch.MODE0;
@@ -415,47 +412,11 @@ void _dsp_Reset(void)
    flags.nOP_MASK=~0;
 }
 
-#if _DEBUG
-static void _Arithmetic_Debug(uint16_t nrc, uint16_t opmask)
-{
-   bool MULT1_RQST_L,MULT2_RQST_L,ALU1_RQST_L,ALU2_RQST_L,BS_RQST_L;
-   int NUMBER_OPERANDS=0, cnt=0;
-
-   (void)MULT1_RQST_L;
-   (void)MULT2_RQST_L;
-   (void)BS_RQST_L;
-
-   if( ((nrc&0x300)==0x300 || (nrc&0xC00)==0xC00) && !(opmask&0x10) )
-   {MULT1_RQST_L=true;cnt++;}
-   else MULT1_RQST_L=false;
-
-   if( ((nrc&0x300)==0x300 || (nrc&0xC00)==0xC00) && !(opmask&0x8) && (nrc&0x1000) )
-   {MULT2_RQST_L=true;cnt++;}
-   else MULT2_RQST_L=false;
-
-   if(  ((nrc&0x300)==0x100 || (nrc&0xC00)==0x400) && !(opmask&0x4)  )
-   {ALU1_RQST_L=true;cnt++;}
-   else ALU1_RQST_L=false;
-
-   if(  ((nrc&0x300)==0x200 || (nrc&0xC00)==0x800) && !(opmask&0x2)  )
-   {ALU2_RQST_L=true;cnt++;}
-   else ALU2_RQST_L=false;
-
-   if( (nrc&0xf)==0x8 && !(opmask&0x1) )
-   {BS_RQST_L=true;cnt++;}
-   else BS_RQST_L=false;
-
-   NUMBER_OPERANDS=(nrc>>13)&3;
-   if(!NUMBER_OPERANDS && (ALU1_RQST_L || ALU2_RQST_L) )NUMBER_OPERANDS=4;
-}
-#endif
-
 unsigned int _dsp_Loop(void)
 {
-   unsigned int AOP, BOP;	//1st & 2nd operand
+   unsigned int BOP;	//1st & 2nd operand
    unsigned int Y;			//accumulator
 
-   unsigned int RBSR;	//return address
 
    union {
       struct {
@@ -466,24 +427,20 @@ unsigned int _dsp_Loop(void)
       };
       unsigned int raw;
    } Flags;
-   bool fExact;
-
-   bool Work;
 
    if(flags.Running&1)
    {
+      unsigned AOP  = 0; /* 1st operand */
+      unsigned RBSR = 0;	/* return address */
+      bool fExact   = 0;
+      bool Work     = true;
       _dsp_Reset();
 
       Flags.raw=0;
-      fExact=0;
 
-      AOP=0;
       BOP=0;
       Y=0;
 
-      RBSR=0;
-
-      Work=true;
       do
       {
          union ITAG inst;
@@ -567,11 +524,6 @@ unsigned int _dsp_Loop(void)
          else
          {
             //ALU instruction
-
-#if _DEBUG
-            _Arithmetic_Debug(inst.raw, ~flags.nOP_MASK);
-#endif
-
             flags.req.raw=INSTTRAS[inst.raw].req.raw;
             flags.BS     =INSTTRAS[inst.raw].BS;
 
@@ -828,7 +780,6 @@ void  _dsp_WriteMemory(uint16_t addr, uint16_t val) //CPU writes NMEM of DSP
 
 uint16_t  RegBase(unsigned int reg)
 {
-   uint16_t res;
    unsigned char twi,x,y;
 
    reg &= 0xf;

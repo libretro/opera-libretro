@@ -473,15 +473,15 @@ void _clio_DoTimers(void)
 {
    unsigned int timer;
    unsigned short counter;
-   unsigned int flag;
    bool NeedDecrementNextTimer=true;   // Need decrement for next timer
-   //bool prevdec=false;
+
    for (timer=0;timer<16;timer++)
    {
-      flag=cregs[(timer<8)?0x200:0x208]>>((timer*4)&31);
-      if( !(flag&CASCADE) ) NeedDecrementNextTimer=true;
+      unsigned flag = cregs[(timer<8)?0x200:0x208]>>((timer*4)&31);
 
-      if( NeedDecrementNextTimer && (flag&DECREMENT) )
+      if( !(flag & CASCADE) ) NeedDecrementNextTimer=true;
+
+      if( NeedDecrementNextTimer && (flag & DECREMENT) )
       {
          counter=cregs[0x100+timer*8];
          if((NeedDecrementNextTimer=(counter--==0)))
@@ -490,7 +490,7 @@ void _clio_DoTimers(void)
             {  // generate the interrupts because be overflow
                _clio_GenerateFiq(1<<(10-timer/2),0);
             }
-            if(flag&RELOAD)
+            if(flag & RELOAD)
             {  // reload timer by reload value
                counter=cregs[0x100+timer*8+4];
                //return;
@@ -502,10 +502,8 @@ void _clio_DoTimers(void)
          }
          cregs[0x100+timer*8]=counter;
       }
-      //else if( !prevdec && (flag&CASCADE) ) return;
-      else NeedDecrementNextTimer=false;
-      //if( !(flag&CASCADE) ) NeedDecrementNextTimer=true;
-      //prevdec=(flag&DECREMENT);
+      else
+         NeedDecrementNextTimer=false;
    }
 }
 
@@ -517,15 +515,15 @@ unsigned int _clio_GetTimerDelay(void)
 
 void HandleDMA(unsigned int val)
 {
-   unsigned int src;
-   unsigned int trg;
-   int len;
-   unsigned int ptr;
-   unsigned char b0,b1,b2,b3;
-
    cregs[0x304]|=val;
+
    if(val&0x00100000)
    {
+      unsigned src;
+      unsigned trg;
+      int len;
+      unsigned char b0,b1,b2,b3;
+
       cregs[0x304]&=~0x00100000;
       src=_madam_Peek(0x540);
       trg=src;
@@ -535,7 +533,6 @@ void HandleDMA(unsigned int val)
 
       if((cregs[0x404])&0x200)
       {
-         ptr=0;
          while(len>=0)
          {
             b3=_xbus_GetDataFIFO();
@@ -557,16 +554,12 @@ void HandleDMA(unsigned int val)
 
             trg+=4;
             len-=4;
-            ptr+=4;
-
          }
          cregs[0x400]|=0x80;
 
       }
       else
       {
-         ptr=0;
-
          while(len>=0)
          {
             b3=_xbus_GetDataFIFO();
@@ -588,8 +581,6 @@ void HandleDMA(unsigned int val)
 
             trg+=4;
             len-=4;
-            ptr+=4;
-
          }
          cregs[0x400]|=0x80;
 
@@ -672,9 +663,6 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
 
 void  _clio_EOFIFO(unsigned short channel, unsigned short val)
 {
-   unsigned int base = 0x500 + (channel * 16);
-   unsigned int mask = 1 << (channel + 16);
-
    /* Channel disabled? */
    if(FIFOO[channel].StartAdr == 0)
       return;
@@ -705,7 +693,6 @@ void  _clio_EOFIFO(unsigned short channel, unsigned short val)
 
 unsigned short  _clio_EIFIFONI(unsigned short channel)
 {
-   unsigned int base = 0x400 + (channel * 16);
 #ifdef MSB_FIRST
    return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])));
 #else
@@ -715,21 +702,15 @@ unsigned short  _clio_EIFIFONI(unsigned short channel)
 
 unsigned short   _clio_GetEIFIFOStat(unsigned char channel)
 {
-   unsigned int mask = 1 << channel;
-   //if(cregs[0x304]&mask)//channel enabled
+
    if( FIFOI[channel].StartAdr!=0 )
-   {
-      //return 1;
-      //return (FIFOI[channel].StartLen-PTRI[channel]);
       return 2;// 2fixme
-   }
+
    return 0;
 }
 
 unsigned short   _clio_GetEOFIFOStat(unsigned char channel)
 {
-   unsigned int mask = 1 << (channel + 16);
-   //if(cregs[0x304]&mask)//channel enabled
    if( FIFOO[channel].StartAdr!=0 )
       return 1;
    return 0;

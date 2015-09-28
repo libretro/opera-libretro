@@ -1406,7 +1406,6 @@ Undefine:
                   unsigned int base,tbas;
                   unsigned int oper2;
                   unsigned int val, rora;
-                  //uint8_t	delta;
 
                   pc_tmp=REG_PC;
                   REG_PC+=4;
@@ -1456,9 +1455,11 @@ Undefine:
                         val=mreadb(tbas)&0xff;
                      else //words/halfwords
                      {
-                        val=mreadw(tbas);
-                        rora=tbas&3;
-                        if((rora)) val = ROTR(val,rora*8);
+                        unsigned rora = tbas & 3;
+                        val           = mreadw(tbas);
+
+                        if((rora))
+                           val = ROTR(val,rora*8);
                      }
 
                      if(((cmd>>12)&0xf)==0xf)
@@ -1692,7 +1693,6 @@ unsigned int mreadw(unsigned int addr)
    //to do -- wipe out all HW
    //to do -- add abort (may be in HW)
    //to do -- proper loging
-   unsigned int val;
    int index;
 
    addr&=~3;
@@ -1729,14 +1729,7 @@ unsigned int mreadw(unsigned int addr)
       if(index & 0x80000) //if (addr>=0x03180000)
          return _diag_Get();
       else if(index & 0x40000)       //else if ((addr>=0x03140000) && (addr<0x03180000))
-      {
-         val=(unsigned int)pNVRam[(index>>2)&32767];
-         return val;
-      }
-      /*else
-        {
-        return 0xBADACCE5;
-        }*/
+         return (unsigned int)pNVRam[(index>>2)&32767];
    }
 
    //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());

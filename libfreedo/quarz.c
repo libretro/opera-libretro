@@ -145,9 +145,10 @@ bool  _qrz_QueueTimer(void)
 
 void  _qrz_PushARMCycles(unsigned int clks)
 {
-   uint32_t arm,cnt;
-   int timers=21000000; /* default */
-   int sp=0;
+   uint32_t arm;
+   int timers = 21000000; /* default */
+   int     sp = 0;
+
    if(sdf>0)
       sdf--;
    if(sf>0)
