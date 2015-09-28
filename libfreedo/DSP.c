@@ -1182,9 +1182,8 @@ void  OperandLoader(int Requests)
 
 int  OperandLoaderNWB(void)
 {
-   int Operand;
-
    union ITAG operand;
+   int Operand = 0;
 
    operand.raw=NMem[dregs.PC++];
    if(operand.nrof.TYPE==4)
@@ -1194,28 +1193,25 @@ int  OperandLoaderNWB(void)
          Operand=ireadh(ireadh(operand.nrof.OP_ADDR));
       else
          Operand=ireadh(       operand.nrof.OP_ADDR);
-
-
    }
-   else if(!(operand.nrof.TYPE&4))  // case 0..3
+   else if(!(operand.nrof.TYPE & 4))  // case 0..3
    {
       if(operand.r3of.R3_DI) // ???
          Operand=ireadh(ireadh(REGCONV[REGi][operand.r3of.R3]^RBASEx4));
       else
          Operand=ireadh(       REGCONV[REGi][operand.r3of.R3]^RBASEx4 );
    }
-   else if ((operand.nrof.TYPE&6)==6)
+   else if ((operand.nrof.TYPE & 6) == 6)
    {
       //case 6: and case 7:  immediate format
       Operand=operand.iof.IMMEDIATE<<(operand.iof.JUSTIFY&3);
-
    }
-   else if(operand.nrof.TYPE==5)
+   else if(operand.nrof.TYPE == 5)
    { //if(operand.r2of.NUMREGS) ignore... It's right?
       if(operand.r2of.R1_DI)
-         Operand=ireadh(ireadh(REGCONV[REGi][operand.r2of.R1]^RBASEx4));
+         Operand = ireadh(ireadh(REGCONV[REGi][operand.r2of.R1]^RBASEx4));
       else
-         Operand=ireadh(       REGCONV[REGi][operand.r2of.R1]^RBASEx4 );
+         Operand = ireadh(       REGCONV[REGi][operand.r2of.R1]^RBASEx4 );
    }
 
    return Operand;
