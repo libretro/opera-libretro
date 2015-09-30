@@ -152,7 +152,6 @@ static char *fsReadSize(void)
 static unsigned int fsReadDiscSize(void)
 {
    unsigned int size;
-   char sectorZero[2048];
    unsigned int temp;
    char *ssize = fsReadSize();
 
@@ -511,13 +510,13 @@ bool retro_load_game(const struct retro_game_info *info)
       }
       else
       {
+         char bios_path[1024];
+         FILE *fp;
 #ifdef _WIN32
          char slash = '\\';
 #else
          char slash = '/';
 #endif
-         char bios_path[1024];
-         FILE *fp;
          sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
 
          fp = fopen(bios_path, "rb");
