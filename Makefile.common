@@ -1,6 +1,7 @@
-4DO_DIR := $(CORE_DIR)/libfreedo
+LIBRETRO_DIR := $(CORE_DIR)/libretro-common
+4DO_DIR      := $(CORE_DIR)/libfreedo
 
-INCFLAGS += -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo
+INCFLAGS += -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo -I$(LIBRETRO_DIR)/include
 
 SOURCES_CXX := 
 
@@ -18,3 +19,8 @@ SOURCES_C := $(CORE_DIR)/libretro.c \
 	$(4DO_DIR)/frame.c \
 	$(4DO_DIR)/bitop.c \
 	$(4DO_DIR)/SPORT.c
+
+ifneq ($(STATIC_LINKING), 1)
+SOURCES_C += $(LIBRETRO_DIR)/file/retro_file.c \
+				 $(LIBRETRO_DIR)/file/retro_stat.c
+endif

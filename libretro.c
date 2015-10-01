@@ -13,6 +13,9 @@
 #pragma pack(1)
 #endif
 
+#include <retro_file.h>
+#include <retro_stat.h>
+
 #include "libretro.h"
 
 #include "libfreedo/freedocore.h"
@@ -51,7 +54,7 @@ extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
 extern void* Getp_NVRAM();
 
-static FILE *fcdrom;
+static RFILE *fcdrom;
 static int currentSector;
 static bool isSwapFrameSignaled;
 
@@ -98,24 +101,27 @@ static const unsigned char nvram_header[] =
    0,0,0,0x84,0,0,0x76,0x68,0,0,0,0x14
 };
 
-static void fsReadBios(const char *biosFile, void *prom)
+static void fsReadBios(const char *bios_path, void *prom)
 {
    long fsize;
    int readcount;
-   FILE *bios1 = fopen(biosFile, "rb");
+   RFILE *bios1 = retro_fopen(bios_path, RFILE_MODE_READ, -1);
 
-   fseek(bios1, 0, SEEK_END);
-   fsize = ftell(bios1);
-   rewind(bios1);
-   readcount = fread(prom, 1, fsize, bios1);
+   if (!bios1)
+      return;
+
+   retro_fseek(bios1, 0, SEEK_END);
+   fsize = retro_ftell(bios1);
+   retro_frewind(bios1);
+   readcount = retro_fread(bios1, prom, fsize);
    (void)readcount;
 
-   fclose(bios1);
+   retro_fclose(bios1);
 }
 
 static int fsOpenIso(const char *path)
 {
-   fcdrom = fopen(path, "rb");
+   fcdrom = retro_fopen(path, RFILE_MODE_READ, -1);
 
    if(!fcdrom)
       return 0;
@@ -125,15 +131,15 @@ static int fsOpenIso(const char *path)
 
 static int fsCloseIso(void)
 {
-   fclose(fcdrom);
+   retro_fclose(fcdrom);
    return 1;
 }
 
 static int fsReadBlock(void *buffer, int sector)
 {
-   fseek(fcdrom, 2048 * sector, SEEK_SET);
-   fread(buffer, 1, 2048, fcdrom);
-   rewind(fcdrom);
+   retro_fseek(fcdrom, 2048 * sector, SEEK_SET);
+   retro_fread(fcdrom, buffer, 2048);
+   retro_frewind(fcdrom);
 
    return 1;
 }
@@ -141,10 +147,11 @@ static int fsReadBlock(void *buffer, int sector)
 static char *fsReadSize(void)
 {
    char *buffer = (char *)malloc(sizeof(char) * 4);
-   rewind(fcdrom);
-   fseek(fcdrom, 80, SEEK_SET);
-   fread(buffer, 1, 4, fcdrom);
-   rewind(fcdrom);
+
+   retro_frewind(fcdrom);
+   retro_fseek(fcdrom, 80, SEEK_SET);
+   retro_fread(fcdrom, buffer, 4);
+   retro_frewind(fcdrom);
 
    return buffer;
 }
@@ -158,7 +165,9 @@ static unsigned int fsReadDiscSize(void)
    memcpy(&temp, ssize, 4);
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
       (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
-   //printf("disc size: %d sectors\n", size);
+
+   printf("disc size: %d sectors\n", size);
+
    return size;
 }
 
@@ -173,7 +182,7 @@ static void initVideo(void)
    memset(frame, 0, sizeof(struct VDLFrame));
 }
 
-// Input helper functions
+/* Input helper functions */
 static int CheckDownButton(int deviceNumber,int button)
 {
    if(internal_input_state[deviceNumber].buttons&button)
