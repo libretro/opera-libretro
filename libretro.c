@@ -520,7 +520,7 @@ bool retro_load_game(const struct retro_game_info *info)
       else
       {
          char bios_path[1024];
-         FILE *fp;
+         RFILE *fp;
 #ifdef _WIN32
          char slash = '\\';
 #else
@@ -528,18 +528,17 @@ bool retro_load_game(const struct retro_game_info *info)
 #endif
          sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
 
-         fp = fopen(bios_path, "rb");
+         fp = retro_fopen(bios_path, RFILE_MODE_READ, -1);
 
-         if (fp)
-         {
-            fclose(fp);
-            strcpy(biosPath, bios_path);
-         }
-         else
+         if (!fp)
          {
             if (log_cb)
                log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
+            return false;
          }
+
+         retro_fclose(fp);
+         strcpy(biosPath, bios_path);
       }
 
       // Initialize libfreedo
