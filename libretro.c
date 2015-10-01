@@ -243,7 +243,7 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_PUSH_SAMPLE:
       {
          //TODO: fix all this, not right
-         sampleBuffer[sampleCurrent] = *((unsigned int*)&data);
+         sampleBuffer[sampleCurrent] = (uintptr_t)data;
          sampleCurrent++;
          if(sampleCurrent >= TEMP_BUFFER_SIZE)
          {
@@ -283,6 +283,7 @@ static void *fdcCallback(int procedure, void *data)
          break;
       case EXT_FRAMETRIGGER_MT:
       {
+         isSwapFrameSignaled = true;
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       }
