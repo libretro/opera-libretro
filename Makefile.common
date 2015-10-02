@@ -1,7 +1,7 @@
 LIBRETRO_DIR := $(CORE_DIR)/libretro-common
 4DO_DIR      := $(CORE_DIR)/libfreedo
 
-INCFLAGS += -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo -I$(LIBRETRO_DIR)/include
+INCFLAGS := -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo -I$(LIBRETRO_DIR)/include
 
 SOURCES_CXX := 
 
