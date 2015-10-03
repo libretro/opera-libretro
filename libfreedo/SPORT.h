@@ -32,13 +32,13 @@ Felix Lazarev
 extern "C" {
 #endif
 
-void _sport_Init(unsigned char *vmem);
+void _sport_Init(uint8_t *vmem);
 
-int _sport_SetSource(unsigned int index);
+int _sport_SetSource(uint32_t index);
 
-void _sport_WriteAccess(unsigned int index, unsigned int mask);
+void _sport_WriteAccess(uint32_t index, uint32_t mask);
 
-unsigned int _sport_SaveSize(void);
+uint32_t _sport_SaveSize(void);
 void _sport_Save(void *buff);
 void _sport_Load(void *buff);
 

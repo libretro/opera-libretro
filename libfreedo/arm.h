@@ -28,6 +28,8 @@ Felix Lazarev
 #ifndef ARM_3DO_HEADER
 #define ARM_3DO_HEADER
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,14 +37,14 @@ extern "C" {
 int _arm_Execute(void);
 void _arm_Reset(void);
 void _arm_Destroy(void);
-unsigned char * _arm_Init(void);
+uint8_t *_arm_Init(void);
 
 //for mas
-void _mem_write8(unsigned int addr, unsigned char val);
-void  _mem_write16(unsigned int addr, unsigned short val);
+void _mem_write8(unsigned int addr, uint8_t val);
+void  _mem_write16(unsigned int addr, uint16_t val);
 void _mem_write32(unsigned int addr, unsigned int val);
-unsigned char  _mem_read8(unsigned int addr);
-unsigned short _mem_read16(unsigned int addr);
+uint8_t  _mem_read8(unsigned int addr);
+uint16_t _mem_read16(unsigned int addr);
 unsigned int  _mem_read32(unsigned int addr);
 
 void WriteIO(unsigned int addr, unsigned int val);

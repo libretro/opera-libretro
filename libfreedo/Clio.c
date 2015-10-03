@@ -37,7 +37,7 @@
 
 extern int jw;
 
-void HandleDMA(unsigned int val);
+void HandleDMA(uint32_t val);
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -46,14 +46,14 @@ void HandleDMA(unsigned int val);
 #pragma pack(push,1)
 struct FIFOt{
 
-   unsigned int StartAdr;
+   uint32_t StartAdr;
    int StartLen;
-   unsigned int NextAdr;
+   uint32_t NextAdr;
    int NextLen;
 };
 struct CLIODatum
 {
-   unsigned int cregs[65536];
+   uint32_t cregs[65536];
    int DSPW1;
    int DSPW2;
    int DSPA;
@@ -64,7 +64,7 @@ struct CLIODatum
 };
 #pragma pack(pop)
 
-static unsigned int * Mregs;
+static uint32_t * Mregs;
 
 static struct CLIODatum clio;
 
@@ -77,7 +77,7 @@ static struct CLIODatum clio;
 #define FIFOI clio.FIFOI
 #define FIFOO clio.FIFOO
 
-unsigned int _clio_SaveSize(void)
+uint32_t _clio_SaveSize(void)
 {
    return sizeof(struct CLIODatum);
 }
@@ -115,7 +115,7 @@ bool _clio_NeedFIQ(void)
    return false;
 }
 
-void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2)
+void _clio_GenerateFiq(uint32_t reason1, uint32_t reason2)
 {
    cregs[0x40] |= reason1;
    cregs[0x60] |= reason2;
@@ -128,7 +128,7 @@ extern _ext_Interface  io_interface;
 void _clio_SetTimers(uint32_t v200, uint32_t v208);
 void _clio_ClearTimers(uint32_t v204, uint32_t v20c);
 
-int _clio_Poke(unsigned int addr, unsigned int val)
+int _clio_Poke(uint32_t addr, uint32_t val)
 {
    int base;
    int i;
@@ -389,7 +389,7 @@ int _clio_Poke(unsigned int addr, unsigned int val)
 
 
 
-unsigned int _clio_Peek(unsigned int addr)
+uint32_t _clio_Peek(uint32_t addr)
 {
    if( (addr& ~0x2C) == 0x40 ) // 0x40..0x4C, 0x60..0x6C case
    {
@@ -471,8 +471,8 @@ void _clio_ClearTimers(uint32_t v204, uint32_t v20c)
 
 void _clio_DoTimers(void)
 {
-   unsigned int timer;
-   unsigned short counter;
+   uint32_t timer;
+   uint16_t counter;
    bool NeedDecrementNextTimer=true;   // Need decrement for next timer
 
    for (timer=0;timer<16;timer++)
@@ -507,13 +507,13 @@ void _clio_DoTimers(void)
    }
 }
 
-unsigned int _clio_GetTimerDelay(void)
+uint32_t _clio_GetTimerDelay(void)
 {
    return cregs[0x220];
 }
 
 
-void HandleDMA(unsigned int val)
+void HandleDMA(uint32_t val)
 {
    cregs[0x304]|=val;
 
@@ -522,7 +522,7 @@ void HandleDMA(unsigned int val)
       unsigned src;
       unsigned trg;
       int len;
-      unsigned char b0,b1,b2,b3;
+      uint8_t b0,b1,b2,b3;
 
       cregs[0x304]&=~0x00100000;
       src=_madam_Peek(0x540);
@@ -607,7 +607,7 @@ void _clio_Init(int ResetReson)
    Mregs=_madam_GetRegs();
 
 }
-unsigned short  _clio_EIFIFO(unsigned short channel)
+uint16_t  _clio_EIFIFO(uint16_t channel)
 {
    unsigned base = 0x400+(channel*16);
    unsigned mask = 1<<channel;
@@ -617,7 +617,7 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
 
    if(FIFOI[channel].StartAdr!=0)//channel enabled
    {
-      unsigned int val;
+      uint32_t val;
 
       if( (FIFOI[channel].StartLen-PTRI[channel])>0 )
       {
@@ -661,7 +661,7 @@ unsigned short  _clio_EIFIFO(unsigned short channel)
    return 0;
 }
 
-void  _clio_EOFIFO(unsigned short channel, unsigned short val)
+void  _clio_EOFIFO(uint16_t channel, uint16_t val)
 {
    /* Channel disabled? */
    if(FIFOO[channel].StartAdr == 0)
@@ -691,7 +691,7 @@ void  _clio_EOFIFO(unsigned short channel, unsigned short val)
    }
 }
 
-unsigned short  _clio_EIFIFONI(unsigned short channel)
+uint16_t  _clio_EIFIFONI(uint16_t channel)
 {
 #ifdef MSB_FIRST
    return _mem_read16(((FIFOI[channel].StartAdr+PTRI[channel])));
@@ -700,24 +700,22 @@ unsigned short  _clio_EIFIFONI(unsigned short channel)
 #endif
 }
 
-unsigned short   _clio_GetEIFIFOStat(unsigned char channel)
+uint16_t   _clio_GetEIFIFOStat(uint8_t channel)
 {
-
    if( FIFOI[channel].StartAdr!=0 )
       return 2;// 2fixme
 
    return 0;
 }
 
-unsigned short   _clio_GetEOFIFOStat(unsigned char channel)
+uint16_t   _clio_GetEOFIFOStat(uint8_t channel)
 {
    if( FIFOO[channel].StartAdr!=0 )
       return 1;
    return 0;
-
 }
 
-void _clio_SetFIFO(unsigned int adr, unsigned int val)
+void _clio_SetFIFO(uint32_t adr, uint32_t val)
 {
    if( (adr&0x500) == 0x400)
    {
@@ -773,7 +771,7 @@ void _clio_Reset(void)
       cregs[i]=0;
 }
 
-unsigned int _clio_FIFOStruct(unsigned int addr)
+uint32_t _clio_FIFOStruct(uint32_t addr)
 {
    if((addr&0x500)==0x400)
    {

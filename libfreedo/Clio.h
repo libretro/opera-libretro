@@ -28,6 +28,8 @@ Felix Lazarev
 #ifndef	CLIO_3DO_HEADER
 #define CLIO_3DO_HEADER
 
+#include <stdint.h>
+
 #include <boolean.h>
 
 #ifdef __cplusplus
@@ -38,26 +40,26 @@ int _clio_v0line(void);
 int _clio_v1line(void);
 bool _clio_NeedFIQ(void);
 
-unsigned int _clio_FIFOStruct(unsigned int addr);
+uint32_t _clio_FIFOStruct(uint32_t addr);
 void _clio_Reset(void);
-void _clio_SetFIFO(unsigned int adr, unsigned int val);
-unsigned short  _clio_GetEOFIFOStat(unsigned char channel);
-unsigned short  _clio_GetEIFIFOStat(unsigned char channel);
-unsigned short  _clio_EIFIFONI(unsigned short channel);
-void  _clio_EOFIFO(unsigned short channel, unsigned short val);
-unsigned short  _clio_EIFIFO(unsigned short channel);
+void _clio_SetFIFO(uint32_t adr, uint32_t val);
+uint16_t  _clio_GetEOFIFOStat(uint8_t channel);
+uint16_t  _clio_GetEIFIFOStat(uint8_t channel);
+uint16_t  _clio_EIFIFONI(uint16_t channel);
+void  _clio_EOFIFO(uint16_t channel, uint16_t val);
+uint16_t  _clio_EIFIFO(uint16_t channel);
 
 void _clio_Init(int ResetReson);
 
 void _clio_DoTimers(void);
-unsigned int _clio_Peek(unsigned int addr);
-int _clio_Poke(unsigned int addr, unsigned int val);
+uint32_t _clio_Peek(uint32_t addr);
+int _clio_Poke(uint32_t addr, uint32_t val);
 void _clio_UpdateVCNT(int line, int halfframe);
-void _clio_GenerateFiq(unsigned int reason1, unsigned int reason2);
+void _clio_GenerateFiq(uint32_t reason1, uint32_t reason2);
 
-unsigned int _clio_GetTimerDelay(void);
+uint32_t _clio_GetTimerDelay(void);
 
-unsigned int _clio_SaveSize(void);
+uint32_t _clio_SaveSize(void);
 void _clio_Save(void *buff);
 void _clio_Load(void *buff);
 

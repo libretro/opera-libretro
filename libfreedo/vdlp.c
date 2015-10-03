@@ -57,22 +57,22 @@ extern int HightResMode;
 
 struct cdmaw
 {
-   unsigned int	lines:9;//0-8
-   unsigned int	numword:6;//9-14
-   unsigned int	prevover:1;//15
-   unsigned int	currover:1;//16
-   unsigned int	prevtick:1;//17
-   unsigned int  abs:1;//18
-   unsigned int  vmode:1;//19
-   unsigned int  pad0:1;//20
-   unsigned int  enadma:1;//21
-   unsigned int  pad1:1;//22
-   unsigned int  modulo:3;//23-25
-   unsigned int  pad2:6;//26-31
+   uint32_t	lines:9;//0-8
+   uint32_t	numword:6;//9-14
+   uint32_t	prevover:1;//15
+   uint32_t	currover:1;//16
+   uint32_t	prevtick:1;//17
+   uint32_t  abs:1;//18
+   uint32_t  vmode:1;//19
+   uint32_t  pad0:1;//20
+   uint32_t  enadma:1;//21
+   uint32_t  pad1:1;//22
+   uint32_t  modulo:3;//23-25
+   uint32_t  pad2:6;//26-31
 };
 union CDMW
 {
-   unsigned int raw;
+   uint32_t raw;
    struct cdmaw  dmaw;
 };
 
@@ -81,13 +81,13 @@ struct VDLDatum
    uint8_t CLUTB[32];
    uint8_t CLUTG[32];
    uint8_t CLUTR[32];
-   unsigned int BACKGROUND;
-   unsigned int HEADVDL;
-   unsigned int MODULO;
-   unsigned int CURRENTVDL;
-   unsigned int CURRENTBMP;
-   unsigned int PREVIOUSBMP;
-   unsigned int OUTCONTROLL;
+   uint32_t BACKGROUND;
+   uint32_t HEADVDL;
+   uint32_t MODULO;
+   uint32_t CURRENTVDL;
+   uint32_t CURRENTBMP;
+   uint32_t PREVIOUSBMP;
+   uint32_t OUTCONTROLL;
    union CDMW CLUTDMA;
    int linedelay;
 };
@@ -96,7 +96,7 @@ struct VDLDatum
 static struct VDLDatum vdl;
 static uint8_t *vram;
 
-unsigned int _vdl_SaveSize(void)
+uint32_t _vdl_SaveSize(void)
 {
    return sizeof(struct VDLDatum);
 }
@@ -125,14 +125,14 @@ void _vdl_Load(void *buff)
 #define linedelay vdl.linedelay
 
 
-unsigned int vmreadw(unsigned int addr);
+uint32_t vmreadw(uint32_t addr);
 
-void _vdl_ProcessVDL( unsigned int addr)
+void _vdl_ProcessVDL( uint32_t addr)
 {
    HEADVDL=addr;
 }
 
-static const unsigned int HOWMAYPIXELEXPECTPERLINE[8] =
+static const uint32_t HOWMAYPIXELEXPECTPERLINE[8] =
 {320, 384, 512, 640, 1024, 320, 320, 320};
 
 // ###### Per line implementation ######
@@ -142,9 +142,9 @@ bool doloadclut=false;
 static INLINE void VDLExec(void)
 {
    int i;
-   unsigned int NEXTVDL;
+   uint32_t NEXTVDL;
    uint8_t ifgnorflag=0;
-   unsigned int tmp = vmreadw(CURRENTVDL);
+   uint32_t tmp = vmreadw(CURRENTVDL);
 
    if(tmp==0) // End of list
    {
@@ -178,7 +178,7 @@ static INLINE void VDLExec(void)
          if(!(cmd&VDL_CONTROL))
          {	//color value
 
-            unsigned int coloridx=(cmd&VDL_PEN_MASK)>>VDL_PEN_SHIFT;
+            uint32_t coloridx=(cmd&VDL_PEN_MASK)>>VDL_PEN_SHIFT;
 
             if((cmd&VDL_RGBCTL_MASK)==VDL_FULLRGB)
             {
@@ -207,9 +207,9 @@ static INLINE void VDLExec(void)
 
             ifgnorflag=OUTCONTROLL&2;
          }
-         else if((unsigned int)cmd==0xffffffff)
+         else if((uint32_t)cmd==0xffffffff)
          {
-            unsigned int j;
+            uint32_t j;
             if (ifgnorflag)
                continue;
             for(j = 0;j < 32; j++)
@@ -252,32 +252,32 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
       {
          if(HightResMode)
          {
-            unsigned short *dst1,*dst2;
-            unsigned int *src1,*src2,*src3,*src4;
+            uint16_t *dst1,*dst2;
+            uint32_t *src1,*src2,*src3,*src4;
             dst1=frame->lines[(y<<1)].line;
             dst2=frame->lines[(y<<1)+1].line;
-            src1=(unsigned int*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
-            src2=(unsigned int*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF)+1024*1024);
-            src3=(unsigned int*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+2*1024*1024);
-            src4=(unsigned int*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+3*1024*1024);
+            src1=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
+            src2=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF)+1024*1024);
+            src3=(uint32_t*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+2*1024*1024);
+            src4=(uint32_t*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+3*1024*1024);
             i=320;
             while(i--)
             {
-               *dst1++=*(unsigned short*)(src1++);
-               *dst1++=*(unsigned short*)(src2++);
-               *dst2++=*(unsigned short*)(src3++);
-               *dst2++=*(unsigned short*)(src4++);
+               *dst1++=*(uint16_t*)(src1++);
+               *dst1++=*(uint16_t*)(src2++);
+               *dst2++=*(uint16_t*)(src3++);
+               *dst2++=*(uint16_t*)(src4++);
             }
          }
          else
          {
-            unsigned short *dst;
-            unsigned int *src;
+            uint16_t *dst;
+            uint32_t *src;
             dst=frame->lines[y].line;
-            src=(unsigned int*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
+            src=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
             i=320;
             while(i--)
-               *dst++=*(unsigned short*)(src++);
+               *dst++=*(uint16_t*)(src++);
          }
          memcpy(frame->lines[(y<<HightResMode)].xCLUTB,CLUTB,32);
          memcpy(frame->lines[(y<<HightResMode)].xCLUTG,CLUTG,32);
@@ -322,10 +322,10 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
 
 void _vdl_Init(uint8_t *vramstart)
 {
-   unsigned int i;
+   uint32_t i;
    vram = vramstart;
 
-   static const unsigned int StartupVDL[]=
+   static const uint32_t StartupVDL[]=
    { // Startup VDL at addres 0x2B0000
       0x00004410, 0x002C0000, 0x002C0000, 0x002B0098,
       0x00000000, 0x01080808, 0x02101010, 0x03191919,
@@ -352,7 +352,7 @@ void _vdl_Init(uint8_t *vramstart)
       CLUTB[i] = CLUTG[i] = CLUTR[i] = ((i&0x1f)<<3) | ((i>>2)&7);
 }
 
-unsigned int vmreadw(unsigned int addr)
+uint32_t vmreadw(uint32_t addr)
 {
    return _mem_read32((addr&0xfffff)+1024*1024*2);
 }

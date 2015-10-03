@@ -35,11 +35,11 @@ extern "C" {
 #endif
 
 void _vdl_Init(uint8_t *vramstart);
-void _vdl_ProcessVDL( unsigned int addr);
+void _vdl_ProcessVDL( uint32_t addr);
 
 void _vdl_DoLineNew(int line, struct VDLFrame *frame);
 
-unsigned int _vdl_SaveSize(void);
+uint32_t _vdl_SaveSize(void);
 void _vdl_Save(void *buff);
 void _vdl_Load(void *buff);
 

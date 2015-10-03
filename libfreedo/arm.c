@@ -144,12 +144,12 @@ static struct ARM_CoreState arm;
 static int CYCLES;	//cycle counter
 
 //forward decls
-unsigned int rreadusr(unsigned int rn);
-void loadusr(unsigned int rn, unsigned int val);
-unsigned int mreadb(unsigned int addr);
-void mwriteb(unsigned int addr, unsigned int val);
-unsigned int mreadw(unsigned int addr);
-void mwritew(unsigned int addr,unsigned int val);
+uint32_t rreadusr(uint32_t rn);
+void loadusr(uint32_t rn, uint32_t val);
+uint32_t mreadb(uint32_t addr);
+void mwriteb(uint32_t addr, uint32_t val);
+uint32_t mreadw(uint32_t addr);
+void mwritew(uint32_t addr,uint32_t val);
 
 #define MAS_Access_Exept	arm.MAS_Access_Exept
 #define pRam	arm.Ram
@@ -182,7 +182,7 @@ void* Getp_RAMS(void)
    return pRam;
 }
 
-unsigned int _arm_SaveSize(void)
+uint32_t _arm_SaveSize(void)
 {
    return sizeof(struct ARM_CoreState) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE;
 }
@@ -229,7 +229,7 @@ void _arm_Load(void *buff)
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-static INLINE void load(unsigned int rn, unsigned int val)
+static INLINE void load(uint32_t rn, uint32_t val)
 {
    RON_USER[rn]=val;
 }
@@ -494,7 +494,7 @@ void SelectROM(int n)
    gSecondROM = (n>0)? true:false;
 }
 
-void _arm_SetCPSR(unsigned int a)
+void _arm_SetCPSR(uint32_t a)
 {
 #if 0
    if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
@@ -508,7 +508,7 @@ void _arm_SetCPSR(unsigned int a)
 }
 
 
-static INLINE void SETM(unsigned int a)
+static INLINE void SETM(uint32_t a)
 {
 #if 0
    if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
@@ -544,7 +544,7 @@ static INLINE void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 
 #define ROTR(val, shift) ((shift)) ? (((val) >> (shift)) | ((val) << (32 - (shift)))) : (val)
 
-unsigned char * _arm_Init(void)
+uint8_t * _arm_Init(void)
 {
    int i;
 
@@ -581,7 +581,7 @@ unsigned char * _arm_Init(void)
    REG_PC=0x03000000;
    _arm_SetCPSR(0x13); //set svc mode
 
-   return (unsigned char *)pRam;
+   return (uint8_t *)pRam;
 }
 
 void _arm_Destroy(void)
@@ -625,11 +625,11 @@ int addrr=0;
 int vall=0;
 int inuse=0;
 
-void ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
+void ldm_accur(uint32_t opc, uint32_t base, uint32_t rn_ind)
 {
-   unsigned short x=opc&0xffff;
-   unsigned short list=opc&0xffff;
-   unsigned int base_comp,	//по ней шагаем
+   uint16_t x=opc&0xffff;
+   uint16_t list=opc&0xffff;
+   uint32_t base_comp,	//по ней шагаем
                 i=0,tmp;
 
    x = (x & 0x5555) + ((x >> 1) & 0x5555);
@@ -718,11 +718,11 @@ void ldm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 }
 
 
-void stm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
+void stm_accur(uint32_t opc, uint32_t base, uint32_t rn_ind)
 {
-   unsigned short x=opc&0xffff;
-   unsigned short list=opc&0x7fff;
-   unsigned int base_comp,	//по ней шагаем
+   uint16_t x=opc&0xffff;
+   uint16_t list=opc&0x7fff;
+   uint32_t base_comp,	//по ней шагаем
                 i=0;
 
    x = (x & 0x5555) + ((x >> 1) & 0x5555);
@@ -794,10 +794,10 @@ void stm_accur(unsigned int opc, unsigned int base, unsigned int rn_ind)
 
 
 
-void  bdt_core(unsigned int opc)
+void  bdt_core(uint32_t opc)
 {
-   unsigned int base;
-   unsigned int rn_ind=(opc>>16)&0xf;
+   uint32_t base;
+   uint32_t rn_ind=(opc>>16)&0xf;
 
    if(rn_ind==0xf)
       base=RON_USER[rn_ind]+8;
@@ -819,11 +819,11 @@ void  bdt_core(unsigned int opc)
 //------------------------------math SWI------------------------------------------------
 typedef struct TagArg
 {
-   unsigned int Type;
-   unsigned int Arg;
+   uint32_t Type;
+   uint32_t Arg;
 } TagItem;
 
-void decode_swi(unsigned int i)
+void decode_swi(uint32_t i)
 {
 
    (void) i;
@@ -1149,7 +1149,7 @@ uint32_t  ARM_SHIFT_SC(uint32_t value, uint8_t shift, uint8_t type)
 
 void ARM_SWAP(uint32_t cmd)
 {
-   unsigned int tmp, addr;
+   uint32_t tmp, addr;
 
    REG_PC+=4;
    addr=RON_USER[(cmd>>16)&0xf];
@@ -1176,9 +1176,9 @@ void ARM_SWAP(uint32_t cmd)
    }
 }
 
-static INLINE unsigned int calcbits(unsigned int num)
+static INLINE uint32_t calcbits(uint32_t num)
 {
-   unsigned int retval;
+   uint32_t retval;
 
    if(!num)
       return 1;
@@ -1218,7 +1218,7 @@ static INLINE unsigned int calcbits(unsigned int num)
    return retval;
 }
 
-unsigned int curr_pc;
+uint32_t curr_pc;
 
 const bool is_logic[]={
    true,true,false,false,
@@ -1261,7 +1261,7 @@ int _arm_Execute(void)
 
                if ((cmd & ARM_MUL_MASK) == ARM_MUL_SIGN)
                {
-                  unsigned int res = ((calcbits(RON_USER[(cmd>>8)&0xf])+5)>>1)-1;
+                  uint32_t res = ((calcbits(RON_USER[(cmd>>8)&0xf])+5)>>1)-1;
                   if(res>16)
                      CYCLES-=16;
                   else
@@ -1403,9 +1403,9 @@ Undefine:
 
                if((cmd&0x2000090)!=0x2000090)
                {
-                  unsigned int base,tbas;
-                  unsigned int oper2;
-                  unsigned int val, rora;
+                  uint32_t base,tbas;
+                  uint32_t oper2;
+                  uint32_t val, rora;
 
                   pc_tmp=REG_PC;
                   REG_PC+=4;
@@ -1579,7 +1579,7 @@ Undefine:
 }
 
 
-void _mem_write8(unsigned int addr, unsigned char val)
+void _mem_write8(uint32_t addr, uint8_t val)
 {
    pRam[addr]=val;
    if(addr<0x200000 || !HightResMode)
@@ -1588,44 +1588,44 @@ void _mem_write8(unsigned int addr, unsigned char val)
    pRam[addr+2*1024*1024]=val;
    pRam[addr+3*1024*1024]=val;
 }
-void  _mem_write16(unsigned int addr, unsigned short val)
+void  _mem_write16(uint32_t addr, uint16_t val)
 {
-   *((unsigned short*)&pRam[addr])=val;
+   *((uint16_t*)&pRam[addr])=val;
    if(addr<0x200000 || !HightResMode) return;
-   *((unsigned short*)&pRam[addr+1024*1024])=val;
-   *((unsigned short*)&pRam[addr+2*1024*1024])=val;
-   *((unsigned short*)&pRam[addr+3*1024*1024])=val;
+   *((uint16_t*)&pRam[addr+1024*1024])=val;
+   *((uint16_t*)&pRam[addr+2*1024*1024])=val;
+   *((uint16_t*)&pRam[addr+3*1024*1024])=val;
 }
-void _mem_write32(unsigned int addr, unsigned int val)
+void _mem_write32(uint32_t addr, uint32_t val)
 {
-   *((unsigned int*)&pRam[addr])=val;
+   *((uint32_t*)&pRam[addr])=val;
    if(addr<0x200000 || !HightResMode) return;
-   *((unsigned int*)&pRam[addr+1024*1024])=val;
-   *((unsigned int*)&pRam[addr+2*1024*1024])=val;
-   *((unsigned int*)&pRam[addr+3*1024*1024])=val;
+   *((uint32_t*)&pRam[addr+1024*1024])=val;
+   *((uint32_t*)&pRam[addr+2*1024*1024])=val;
+   *((uint32_t*)&pRam[addr+3*1024*1024])=val;
 }
 
-unsigned short _mem_read16(unsigned int addr)
+uint16_t _mem_read16(uint32_t addr)
 {
-   return *((unsigned short*)&pRam[addr]);
+   return *((uint16_t*)&pRam[addr]);
 }
 
-unsigned int _mem_read32(unsigned int addr)
+uint32_t _mem_read32(uint32_t addr)
 {
-   return *((unsigned int*)&pRam[addr]);
+   return *((uint32_t*)&pRam[addr]);
 }
 
-unsigned char _mem_read8(unsigned int addr)
+uint8_t _mem_read8(uint32_t addr)
 {
    return pRam[addr];
 }
 
 
-void mwritew(unsigned int addr, unsigned int val)
+void mwritew(uint32_t addr, uint32_t val)
 {
    //to do -- wipe out all HW part
    //to do -- add proper loging
-   unsigned int index;
+   uint32_t index;
 
    addr&=~3;
 
@@ -1671,7 +1671,7 @@ void mwritew(unsigned int addr, unsigned int val)
       {
          //  sprintf(str,":NVRAM Write [0x%X] = 0x%8.8X\n",addr,val);
          //  CDebug::DPrint(str);
-         pNVRam[(index>>2) & 32767]=(unsigned char)val;
+         pNVRam[(index>>2) & 32767]=(uint8_t)val;
          //CConfig::SetNVRAMData(pNVRam);
          io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
       }
@@ -1688,7 +1688,7 @@ void mwritew(unsigned int addr, unsigned int val)
 
 }
 
-unsigned int mreadw(unsigned int addr)
+uint32_t mreadw(uint32_t addr)
 {
    //to do -- wipe out all HW
    //to do -- add abort (may be in HW)
@@ -1719,8 +1719,8 @@ unsigned int mreadw(unsigned int addr)
    if (!((index=(addr^0x03000000)) & ~0xFFFFF)) //rom
    {
       if(!gSecondROM) // 2nd rom
-         return *(unsigned int*)(pRom+index);
-      return *(unsigned int*)(pRom+index+1024*1024);
+         return *(uint32_t*)(pRom+index);
+      return *(uint32_t*)(pRom+index+1024*1024);
    }
 
 
@@ -1729,7 +1729,7 @@ unsigned int mreadw(unsigned int addr)
       if(index & 0x80000) //if (addr>=0x03180000)
          return _diag_Get();
       else if(index & 0x40000)       //else if ((addr>=0x03140000) && (addr<0x03180000))
-         return (unsigned int)pNVRam[(index>>2)&32767];
+         return (uint32_t)pNVRam[(index>>2)&32767];
    }
 
    //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());
@@ -1739,7 +1739,7 @@ unsigned int mreadw(unsigned int addr)
 }
 
 
-void mwriteb(unsigned int addr, unsigned int val)
+void mwriteb(uint32_t addr, uint32_t val)
 {
    int index; // for avoid bad compiler optimization
 
@@ -1777,7 +1777,7 @@ void mwriteb(unsigned int addr, unsigned int val)
 
 
 
-unsigned int mreadb(unsigned int addr)
+uint32_t mreadb(uint32_t addr)
 {
 
    int index; // for avoid bad compiler optimization
@@ -1807,7 +1807,7 @@ unsigned int mreadb(unsigned int addr)
 }
 
 
-void  loadusr(unsigned int n, unsigned int val)
+void  loadusr(uint32_t n, uint32_t val)
 {
    if(n==15)
    {
@@ -1839,7 +1839,7 @@ void  loadusr(unsigned int n, unsigned int val)
 }
 
 
-unsigned int rreadusr(unsigned int n)
+uint32_t rreadusr(uint32_t n)
 {
    if(n==15)
       return RON_USER[15];
@@ -1863,12 +1863,12 @@ unsigned int rreadusr(unsigned int n)
    return 0;
 }
 
-unsigned int ReadIO(unsigned int addr)
+uint32_t ReadIO(uint32_t addr)
 {
    return mreadw(addr);
 }
 
-void WriteIO(unsigned int addr, unsigned int val)
+void WriteIO(uint32_t addr, uint32_t val)
 {
    mwritew(addr,val);
 }

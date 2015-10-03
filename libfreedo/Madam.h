@@ -36,21 +36,21 @@ Felix Lazarev
 extern "C" {
 #endif
 
-unsigned int Get_madam_FSM(void);
-void Set_madam_FSM(unsigned int val);
+uint32_t Get_madam_FSM(void);
+void Set_madam_FSM(uint32_t val);
 
 
-void _madam_SetMapping(unsigned int flag);
+void _madam_SetMapping(uint32_t flag);
 void _madam_Reset(void);
-unsigned int _madam_GetCELCycles(void);
-unsigned int * _madam_GetRegs(void);
+uint32_t _madam_GetCELCycles(void);
+uint32_t * _madam_GetRegs(void);
 int _madam_HandleCEL(void);
-void _madam_Init(unsigned char* memory);
-void _madam_KeyPressed(unsigned char* data, unsigned int num);
-void _madam_Poke(unsigned int addr, unsigned int val);
-unsigned int _madam_Peek(unsigned int addr);
+void _madam_Init(uint8_t* memory);
+void _madam_KeyPressed(uint8_t* data, uint32_t num);
+void _madam_Poke(uint32_t addr, uint32_t val);
+uint32_t _madam_Peek(uint32_t addr);
 
-unsigned int _madam_SaveSize(void);
+uint32_t _madam_SaveSize(void);
 void _madam_Save(void *buff);
 void _madam_Load(void *buff);
 

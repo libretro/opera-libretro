@@ -227,54 +227,54 @@ extern int speedfixes;
 #pragma pack(push,1)
 
 struct cp1btag{
-   unsigned short	c:1;
-   unsigned short	pad:15;
+   uint16_t	c:1;
+   uint16_t	pad:15;
 };
 struct cp2btag{
-   unsigned short	c:2;
-   unsigned short	pad:14;
+   uint16_t	c:2;
+   uint16_t	pad:14;
 };
 typedef struct cp4btag{
-   unsigned short	c:4;
-   unsigned short	pad:12;
+   uint16_t	c:4;
+   uint16_t	pad:12;
 } cp4b;
 struct cp6btag{
-   unsigned short  c:5;
-   unsigned short  pw:1;
-   unsigned short	pad:10;
+   uint16_t  c:5;
+   uint16_t  pw:1;
+   uint16_t	pad:10;
 };
 struct cp8btag{
-   unsigned short	c:5;
-   unsigned short	mpw:1;
-   unsigned short	m:2;
-   unsigned short	pad:8;
+   uint16_t	c:5;
+   uint16_t	mpw:1;
+   uint16_t	m:2;
+   uint16_t	pad:8;
 };
 struct cp16btag{
-   unsigned short	c:5;
-   unsigned short	mb:3;
-   unsigned short	mg:3;
-   unsigned short	mr:3;
-   unsigned short	pad:1;
-   unsigned short	pw:1;
+   uint16_t	c:5;
+   uint16_t	mb:3;
+   uint16_t	mg:3;
+   uint16_t	mr:3;
+   uint16_t	pad:1;
+   uint16_t	pw:1;
 };
 struct up8btag{
-   unsigned short	b:2;
-   unsigned short	g:3;
-   unsigned short	r:3;
-   unsigned short	pad:8;
+   uint16_t	b:2;
+   uint16_t	g:3;
+   uint16_t	r:3;
+   uint16_t	pad:8;
 };
 struct up16btag{
-   unsigned short	bw:1;
-   unsigned short	b:4;
-   unsigned short	g:5;
-   unsigned short	r:5;
-   unsigned short	p:1;
+   uint16_t	bw:1;
+   uint16_t	b:4;
+   uint16_t	g:5;
+   uint16_t	r:5;
+   uint16_t	p:1;
 };
 struct res16btag{
-   unsigned short	b:5;
-   unsigned short	g:5;
-   unsigned short	r:5;
-   unsigned short	p:1;
+   uint16_t	b:5;
+   uint16_t	g:5;
+   uint16_t	r:5;
+   uint16_t	p:1;
 };
 
 union pdeco{
@@ -292,11 +292,11 @@ union pdeco{
 
 struct avtag
 {
-   unsigned char NEG:1;
-   unsigned char XTEND:1;
-   unsigned char nCLIP:1;
-   unsigned char dv3:2;
-   unsigned char pad:3;
+   uint8_t NEG:1;
+   uint8_t XTEND:1;
+   uint8_t nCLIP:1;
+   uint8_t dv3:2;
+   uint8_t pad:3;
 };
 
 union AVS
@@ -307,13 +307,13 @@ union AVS
 
 struct pixctag
 {
-   unsigned char	dv2:1;
-   unsigned char	av:5;  // why int don't work???
-   unsigned char	s2:2;
-   unsigned char	dv1:2;
-   unsigned char	mxf:3;
-   unsigned char	ms:2;
-   unsigned char	s1:1;
+   uint8_t	dv2:1;
+   uint8_t	av:5;  // why int don't work???
+   uint8_t	s2:2;
+   uint8_t	dv1:2;
+   uint8_t	mxf:3;
+   uint8_t	ms:2;
+   uint8_t	s1:1;
 };
 
 union	PXC
@@ -330,8 +330,8 @@ union	PXC
 struct MADAMDatum
 {
    unsigned int mregs[2048+64];
-   unsigned short PLUT[32];
-   unsigned char PBUSQueue[20];
+   uint16_t PLUT[32];
+   uint8_t PBUSQueue[20];
    int RMOD;
    int WMOD;
    unsigned int _madam_FSM;
@@ -414,17 +414,17 @@ unsigned int PXOR1, PXOR2;
 unsigned int  mread(unsigned int addr);
 void  mwrite(unsigned int addr, unsigned int val);
 int TestInitVisual(int packed);
-int Init_Line_Map();
-void Init_Scale_Map();
-void Init_Arbitrary_Map();
-int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt);
-int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay);
-int  TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD);
-void  DrawPackedCel_New();
-void  DrawLiteralCel_New();
-void  DrawLRCel_New();
-void HandleDMA8();
-void DMAPBus();
+int Init_Line_Map(void);
+void Init_Scale_Map(void);
+void Init_Arbitrary_Map(void);
+int  TexelDraw_Line(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int cnt);
+int  TexelDraw_Scale(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int deltax, int deltay);
+int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD);
+void  DrawPackedCel_New(void);
+void  DrawLiteralCel_New(void);
+void  DrawLRCel_New(void);
+void HandleDMA8(void);
+void DMAPBus(void);
 
 
 unsigned int MAPPING;
@@ -450,7 +450,7 @@ static struct
 } pproj;
 
 unsigned int pbus=0;
-unsigned char * Mem;
+uint8_t * Mem;
 unsigned int retuval;
 unsigned int BITADDR;
 //static unsigned int * BITPTR;
@@ -466,19 +466,19 @@ bool ADD;
 int BITCALC;
 
 
-unsigned short bitbuf; //bit buffer
-unsigned char  subbitbuf;// bit sub buffer
+uint16_t bitbuf; //bit buffer
+uint8_t  subbitbuf;// bit sub buffer
 int    bitcount; // bit counter
 long   compsize; // size of commpressed!!! in bytes!!! actually pixcount*bpp/8!!!
 unsigned int gFINISH;
-unsigned short RRR;
+uint16_t RRR;
 int USECEL;
 
 unsigned int	const BPP[8]={1,1,2,4,6,8,16,1};
 
-unsigned char PSCALAR[8][4][32];
+uint8_t PSCALAR[8][4][32];
 
-unsigned short MAPu8b[256+64], MAPc8bAMV[256+64], MAPc16bAMV[8*8*8+64];
+uint16_t MAPu8b[256+64], MAPc8bAMV[256+64], MAPc16bAMV[8*8*8+64];
 
 
 int currentrow;
@@ -494,7 +494,7 @@ int nrows;
 
 unsigned int pix;
 
-unsigned short ttt;
+uint16_t ttt;
 
 unsigned int OFF;
 
@@ -550,7 +550,7 @@ int FLOAT1612(int a)
 static int QUICK_DIVIDE_UBOUND = 0;
 static int QUICK_DIVIDE_LBOUND = 0;
 
-static short quickDivide_lookups[QUICK_DIVIDE_CACHE_SIZE][QUICK_DIVIDE_CACHE_SIZE];
+static int16_t quickDivide_lookups[QUICK_DIVIDE_CACHE_SIZE][QUICK_DIVIDE_CACHE_SIZE];
 
 static void quickDivide_init(void)
 {
@@ -585,7 +585,7 @@ static INLINE int quickDivide(int a, int b)
 //////////////////////////////////////////////////////////////////////
 
 //void MapCoord(poly *pol);
-//void RenderPoly();
+//void RenderPoly(void);
 
 unsigned int  _madam_Peek(unsigned int addr)
 {
@@ -808,7 +808,7 @@ double HDDX,HDDY,HDX,HDY,VDX,VDY,XPOS,YPOS,HDX_2,HDY_2;
 
 int HDDX1616,HDDY1616,HDX1616,HDY1616,VDX1616,VDY1616,XPOS1616,YPOS1616,HDX1616_2,HDY1616_2;
 unsigned int CEL_ORIGIN_VH_VALUE;
-char	TEXEL_FUN_NUMBER;
+int8_t	TEXEL_FUN_NUMBER;
 int TEXTURE_WI_START,TEXTURE_HI_START,TEXEL_INCX,TEXEL_INCY;
 int TEXTURE_WI_LIM, TEXTURE_HI_LIM;
 
@@ -1047,9 +1047,7 @@ int _madam_HandleCEL(void)
       if(!(CCBFLAGS&CCB_SKIP) && !PDATF)
       {
          if(CCBFLAGS&CCB_PACKED)
-         {
             DrawPackedCel_New();
-         }
          else
          {
 
@@ -1072,9 +1070,7 @@ int _madam_HandleCEL(void)
    return CELCYCLES;
 }//HandleCEL
 
-
-
-void HandleDMA8()
+void HandleDMA8(void)
 {
    if(mregs[0x8]&0x8000)// pbus transfer
    {
@@ -1085,8 +1081,7 @@ void HandleDMA8()
    }
 }
 
-
-void DMAPBus()
+void DMAPBus(void)
 {
    unsigned int i=0;
 
@@ -1110,15 +1105,17 @@ void DMAPBus()
    mregs[0x574]=0xfffffffc;
 }
 
-void _madam_KeyPressed(unsigned char* data, unsigned int num)
+void _madam_KeyPressed(uint8_t* data, unsigned int num)
 {
-   if(num>16)num=16;
-   if(num)memcpy(PBUSQueue,data,num);
+   if(num>16)
+      num=16;
+   if(num)
+      memcpy(PBUSQueue,data,num);
    memset(&PBUSQueue[num],-1,20-num);
 }
 
 
-void _madam_Init(unsigned char *memory)
+void _madam_Init(uint8_t *memory)
 {
    int i,j,n;
    ADD=0;
@@ -1148,19 +1145,15 @@ void _madam_Init(unsigned char *memory)
    mregs[000]=0x01020001; // for ARM soft emu of matrix engine
 #endif
 
-
-
    for(i=0;i<32;i++)
       for(j=0;j<8;j++)
          for(n=0;n<4;n++)
-         {
             PSCALAR[j][n][i]=((i*(j+1))>>PDV(n));
-         }
 
    for(i=0;i<256;i++)
    {
       union pdeco	pix1,pix2;
-      unsigned short pres, resamv;
+      uint16_t pres, resamv;
 
       pix1.raw=i;
       pix2.r16b.b=(pix1.u8b.b<<3)+(pix1.u8b.b<<1)+(pix1.u8b.b>>1);
@@ -1184,7 +1177,8 @@ void _madam_Init(unsigned char *memory)
 }
 
 extern void _3do_InternalFrame(int cycles);
-void exteraclocker()
+
+void exteraclocker(void)
 {
    if((CELCYCLES-__smallcycles)>>7)
    {
@@ -1216,7 +1210,7 @@ void  mwrite(unsigned int addr, unsigned int val)
 
 }
 
-void  mwriteh(unsigned int addr, unsigned short val)
+void  mwriteh(unsigned int addr, uint16_t val)
 {
 #ifdef SAFEMEMACCESS
    addr&=0x3fffff;
@@ -1230,7 +1224,7 @@ void  mwriteh(unsigned int addr, unsigned short val)
    //exteraclocker();
 }
 
-unsigned short  mreadh(unsigned int addr)
+uint16_t  mreadh(unsigned int addr)
 {
 #ifdef SAFEMEMACCESS
    //	addr&=0x3FFFFF;
@@ -1249,14 +1243,14 @@ unsigned int  readPLUTDATA(unsigned int offset)
    CELCYCLES+=4;
    if(PLUTDATA==0)
       return 0;
-   return *(unsigned short*)(PLUTDATA+(offset^2));
-   //return ((unsigned short*)PAL_EXP)[((offset^2)>>1)];
+   return *(uint16_t*)(PLUTDATA+(offset^2));
+   //return ((uint16_t*)PAL_EXP)[((offset^2)>>1)];
 }
 
-unsigned int  PDEC(unsigned int pixel, unsigned short * amv)
+unsigned int  PDEC(unsigned int pixel, uint16_t * amv)
 {
    union pdeco	pix1;
-   unsigned short resamv,pres;
+   uint16_t resamv,pres;
 
    pix1.raw=pixel;
 
@@ -1377,11 +1371,10 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
       // TODO: I have read that PRE1 is only set for unpacked CELs.
       //       So... should this be ignored if using packed CELs? I don't know.
       if (!(PRE1&PRE1_NOSWAP))
-      {
          VHOutput=(VHOutput>>15)|((VHOutput&1)<<15);
-      }
    }
 
+#if 0
    //////////////////////////
    // CFBDSUB flag
    // Substitute the VH values from the frame buffer if requested.
@@ -1392,6 +1385,7 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
       //       must be some missing mbehavior elsewhere.
       //VHOutput = (pframe_input & 0x8001);
    }
+#endif
 
 
    //////////////////////////
@@ -1450,9 +1444,7 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 
    pixc.raw=PIXC&0xffff;
    if((pixel&0x8000))
-   {
       pixc.raw=PIXC>>16;
-   }
 
    //pres,fpix
 
@@ -1463,9 +1455,7 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
    //pixc.raw=0;
 
    if(CCBFLAGS&CCB_USEAV)
-   {
       AV.raw=pixc.meaning.av;
-   }
    else
    {
       AV.avsignal.dv3=0;
@@ -1486,10 +1476,10 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
       unsigned int raw;
       struct
       {
-         char R;
-         char B;
-         char G;
-         char a;
+         int8_t R;
+         int8_t B;
+         int8_t G;
+         int8_t a;
       };
    } color1, color2, AOP, BOP;
 #pragma pack(pop)
@@ -1616,28 +1606,28 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 
 
 
-unsigned int * _madam_GetRegs()
+unsigned int * _madam_GetRegs(void)
 {
    return mregs;
 }
 
-
-
-void  DrawPackedCel_New()
+void  DrawPackedCel_New(void)
 {
    sf=100000;
-   unsigned int start;
-   unsigned short CURPIX,LAMV;
+   uint16_t CURPIX,LAMV;
 
    int lastaddr;
    int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
 
-   start = PDATA;
+   unsigned int start = PDATA;
 
    nrows=(PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT;
 
    bpp=BPP[PRE0&PRE0_BPP_MASK];
-   offsetl=2;	if(bpp < 8) offsetl=1;
+   offsetl=2;
+
+   if(bpp < 8)
+      offsetl=1;
 
    pixcount=0;
 
@@ -1646,7 +1636,8 @@ void  DrawPackedCel_New()
    SPRHI=nrows+1;
    calcx=0;
 
-   if(TestInitVisual(1))return;
+   if(TestInitVisual(1))
+      return;
    xvert=XPOS1616;
    yvert=YPOS1616;
 
@@ -1770,9 +1761,10 @@ void  DrawPackedCel_New()
    }
    else if(TEXEL_FUN_NUMBER==1)
    {
+      int drawHeight;
+
       unknownflag11=100000;
 
-      int drawHeight;
       drawHeight = VDY1616;
       if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
          drawHeight = (1 << 16);
@@ -1983,10 +1975,12 @@ void  DrawLiteralCel_New(void)
 {
    sf=100000;
    int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
-   unsigned short CURPIX,LAMV;
+   uint16_t CURPIX,LAMV;
 
    bpp=BPP[PRE0&PRE0_BPP_MASK];
-   offsetl=2;	if(bpp < 8)	offsetl=1;
+   offsetl=2;
+   if(bpp < 8)
+      offsetl=1;
    pixcount=0;
    offset=(offsetl==1)?((PRE1&PRE1_WOFFSET8_MASK)>>PRE1_WOFFSET8_SHIFT):((PRE1&PRE1_WOFFSET10_MASK)>>PRE1_WOFFSET10_SHIFT);
 
@@ -1994,150 +1988,155 @@ void  DrawLiteralCel_New(void)
    SPRWI=1+(PRE1&PRE1_TLHPCNT_MASK);
    SPRHI=((PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT)+1;
 
-   if(TestInitVisual(0))return;
+   if(TestInitVisual(0))
+      return;
    xvert=XPOS1616;
    yvert=YPOS1616;
 
-
-
-   if(TEXEL_FUN_NUMBER==0)
+   switch (TEXEL_FUN_NUMBER)
    {
-      unsigned i;
-
-      //  if(speedfixes>=0&&speedfixes<=100001)   speedfixes=300000;
-      sdf=100000;
-      //רנטפעû NFS
-      SPRWI-=((PRE0>>24)&0xf);
-      xvert+=TEXTURE_HI_START*VDX1616;
-      yvert+=TEXTURE_HI_START*VDY1616;
-      PDATA+=((offset+2)<<2)*TEXTURE_HI_START;
-      if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
-      for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
-      {
-         unsigned j;
-
-         BitReaderBig_AttachBuffer(&bitoper, PDATA);
-         BITCALC=((offset+2)<<2)<<5;
-         xcur=xvert+TEXTURE_WI_START*HDX1616;
-         ycur=yvert+TEXTURE_WI_START*HDY1616;
-         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-         if(TEXTURE_WI_START)
-            BitReaderBig_Skip(&bitoper, bpp*(TEXTURE_WI_START));
-
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-
-
-         for(j=TEXTURE_WI_START;j<SPRWI;j++)
+      case 0:
          {
-            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+            unsigned i;
 
-            if(!pproj.Transparent)
+            //  if(speedfixes>=0&&speedfixes<=100001)   speedfixes=300000;
+            sdf=100000;
+            //רנטפעû NFS
+            SPRWI-=((PRE0>>24)&0xf);
+            xvert+=TEXTURE_HI_START*VDX1616;
+            yvert+=TEXTURE_HI_START*VDY1616;
+            PDATA+=((offset+2)<<2)*TEXTURE_HI_START;
+            if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
+            for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
             {
-               unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-               unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
-               pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-               mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+               unsigned j;
+
+               BitReaderBig_AttachBuffer(&bitoper, PDATA);
+               BITCALC=((offset+2)<<2)<<5;
+               xcur=xvert+TEXTURE_WI_START*HDX1616;
+               ycur=yvert+TEXTURE_WI_START*HDY1616;
+               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+               if(TEXTURE_WI_START)
+                  BitReaderBig_Skip(&bitoper, bpp*(TEXTURE_WI_START));
+
+               xvert+=VDX1616;
+               yvert+=VDY1616;
+
+
+               for(j=TEXTURE_WI_START;j<SPRWI;j++)
+               {
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+
+                  if(!pproj.Transparent)
+                  {
+                     unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                     unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
+                     pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+                     mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+
+                  }
+                  xcur+=HDX1616;
+                  ycur+=HDY1616;
+
+               }
+               PDATA+=(offset+2)<<2;
 
             }
-            xcur+=HDX1616;
-            ycur+=HDY1616;
-
          }
-         PDATA+=(offset+2)<<2;
-
-      }
-   }
-   else if(TEXEL_FUN_NUMBER==1)
-   {
-      int drawHeight;
-      unsigned i, j;
-
-      SPRWI-=((PRE0>>24)&0xf);
-
-      drawHeight = VDY1616;
-      if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
-         drawHeight = (1 << 16);
-
-      for(i=0;i<SPRHI;i++)
-      {
-
-         BitReaderBig_AttachBuffer(&bitoper, PDATA);
-         BITCALC=((offset+2)<<2)<<5;
-         xcur=xvert;
-         ycur=yvert;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-
-
-         for(j=0;j<SPRWI;j++)
+         break;
+      case 1:
          {
+            int drawHeight;
+            unsigned i, j;
 
-            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+            SPRWI-=((PRE0>>24)&0xf);
 
+            drawHeight = VDY1616;
+            if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
+               drawHeight = (1 << 16);
 
-            if(!pproj.Transparent)
+            for(i=0;i<SPRHI;i++)
             {
-               if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))break;
+
+               BitReaderBig_AttachBuffer(&bitoper, PDATA);
+               BITCALC=((offset+2)<<2)<<5;
+               xcur=xvert;
+               ycur=yvert;
+               xvert+=VDX1616;
+               yvert+=VDY1616;
+               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+
+
+               for(j=0;j<SPRWI;j++)
+               {
+
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+
+
+                  if(!pproj.Transparent)
+                  {
+                     if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))break;
+
+                  }
+                  xcur+=HDX1616;
+                  ycur+=HDY1616;
+
+               }
+               PDATA+=(offset+2)<<2;
 
             }
-            xcur+=HDX1616;
-            ycur+=HDY1616;
-
          }
-         PDATA+=(offset+2)<<2;
-
-      }
-   }
-   else
-   {
-      unsigned i, j;
-
-      SPRWI-=((PRE0>>24)&0xf);
-      for(i=0;i<SPRHI;i++)
-      {
-         BitReaderBig_AttachBuffer(&bitoper, PDATA);
-         BITCALC=((offset+2)<<2)<<5;
-
-         xcur=xvert;
-         ycur=yvert;
-         hdx=HDX1616;
-         hdy=HDY1616;
-
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-         HDX1616+=HDDX1616;
-         HDY1616+=HDDY1616;
-
-         BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-
-
-         xdown=xvert;
-         ydown=yvert;
-
-         for(j=0;j<SPRWI;j++)
+         break;
+      default:
          {
+            unsigned i, j;
 
-            CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
-
-            if(!pproj.Transparent)
+            SPRWI-=((PRE0>>24)&0xf);
+            for(i=0;i<SPRHI;i++)
             {
-               if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                  break;
-               if(speedfixes<1||(speedfixes>=0&&speedfixes<200001)){
-                  if (CURPIX>30000&&CURPIX<40000)speedfixes=0;
-                  else speedfixes=-100000;}
+               BitReaderBig_AttachBuffer(&bitoper, PDATA);
+               BITCALC=((offset+2)<<2)<<5;
+
+               xcur=xvert;
+               ycur=yvert;
+               hdx=HDX1616;
+               hdy=HDY1616;
+
+               xvert+=VDX1616;
+               yvert+=VDY1616;
+               HDX1616+=HDDX1616;
+               HDY1616+=HDDY1616;
+
+               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+
+
+               xdown=xvert;
+               ydown=yvert;
+
+               for(j=0;j<SPRWI;j++)
+               {
+
+                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+
+                  if(!pproj.Transparent)
+                  {
+                     if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
+                        break;
+                     if(speedfixes<1||(speedfixes>=0&&speedfixes<200001)){
+                        if (CURPIX>30000&&CURPIX<40000)speedfixes=0;
+                        else speedfixes=-100000;}
+                  }
+                  xcur+=hdx;
+                  ycur+=hdy;
+                  xdown+=HDX1616;
+                  ydown+=HDY1616;
+               }
+               PDATA+=(((offset+2)<<2)/*scipstr*/);
+
+
             }
-            xcur+=hdx;
-            ycur+=hdy;
-            xdown+=HDX1616;
-            ydown+=HDY1616;
          }
-         PDATA+=(((offset+2)<<2)/*scipstr*/);
-
-
-      }
+         break;
    }
 
    if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
@@ -2152,11 +2151,11 @@ void  DrawLiteralCel_New(void)
    }
 }
 
-void  DrawLRCel_New()
+void  DrawLRCel_New(void)
 {
    sf=100000;
    int i,j,xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
-   unsigned short CURPIX,LAMV;
+   uint16_t CURPIX,LAMV;
 
 
    bpp=BPP[PRE0&PRE0_BPP_MASK];
@@ -2172,112 +2171,113 @@ void  DrawLRCel_New()
    xvert=XPOS1616;
    yvert=YPOS1616;
 
-   if(TEXEL_FUN_NUMBER==0)
+   switch (TEXEL_FUN_NUMBER)
    {
-      xvert+=TEXTURE_HI_START*VDX1616;
-      yvert+=TEXTURE_HI_START*VDY1616;
-      //if(SPRHI>TEXTURE_HI_LIM)SPRHI=TEXTURE_HI_LIM;
-      if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
-      for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
-      {
-         xcur=xvert+TEXTURE_WI_START*HDX1616;
-         ycur=yvert+TEXTURE_WI_START*HDY1616;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-
-
-         for(j=TEXTURE_WI_START;j<SPRWI;j++)
+      case 0:
+         xvert+=TEXTURE_HI_START*VDX1616;
+         yvert+=TEXTURE_HI_START*VDY1616;
+         //if(SPRHI>TEXTURE_HI_LIM)SPRHI=TEXTURE_HI_LIM;
+         if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
+         for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
          {
-            CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+            xcur=xvert+TEXTURE_WI_START*HDX1616;
+            ycur=yvert+TEXTURE_WI_START*HDY1616;
+            xvert+=VDX1616;
+            yvert+=VDY1616;
 
-            if(!pproj.Transparent)
+
+            for(j=TEXTURE_WI_START;j<SPRWI;j++)
             {
-               unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-               unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
-               pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-               mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+               CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+
+               if(!pproj.Transparent)
+               {
+                  unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                  unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
+                  pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+                  mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+               }
+
+               xcur+=HDX1616;
+               ycur+=HDY1616;
             }
 
-            xcur+=HDX1616;
-            ycur+=HDY1616;
          }
-
-      }
-   }
-   else if(TEXEL_FUN_NUMBER==1)
-   {
-      int drawHeight;
-      drawHeight = VDY1616;
-      if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
-         drawHeight = (1 << 16);
-
-      for(i=0;i<SPRHI;i++)
-      {
-         xcur=xvert;
-         ycur=yvert;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-
-
-         for(j=0;j<SPRWI;j++)
+         break;
+      case 1:
          {
+            int drawHeight;
+            drawHeight = VDY1616;
+            if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
+               drawHeight = (1 << 16);
 
-            CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
-
-            if(!pproj.Transparent)
+            for(i=0;i<SPRHI;i++)
             {
+               xcur=xvert;
+               ycur=yvert;
+               xvert+=VDX1616;
+               yvert+=VDY1616;
 
-               if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))break;
+
+               for(j=0;j<SPRWI;j++)
+               {
+
+                  CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+
+                  if(!pproj.Transparent)
+                  {
+
+                     if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))
+                        break;
+
+                  }
+                  xcur+=HDX1616;
+                  ycur+=HDY1616;
+
+
+               }
 
             }
-            xcur+=HDX1616;
-            ycur+=HDY1616;
-
-
          }
-
-      }
-   }
-   else
-   {
-      //return;
-
-      for(i=0;i<SPRHI;i++)
-      {
-
-
-         xcur=xvert;
-         ycur=yvert;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-         xdown=xvert;
-         ydown=yvert;
-         hdx=HDX1616;
-         hdy=HDY1616;
-         HDX1616+=HDDX1616;
-         HDY1616+=HDDY1616;
-
-
-         for(j=0;j<SPRWI;j++)
+         break;
+      default:
+         for(i=0;i<SPRHI;i++)
          {
-            CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
 
-            if(!pproj.Transparent)
+
+            xcur=xvert;
+            ycur=yvert;
+            xvert+=VDX1616;
+            yvert+=VDY1616;
+            xdown=xvert;
+            ydown=yvert;
+            hdx=HDX1616;
+            hdy=HDY1616;
+            HDX1616+=HDDX1616;
+            HDY1616+=HDDY1616;
+
+
+            for(j=0;j<SPRWI;j++)
             {
-               if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                  break;
+               CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+
+               if(!pproj.Transparent)
+               {
+                  if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
+                     break;
+               }
+
+               xcur+=hdx;
+               ycur+=hdy;
+               xdown+=HDX1616;
+               ydown+=HDY1616;
+
+
             }
 
-            xcur+=hdx;
-            ycur+=hdy;
-            xdown+=HDX1616;
-            ydown+=HDY1616;
-
 
          }
-
-
-      }
+         break;
    }
 
    if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
@@ -2292,9 +2292,7 @@ void  DrawLRCel_New()
    }
 }
 
-
-
-unsigned int _madam_GetCELCycles()
+unsigned int _madam_GetCELCycles(void)
 {
    unsigned int val=CELCYCLES; // 1 word = 2 CELCYCLES, 1 hword= 1 CELCYCLE, 8 CELCYCLE=1 CPU SCYCLE
    CELCYCLES=0;
@@ -2302,11 +2300,11 @@ unsigned int _madam_GetCELCycles()
 }
 
 
-void _madam_Reset()
+void _madam_Reset(void)
 {
-   int i;
-   for(i=0;i<2048;i++)
-      mregs[i]=0;
+   unsigned i;
+   for(i = 0; i < 2048; i++)
+      mregs[i] = 0;
 }
 
 
@@ -2324,18 +2322,24 @@ void _madam_SetMapping(unsigned int flag)
 
 unsigned int TexelCCWTest(double hdx, double hdy, double vdx, double vdy)
 {
-   if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0.0)return CCB_ACCW;
+   if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0.0)
+      return CCB_ACCW;
    return CCB_ACW;
 }
+
 bool QuardCCWTest(int wdt)
 {
    unsigned int tmp;
-   if(((CCBFLAGS&CCB_ACCW)) && ((CCBFLAGS&CCB_ACW)))return false;
+   if(((CCBFLAGS&CCB_ACCW)) && ((CCBFLAGS&CCB_ACW)))
+      return false;
 
    tmp=TexelCCWTest(HDX,HDY,VDX,VDY);
-   if(tmp!=TexelCCWTest(HDX,HDY,VDX+(HDDX)*(float)wdt,VDY+(HDDY)*(float)wdt))return false;
-   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX,VDY))return false;
-   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX+(HDDX)*(float)SPRHI*(float)wdt,VDY+(HDDY)*(float)SPRHI*(float)wdt))return false;
+   if(tmp!=TexelCCWTest(HDX,HDY,VDX+(HDDX)*(float)wdt,VDY+(HDDY)*(float)wdt))
+      return false;
+   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX,VDY))
+      return false;
+   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX+(HDDX)*(float)SPRHI*(float)wdt,VDY+(HDDY)*(float)SPRHI*(float)wdt))
+      return false;
    if(tmp==(CCBFLAGS&(CCB_ACCW|CCB_ACW)))
       return true;
    return false;
@@ -2352,8 +2356,8 @@ int TestInitVisual(int packed)
 {
    int xpoints[4],ypoints[4];
 
-   if((!(CCBFLAGS&CCB_ACCW)) && (!(CCBFLAGS&CCB_ACW)))return -1;
-
+   if((!(CCBFLAGS&CCB_ACCW)) && (!(CCBFLAGS&CCB_ACW)))
+      return -1;
 
    if(!packed)
    {
@@ -2387,7 +2391,6 @@ int TestInitVisual(int packed)
       if(ypoints[0]>CLIPYVAL && ypoints[1]>CLIPYVAL && HDY1616>=0 && HDDY1616>=0 ) return -1;
    }
 
-   //*
    if(HDDX1616==0 && HDDY1616==0)
    {
       if(HDX1616==0 && VDY1616==0)
@@ -2468,7 +2471,7 @@ int TestInitVisual(int packed)
 
 
       }
-   } //*/
+   }
 
    if(QuardCCWTest((!packed)?SPRWI:2048))return -1;
    Init_Arbitrary_Map();
@@ -2478,7 +2481,7 @@ int TestInitVisual(int packed)
 
 }
 
-int Init_Line_Map()
+int Init_Line_Map(void)
 {
    TEXEL_FUN_NUMBER=0;
    TEXTURE_WI_START=0;
@@ -2579,7 +2582,7 @@ int Init_Line_Map()
    return 0;
 }
 
-void Init_Scale_Map()
+void Init_Scale_Map(void)
 {
    int deltax,deltay;
    TEXEL_FUN_NUMBER=1;
@@ -2606,14 +2609,14 @@ void Init_Scale_Map()
    TEXTURE_HI_START=0;
 }
 
-void Init_Arbitrary_Map()
+void Init_Arbitrary_Map(void)
 {
    TEXEL_FUN_NUMBER=2;
    TEXTURE_WI_START=0;
    TEXTURE_HI_START=0;
 }
 
-int  TexelDraw_Line(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int cnt)
+int  TexelDraw_Line(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int cnt)
 {
    int i=0;
    unsigned int pixel;
@@ -2656,7 +2659,7 @@ static INLINE void writePIX(uint32_t src, int i, int j, uint16_t pix)
 }
 
 
-int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int ycur, int deltax, int deltay)
+int  TexelDraw_Scale(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int deltax, int deltay)
 {
    int i,j;
    unsigned int pixel;
@@ -2670,23 +2673,23 @@ int  TexelDraw_Scale(unsigned short CURPIX, unsigned short LAMV, int xcur, int y
       return -1;
    else if((HDY1616>0) && ((deltay))>(CLIPYVAL) && (ycur)>(CLIPYVAL))
       return -1;
-   else
-   {
-      if((((int)xcur))==(((int)deltax)))return 0;
 
-      for(i=((int)ycur);i!=(((int)deltay));i+=TEXEL_INCY)
-         for(j=(((int)xcur))<<2;j!=((((int)deltax))<<2);j+=TEXEL_INCX)
-            if((TESTCLIP((j<<14),(i<<16))))
-            {
-               framePixel = mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
-               pixel=PPROC(CURPIX,framePixel,LAMV);
-               pixel=PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-               //next=mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
-               //if(next!=curr){curr=next;pixel=PPROC(CURPIX,next,LAMV);}
-               mwriteh((FBTARGET+XY2OFF(j,i,WMOD)),pixel);
+   if((((int)xcur))==(((int)deltax)))
+      return 0;
 
-            }
-   }
+   for(i=((int)ycur);i!=(((int)deltay));i+=TEXEL_INCY)
+      for(j=(((int)xcur))<<2;j!=((((int)deltax))<<2);j+=TEXEL_INCX)
+         if((TESTCLIP((j<<14),(i<<16))))
+         {
+            framePixel = mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
+            pixel=PPROC(CURPIX,framePixel,LAMV);
+            pixel=PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+            //next=mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
+            //if(next!=curr){curr=next;pixel=PPROC(CURPIX,next,LAMV);}
+            mwriteh((FBTARGET+XY2OFF(j,i,WMOD)),pixel);
+
+         }
+
    return 0;
 }
 
@@ -2697,7 +2700,8 @@ static INLINE int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
    return CCB_ACW;
 }
 
-int  TexelDraw_Arbitrary(unsigned short CURPIX, unsigned short LAMV, int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
+int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
+      int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
 {
    int miny, maxy, i, xpoints[4], j, maxyt, maxxt, maxx;
    int updowns[4], jtmp;

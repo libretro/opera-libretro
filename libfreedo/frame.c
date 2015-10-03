@@ -31,7 +31,7 @@ void Get_Frame_Bitmap(
    for (i = 0; i < copyHeight; i++)
    {
       struct VDLLine* linePtr = (struct VDLLine*)&sourceFrame->lines[i];
-      short* srcPtr = (short*)linePtr;
+      int16_t *srcPtr = (int16_t*)linePtr;
       bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
       for (pix = 0; pix < copyWidth; pix++)
       {

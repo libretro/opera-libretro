@@ -43,17 +43,17 @@ void _xbus_DevEject(int dev);
 void _xbus_Init(_xbus_device zero_dev);
 void _xbus_Destroy(void);
 
-void _xbus_SetSEL(unsigned int val);
-void _xbus_SetPoll(unsigned int val);
-void _xbus_SetCommandFIFO(unsigned int val);
-void _xbus_SetDataFIFO(unsigned int val);
+void _xbus_SetSEL(uint32_t val);
+void _xbus_SetPoll(uint32_t val);
+void _xbus_SetCommandFIFO(uint32_t val);
+void _xbus_SetDataFIFO(uint32_t val);
 
-unsigned int _xbus_GetStatusFIFO(void);
-unsigned int _xbus_GetRes(void);
-unsigned int _xbus_GetPoll(void);
-unsigned int _xbus_GetDataFIFO(void);
+uint32_t _xbus_GetStatusFIFO(void);
+uint32_t _xbus_GetRes(void);
+uint32_t _xbus_GetPoll(void);
+uint32_t _xbus_GetDataFIFO(void);
 
-unsigned int _xbus_SaveSize(void);
+uint32_t _xbus_SaveSize(void);
 void _xbus_Save(void *buff);
 void _xbus_Load(void *buff);
 

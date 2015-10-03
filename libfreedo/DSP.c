@@ -161,14 +161,14 @@ struct RQFTAG{
 
 union _requnion
 {
-   unsigned char raw;
+   uint8_t raw;
    struct RQFTAG	rq;
 };
 
 struct __INSTTRAS
 {
    union _requnion req;
-   char BS;		// 4+1 bits
+   int8_t BS;		// 4+1 bits
 }; // only for ALU command
 
 struct REGSTAG{
@@ -336,10 +336,10 @@ void _dsp_Init(void)
 
       union {
          struct {
-            char Zero;
-            char Nega;
-            char Carry;//not borrow
-            char Over;
+            int8_t Zero;
+            int8_t Nega;
+            int8_t Carry;//not borrow
+            int8_t Over;
          };
          unsigned int raw;
       } Flags;
@@ -780,7 +780,7 @@ void  _dsp_WriteMemory(uint16_t addr, uint16_t val) //CPU writes NMEM of DSP
 
 uint16_t  RegBase(unsigned int reg)
 {
-   unsigned char twi,x,y;
+   uint8_t twi,x,y;
 
    reg &= 0xf;
    x    = (reg >> 2) & 1;

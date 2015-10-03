@@ -56,13 +56,13 @@ extern void* _xbplug_MainDevice(int proc, void* data);
 int _3do_Init(void)
 {
    int i;
-   unsigned char *Memory;
-   unsigned char *rom;
+   uint8_t *Memory;
+   uint8_t *rom;
 
    Memory=_arm_Init();
 
    io_interface(EXT_READ_ROMS,Getp_ROMS());
-   rom=(unsigned char*)Getp_ROMS();
+   rom=(uint8_t*)Getp_ROMS();
    for(i= (1024*1024*2)-4; i >= 0; i -= 4)
       *(int *)(rom+i) =_bswap(*(int *)(rom+i));
 
@@ -137,7 +137,7 @@ void _3do_InternalFrame(int cycles)
       if(line==_clio_v1line())
       {
          _clio_GenerateFiq(1<<1,0);
-         _madam_KeyPressed((unsigned char*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
+         _madam_KeyPressed((uint8_t*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!skipframe)
@@ -180,9 +180,9 @@ void _3do_Destroy()
    _xbus_Destroy();
 }
 
-unsigned int _3do_SaveSize(void)
+uint32_t _3do_SaveSize(void)
 {
-   unsigned int tmp=_arm_SaveSize();
+   uint32_t tmp=_arm_SaveSize();
 
    tmp+=_vdl_SaveSize();
    tmp+=_dsp_SaveSize();
@@ -197,7 +197,7 @@ unsigned int _3do_SaveSize(void)
 
 void _3do_Save(void *buff)
 {
-   unsigned char *data=(unsigned char*)buff;
+   uint8_t *data=(uint8_t*)buff;
    int *indexes=(int*)buff;
 
    indexes[0]=0x97970101;
@@ -224,9 +224,10 @@ void _3do_Save(void *buff)
 
 bool _3do_Load(void *buff)
 {
-   unsigned char *data=(unsigned char*)buff;
+   uint8_t *data=(uint8_t*)buff;
    int *indexes=(int*)buff;
-   if((unsigned int)indexes[0]!=0x97970101)return false;
+   if((uint32_t)indexes[0]!=0x97970101)
+      return false;
 
    _arm_Load(&data[indexes[1]]);
    _vdl_Load(&data[indexes[2]]);
@@ -240,7 +241,7 @@ bool _3do_Load(void *buff)
    return true;
 }
 
-void _3do_OnSector(unsigned int sector)
+void _3do_OnSector(uint32_t sector)
 {
    io_interface(EXT_ON_SECTOR,(void*)sector);
 }
@@ -250,7 +251,7 @@ void _3do_Read2048(void *buff)
    io_interface(EXT_READ2048,(void*)buff);
 }
 
-unsigned int _3do_DiscSize()
+uint32_t _3do_DiscSize(void)
 {
    return (intptr_t)io_interface(EXT_GET_DISC_SIZE,NULL);
 }

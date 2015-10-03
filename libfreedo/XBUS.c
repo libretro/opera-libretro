@@ -33,14 +33,14 @@ Felix Lazarev
 
 struct XBUSDatum
 {
-   unsigned char XBSEL;
-   unsigned char XBSELH;
-   unsigned char POLF;
-   unsigned char POLDEVF;
-   unsigned char STDEVF[255];  //status of devices
-   unsigned char STLENF; //pointer in fifo
-   unsigned char CmdF[7];
-   unsigned char CmdPtrF;
+   uint8_t XBSEL;
+   uint8_t XBSELH;
+   uint8_t POLF;
+   uint8_t POLDEVF;
+   uint8_t STDEVF[255];  //status of devices
+   uint8_t STLENF; //pointer in fifo
+   uint8_t CmdF[7];
+   uint8_t CmdPtrF;
 };
 #pragma pack(pop)
 
@@ -67,7 +67,7 @@ static _xbus_device xdev[16];
 
 void ExecuteCommandF(void);
 
-void _xbus_SetCommandFIFO(unsigned int val)
+void _xbus_SetCommandFIFO(uint32_t val)
 {
 
    if(xdev[XBSEL])
@@ -80,7 +80,7 @@ void _xbus_SetCommandFIFO(unsigned int val)
    {
       if (CmdPtrF<7)
       {
-         CmdF[CmdPtrF]=(unsigned char)val;
+         CmdF[CmdPtrF]=(uint8_t)val;
          CmdPtrF++;
       }
       if(CmdPtrF>=7)
@@ -91,16 +91,16 @@ void _xbus_SetCommandFIFO(unsigned int val)
    }
 }
 
-unsigned int _xbus_GetDataFIFO(void)
+uint32_t _xbus_GetDataFIFO(void)
 {
    if(xdev[XBSEL])
       return (intptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
    return 0;
 }
 
-unsigned int _xbus_GetPoll(void)
+uint32_t _xbus_GetPoll(void)
 {
-   unsigned int res = 0x30;
+   uint32_t res = 0x30;
 
    if(XBSEL==0xf)
       res = POLF;
@@ -113,7 +113,7 @@ unsigned int _xbus_GetPoll(void)
    return res;
 }
 
-unsigned int _xbus_GetRes(void)
+uint32_t _xbus_GetRes(void)
 {
    if(xdev[XBSEL])
       return (intptr_t)(*xdev[XBSEL])(XBP_RESERV, NULL);
@@ -144,9 +144,9 @@ void ExecuteCommandF(void)
       _clio_GenerateFiq(4,0);
 }
 
-unsigned int _xbus_GetStatusFIFO(void)
+uint32_t _xbus_GetStatusFIFO(void)
 {
-   unsigned int res=0;
+   uint32_t res=0;
 
    if(xdev[XBSEL])
       res=(intptr_t)(*xdev[XBSEL])(XBP_GET_STATUS,NULL);
@@ -171,13 +171,13 @@ unsigned int _xbus_GetStatusFIFO(void)
    return res;
 }
 
-void _xbus_SetDataFIFO(unsigned int val)
+void _xbus_SetDataFIFO(uint32_t val)
 {
    if(xdev[XBSEL])
       (*xdev[XBSEL])(XBP_SET_DATA,(void*)val);
 }
 
-void _xbus_SetPoll(unsigned int val)
+void _xbus_SetPoll(uint32_t val)
 {
    if(XBSEL==0xf)
    {
@@ -191,10 +191,10 @@ void _xbus_SetPoll(unsigned int val)
    }
 }
 
-void _xbus_SetSEL(unsigned int val)
+void _xbus_SetSEL(uint32_t val)
 {
-	XBSEL=(unsigned char)val&0xf;
-	XBSELH=(unsigned char)val&0xf0;
+	XBSEL=(uint8_t)val&0xf;
+	XBSELH=(uint8_t)val&0xf0;
 }
 
 void _xbus_Init(_xbus_device zero_dev)
@@ -250,9 +250,9 @@ void _xbus_Destroy(void)
    }
 }
 
-unsigned int _xbus_SaveSize(void)
+uint32_t _xbus_SaveSize(void)
 {
-   unsigned int tmp=sizeof(struct XBUSDatum);
+   uint32_t tmp=sizeof(struct XBUSDatum);
    int i;
    tmp+=16*4;
    for(i=0;i<15;i++)
@@ -276,12 +276,12 @@ void _xbus_Save(void *buff)
       if(!xdev[i])
       {
          tmp=0;
-         memcpy(&((unsigned char*)buff)[j+i*4],&tmp,4);
+         memcpy(&((uint8_t*)buff)[j+i*4],&tmp,4);
       }
       else
       {
-         (*xdev[i])(XBP_GET_SAVEDATA,&((unsigned char*)buff)[off]);
-         memcpy(&((unsigned char*)buff)[j+i*4],&off,4);
+         (*xdev[i])(XBP_GET_SAVEDATA,&((uint8_t*)buff)[off]);
+         memcpy(&((uint8_t*)buff)[j+i*4],&off,4);
          off += (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE, NULL);
       }
    }
@@ -297,7 +297,7 @@ void _xbus_Load(void *buff)
 
    for(i=0;i<15;i++)
    {
-      memcpy(&offd,&((unsigned char*)buff)[j+i*4],4);
+      memcpy(&offd,&((uint8_t*)buff)[j+i*4],4);
 
       if(!xdev[i])
          continue;
@@ -305,6 +305,6 @@ void _xbus_Load(void *buff)
       if(!offd)
          (*xdev[i])(XBP_RESET,NULL);
       else
-         (*xdev[i])(XBP_SET_SAVEDATA,&((unsigned char*)buff)[offd]);
+         (*xdev[i])(XBP_SET_SAVEDATA,&((uint8_t*)buff)[offd]);
    }
 }
