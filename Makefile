@@ -52,7 +52,10 @@ ifndef ($(NOUNIVERSAL))
    FLAGS += $(ARCHFLAGS)
    LDFLAGS += $(ARCHFLAGS)
 endif
-else ifeq ($(platform), ios)
+
+# iOS
+else ifneq (,$(findstring ios,$(platform)))
+
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
@@ -61,10 +64,11 @@ ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
 endif
 
-   CC = clang -arch armv7 -isysroot $(IOSSDK)
-   OSXVER = `sw_vers -productVersion | cut -d. -f 2`
-   OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
-ifeq ($(OSX_LT_MAVERICKS),"YES")
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
+ifeq ($(platform),ios9)
+   SHARED += -miphoneos-version-min=8.0
+   CC +=  -miphoneos-version-min=8.0
+else
    SHARED += -miphoneos-version-min=5.0
    CC +=  -miphoneos-version-min=5.0
 endif
