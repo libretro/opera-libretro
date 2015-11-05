@@ -850,11 +850,11 @@ void DoCommand(struct cdrom_Device *cd)
    }
 }
 
-void  SendCommand(struct cdrom_Device *cd, unsigned char val)
+void  SendCommand(struct cdrom_Device *cd, uint8_t val)
 {
    if (cd->CmdPtr < 7)
    {
-      cd->Command[cd->CmdPtr] = (unsigned char)val;
+      cd->Command[cd->CmdPtr] = (uint8_t)val;
       cd->CmdPtr++;
    }
 
@@ -888,7 +888,7 @@ unsigned int GetDataFifo(struct cdrom_Device *cd)
 
    if(cd->DataLen > 0)
    {
-      res= (unsigned char)cd->Data[cd->DataPtr];
+      res= (uint8_t)cd->Data[cd->DataPtr];
       cd->DataLen--;
       cd->DataPtr++;
 
@@ -1020,7 +1020,7 @@ unsigned int GedWord(struct cdrom_Device *cd)
 
    if(cd->DataLen > 0)
    {
-      //res=(unsigned char)Data[0];
+      //res=(uint8_t)Data[0];
       //res
       res=(cd->Data[0]<<24) + (cd->Data[1]<<16) + (cd->Data[2]<<8) + cd->Data[3];
       if(cd->DataLen<3)
@@ -1094,19 +1094,19 @@ void* _xbplug_MainDevice(int proc, void* data)
       case XBP_FIQ:
          return (void*)TestFIQ(isodrive);
       case XBP_GET_DATA:
-         return (void*)GetDataFifo(isodrive);
+         return (void*)(uintptr_t)GetDataFifo(isodrive);
       case XBP_GET_STATUS:
-         return (void*)GetStatusFifo(isodrive);
+         return (void*)(uintptr_t)GetStatusFifo(isodrive);
       case XBP_SET_POLL:
          SetPoll(isodrive, (intptr_t)data);
          break;
       case XBP_GET_POLL:
-         return (void*)isodrive->Poll;
+         return (void*)(uintptr_t)isodrive->Poll;
       case XBP_DESTROY:
          break;
       case XBP_GET_SAVESIZE:
          tmp = sizeof(struct cdrom_Device);
-         return (void*)tmp;
+         return (void*)(uintptr_t)tmp;
       case XBP_GET_SAVEDATA:
          memcpy(data, &isodrive, sizeof(struct cdrom_Device));
          break;

@@ -329,27 +329,27 @@ union	PXC
 #pragma pack(push,1)
 struct MADAMDatum
 {
-   unsigned int mregs[2048+64];
+   uint32_t mregs[2048+64];
    uint16_t PLUT[32];
    uint8_t PBUSQueue[20];
-   int RMOD;
-   int WMOD;
+   int32_t RMOD;
+   int32_t WMOD;
    unsigned int _madam_FSM;
 };
 #pragma pack(pop)
 static struct MADAMDatum madam;
 
-unsigned int Get_madam_FSM(void)
+uint32_t Get_madam_FSM(void)
 {
    return madam._madam_FSM;
 }
 
-void Set_madam_FSM(unsigned int val)
+void Set_madam_FSM(uint32_t val)
 {
    madam._madam_FSM=val;
 }
 
-unsigned int _madam_SaveSize(void)
+uint32_t _madam_SaveSize(void)
 {
    return sizeof(struct MADAMDatum);
 }
@@ -372,7 +372,7 @@ void _madam_Load(void *buff)
 #define _madam_FSM madam._madam_FSM
 //*******************************************
 
-unsigned int PXOR1, PXOR2;
+uint32_t PXOR1, PXOR2;
 
 
 #define PDV(x) ((((x)-1)&3)+1)
@@ -411,8 +411,8 @@ unsigned int PXOR1, PXOR2;
 
 
 // CLASSES /////////////////////////////////////////////////////////////////
-unsigned int  mread(unsigned int addr);
-void  mwrite(unsigned int addr, unsigned int val);
+uint32_t  mread(uint32_t addr);
+void  mwrite(uint32_t addr, uint32_t val);
 int TestInitVisual(int packed);
 int Init_Line_Map(void);
 void Init_Scale_Map(void);
@@ -427,7 +427,7 @@ void HandleDMA8(void);
 void DMAPBus(void);
 
 
-unsigned int MAPPING;
+uint32_t MAPPING;
 
 // general 3D vertex class
 
@@ -436,16 +436,16 @@ unsigned int MAPPING;
 
 static struct
 {
-   unsigned int plutaCCBbits;
-   unsigned int pixelBitsMask;
+   uint32_t plutaCCBbits;
+   uint32_t pixelBitsMask;
    bool tmask;
 } pdec;
 
 static struct
 {
-   unsigned int pmode;
-   unsigned int pmodeORmask;
-   unsigned int pmodeANDmask;
+   uint32_t pmode;
+   uint32_t pmodeORmask;
+   uint32_t pmodeANDmask;
    bool Transparent;
 } pproj;
 
@@ -453,8 +453,6 @@ unsigned int pbus=0;
 uint8_t * Mem;
 unsigned int retuval;
 unsigned int BITADDR;
-//static unsigned int * BITPTR;
-//static unsigned int * BITEND;
 unsigned int BITBUFLEN;
 unsigned int BITBUF;
 unsigned int CCBFLAGS,/*PLUTDATA*/PIXC,PRE0,PRE1,TARGETPROJ,SRCDATA,debug;

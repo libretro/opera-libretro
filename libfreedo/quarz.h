@@ -42,9 +42,9 @@ bool  _qrz_QueueVDL(void);
 bool  _qrz_QueueDSP(void);
 bool  _qrz_QueueTimer(void);
 
-void  _qrz_PushARMCycles(unsigned int clks);
+void  _qrz_PushARMCycles(uint32_t clks);
 
-unsigned int _qrz_SaveSize(void);
+uint32_t _qrz_SaveSize(void);
 void _qrz_Save(void *buff);
 void _qrz_Load(void *buff);
 

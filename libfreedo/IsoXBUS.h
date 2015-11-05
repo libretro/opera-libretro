@@ -131,55 +131,56 @@ extern "C" {
 #pragma pack(push,1)
 //drive specific
 //disc data
-struct TOCEntry{
-   unsigned char res0;
-   unsigned char CDCTL;
-   unsigned char TRKNUM;
-   unsigned char res1;
-   unsigned char mm;
-   unsigned char ss;
-   unsigned char ff;
-   unsigned char res2;
+struct TOCEntry
+{
+   uint8_t res0;
+   uint8_t CDCTL;
+   uint8_t TRKNUM;
+   uint8_t res1;
+   uint8_t mm;
+   uint8_t ss;
+   uint8_t ff;
+   uint8_t res2;
 };
 
 //disc data
 struct DISCStc{
-   unsigned char curabsmsf[3]; //BIN form
-   unsigned char curtrack;
-   unsigned char nextmsf[3]; //BIN form
-   unsigned char tempmsf[3]; //BIN form
-   int  tempblk;
-   int  templba;
-   unsigned char currenterror;
-   unsigned char currentxbus;
-   unsigned int  currentoffset;
-   unsigned int  currentblocksize;
-   unsigned char currentspeed;
-   unsigned char  totalmsf[3];//BIN form
-   unsigned char  firsttrk;
-   unsigned char  lasttrk;
-   unsigned char  discid;
-   unsigned char  sesmsf[3]; //BIN form
+   uint8_t curabsmsf[3]; //BIN form
+   uint8_t curtrack;
+   uint8_t nextmsf[3]; //BIN form
+   uint8_t tempmsf[3]; //BIN form
+   int32_t  tempblk;
+   int32_t  templba;
+   uint8_t currenterror;
+   uint8_t currentxbus;
+   uint32_t  currentoffset;
+   uint32_t  currentblocksize;
+   uint8_t currentspeed;
+   uint8_t  totalmsf[3];//BIN form
+   uint8_t  firsttrk;
+   uint8_t  lasttrk;
+   uint8_t  discid;
+   uint8_t  sesmsf[3]; //BIN form
    struct TOCEntry DiscTOC[100];
 };
 
 struct cdrom_Device
 {
-      unsigned char Poll;
-      unsigned char XbusStatus;
-      unsigned char StatusLen;
-      int  DataLen;
-      int  DataPtr;
-      unsigned int olddataptr;
-      unsigned char CmdPtr;
-      unsigned char Status[256];
-      unsigned char Data[REQSIZE];
-      unsigned char Command[7];
-      char STATCYC;
-      int Requested;
-      unsigned int MEIStatus;
-      struct DISCStc DISC;
-      unsigned int curr_sector;
+   uint8_t Poll;
+   uint8_t XbusStatus;
+   uint8_t StatusLen;
+   int32_t  DataLen;
+   int32_t  DataPtr;
+   uint32_t olddataptr;
+   uint8_t CmdPtr;
+   uint8_t Status[256];
+   uint8_t Data[REQSIZE];
+   uint8_t Command[7];
+   int8_t STATCYC;
+   int32_t Requested;
+   uint32_t MEIStatus;
+   struct DISCStc DISC;
+   uint32_t curr_sector;
 };
 
 extern struct cdrom_Device *isodrive;

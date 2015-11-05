@@ -31,7 +31,7 @@ Felix Lazarev
 extern "C" {
 #endif
 
-unsigned int _dsp_Loop(void);
+uint32_t _dsp_Loop(void);
 
 uint16_t  _dsp_ReadIMem(uint16_t addr);
 void  _dsp_WriteIMem(uint16_t addr, uint16_t val);

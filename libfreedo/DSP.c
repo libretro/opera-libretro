@@ -412,11 +412,10 @@ void _dsp_Reset(void)
    flags.nOP_MASK=~0;
 }
 
-unsigned int _dsp_Loop(void)
+uint32_t _dsp_Loop(void)
 {
    unsigned int BOP;	//1st & 2nd operand
    unsigned int Y;			//accumulator
-
 
    union {
       struct {

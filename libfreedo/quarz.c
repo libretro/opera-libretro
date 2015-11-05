@@ -56,7 +56,7 @@ struct QDatum
 
 static struct QDatum quarz;
 
-unsigned int _qrz_SaveSize(void)
+uint32_t _qrz_SaveSize(void)
 {
    return sizeof(struct QDatum);
 }
@@ -143,7 +143,7 @@ bool  _qrz_QueueTimer(void)
    return false;
 }
 
-void  _qrz_PushARMCycles(unsigned int clks)
+void  _qrz_PushARMCycles(uint32_t clks)
 {
    uint32_t arm;
    int timers = 21000000; /* default */
@@ -226,7 +226,7 @@ void  _qrz_PushARMCycles(unsigned int clks)
 
    if((ARM_CLOCK-sp)!=THE_ARM_CLOCK)
    {   THE_ARM_CLOCK=(ARM_CLOCK-sp);
-      io_interface(EXT_ARM_SYNC,(void*)THE_ARM_CLOCK); /* fix for working with 4do */
+      io_interface(EXT_ARM_SYNC,(void*)(intptr_t)THE_ARM_CLOCK); /* fix for working with 4do */
    }
    arm=(clks<<24)/(ARM_CLOCK-sp);
    qrz_AccARM+=arm*(ARM_CLOCK-sp);

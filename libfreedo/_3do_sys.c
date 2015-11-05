@@ -119,7 +119,7 @@ void _3do_InternalFrame(int cycles)
    int line;
    _qrz_PushARMCycles(cycles);
    if(_qrz_QueueDSP())
-      io_interface(EXT_PUSH_SAMPLE,(void*)_dsp_Loop());
+      io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)_dsp_Loop());
    if(_qrz_QueueTimer())
       _clio_DoTimers();
    if(_qrz_QueueVDL())
@@ -243,7 +243,7 @@ bool _3do_Load(void *buff)
 
 void _3do_OnSector(uint32_t sector)
 {
-   io_interface(EXT_ON_SECTOR,(void*)sector);
+   io_interface(EXT_ON_SECTOR,(void*)(uintptr_t)sector);
 }
 
 void _3do_Read2048(void *buff)
