@@ -381,7 +381,10 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
    info->library_name = "4DO";
-   info->library_version = "1.3.2.3";
+#ifndef GIT_VERSION
+#define GIT_VERSION ""
+#endif
+   info->library_version = "1.3.2.3" GIT_VERSION;
    info->need_fullpath = true;
    info->valid_extensions = "iso";
 }
