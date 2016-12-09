@@ -31,6 +31,10 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 endif
 
 TARGET_NAME := 4do
+GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
+ifneq ($(GIT_VERSION)," unknown")
+	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+endif
 
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
