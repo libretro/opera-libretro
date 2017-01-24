@@ -239,7 +239,7 @@ void _xbus_DevEject(int dev)
 
 void _xbus_Destroy(void)
 {
-   int i;
+   unsigned i;
    for(i=0; i < 16; i++)
    {
       if(xdev[i])

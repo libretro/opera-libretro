@@ -467,13 +467,6 @@ static void check_variables(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-   {
-      if (log_cb)
-         log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
-      return false;
-   }
-
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
@@ -502,7 +495,17 @@ bool retro_load_game(const struct retro_game_info *info)
       { 0 },
    };
 
+   if (!info)
+      return false;
+
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   {
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
+      return false;
+   }
 
    currentSector = 0;
    sampleCurrent = 0;
@@ -571,6 +574,18 @@ void retro_unload_game(void)
 {
    _freedo_Interface(FDP_DESTROY, (void*)0);
    fsCloseIso();
+
+   if (isodrive)
+      free(isodrive);
+   isodrive = NULL;
+
+   if (videoBuffer)
+      free(videoBuffer);
+   videoBuffer = NULL;
+
+   if (frame)
+      free(frame);
+   frame       = NULL;
 }
 
 unsigned retro_get_region(void)
@@ -602,7 +617,7 @@ size_t retro_get_memory_size(unsigned id)
 void retro_init(void)
 {
    struct retro_log_callback log;
-   unsigned level = 5;
+   unsigned level                = 5;
    uint64_t serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
@@ -611,24 +626,11 @@ void retro_init(void)
       log_cb = NULL;
 
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
-
    environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
 }
 
 void retro_deinit(void)
 {
-   if (isodrive)
-      free(isodrive);
-   isodrive = NULL;
-
-   if (videoBuffer)
-      free(videoBuffer);
-
-   if (frame)
-      free(frame);
-
-   videoBuffer = NULL;
-   frame = NULL;
 }
 
 void retro_reset(void)

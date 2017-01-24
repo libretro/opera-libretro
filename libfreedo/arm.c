@@ -586,11 +586,20 @@ uint8_t * _arm_Init(void)
 
 void _arm_Destroy(void)
 {
-   io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
+   if (pNVRam)
+      io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
 
-   free(pNVRam);
-   free(pRom);
-   free(pRam);
+   if (pNVRam)
+      free(pNVRam);
+   pNVRam = NULL;
+
+   if (pRom)
+      free(pRom);
+   pRom = NULL;
+
+   if (pRam)
+      free(pRam);
+   pRam = NULL;
 }
 
 void _arm_Reset(void)
