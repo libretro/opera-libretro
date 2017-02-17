@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (boolean.h).
+ * The following license statement only applies to this file (memmap.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,20 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_BOOLEAN_H
-#define __LIBRETRO_SDK_BOOLEAN_H
+#ifndef _LIBRETRO_MEMMAP_H
+#define _LIBRETRO_MEMMAP_H
 
-#ifndef __cplusplus
-
-#if defined(_MSC_VER) && !defined(SN_TARGET_PS3)
-/* Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant. */
-#define bool unsigned char
-#define true 1
-#define false 0
+#if defined(__CELLOS_LV2__) || defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU)
+/* No mman available */
+#elif defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
+#include <errno.h>
+#include <io.h>
 #else
-#include <stdbool.h>
+#define HAVE_MMAN
+#include <sys/mman.h>
 #endif
 
+#if !defined(HAVE_MMAN) || defined(_WIN32)
+void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+
+int munmap(void *addr, size_t len);
+
+int mprotect(void *addr, size_t len, int prot);
 #endif
+
+int memsync(void *start, void *end);
+
+int memprotect(void *addr, size_t len);
 
 #endif

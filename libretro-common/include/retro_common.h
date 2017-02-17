@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_file.h).
+ * The following license statement only applies to this file (retro_common.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,51 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __RETRO_FILE_H
-#define __RETRO_FILE_H
+#ifndef _LIBRETRO_COMMON_RETRO_COMMON_H
+#define _LIBRETRO_COMMON_RETRO_COMMON_H
 
-#include <stdint.h>
-#include <stddef.h>
+/*
+This file is designed to normalize the libretro-common compiling environment.
+It is not to be used in public API headers, as they should be designed as leanly as possible.
+Nonetheless.. in the meantime, if you do something like use ssize_t, which is not fully portable, 
+in a public API, you may need this.
+*/
 
-#include <sys/types.h>
-
-#include <boolean.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct RFILE RFILE;
-
-enum
-{
-   RFILE_MODE_READ = 0,
-   RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE
-};
-
-RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len);
-
-ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence);
-
-ssize_t retro_fread(RFILE *stream, void *s, size_t len);
-
-ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len);
-
-ssize_t retro_ftell(RFILE *stream);
-
-void retro_frewind(RFILE *stream);
-
-int retro_fclose(RFILE *stream);
-
-int retro_read_file(const char *path, void **buf, ssize_t *len);
-
-bool retro_write_file(const char *path, const void *data, ssize_t size);
-
-int retro_get_fd(RFILE *stream);
-
-#ifdef __cplusplus
-}
-#endif
+/* conditional compilation is handled inside here */
+#include <compat/msvc.h>
 
 #endif
+

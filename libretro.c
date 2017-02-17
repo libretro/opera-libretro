@@ -13,7 +13,7 @@
 #pragma pack(1)
 #endif
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <retro_stat.h>
 
 #include "libretro.h"
@@ -105,23 +105,23 @@ static void fsReadBios(const char *bios_path, void *prom)
 {
    long fsize;
    int readcount;
-   RFILE *bios1 = retro_fopen(bios_path, RFILE_MODE_READ, -1);
+   RFILE *bios1 = filestream_open(bios_path, RFILE_MODE_READ, -1);
 
    if (!bios1)
       return;
 
-   retro_fseek(bios1, 0, SEEK_END);
-   fsize = retro_ftell(bios1);
-   retro_frewind(bios1);
-   readcount = retro_fread(bios1, prom, fsize);
+   filestream_seek(bios1, 0, SEEK_END);
+   fsize = filestream_tell(bios1);
+   filestream_rewind(bios1);
+   readcount = filestream_read(bios1, prom, fsize);
    (void)readcount;
 
-   retro_fclose(bios1);
+   filestream_close(bios1);
 }
 
 static int fsOpenIso(const char *path)
 {
-   fcdrom = retro_fopen(path, RFILE_MODE_READ, -1);
+   fcdrom = filestream_open(path, RFILE_MODE_READ, -1);
 
    if(!fcdrom)
       return 0;
@@ -131,15 +131,15 @@ static int fsOpenIso(const char *path)
 
 static int fsCloseIso(void)
 {
-   retro_fclose(fcdrom);
+   filestream_close(fcdrom);
    return 1;
 }
 
 static int fsReadBlock(void *buffer, int sector)
 {
-   retro_fseek(fcdrom, 2048 * sector, SEEK_SET);
-   retro_fread(fcdrom, buffer, 2048);
-   retro_frewind(fcdrom);
+   filestream_seek(fcdrom, 2048 * sector, SEEK_SET);
+   filestream_read(fcdrom, buffer, 2048);
+   filestream_rewind(fcdrom);
 
    return 1;
 }
@@ -148,10 +148,10 @@ static char *fsReadSize(void)
 {
    char *buffer = (char *)malloc(sizeof(char) * 4);
 
-   retro_frewind(fcdrom);
-   retro_fseek(fcdrom, 80, SEEK_SET);
-   retro_fread(fcdrom, buffer, 4);
-   retro_frewind(fcdrom);
+   filestream_rewind(fcdrom);
+   filestream_seek(fcdrom, 80, SEEK_SET);
+   filestream_read(fcdrom, buffer, 4);
+   filestream_rewind(fcdrom);
 
    return buffer;
 }
@@ -535,7 +535,7 @@ bool retro_load_game(const struct retro_game_info *info)
 #endif
          sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
 
-         fp = retro_fopen(bios_path, RFILE_MODE_READ, -1);
+         fp = filestream_open(bios_path, RFILE_MODE_READ, -1);
 
          if (!fp)
          {
@@ -544,7 +544,7 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
 
-         retro_fclose(fp);
+         filestream_close(fp);
          strcpy(biosPath, bios_path);
       }
 

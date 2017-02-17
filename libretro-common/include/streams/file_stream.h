@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_stat.h).
+ * The following license statement only applies to this file (file_stream.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,43 +20,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __RETRO_STAT_H
-#define __RETRO_STAT_H
+#ifndef __LIBRETRO_SDK_FILE_STREAM_H
+#define __LIBRETRO_SDK_FILE_STREAM_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-#include <retro_common_api.h>
+#include <sys/types.h>
 
+#include <retro_common_api.h>
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
 
-/**
- * path_is_directory:
- * @path               : path
- *
- * Checks if path is a directory.
- *
- * Returns: true (1) if path is a directory, otherwise false (0).
- */
-bool path_is_directory(const char *path);
+typedef struct RFILE RFILE;
 
-bool path_is_character_special(const char *path);
+enum
+{
+   RFILE_MODE_READ = 0,
+   RFILE_MODE_READ_TEXT,
+   RFILE_MODE_WRITE,
+   RFILE_MODE_READ_WRITE,
 
-bool path_is_valid(const char *path);
+   /* There is no garantee these requests will be attended. */
+   RFILE_HINT_UNBUFFERED = 1<<8,
+   RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
+};
 
-int32_t path_get_size(const char *path);
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t len);
 
-/**
- * path_mkdir_norecurse:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-bool mkdir_norecurse(const char *dir);
+ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
+
+ssize_t filestream_read(RFILE *stream, void *data, size_t len);
+
+ssize_t filestream_write(RFILE *stream, const void *data, size_t len);
+
+ssize_t filestream_tell(RFILE *stream);
+
+void filestream_rewind(RFILE *stream);
+
+int filestream_close(RFILE *stream);
+
+int filestream_read_file(const char *path, void **buf, ssize_t *len);
+
+char *filestream_gets(RFILE *stream, char *s, size_t len);
+
+char *filestream_getline(RFILE *stream);
+
+int filestream_getc(RFILE *stream);
+
+int filestream_eof(RFILE *stream);
+
+bool filestream_write_file(const char *path, const void *data, ssize_t size);
+
+int filestream_putc(RFILE *stream, int c);
+
+int filestream_get_fd(RFILE *stream);
+
+int filestream_flush(RFILE *stream);
 
 RETRO_END_DECLS
 

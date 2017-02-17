@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_stat.c).
@@ -24,11 +24,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
+#include <sys/stat.h>
 #ifdef _XBOX
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1
@@ -62,7 +64,7 @@
 #endif
 
 #if defined(VITA)
-#define FIO_S_ISDIR PSP2_S_ISDIR
+#define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
@@ -100,10 +102,12 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
     if (cellFsStat(path, &buf) < 0)
        return false;
 #elif defined(_WIN32)
-   WIN32_FILE_ATTRIBUTE_DATA file_info;
-   GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
-   DWORD ret = GetFileAttributesEx(path, fInfoLevelId, &file_info);
-   if (ret == 0)
+   DWORD file_info = GetFileAttributes(path);
+   struct _stat buf;
+
+   _stat(path, &buf);
+
+   if (file_info == INVALID_FILE_ATTRIBUTES)
       return false;
 #else
    struct stat buf;
@@ -111,13 +115,8 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
       return false;
 #endif
 
-#if defined(_WIN32)
-   if (size)
-      *size = file_info.nFileSizeLow;
-#else
    if (size)
       *size = buf.st_size;
-#endif
 
    switch (mode)
    {
@@ -127,7 +126,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
-         return (file_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+         return (file_info & FILE_ATTRIBUTE_DIRECTORY);
 #else
          return S_ISDIR(buf.st_mode);
 #endif
@@ -193,6 +192,8 @@ bool mkdir_norecurse(const char *dir)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
    ret = sceIoMkdir(dir, 0777);
+#elif defined(__QNX__)
+   ret = mkdir(dir, 0777);
 #else
    ret = mkdir(dir, 0750);
 #endif
@@ -200,7 +201,7 @@ bool mkdir_norecurse(const char *dir)
 #if defined(VITA)
    if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
       ret = 0;
-#elif defined(PSP)
+#elif defined(PSP) || defined(_3DS)
    if ((ret == -1) && path_is_directory(dir))
       ret = 0;
 #else 
