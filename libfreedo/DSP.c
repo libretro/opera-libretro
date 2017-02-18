@@ -59,8 +59,7 @@ int  OperandLoaderNWB(void);
 //////////////////////////////////////////////////////////////////////
 #pragma pack(push,1)
 
-struct CIFTAG
-{
+struct CIFTAG{
    unsigned int	BCH_ADDR	:10;
    unsigned int	FLAG_MASK	:2;
    unsigned int	FLGSEL		:1;
@@ -70,74 +69,62 @@ struct CIFTAG
 
 struct BRNTAG
 {
-   unsigned int	BCH_ADDR:10;
-   unsigned int	FLAGM0	:1;
-   unsigned int	FLAGM1	:1;
-   unsigned int	FLAGSEL:1;
-   unsigned int	MODE0	:1;
-   unsigned int	MODE1  :1;
-   unsigned int	AC		:1;
+   unsigned int BCH_ADDR:10;
+   unsigned int FLAGM0	:1;
+   unsigned int FLAGM1	:1;
+   unsigned int FLAGSEL:1;
+   unsigned int MODE0	:1;
+   unsigned int MODE1  :1;
+   unsigned int AC		:1;
+};
+struct BRNBITS {
+   unsigned int BCH_ADDR:10;
+   unsigned int bits	:5;
+   unsigned int AC		:1;
 };
 
-struct BRNBITS
-{
-   unsigned int	BCH_ADDR:10;
-   unsigned int	bits	:5;
-   unsigned int	AC		:1;
-};
-
-struct AIFTAG
-{
+struct AIFTAG{
    unsigned int	BS			:4;
    unsigned int	ALU			:4;
    unsigned int	MUXB		:2;
    unsigned int	MUXA		:2;
-   signed int		M2SEL		:1;
+   signed int	M2SEL		:1;
    unsigned int	NUMOPS		:2;
-   signed int		PAD			:1;
+   signed int	PAD			:1;
 };
-
-struct IOFTAG
-{
-   signed int		IMMEDIATE	:13;
-   signed int		JUSTIFY		:1;
+struct IOFTAG{
+   signed int	IMMEDIATE	:13;
+   signed int	JUSTIFY		:1;
    unsigned int	TYPE		:2;
 };
-
-struct NROFTAG
-{
+struct NROFTAG{
    unsigned int	OP_ADDR		:10;
-   signed int		DI			:1;
+   signed int	DI			:1;
    unsigned int	WB1			:1;
    unsigned int	PAD			:1;
    unsigned int	TYPE		:3;
 };
-
-struct R2OFTAG
-{
+struct R2OFTAG{
    unsigned int	R1			:4;
-   signed int		R1_DI		:1;
+   signed int	R1_DI		:1;
    unsigned int	R2			:4;
-   signed int		R2_DI		:1;
+   signed int	R2_DI		:1;
    unsigned int	NUMREGS		:1;
    unsigned int	WB1			:1;
    unsigned int	WB2			:1;
    unsigned int	TYPE		:3;
 };
-
-struct R3OFTAG
-{
+struct R3OFTAG{
    unsigned int	R1			:4;
-   signed int		R1_DI		:1;
+   signed int	R1_DI		:1;
    unsigned int	R2			:4;
-   signed int		R2_DI		:1;
+   signed int	R2_DI		:1;
    unsigned int	R3			:4;
-   signed int		R3_DI		:1;
+   signed int	R3_DI		:1;
    unsigned int	TYPE		:1;
 };
 
-union ITAG
-{
+union ITAG{
    unsigned int raw;
    struct AIFTAG	aif;
    struct CIFTAG	cif;
@@ -158,45 +145,43 @@ struct RQFTAG{
    unsigned int MULT1:1;
 
 };
-
 union _requnion
 {
-   uint8_t raw;
+   unsigned char raw;
    struct RQFTAG	rq;
 };
 
 struct __INSTTRAS
 {
    union _requnion req;
-   int8_t BS;		// 4+1 bits
+   char BS;		// 4+1 bits
 }; // only for ALU command
 
 struct REGSTAG{
    unsigned int PC;//0x0ee
-   uint16_t NOISE;//0x0ea
-   uint16_t AudioOutStatus;//audlock,lftfull,rgtfull -- 0x0eb//0x3eb
-   uint16_t Sema4Status;//0x0ec//0x3ec
-   uint16_t Sema4Data;//0x0ed//0x3ed
-   int16_t DSPPCNT;//0x0ef
-   int16_t DSPPRLD;//0x3ef
-   int16_t AUDCNT;
-   uint16_t INT;//0x3ee
+   unsigned short NOISE;//0x0ea
+   unsigned short AudioOutStatus;//audlock,lftfull,rgtfull -- 0x0eb//0x3eb
+   unsigned short Sema4Status;//0x0ec//0x3ec
+   unsigned short Sema4Data;//0x0ed//0x3ed
+   short DSPPCNT;//0x0ef
+   short DSPPRLD;//0x3ef
+   short AUDCNT;
+   unsigned short INT;//0x3ee
 };
+struct INTAG{
 
-struct INTAG
-{
-   int16_t MULT1;
-   int16_t MULT2;
+   signed short MULT1;
+   signed short MULT2;
 
-   int16_t ALU1;
-   int16_t ALU2;
+   signed short ALU1;
+   signed short ALU2;
 
    int BS;
 
-   uint16_t RMAP;
-   uint16_t nOP_MASK;
+   unsigned short RMAP;
+   unsigned short nOP_MASK;
 
-   uint16_t WRITEBACK;
+   unsigned short WRITEBACK;
 
    union _requnion	req;
 
@@ -209,10 +194,10 @@ struct DSPDatum
 {
    unsigned int RBASEx4;
    struct __INSTTRAS INSTTRAS[0x8000];
-   uint16_t REGCONV[8][16];
+   unsigned short REGCONV[8][16];
    bool BRCONDTAB[32][32];
-   uint16_t NMem[2048];
-   uint16_t IMem[1024];
+   unsigned short NMem[2048];
+   unsigned short IMem[1024];
    int REGi;
    struct REGSTAG dregs;
    struct INTAG flags;

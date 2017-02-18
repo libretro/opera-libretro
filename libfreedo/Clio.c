@@ -32,6 +32,10 @@
 #define RELOAD       0x2
 #define CASCADE      0x4
 #define FLABLODE     0x8
+int lsize, flagtime;
+int TIMER_VAL=0; //0x415
+extern int ARM_CLOCK;
+extern int FMVFIX;
 
 #define RELOAD_VAL   0x10
 
@@ -89,6 +93,8 @@ void _clio_Save(void *buff)
 
 void _clio_Load(void *buff)
 {
+   TIMER_VAL=0;
+
    memcpy(&clio,buff,sizeof(struct CLIODatum));
 }
 
@@ -132,6 +138,8 @@ int _clio_Poke(uint32_t addr, uint32_t val)
 {
    int base;
    int i;
+
+   if(!flagtime){TIMER_VAL=lsize=0;}
 
    if( (addr& ~0x2C) == 0x40 ) // 0x40..0x4C, 0x60..0x6C case
    {
@@ -252,6 +260,19 @@ int _clio_Poke(uint32_t addr, uint32_t val)
    else if(addr==0x304) // Dma Starter!!!!! P/A !!!! need to create Handler.
    {
       HandleDMA(val);
+      switch(val)
+      {
+         case 0x100000:
+            if(TIMER_VAL<5800)
+               TIMER_VAL+=0x33;
+            lsize+=0x33;
+            flagtime=(ARM_CLOCK/2000000);
+            break;
+         default:
+            if(!cregs[0x304])
+               TIMER_VAL=lsize=0;
+            break;
+      }
       return 0;
    }
    else if(addr==0x308) //Dma Stopper!!!!
@@ -374,9 +395,9 @@ int _clio_Poke(uint32_t addr, uint32_t val)
       cregs[addr]=val&0x3ff;
       return 0;
    }
-   else if(addr>=0x100 && addr<=0x7c)
+   else if(addr==0x120)
    {
-      cregs[addr]=val&0xffff;
+      cregs[addr]=((TIMER_VAL>800)?TIMER_VAL+(val/0x30):val); //316 or 800?
       return 0;
    }
 
@@ -445,8 +466,6 @@ uint32_t _clio_Peek(uint32_t addr)
       return fastrand();
    else if(addr==0x17D0)//Read DSP/ARM Semaphore
       return _dsp_ARMread2sema4();
-   else if(addr>=0x100 && addr<=0x7c)
-      return cregs[addr]&0xffff;
 
    return cregs[addr];
 }
@@ -605,6 +624,7 @@ void _clio_Init(int ResetReson)
    cregs[0x0400]=0x80;
    cregs[0x220]=64;
    Mregs=_madam_GetRegs();
+   TIMER_VAL=0;
 
 }
 uint16_t  _clio_EIFIFO(uint16_t channel)

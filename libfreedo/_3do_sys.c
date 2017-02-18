@@ -45,6 +45,21 @@ extern void* Getp_ROMS(void);
 extern void* Getp_RAMS(void);
 extern int ARM_CLOCK;
 extern int THE_ARM_CLOCK;
+extern int FMVFIX;
+extern int lsize;
+extern int flagtime;
+
+int __tex__scaler = 0;
+int HightResMode=0;
+int fixmode=0;
+int biosanvil=0;
+int isanvil=0;
+int speedfixes=0;
+int sf=0;
+int sdf=0;
+int unknownflag11=0;
+int jw=0;
+int cnbfix=0;
 
 static INLINE uint32_t _bswap(uint32_t x)
 {
@@ -58,7 +73,7 @@ int _3do_Init(void)
    int i;
    uint8_t *Memory;
    uint8_t *rom;
-
+   if(isanvil==30)biosanvil=1;
    Memory=_arm_Init();
 
    io_interface(EXT_READ_ROMS,Getp_ROMS());
@@ -142,6 +157,7 @@ void _3do_InternalFrame(int cycles)
          //curr_frame->srch=240;
          if(!skipframe)
             curr_frame = (struct VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
+         //if(!scipframe)io_interface(EXT_SWAPFRAME,curr_frame);
       }
    }
 }
@@ -153,6 +169,7 @@ void _3do_Frame(struct VDLFrame *frame, bool __skipframe)
 
    curr_frame = frame;
    skipframe = __skipframe;
+   if(flagtime)flagtime--;
 
    do
    {
@@ -256,25 +273,15 @@ uint32_t _3do_DiscSize(void)
    return (intptr_t)io_interface(EXT_GET_DISC_SIZE,NULL);
 }
 
-int __tex__scaler = 0;
-int HightResMode=0;
-int fixmode=0;
-int speedfixes=0;
-int sf=0;
-int sdf=0;
-int unknownflag11=0;
-int jw=0;
-int cnbfix=0;
-
-void _freedo_Interface(int procedure, void *datum)
+void *_freedo_Interface(int procedure, void *datum)
 {
    int line;
 
    switch(procedure)
    {
       case FDP_INIT:
-         sf=5000000;
          cnbfix=0;
+         sf=5000000;
          io_interface=(_ext_Interface)datum;
          _3do_Init();
          break;
@@ -298,6 +305,7 @@ void _freedo_Interface(int procedure, void *datum)
          _3do_Save(datum);
          break;
       case FDP_DO_LOAD:
+         cnbfix=1;
          sf=0;
          _3do_Load(datum);
          break;
@@ -313,7 +321,6 @@ void _freedo_Interface(int procedure, void *datum)
       case FDP_GETP_PROFILE:
          break;
       case FDP_SET_ARMCLOCK:
-         THE_ARM_CLOCK=0;
          ARM_CLOCK=(intptr_t)datum;
          break;
       case FDP_SET_TEXQUALITY:
@@ -338,5 +345,13 @@ void _freedo_Interface(int procedure, void *datum)
          //			, &param->resultingWidth
          //			, &param->resultingHeight);
          //		break;
-   };
+      case FDP_GET_BIOS_TYPE:
+         return (void*)isanvil;
+         break;
+      case FDP_SET_ANVIL:
+         isanvil=(int)datum;
+         break;
+   }
+
+   return NULL;
 }

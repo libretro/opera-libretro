@@ -1243,6 +1243,12 @@ int _arm_Execute(void)
    uint8_t shtype;
    uint32_t cmd,pc_tmp;
    bool isexeption=false;
+   if(biosanvil==1)
+   {
+      REG_PC+=64;
+      biosanvil=2;
+      isanvil=1;
+   }
 
    //for(; CYCLES>0; CYCLES-=SCYCLE)
    {   

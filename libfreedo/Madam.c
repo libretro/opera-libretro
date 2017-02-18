@@ -541,44 +541,6 @@ int FLOAT1612(int a)
 }
 
 //////////////////////////////////////////////////////////////////////
-// Quick divide helper
-//////////////////////////////////////////////////////////////////////
-
-#define QUICK_DIVIDE_CACHE_SIZE 512
-static int QUICK_DIVIDE_UBOUND = 0;
-static int QUICK_DIVIDE_LBOUND = 0;
-
-static int16_t quickDivide_lookups[QUICK_DIVIDE_CACHE_SIZE][QUICK_DIVIDE_CACHE_SIZE];
-
-static void quickDivide_init(void)
-{
-   int a, b;
-
-   QUICK_DIVIDE_UBOUND	= (QUICK_DIVIDE_CACHE_SIZE / 2) - 1;
-   QUICK_DIVIDE_LBOUND	= -(QUICK_DIVIDE_CACHE_SIZE / 2);
-   for (a = QUICK_DIVIDE_LBOUND; a <= QUICK_DIVIDE_UBOUND; a++)
-   {
-      for (b = QUICK_DIVIDE_LBOUND; b <= QUICK_DIVIDE_UBOUND; b++)
-      {
-         if (b == 0)
-            quickDivide_lookups[a - QUICK_DIVIDE_LBOUND][b - QUICK_DIVIDE_LBOUND] = 0;
-         else
-            quickDivide_lookups[a - QUICK_DIVIDE_LBOUND][b - QUICK_DIVIDE_LBOUND] = a / b;
-      }
-   }
-}
-
-static INLINE int quickDivide(int a, int b)
-{
-   if (a >= QUICK_DIVIDE_LBOUND 
-         && a <= QUICK_DIVIDE_UBOUND 
-         && b >= QUICK_DIVIDE_LBOUND 
-         && b <= QUICK_DIVIDE_UBOUND)
-      return quickDivide_lookups[a - QUICK_DIVIDE_LBOUND][b - QUICK_DIVIDE_LBOUND];
-   return a / b;
-}
-
-//////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
@@ -1124,8 +1086,6 @@ void _madam_Init(uint8_t *memory)
 
    bitoper.bitset = 1;
 
-   quickDivide_init();
-
    MAPPING=1;
 
    _madam_FSM=FSM_IDLE;
@@ -1611,6 +1571,7 @@ unsigned int * _madam_GetRegs(void)
 
 void  DrawPackedCel_New(void)
 {
+   //if(isanvil==2&&biosanvil==2)  //for later
    sf=100000;
    uint16_t CURPIX,LAMV;
 
@@ -1759,6 +1720,7 @@ void  DrawPackedCel_New(void)
    }
    else if(TEXEL_FUN_NUMBER==1)
    {
+      //dinopark
       int drawHeight;
 
       unknownflag11=100000;
@@ -2190,7 +2152,9 @@ void  DrawLRCel_New(void)
 
                if(!pproj.Transparent)
                {
-                  unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                  unsigned framePixel;
+                  if(fixmode&FIX_BIT_TIMING_6)framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,RMOD)));
+                  else framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
                   unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
                   mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
@@ -2662,6 +2626,11 @@ int  TexelDraw_Scale(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int del
    int i,j;
    unsigned int pixel;
    unsigned int framePixel;
+   if((fixmode&FIX_BIT_TIMING_3))
+   {
+      deltay*=5;
+      ycur*=5;
+   }
 
    if((HDX1616<0) && (deltax)<0 && xcur<0)
       return -1;
@@ -2759,34 +2728,34 @@ int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
       int cnt_cross = 0;
       if(i<(yB) && i>=(yA))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xB-xA)*(i-yA)),(yB-yA))+xA));
+         xpoints[cnt_cross]=(int)(((((xB-xA)*(i-yA)),(yB-yA))+xA));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yB) && i<(yA))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xA-xB)*(i-yB)),(yA-yB))+xB));
+         xpoints[cnt_cross]=(int)(((((xA-xB)*(i-yB)),(yA-yB))+xB));
          updowns[cnt_cross++]=0;
       }
 
       if(i<(yC) && i>=(yB))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xC-xB)*(i-yB)),(yC-yB))+xB));
+         xpoints[cnt_cross]=(int)(((((xC-xB)*(i-yB)),(yC-yB))+xB));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yC) && i<(yB))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xB-xC)*(i-yC)),(yB-yC))+xC));
+         xpoints[cnt_cross]=(int)(((((xB-xC)*(i-yC)),(yB-yC))+xC));
          updowns[cnt_cross++]=0;
       }
 
       if(i<(yD) && i>=(yC))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xD-xC)*(i-yC)),(yD-yC))+xC));
+         xpoints[cnt_cross]=(int)(((((xD-xC)*(i-yC)),(yD-yC))+xC));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yD) && i<(yC))
       {
-         xpoints[cnt_cross]=(int)((quickDivide(((xC-xD)*(i-yD)),(yC-yD))+xD));
+         xpoints[cnt_cross]=(int)(((((xC-xD)*(i-yD)),(yC-yD))+xD));
          updowns[cnt_cross++]=0;
       }
 
@@ -2794,12 +2763,12 @@ int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
       {
          if(i<(yA) && i>=(yD))
          {
-            xpoints[cnt_cross]=(int)((quickDivide(((xA-xD)*(i-yD)),(yA-yD))+xD));
+            xpoints[cnt_cross]=(int)(((((xA-xD)*(i-yD)),(yA-yD))+xD));
             updowns[cnt_cross]=1;
          }
          else if(i>=(yA) && i<(yD))
          {
-            xpoints[cnt_cross]=(int)((quickDivide(((xD-xA)*(i-yA)),(yD-yA))+xA));
+            xpoints[cnt_cross]=(int)(((((xD-xA)*(i-yA)),(yD-yA))+xA));
             updowns[cnt_cross]=0;
          }
       }

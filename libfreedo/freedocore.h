@@ -106,6 +106,8 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FDP_GETP_WRCOUNT        16
 #define FDP_SET_FIX_MODE        17
 #define FDP_GET_FRAME_BITMAP    18
+#define FDP_GET_BIOS_TYPE       19
+#define FDP_SET_ANVIL           20
 
 #define FIX_BIT_TIMING_1        (0x00000001)
 #define FIX_BIT_TIMING_2        (0x00000002)
@@ -116,12 +118,18 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FIX_BIT_TIMING_7        (0x00000040)
 #define FIX_BIT_GRAPHICS_STEP_Y (0x00080000) // Preserve Y coordinate rather than X between CELs.
 
+#define BIOS_ANVIL (0x40)
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-void _freedo_Interface(int procedure, void *datum);
+void *_freedo_Interface(int procedure, void *datum);
+
+extern int fixmode;
+extern int biosanvil;
+extern int isanvil;
 
 #ifdef __cplusplus
 };
