@@ -346,7 +346,7 @@ void *_freedo_Interface(int procedure, void *datum)
          //			, &param->resultingHeight);
          //		break;
       case FDP_GET_BIOS_TYPE:
-         return (void*)isanvil;
+         return (void*)&isanvil;
          break;
       case FDP_SET_ANVIL:
          isanvil=(int)datum;
