@@ -17,6 +17,7 @@
 #include <retro_stat.h>
 
 #include "libretro.h"
+#include "cuefile.h"
 
 #include "libfreedo/freedocore.h"
 #include "libfreedo/IsoXBUS.h"
@@ -53,6 +54,9 @@ extern unsigned int _3do_SaveSize(void);
 extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
 extern void* Getp_NVRAM();
+
+static int cd_sector_size;
+static int cd_sector_offset;
 
 static RFILE *fcdrom;
 static int currentSector;
@@ -119,6 +123,52 @@ static void fsReadBios(const char *bios_path, void *prom)
    filestream_close(bios1);
 }
 
+static void fsDetectCDFormat(const char *path)
+{
+   CD_format cd_format;
+   cueFile *cue_file = cue_get(path, log_cb);
+   if (cue_file) {
+      cd_format = cue_file->cd_format;
+      log_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
+      free(cue_file);
+   } else {
+      int size = 0;
+      FILE *fp = fopen(path, "r");
+      if (fp) {
+         fseek(fp, 0L, SEEK_END);
+	     size = ftell(fp);
+	     fclose(fp);
+      }
+      if (size % SECTOR_SIZE_2048 == 0) {  // most standard guess first
+         cd_format = MODE1_2048;
+      } else if (size % SECTOR_SIZE_2352 == 0) {
+    	 cd_format = MODE1_2352;
+      } else {
+         cd_format = MODE1_2048;
+         log_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
+      }
+      log_cb(RETRO_LOG_INFO, "[4DO]: File format guessed by file size is %s", cue_get_cd_format_name(cd_format));
+   }
+
+   switch (cd_format) {
+   case MODE1_2048:
+      cd_sector_size = SECTOR_SIZE_2048;
+      cd_sector_offset = SECTOR_OFFSET_MODE1_2048;
+      break;
+   case MODE1_2352:
+      cd_sector_size = SECTOR_SIZE_2352;
+      cd_sector_offset = SECTOR_OFFSET_MODE1_2352;
+      break;
+   case MODE2_2352:
+      cd_sector_size = SECTOR_SIZE_2352;
+      cd_sector_offset = SECTOR_OFFSET_MODE2_2352;
+      break;
+   }
+
+   log_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
+}
+
+
 static int fsOpenIso(const char *path)
 {
    fcdrom = filestream_open(path, RFILE_MODE_READ, -1);
@@ -126,6 +176,7 @@ static int fsOpenIso(const char *path)
    if(!fcdrom)
       return 0;
 
+   fsDetectCDFormat(path);
    return 1;
 }
 
@@ -137,8 +188,8 @@ static int fsCloseIso(void)
 
 static int fsReadBlock(void *buffer, int sector)
 {
-   filestream_seek(fcdrom, 2048 * sector, SEEK_SET);
-   filestream_read(fcdrom, buffer, 2048);
+   filestream_seek(fcdrom, (cd_sector_size * sector) + cd_sector_offset, SEEK_SET);
+   filestream_read(fcdrom, buffer, SECTOR_SIZE_2048);
    filestream_rewind(fcdrom);
 
    return 1;
@@ -149,7 +200,7 @@ static char *fsReadSize(void)
    char *buffer = (char *)malloc(sizeof(char) * 4);
 
    filestream_rewind(fcdrom);
-   filestream_seek(fcdrom, 80, SEEK_SET);
+   filestream_seek(fcdrom, 80 + cd_sector_offset, SEEK_SET);
    filestream_read(fcdrom, buffer, 4);
    filestream_rewind(fcdrom);
 
@@ -166,7 +217,7 @@ static unsigned int fsReadDiscSize(void)
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
       (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
 
-   printf("disc size: %d sectors\n", size);
+   log_cb(RETRO_LOG_INFO, "[4DO]: disc size: %d sectors\n", size);
 
    return size;
 }
@@ -386,7 +437,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #endif
    info->library_version = "1.3.2.4" GIT_VERSION;
    info->need_fullpath = true;
-   info->valid_extensions = "iso";
+   info->valid_extensions = "iso|img|bin";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)

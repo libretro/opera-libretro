@@ -6,6 +6,7 @@ INCFLAGS := -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo -I$(LIBRETRO_COMM_DIR)/include
 SOURCES_CXX := 
 
 SOURCES_C := $(CORE_DIR)/libretro.c \
+             $(CORE_DIR)/cuefile.c \
 				 $(4DO_DIR)/_3do_sys.c \
 				 $(4DO_DIR)/arm.c \
 				 $(4DO_DIR)/Clio.c \
