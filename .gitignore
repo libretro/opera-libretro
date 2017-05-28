@@ -4,3 +4,5 @@
 *.dylib
 *.exe
 /.project
+/obj/
+/libs/
