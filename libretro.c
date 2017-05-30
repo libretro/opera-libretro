@@ -123,14 +123,13 @@ static void fsReadBios(const char *bios_path, void *prom)
    filestream_close(bios1);
 }
 
-static void fsDetectCDFormat(const char *path)
+static void fsDetectCDFormat(const char *path, cueFile *cue_file)
 {
    CD_format cd_format;
-   cueFile *cue_file = cue_get(path, log_cb);
+
    if (cue_file) {
       cd_format = cue_file->cd_format;
       log_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
-      free(cue_file);
    } else {
       int size = 0;
       FILE *fp = fopen(path, "r");
@@ -171,12 +170,17 @@ static void fsDetectCDFormat(const char *path)
 
 static int fsOpenIso(const char *path)
 {
-   fcdrom = filestream_open(path, RFILE_MODE_READ, -1);
+   cueFile *cue_file = cue_get(path);
+   fsDetectCDFormat(path, cue_file);
+
+   const char *cd_image_path = cue_is_cue_path(path) ? cue_file->cd_image : path;
+   fcdrom = filestream_open(cd_image_path, RFILE_MODE_READ, -1);
+
+   free(cue_file);
 
    if(!fcdrom)
       return 0;
 
-   fsDetectCDFormat(path);
    return 1;
 }
 
@@ -437,7 +441,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #endif
    info->library_version = "1.3.2.4" GIT_VERSION;
    info->need_fullpath = true;
-   info->valid_extensions = "iso|img|bin";
+   info->valid_extensions = "iso|img|bin|cue";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -567,6 +571,7 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *system_directory_c = NULL;
 
    *biosPath = '\0';
+
    if (fsOpenIso(full_path))
    {
       environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
@@ -675,6 +680,8 @@ void retro_init(void)
       log_cb = log.log;
    else
       log_cb = NULL;
+
+   cue_log_cb = log_cb;
 
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
    environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
