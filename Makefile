@@ -134,6 +134,47 @@ else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
    STATIC_LINKING = 1
 
+# Raspberry Pi
+else ifneq (,$(findstring rpi,$(platform)))
+	AR = ${CC_PREFIX}ar
+	CC = ${CC_PREFIX}gcc
+
+	EXT    ?= so
+	TARGET := $(TARGET_NAME)_libretro.$(EXT)
+	SHARED := -shared -Wl,--version-script=link.T
+	fpic = -fPIC
+	ifneq (,$(findstring rpi2,$(platform)))
+		CFLAGS = -mcpu=cortex-a7 -mfloat-abi=hard
+	endif
+
+# ODROIDs
+else ifneq (,$(findstring odroid,$(platform)))
+	AR = ${CC_PREFIX}ar
+	CC = ${CC_PREFIX}gcc
+
+	EXT    ?= so
+	TARGET := $(TARGET_NAME)_libretro.$(EXT)
+ifeq ($(BOARD),1)
+	BOARD := $(shell cat /proc/cpuinfo | grep -i odroid | awk '{print $$3}')
+endif
+	SHARED := -shared -Wl,--version-script=link.T
+	fpic = -fPIC
+	CFLAGS += -marm -mfloat-abi=hard
+	ifneq (,$(findstring ODROIDC,$(BOARD)))
+		# ODROID-C1
+		CFLAGS += -mtune=cortex-a5
+	else ifneq (,$(findstring ODROID-XU3,$(BOARD)))
+		# ODROID-XU3 & -XU3 Lite
+		ifeq "$(shell expr `gcc -dumpversion` \>= 4.9)" "1"
+			CFLAGS += -march=armv7ve -mtune=cortex-a15.cortex-a7
+		else
+			CFLAGS += -mtune=cortex-a9
+		endif
+	else
+		# ODROID-U2, -U3, -X & -X2
+		CFLAGS += -mtune=cortex-a9
+	endif
+
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
