@@ -1961,7 +1961,6 @@ void  DrawLiteralCel_New(void)
 
             //  if(speedfixes>=0&&speedfixes<=100001)   speedfixes=300000;
             sdf=100000;
-            //רנטפעû NFS
             SPRWI-=((PRE0>>24)&0xf);
             xvert+=TEXTURE_HI_START*VDX1616;
             yvert+=TEXTURE_HI_START*VDY1616;
@@ -2728,34 +2727,34 @@ int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
       int cnt_cross = 0;
       if(i<(yB) && i>=(yA))
       {
-         xpoints[cnt_cross]=(int)(((((xB-xA)*(i-yA)),(yB-yA))+xA));
+         xpoints[cnt_cross]=(int)(((((xB-xA)*(i-yA))/(yB-yA))+xA));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yB) && i<(yA))
       {
-         xpoints[cnt_cross]=(int)(((((xA-xB)*(i-yB)),(yA-yB))+xB));
+         xpoints[cnt_cross]=(int)(((((xA-xB)*(i-yB))/(yA-yB))+xB));
          updowns[cnt_cross++]=0;
       }
 
       if(i<(yC) && i>=(yB))
       {
-         xpoints[cnt_cross]=(int)(((((xC-xB)*(i-yB)),(yC-yB))+xB));
+         xpoints[cnt_cross]=(int)(((((xC-xB)*(i-yB))/(yC-yB))+xB));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yC) && i<(yB))
       {
-         xpoints[cnt_cross]=(int)(((((xB-xC)*(i-yC)),(yB-yC))+xC));
+         xpoints[cnt_cross]=(int)(((((xB-xC)*(i-yC))/(yB-yC))+xC));
          updowns[cnt_cross++]=0;
       }
 
       if(i<(yD) && i>=(yC))
       {
-         xpoints[cnt_cross]=(int)(((((xD-xC)*(i-yC)),(yD-yC))+xC));
+         xpoints[cnt_cross]=(int)(((((xD-xC)*(i-yC))/(yD-yC))+xC));
          updowns[cnt_cross++]=1;
       }
       else if(i>=(yD) && i<(yC))
       {
-         xpoints[cnt_cross]=(int)(((((xC-xD)*(i-yD)),(yC-yD))+xD));
+         xpoints[cnt_cross]=(int)(((((xC-xD)*(i-yD))/(yC-yD))+xD));
          updowns[cnt_cross++]=0;
       }
 
@@ -2763,12 +2762,12 @@ int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
       {
          if(i<(yA) && i>=(yD))
          {
-            xpoints[cnt_cross]=(int)(((((xA-xD)*(i-yD)),(yA-yD))+xD));
+            xpoints[cnt_cross]=(int)(((((xA-xD)*(i-yD))/(yA-yD))+xD));
             updowns[cnt_cross]=1;
          }
          else if(i>=(yA) && i<(yD))
          {
-            xpoints[cnt_cross]=(int)(((((xD-xA)*(i-yA)),(yD-yA))+xA));
+            xpoints[cnt_cross]=(int)(((((xD-xA)*(i-yA))/(yD-yA))+xA));
             updowns[cnt_cross]=0;
          }
       }
