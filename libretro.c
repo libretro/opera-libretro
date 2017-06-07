@@ -218,6 +218,8 @@ static unsigned int fsReadDiscSize(void)
    char *ssize = fsReadSize();
 
    memcpy(&temp, ssize, 4);
+
+   free(ssize);
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
       (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
 
