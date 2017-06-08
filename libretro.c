@@ -162,6 +162,8 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
       cd_sector_size = SECTOR_SIZE_2352;
       cd_sector_offset = SECTOR_OFFSET_MODE2_2352;
       break;
+   case CUE_MODE_UNKNOWN:
+      break;
    }
 
    log_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
