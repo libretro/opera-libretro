@@ -57,7 +57,7 @@ static char *extract_file_name(const char *path, char *line)
 #else
    char slash            = '/';
 #endif
-   char *fule_name_end   = NULL;
+   char *file_name_end   = NULL;
    char *file_name_start = strstr(line, "\"");
    if (!file_name_start)
    {
