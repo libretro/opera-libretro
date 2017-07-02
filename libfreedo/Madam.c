@@ -1752,12 +1752,14 @@ void  DrawPackedCel_New(void)
 
          while(!eor)//while not end of row
          {
+            int __pix;
 
             type = BitReaderBig_Read(&bitoper, 2);
             if( (bitoper.point +start) >= (lastaddr))
                type=0;
 
-            int __pix= BitReaderBig_Read(&bitoper, 6)+1;
+            __pix= BitReaderBig_Read(&bitoper, 6)+1;
+
             switch(type)
             {
                case 0: //end of row
@@ -1938,10 +1940,10 @@ void  DrawPackedCel_New(void)
 
 void  DrawLiteralCel_New(void)
 {
-   sf=100000;
    int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
    uint16_t CURPIX,LAMV;
 
+   sf=100000;
    bpp=BPP[PRE0&PRE0_BPP_MASK];
    offsetl=2;
    if(bpp < 8)
@@ -2117,11 +2119,10 @@ void  DrawLiteralCel_New(void)
 
 void  DrawLRCel_New(void)
 {
-   sf=100000;
    int i,j,xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
    uint16_t CURPIX,LAMV;
 
-
+   sf=100000;
    bpp=BPP[PRE0&PRE0_BPP_MASK];
    offsetl=2;	if(bpp < 8)	offsetl=1;
    pixcount=0;
