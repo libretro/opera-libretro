@@ -225,7 +225,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    stream->fd = sceIoOpen(path, flags, mode_int);
 #else
 #if defined(HAVE_BUFFERED_IO)
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
       stream->fp = fopen(path, mode_str);
       if (!stream->fp)
@@ -235,7 +235,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
    {
       /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
-      stream->fd = open(path, flags);
+      stream->fd = open(path, flags, mode_int);
       if (stream->fd == -1)
          goto error;
 #ifdef HAVE_MMAP
@@ -533,6 +533,9 @@ int filestream_close(RFILE *stream)
 {
    if (!stream)
       goto error;
+
+   if (stream->ext)
+      free(stream->ext);
 
 #if  defined(PSP)
    if (stream->fd > 0)
