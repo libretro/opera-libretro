@@ -722,14 +722,14 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
 
                   case 3: // Multiply a 3x3 matrix of 16.16 values by multiple vectors, then multiply x and y by n/z
                      {   // Return the result vectors {x*n/z, y*n/z, z}
-
+                        double M;
 
                         Rez0=Rez0T;
                         Rez1=Rez1T;
                         Rez2=Rez2T;
                         Rez3=Rez3T;
 
-                        double M=Nfrac16;
+                        M=Nfrac16;
 
                         Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
                         if(Rez2T!=0)
