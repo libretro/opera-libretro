@@ -679,73 +679,74 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
 
             // Matix engine
          case 0x7fc:
-
-            mregs[0x7fc]=0; // Ours matrix engine already ready
-
-            static double Rez0T,Rez1T,Rez2T,Rez3T;
-
-            switch(val) // Cmd
             {
-               case 0: //printf("#Matrix = NOP\n");
-                  Rez0=Rez0T;
-                  Rez1=Rez1T;
-                  Rez2=Rez2T;
-                  Rez3=Rez3T;
-                  return;   // NOP
+               static double Rez0T,Rez1T,Rez2T,Rez3T;
+
+               mregs[0x7fc]=0; // Ours matrix engine already ready
+
+               switch(val) // Cmd
+               {
+                  case 0: //printf("#Matrix = NOP\n");
+                     Rez0=Rez0T;
+                     Rez1=Rez1T;
+                     Rez2=Rez2T;
+                     Rez3=Rez3T;
+                     return;   // NOP
 
 
-               case 1: //multiply a 4x4 matrix of 16.16 values by a vector of 16.16 values
-
-                  Rez0=Rez0T;
-                  Rez1=Rez1T;
-                  Rez2=Rez2T;
-                  Rez3=Rez3T;
-
-
-                  Rez0T=(int)((M00*V0+M01*V1+M02*V2+M03*V3)/65536.0);
-                  Rez1T=(int)((M10*V0+M11*V1+M12*V2+M13*V3)/65536.0);
-                  Rez2T=(int)((M20*V0+M21*V1+M22*V2+M23*V3)/65536.0);
-                  Rez3T=(int)((M30*V0+M31*V1+M32*V2+M33*V3)/65536.0);
-
-                  return;
-               case 2: //multiply a 3x3 matrix of 16.16 values by a vector of 16.16 values
-                  Rez0=Rez0T;
-                  Rez1=Rez1T;
-                  Rez2=Rez2T;
-                  Rez3=Rez3T;
-
-                  Rez0T=(int)((M00*V0+M01*V1+M02*V2)/65536.0);
-                  Rez1T=(int)((M10*V0+M11*V1+M12*V2)/65536.0);
-                  Rez2T=(int)((M20*V0+M21*V1+M22*V2)/65536.0);
-                  //printf("#Matrix CMD2, R0=0x%8.8X, R1=0x%8.8X, R2=0x%8.8X\n",Rez0,Rez1,Rez2);
-                  return;
-
-               case 3: // Multiply a 3x3 matrix of 16.16 values by multiple vectors, then multiply x and y by n/z
-                  {   // Return the result vectors {x*n/z, y*n/z, z}
-
+                  case 1: //multiply a 4x4 matrix of 16.16 values by a vector of 16.16 values
 
                      Rez0=Rez0T;
                      Rez1=Rez1T;
                      Rez2=Rez2T;
                      Rez3=Rez3T;
 
-                     double M=Nfrac16;
 
-                     Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
-                     if(Rez2T!=0)
-                        M /= (double)Rez2T;          // n/z
+                     Rez0T=(int)((M00*V0+M01*V1+M02*V2+M03*V3)/65536.0);
+                     Rez1T=(int)((M10*V0+M11*V1+M12*V2+M13*V3)/65536.0);
+                     Rez2T=(int)((M20*V0+M21*V1+M22*V2+M23*V3)/65536.0);
+                     Rez3T=(int)((M30*V0+M31*V1+M32*V2+M33*V3)/65536.0);
 
-                     Rez0T=(signed int)((M00*V0+M01*V1+M02*V2)/65536.0);
-                     Rez1T=(signed int)((M10*V0+M11*V1+M12*V2)/65536.0);
+                     return;
+                  case 2: //multiply a 3x3 matrix of 16.16 values by a vector of 16.16 values
+                     Rez0=Rez0T;
+                     Rez1=Rez1T;
+                     Rez2=Rez2T;
+                     Rez3=Rez3T;
+
+                     Rez0T=(int)((M00*V0+M01*V1+M02*V2)/65536.0);
+                     Rez1T=(int)((M10*V0+M11*V1+M12*V2)/65536.0);
+                     Rez2T=(int)((M20*V0+M21*V1+M22*V2)/65536.0);
+                     //printf("#Matrix CMD2, R0=0x%8.8X, R1=0x%8.8X, R2=0x%8.8X\n",Rez0,Rez1,Rez2);
+                     return;
+
+                  case 3: // Multiply a 3x3 matrix of 16.16 values by multiple vectors, then multiply x and y by n/z
+                     {   // Return the result vectors {x*n/z, y*n/z, z}
 
 
-                     Rez0T=(double)((Rez0T*M)/65536.0/65536.0); // x * n/z
-                     Rez1T=(double)((Rez1T*M)/65536.0/65536.0); // y * n/z
+                        Rez0=Rez0T;
+                        Rez1=Rez1T;
+                        Rez2=Rez2T;
+                        Rez3=Rez3T;
 
-                  }
-                  break;
-               default:
-                  break;
+                        double M=Nfrac16;
+
+                        Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
+                        if(Rez2T!=0)
+                           M /= (double)Rez2T;          // n/z
+
+                        Rez0T=(signed int)((M00*V0+M01*V1+M02*V2)/65536.0);
+                        Rez1T=(signed int)((M10*V0+M11*V1+M12*V2)/65536.0);
+
+
+                        Rez0T=(double)((Rez0T*M)/65536.0/65536.0); // x * n/z
+                        Rez1T=(double)((Rez1T*M)/65536.0/65536.0); // y * n/z
+
+                     }
+                     break;
+                  default:
+                     break;
+               }
             }
             break;
          case 0x130:
@@ -777,11 +778,13 @@ void LoadPLUT(unsigned int pnt,int n)
 {
    int i;
    for(i=0;i<n;i++)
+   {
 #ifdef MSB_FIRST
       PLUT[i]=_mem_read16((((pnt>>1)+i))<<1);
 #else
       PLUT[i]=_mem_read16((((pnt>>1)+i)^1)<<1);
 #endif
+   }
 }
 
 int CCBCOUNTER;
