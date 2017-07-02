@@ -25,7 +25,7 @@
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
-#define ROM2_SIZE 933636 //was 1 * 1024 * 1024,
+#define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
 #define NVRAM_SIZE 32 * 1024
 
 #define INPUTBUTTONL     (1<<4)
@@ -40,8 +40,9 @@
 #define INPUTBUTTONUP    (1<<13)
 #define INPUTBUTTONDOWN  (1<<14)
 
-typedef struct{
-   int buttons; // buttons bitfield
+typedef struct
+{
+   int buttons; /* buttons bitfield */
 }inputState;
 
 inputState internal_input_state[6];
@@ -135,13 +136,13 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
       FILE *fp = fopen(path, "r");
       if (fp) {
          fseek(fp, 0L, SEEK_END);
-	     size = ftell(fp);
-	     fclose(fp);
+         size = ftell(fp);
+         fclose(fp);
       }
-      if (size % SECTOR_SIZE_2048 == 0) {  // most standard guess first
+      if (size % SECTOR_SIZE_2048 == 0) {  /* most standard guess first */
          cd_format = MODE1_2048;
       } else if (size % SECTOR_SIZE_2352 == 0) {
-    	 cd_format = MODE1_2352;
+         cd_format = MODE1_2352;
       } else {
          cd_format = MODE1_2048;
          log_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
@@ -150,20 +151,20 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
    }
 
    switch (cd_format) {
-   case MODE1_2048:
-      cd_sector_size = SECTOR_SIZE_2048;
-      cd_sector_offset = SECTOR_OFFSET_MODE1_2048;
-      break;
-   case MODE1_2352:
-      cd_sector_size = SECTOR_SIZE_2352;
-      cd_sector_offset = SECTOR_OFFSET_MODE1_2352;
-      break;
-   case MODE2_2352:
-      cd_sector_size = SECTOR_SIZE_2352;
-      cd_sector_offset = SECTOR_OFFSET_MODE2_2352;
-      break;
-   case CUE_MODE_UNKNOWN:
-      break;
+      case MODE1_2048:
+         cd_sector_size = SECTOR_SIZE_2048;
+         cd_sector_offset = SECTOR_OFFSET_MODE1_2048;
+         break;
+      case MODE1_2352:
+         cd_sector_size = SECTOR_SIZE_2352;
+         cd_sector_offset = SECTOR_OFFSET_MODE1_2352;
+         break;
+      case MODE2_2352:
+         cd_sector_size = SECTOR_SIZE_2352;
+         cd_sector_offset = SECTOR_OFFSET_MODE2_2352;
+         break;
+      case CUE_MODE_UNKNOWN:
+         break;
    }
 
    log_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
@@ -172,11 +173,13 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
 
 static int fsOpenIso(const char *path)
 {
-   cueFile *cue_file = cue_get(path);
+   const char *cd_image_path = NULL;
+   cueFile *cue_file         = cue_get(path);
+
    fsDetectCDFormat(path, cue_file);
 
-   const char *cd_image_path = cue_is_cue_path(path) ? cue_file->cd_image : path;
-   fcdrom = filestream_open(cd_image_path, RFILE_MODE_READ, -1);
+   cd_image_path             = cue_is_cue_path(path) ? cue_file->cd_image : path;
+   fcdrom                    = filestream_open(cd_image_path, RFILE_MODE_READ, -1);
 
    free(cue_file);
 
@@ -253,8 +256,8 @@ static char CalculateDeviceLowByte(int deviceNumber)
 {
    char returnValue = 0;
 
-   returnValue |= 0x01 & 0; // unknown
-   returnValue |= 0x02 & 0; // unknown
+   returnValue |= 0x01 & 0; /* unknown */
+   returnValue |= 0x02 & 0; /* unknown */
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONL) ? (char)0x04 : (char)0;
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONR) ? (char)0x08 : (char)0;
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONX) ? (char)0x10 : (char)0;
@@ -274,34 +277,29 @@ static char CalculateDeviceHighByte(int deviceNumber)
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONRIGHT) ? (char)0x04 : (char)0;
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONUP)    ? (char)0x08 : (char)0;
    returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONDOWN)  ? (char)0x10 : (char)0;
-   returnValue |= 0x20 & 0; // unknown
-   returnValue |= 0x40 & 0; // unknown
-   returnValue |= 0x80; // This last bit seems to indicate power and/or connectivity.
+   returnValue |= 0x20 & 0; /* unknown */
+   returnValue |= 0x40 & 0; /* unknown */
+   returnValue |= 0x80;     /* This last bit seems to indicate power and/or connectivity. */
 
    return returnValue;
 }
 
-// libfreedo callback
+/* libfreedo callback */
 static void *fdcCallback(int procedure, void *data)
 {
    switch(procedure)
    {
       case EXT_READ_ROMS:
-      {
          fsReadBios(biosPath, data);
          break;
-      }
       case EXT_READ_NVRAM:
       case EXT_WRITE_NVRAM:
          break;
       case EXT_SWAPFRAME:
-      {
          isSwapFrameSignaled = true;
          return frame;
-      }
       case EXT_PUSH_SAMPLE:
-      {
-         //TODO: fix all this, not right
+         /* TODO: fix all this, not right */
          sampleBuffer[sampleCurrent] = (uintptr_t)data;
          sampleCurrent++;
          if(sampleCurrent >= TEMP_BUFFER_SIZE)
@@ -310,42 +308,39 @@ static void *fdcCallback(int procedure, void *data)
             audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
          }
          break;
-      }
       case EXT_GET_PBUSLEN:
          return (void*)16;
       case EXT_GETP_PBUSDATA:
-      {
-         // Set up raw data to return
-         unsigned char *pbusData;
-         pbusData = (unsigned char *)malloc(sizeof(unsigned char) * 16);
+         {
+            /* Set up raw data to return */
+            unsigned char *pbusData = (unsigned char *)
+               malloc(sizeof(unsigned char) * 16);
 
-         pbusData[0x0] = 0x00;
-         pbusData[0x1] = 0x48;
-         pbusData[0x2] = CalculateDeviceLowByte(0);
-         pbusData[0x3] = CalculateDeviceHighByte(0);
-         pbusData[0x4] = CalculateDeviceLowByte(2);
-         pbusData[0x5] = CalculateDeviceHighByte(2);
-         pbusData[0x6] = CalculateDeviceLowByte(1);
-         pbusData[0x7] = CalculateDeviceHighByte(1);
-         pbusData[0x8] = CalculateDeviceLowByte(4);
-         pbusData[0x9] = CalculateDeviceHighByte(4);
-         pbusData[0xA] = CalculateDeviceLowByte(3);
-         pbusData[0xB] = CalculateDeviceHighByte(3);
-         pbusData[0xC] = 0x00;
-         pbusData[0xD] = 0x80;
-         pbusData[0xE] = CalculateDeviceLowByte(5);
-         pbusData[0xF] = CalculateDeviceHighByte(5);
+            pbusData[0x0] = 0x00;
+            pbusData[0x1] = 0x48;
+            pbusData[0x2] = CalculateDeviceLowByte(0);
+            pbusData[0x3] = CalculateDeviceHighByte(0);
+            pbusData[0x4] = CalculateDeviceLowByte(2);
+            pbusData[0x5] = CalculateDeviceHighByte(2);
+            pbusData[0x6] = CalculateDeviceLowByte(1);
+            pbusData[0x7] = CalculateDeviceHighByte(1);
+            pbusData[0x8] = CalculateDeviceLowByte(4);
+            pbusData[0x9] = CalculateDeviceHighByte(4);
+            pbusData[0xA] = CalculateDeviceLowByte(3);
+            pbusData[0xB] = CalculateDeviceHighByte(3);
+            pbusData[0xC] = 0x00;
+            pbusData[0xD] = 0x80;
+            pbusData[0xE] = CalculateDeviceLowByte(5);
+            pbusData[0xF] = CalculateDeviceHighByte(5);
 
-         return pbusData;
-      }
+            return pbusData;
+         }
       case EXT_KPRINT:
          break;
       case EXT_FRAMETRIGGER_MT:
-      {
          isSwapFrameSignaled = true;
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
-      }
       case EXT_READ2048:
          fsReadBlock(data, currentSector);
          break;
@@ -355,7 +350,9 @@ static void *fdcCallback(int procedure, void *data)
          currentSector = *((int*)&data);
          break;
       case EXT_ARM_SYNC:
-         //printf("fdcCallback EXT_ARM_SYNC\n");
+#if 0
+         printf("fdcCallback EXT_ARM_SYNC\n");
+#endif
          break;
 
       default:
@@ -525,7 +522,9 @@ static void check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   enum retro_pixel_format fmt          = RETRO_PIXEL_FORMAT_XRGB8888;
+   const char *system_directory_c       = NULL;
+   const char *full_path                = NULL;
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
@@ -570,56 +569,52 @@ bool retro_load_game(const struct retro_game_info *info)
    sampleCurrent = 0;
    memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
-   const char *full_path;
    full_path = info->path;
-   const char *system_directory_c = NULL;
 
    *biosPath = '\0';
 
-   if (fsOpenIso(full_path))
+   if (!fsOpenIso(full_path))
+      return false;
+
+   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
+   if (!system_directory_c)
    {
-      environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
-      if (!system_directory_c)
+      if (log_cb)
+         log_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
+   }
+   else
+   {
+      char bios_path[1024];
+      RFILE *fp;
+#ifdef _WIN32
+      char slash = '\\';
+#else
+      char slash = '/';
+#endif
+      sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
+
+      fp = filestream_open(bios_path, RFILE_MODE_READ, -1);
+
+      if (!fp)
       {
          if (log_cb)
-            log_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
-      }
-      else
-      {
-         char bios_path[1024];
-         RFILE *fp;
-#ifdef _WIN32
-         char slash = '\\';
-#else
-         char slash = '/';
-#endif
-         sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
-
-         fp = filestream_open(bios_path, RFILE_MODE_READ, -1);
-
-         if (!fp)
-         {
-            if (log_cb)
-               log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
-            return false;
-         }
-
-         filestream_close(fp);
-         strcpy(biosPath, bios_path);
+            log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
+         return false;
       }
 
-      // Initialize libfreedo
-      check_variables();
-      initVideo();
-      _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
-
-      // XXX: Is this really a frontend responsibility?
-      memcpy(Getp_NVRAM(), nvram_header, sizeof(nvram_header));
-
-      return true;
+      filestream_close(fp);
+      strcpy(biosPath, bios_path);
    }
 
-   return false;
+   /* Initialize libfreedo */
+   check_variables();
+   initVideo();
+   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+
+   /* XXX: Is this really a frontend responsibility? */
+   memcpy(Getp_NVRAM(), nvram_header, sizeof(nvram_header));
+
+   return true;
 }
 
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
@@ -718,7 +713,7 @@ void retro_run(void)
 
    update_input();
 
-   _freedo_Interface(FDP_DO_EXECFRAME, frame); // FDP_DO_EXECFRAME_MT ?
+   _freedo_Interface(FDP_DO_EXECFRAME, frame); /* FDP_DO_EXECFRAME_MT ? */
 
    if(isSwapFrameSignaled)
       Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
