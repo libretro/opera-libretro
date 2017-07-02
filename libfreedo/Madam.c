@@ -1308,6 +1308,7 @@ unsigned int  PDEC(unsigned int pixel, uint16_t * amv)
 
 unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, unsigned int pframe_input)
 {
+   int b15mode;
    unsigned int VHOutput;
 
    ///////////////////////////
@@ -1352,7 +1353,7 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
    //////////////////////////
    // B15POS_MASK settings
    // Substitute the V value explicitly if requested.
-   int b15mode = (CCBCTL0 & B15POS_MASK);
+   b15mode = (CCBCTL0 & B15POS_MASK);
    if (b15mode == B15POS_PDC)
    {
       // Don't touch it.
@@ -1398,6 +1399,20 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 
    union pdeco	input1,out,pix1;
 
+#pragma pack(push,1)
+   union
+   {
+      unsigned int raw;
+      struct
+      {
+         int8_t R;
+         int8_t B;
+         int8_t G;
+         int8_t a;
+      };
+   } color1, color2, AOP, BOP;
+#pragma pack(pop)
+
    // Set PMODE according to the values set up in the CCBFLAGS word.
    // (This merely uses masks here because it's faster).
    // This is a duty of the PROJECTOR, but we'll do it here because its easier.
@@ -1429,21 +1444,6 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
       input1.raw=pixel;
    else
       input1.raw=fpix;
-
-
-#pragma pack(push,1)
-   union
-   {
-      unsigned int raw;
-      struct
-      {
-         int8_t R;
-         int8_t B;
-         int8_t G;
-         int8_t a;
-      };
-   } color1, color2, AOP, BOP;
-#pragma pack(pop)
 
    switch(pixc.meaning.s2)
    {
