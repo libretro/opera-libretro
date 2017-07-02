@@ -284,3 +284,6 @@ clean:
 
 .PHONY: clean
 endif
+
+print-%:
+	@echo '$*=$($*)'
