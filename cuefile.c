@@ -13,7 +13,7 @@ static FILE *cue_get_file_for_image(const char *path)
 {
    int i;
    char cue_path_base[STRING_MAX];
-   char cue_path[PATH_MAX];
+   char cue_path[8192];
    char *exts[]   = {".cue", ".CUE"};
    char *last_dot = NULL;
 
