@@ -1849,11 +1849,12 @@ void  DrawPackedCel_New(void)
 
          while(!eor)//while not end of row
          {
+            int __pix;
 
             type= BitReaderBig_Read(&bitoper, 2);
             if( (bitoper.point + start) >= (lastaddr))type=0;
 
-            int __pix= BitReaderBig_Read(&bitoper, 6)+1;
+            __pix= BitReaderBig_Read(&bitoper, 6)+1;
 
             switch(type)
             {
@@ -2158,9 +2159,13 @@ void  DrawLRCel_New(void)
                if(!pproj.Transparent)
                {
                   unsigned framePixel;
-                  if(fixmode&FIX_BIT_TIMING_6)framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,RMOD)));
-                  else framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-                  unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
+                  unsigned pixel;
+
+                  if(fixmode&FIX_BIT_TIMING_6)
+                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,RMOD)));
+                  else
+                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                  pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
                   mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
                }
