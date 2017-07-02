@@ -1309,6 +1309,7 @@ unsigned int  PDEC(unsigned int pixel, uint16_t * amv)
 unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, unsigned int pframe_input)
 {
    int b15mode;
+   int b0mode;
    unsigned int VHOutput;
 
    ///////////////////////////
@@ -1370,7 +1371,7 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
    //////////////////////////
    // B15POS_MASK settings
    // Substitute the H value explicitly if requested.
-   int b0mode = (CCBCTL0 & B0POS_MASK);
+   b0mode = (CCBCTL0 & B0POS_MASK);
    if (b0mode == B0POS_PDC)
    {
       // Don't touch it.
@@ -1575,13 +1576,14 @@ unsigned int * _madam_GetRegs(void)
 void  DrawPackedCel_New(void)
 {
    //if(isanvil==2&&biosanvil==2)  //for later
-   sf=100000;
    uint16_t CURPIX,LAMV;
 
    int lastaddr;
    int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
 
    unsigned int start = PDATA;
+
+   sf=100000;
 
    nrows=(PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT;
 
