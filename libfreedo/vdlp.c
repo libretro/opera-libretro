@@ -153,6 +153,8 @@ static INLINE void VDLExec(void)
    }
    else
    {
+      int nmcmd;
+
       CLUTDMA.raw=tmp;
 
       if(CLUTDMA.dmaw.currover)
@@ -179,7 +181,8 @@ static INLINE void VDLExec(void)
 
       CURRENTVDL+=16;
 
-      int nmcmd=CLUTDMA.dmaw.numword;	//nmcmd-=4;?
+      nmcmd = CLUTDMA.dmaw.numword;	//nmcmd-=4;?
+
       for(i = 0; i < nmcmd; i++)
       {
          int cmd=vmreadw(CURRENTVDL);
@@ -333,7 +336,6 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
 void _vdl_Init(uint8_t *vramstart)
 {
    uint32_t i;
-   vram = vramstart;
 
    static const uint32_t StartupVDL[]=
    { // Startup VDL at addres 0x2B0000
@@ -350,6 +352,8 @@ void _vdl_Init(uint8_t *vramstart)
       0x002C0000, 0x002B00A8, 0x00000000, 0x002C0000,
       0x002C0000, 0x002B0000
    };
+
+   vram = vramstart;
    HEADVDL=0xB0000;
 
    for(i = 0;i < (sizeof(StartupVDL)/4); i++)
