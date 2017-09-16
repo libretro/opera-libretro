@@ -14,7 +14,7 @@
 #endif
 
 #include <streams/file_stream.h>
-#include <retro_stat.h>
+#include <file/file_path.h>
 
 #include "libretro.h"
 #include "cuefile.h"
