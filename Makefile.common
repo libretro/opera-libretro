@@ -3,6 +3,10 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
 INCFLAGS := -I$(CORE_DIR) -I$(CORE_DIR)/libfreedo -I$(LIBRETRO_COMM_DIR)/include
 
+ifneq (,$(findstring msvc2003,$(platform)))
+INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
+endif
+
 SOURCES_CXX := 
 
 SOURCES_C := $(CORE_DIR)/libretro.c \
