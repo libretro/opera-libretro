@@ -77,6 +77,7 @@ static retro_audio_sample_batch_t audio_batch_cb;
 
 void retro_set_environment(retro_environment_t cb)
 {
+   struct retro_vfs_interface_info vfs_iface_info;
    static const struct retro_variable vars[] = {
       { "4do_high_resolution", "High Resolution (restart); disabled|enabled" },
       { NULL, NULL },
@@ -84,6 +85,11 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb = cb;
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
+   vfs_iface_info.required_interface_version = 1;
+   vfs_iface_info.iface                      = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+	   filestream_vfs_init(&vfs_iface_info);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { }
