@@ -122,7 +122,7 @@ static void fsReadBios(const char *bios_path, void *prom)
    if (!bios1)
       return;
 
-   filestream_seek(bios1, 0, SEEK_END);
+   filestream_seek(bios1, 0, RETRO_VFS_SEEK_POSITION_END);
    fsize = filestream_tell(bios1);
    filestream_rewind(bios1);
    readcount = filestream_read(bios1, prom, fsize);
@@ -135,29 +135,36 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
 {
    CD_format cd_format;
 
-   if (cue_file) {
+   if (cue_file)
+   {
       cd_format = cue_file->cd_format;
       log_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
-   } else {
+   }
+   else
+   {
       int size = 0;
-      FILE *fp = fopen(path, "r");
-      if (fp) {
-         fseek(fp, 0L, SEEK_END);
-         size = ftell(fp);
-         fclose(fp);
+      RFILE *fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (fp)
+      {
+         filestream_seek(fp, 0L, RETRO_VFS_SEEK_POSITION_END);
+         size = filestream_tell(fp);
+         filestream_close(fp);
       }
-      if (size % SECTOR_SIZE_2048 == 0) {  /* most standard guess first */
+      if (size % SECTOR_SIZE_2048 == 0) /* most standard guess first */
          cd_format = MODE1_2048;
-      } else if (size % SECTOR_SIZE_2352 == 0) {
+      else if (size % SECTOR_SIZE_2352 == 0)
          cd_format = MODE1_2352;
-      } else {
+      else
+      {
          cd_format = MODE1_2048;
          log_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
       }
       log_cb(RETRO_LOG_INFO, "[4DO]: File format guessed by file size is %s", cue_get_cd_format_name(cd_format));
    }
 
-   switch (cd_format) {
+   switch (cd_format)
+   {
       case MODE1_2048:
          cd_sector_size = SECTOR_SIZE_2048;
          cd_sector_offset = SECTOR_OFFSET_MODE1_2048;
@@ -204,7 +211,8 @@ static int fsCloseIso(void)
 
 static int fsReadBlock(void *buffer, int sector)
 {
-   filestream_seek(fcdrom, (cd_sector_size * sector) + cd_sector_offset, SEEK_SET);
+   filestream_seek(fcdrom, (cd_sector_size * sector) + cd_sector_offset,
+         RETRO_VFS_SEEK_POSITION_START);
    filestream_read(fcdrom, buffer, SECTOR_SIZE_2048);
    filestream_rewind(fcdrom);
 
@@ -216,7 +224,8 @@ static char *fsReadSize(void)
    char *buffer = (char *)malloc(sizeof(char) * 4);
 
    filestream_rewind(fcdrom);
-   filestream_seek(fcdrom, 80 + cd_sector_offset, SEEK_SET);
+   filestream_seek(fcdrom, 80 + cd_sector_offset,
+         RETRO_VFS_SEEK_POSITION_START);
    filestream_read(fcdrom, buffer, 4);
    filestream_rewind(fcdrom);
 
