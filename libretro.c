@@ -16,7 +16,7 @@
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
-#include "libretro.h"
+#include <libretro.h>
 #include "cuefile.h"
 
 #include "libfreedo/freedocore.h"
@@ -110,7 +110,8 @@ static void fsReadBios(const char *bios_path, void *prom)
 {
    long fsize;
    int readcount;
-   RFILE *bios1 = filestream_open(bios_path, RFILE_MODE_READ, -1);
+   RFILE *bios1 = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!bios1)
       return;
@@ -179,7 +180,7 @@ static int fsOpenIso(const char *path)
    fsDetectCDFormat(path, cue_file);
 
    cd_image_path             = cue_is_cue_path(path) ? cue_file->cd_image : path;
-   fcdrom                    = filestream_open(cd_image_path, RFILE_MODE_READ, -1);
+   fcdrom                    = filestream_open(cd_image_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    free(cue_file);
 
@@ -593,7 +594,7 @@ bool retro_load_game(const struct retro_game_info *info)
 #endif
       sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
 
-      fp = filestream_open(bios_path, RFILE_MODE_READ, -1);
+      fp = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!fp)
       {
