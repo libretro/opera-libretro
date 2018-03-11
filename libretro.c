@@ -22,6 +22,9 @@
 #include "libfreedo/freedocore.h"
 #include "libfreedo/IsoXBUS.h"
 #include "libfreedo/frame.h"
+#include "libfreedo/quarz.h"
+
+extern int ARM_CLOCK;
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
@@ -78,7 +81,8 @@ void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
    static const struct retro_variable vars[] = {
-      { "4do_high_resolution", "High Resolution (restart); disabled|enabled" },
+      { "4do_cpu_overclock", "CPU overclock; 1x|2x|4x" },
+      { "4do_high_resolution", "High Resolution; disabled|enabled" },
       { NULL, NULL },
    };
 
@@ -508,7 +512,7 @@ static void check_variables(void)
 {
    struct retro_variable var;
 
-   var.key = "4do_high_resolution";
+   var.key   = "4do_high_resolution";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -516,21 +520,38 @@ static void check_variables(void)
       if (!strcmp(var.value, "enabled"))
       {
          HightResMode = 1;
-         videoWidth = 640;
-         videoHeight = 480;
+         videoWidth   = 640;
+         videoHeight  = 480;
       }
       else if (!strcmp(var.value, "disabled"))
       {
          HightResMode = 0;
-         videoWidth = 320;
-         videoHeight = 240;
+         videoWidth   = 320;
+         videoHeight  = 240;
       }
    }
    else
    {
-      HightResMode = 0;
-      videoWidth = 320;
-      videoHeight = 240;
+      HightResMode    = 0;
+      videoWidth      = 320;
+      videoHeight     = 240;
+   }
+
+   var.key   = "4do_cpu_overclock";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "1x"))
+         ARM_CLOCK = ARM_FREQUENCY;
+      else if (!strcmp(var.value, "2x"))
+         ARM_CLOCK = ARM_FREQUENCY * 2;
+      else if (!strcmp(var.value, "4x"))
+         ARM_CLOCK = ARM_FREQUENCY * 4;
+   }
+   else
+   {
+      ARM_CLOCK = ARM_FREQUENCY;
    }
 }
 

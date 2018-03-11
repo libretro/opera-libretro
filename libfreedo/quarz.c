@@ -32,7 +32,7 @@ Felix Lazarev
 
 #define SND_CLOCK       44100
 
-int ARM_CLOCK=12500000;
+int ARM_CLOCK = ARM_FREQUENCY;
 int THE_ARM_CLOCK=0;
 
 extern _ext_Interface  io_interface;

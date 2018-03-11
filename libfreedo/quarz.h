@@ -28,6 +28,8 @@ Felix Lazarev
 
 #include <boolean.h>
 
+#define ARM_FREQUENCY 12500000
+
 #ifdef __cplusplus
 extern "C" {
 #endif
