@@ -188,7 +188,7 @@ void _3do_Frame(struct VDLFrame *frame, bool __skipframe)
          i += cnt;
          cnt = 0;
       }
-   }while(i < (12500000/60));
+   }while(i < (ARM_CLOCK/60));
 }
 
 void _3do_Destroy()
