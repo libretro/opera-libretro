@@ -61,7 +61,6 @@ static int cd_sector_offset;
 
 static RFILE *fcdrom;
 static int currentSector;
-static bool isSwapFrameSignaled;
 
 static uint32_t *videoBuffer;
 static int videoWidth, videoHeight;
@@ -312,7 +311,7 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_WRITE_NVRAM:
          break;
       case EXT_SWAPFRAME:
-         isSwapFrameSignaled = true;
+        Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
          return frame;
       case EXT_PUSH_SAMPLE:
          /* TODO: fix all this, not right */
@@ -354,7 +353,6 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_KPRINT:
          break;
       case EXT_FRAMETRIGGER_MT:
-         isSwapFrameSignaled = true;
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       case EXT_READ2048:
@@ -641,7 +639,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
    return false;
 }
 
-void retro_unload_game(void) 
+void retro_unload_game(void)
 {
    _freedo_Interface(FDP_DESTROY, (void*)0);
    fsCloseIso();
@@ -731,8 +729,5 @@ void retro_run(void)
 
    _freedo_Interface(FDP_DO_EXECFRAME, frame); /* FDP_DO_EXECFRAME_MT ? */
 
-   if(isSwapFrameSignaled)
-      Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
-   video_cb(isSwapFrameSignaled ? videoBuffer : NULL, videoWidth, videoHeight, videoWidth << 2);
-   isSwapFrameSignaled = false;
+   video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
 }
