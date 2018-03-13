@@ -81,8 +81,13 @@ void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
    static const struct retro_variable vars[] = {
-      { "4do_cpu_overclock", "CPU overclock; 1x|2x|4x" },
-      { "4do_high_resolution", "High Resolution; disabled|enabled" },
+      { "4do_cpu_overclock",        "CPU overclock; 1x|2x|4x" },
+      { "4do_high_resolution",      "High Resolution; disabled|enabled" },
+      { "4do_hack_timing_1",        "Timing Hack 1 (Crash 'n Burn); disabled|enabled" },
+      { "4do_hack_timing_3",        "Timing Hack 3 (Dinopark Tycoon); disabled|enabled" },
+      { "4do_hack_timing_5",        "Timing Hack 5 (Microcosm); disabled|enabled" },
+      { "4do_hack_timing_6",        "Timing Hack 6 (Alone in the Dark); disabled|enabled" },
+      { "4do_hack_graphics_step_y", "Graphics Step Y Hack (Samurai Shodown); disabled|enabled" },
       { NULL, NULL },
    };
 
@@ -92,8 +97,9 @@ void retro_set_environment(retro_environment_t cb)
    vfs_iface_info.required_interface_version = 1;
    vfs_iface_info.iface                      = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
-	   filestream_vfs_init(&vfs_iface_info);
+     filestream_vfs_init(&vfs_iface_info);
 }
+
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
@@ -508,51 +514,86 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)code;
 }
 
-static void check_variables(void)
+static
+bool
+environ_enabled(const char *key)
 {
-   struct retro_variable var;
+  int rv;
+  struct retro_variable var;
 
-   var.key   = "4do_high_resolution";
-   var.value = NULL;
+  var.key   = key;
+  var.value = NULL;
+  rv = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if(rv && var.value)
+    return (strcmp(var.value,"enabled") == 0);
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (!strcmp(var.value, "enabled"))
-      {
-         HightResMode = 1;
-         videoWidth   = 640;
-         videoHeight  = 480;
-      }
-      else if (!strcmp(var.value, "disabled"))
-      {
-         HightResMode = 0;
-         videoWidth   = 320;
-         videoHeight  = 240;
-      }
-   }
-   else
-   {
-      HightResMode    = 0;
-      videoWidth      = 320;
-      videoHeight     = 240;
-   }
+  return false;
+}
 
-   var.key   = "4do_cpu_overclock";
-   var.value = NULL;
+static
+void
+check_env_4do_high_resolution(void)
+{
+  if(environ_enabled("4do_high_resolution"))
+    {
+      HightResMode = 1;
+      videoWidth   = 640;
+      videoHeight  = 480;
+    }
+  else
+    {
+      HightResMode = 0;
+      videoWidth   = 320;
+      videoHeight  = 240;
+    }
+}
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+static
+void
+check_env_4do_cpu_overclock(void)
+{
+  int                   rv;
+  struct retro_variable var;
+
+  ARM_CLOCK = ARM_FREQUENCY;
+
+  var.key   = "4do_cpu_overclock";
+  var.value = NULL;
+
+  rv = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if(rv && var.value)
+    {
       if (!strcmp(var.value, "1x"))
-         ARM_CLOCK = ARM_FREQUENCY;
+        ARM_CLOCK = ARM_FREQUENCY;
       else if (!strcmp(var.value, "2x"))
-         ARM_CLOCK = ARM_FREQUENCY * 2;
+        ARM_CLOCK = ARM_FREQUENCY * 2;
       else if (!strcmp(var.value, "4x"))
-         ARM_CLOCK = ARM_FREQUENCY * 4;
-   }
-   else
-   {
-      ARM_CLOCK = ARM_FREQUENCY;
-   }
+        ARM_CLOCK = ARM_FREQUENCY * 4;
+    }
+}
+
+static
+void
+check_env_set_reset_bits(const char *key,
+                         int        *input,
+                         int         bitmask)
+{
+  *input = (environ_enabled(key) ?
+            (*input | bitmask) :
+            (*input & ~bitmask));
+}
+
+static
+void
+check_variables(void)
+{
+   check_env_4do_high_resolution();
+   check_env_4do_cpu_overclock();
+   check_env_set_reset_bits("4do_hack_timing_1",&fixmode,FIX_BIT_TIMING_1);
+   check_env_set_reset_bits("4do_hack_timing_3",&fixmode,FIX_BIT_TIMING_3);
+   check_env_set_reset_bits("4do_hack_timing_5",&fixmode,FIX_BIT_TIMING_5);
+   check_env_set_reset_bits("4do_hack_timing_6",&fixmode,FIX_BIT_TIMING_6);
+   check_env_set_reset_bits("4do_hack_graphics_step_y",&fixmode,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
 bool retro_load_game(const struct retro_game_info *info)
