@@ -573,10 +573,7 @@ uint8_t * _arm_Init(void)
    memset( pNVRam,0, NVRAMSIZE);
    gFIQ=false;
 
-   io_interface(EXT_READ_NVRAM,pNVRam);//_3do_LoadNVRAM(pNVRam);
-
    // Endian swap for loaded ROM image
-
 
    REG_PC=0x03000000;
    _arm_SetCPSR(0x13); //set svc mode
@@ -586,9 +583,6 @@ uint8_t * _arm_Init(void)
 
 void _arm_Destroy(void)
 {
-   if (pNVRam)
-      io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
-
    if (pNVRam)
       free(pNVRam);
    pNVRam = NULL;
@@ -705,7 +699,7 @@ void ldm_accur(uint32_t opc, uint32_t base, uint32_t rn_ind)
             if(inuse==1&&base_comp&0x1FFFFF)
             {
                if(base_comp==addrr)
-                  inuse=0;   
+                  inuse=0;
                if(tmp!=vall)
                {
                   if(tmp==0xEFE54&&i==0x4&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
@@ -1251,7 +1245,7 @@ int _arm_Execute(void)
    }
 
    //for(; CYCLES>0; CYCLES-=SCYCLE)
-   {   
+   {
       if(REG_PC==0x94D60&&RON_USER[0]==0x113000&&RON_USER[1]==0x113000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
       {
          REG_PC=0x9E9CC;
@@ -1688,7 +1682,6 @@ void mwritew(uint32_t addr, uint32_t val)
          //  CDebug::DPrint(str);
          pNVRam[(index>>2) & 32767]=(uint8_t)val;
          //CConfig::SetNVRAMData(pNVRam);
-         io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
       }
       return;
    }
@@ -1774,7 +1767,6 @@ void mwriteb(uint32_t addr, uint32_t val)
          //if((addr&3)==3)
          {
             pNVRam[(index>>2)&32767]=val;
-            io_interface(EXT_WRITE_NVRAM,pNVRam);//_3do_SaveNVRAM(pNVRam);
          }
          return;
       }

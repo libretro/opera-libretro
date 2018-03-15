@@ -309,9 +309,6 @@ void *_freedo_Interface(int procedure, void *datum)
          sf=0;
          _3do_Load(datum);
          break;
-      case FDP_GETP_NVRAM:
-         Getp_NVRAM();
-         break;
       case FDP_GETP_RAMS:
          Getp_RAMS();
          break;
