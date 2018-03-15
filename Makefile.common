@@ -7,33 +7,37 @@ ifneq (,$(findstring msvc2003,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
 endif
 
-SOURCES_CXX := 
+SOURCES_CXX :=
 
-SOURCES_C := $(CORE_DIR)/libretro.c \
-             $(CORE_DIR)/cuefile.c \
-				 $(4DO_DIR)/_3do_sys.c \
-				 $(4DO_DIR)/arm.c \
-				 $(4DO_DIR)/Clio.c \
-				 $(4DO_DIR)/DSP.c \
-				 $(4DO_DIR)/Iso.c \
-				 $(4DO_DIR)/Madam.c \
-				 $(4DO_DIR)/quarz.c \
-				 $(4DO_DIR)/vdlp.c \
-				 $(4DO_DIR)/XBUS.c \
-				 $(4DO_DIR)/DiagPort.c \
-				 $(4DO_DIR)/frame.c \
-				 $(4DO_DIR)/bitop.c \
-				 $(4DO_DIR)/SPORT.c
+SOURCES_C := \
+	$(CORE_DIR)/libretro.c \
+	$(CORE_DIR)/cuefile.c \
+	$(CORE_DIR)/nvram.c \
+	$(CORE_DIR)/retro_callbacks.c \
+	$(4DO_DIR)/_3do_sys.c \
+	$(4DO_DIR)/arm.c \
+	$(4DO_DIR)/Clio.c \
+	$(4DO_DIR)/DSP.c \
+	$(4DO_DIR)/Iso.c \
+	$(4DO_DIR)/Madam.c \
+	$(4DO_DIR)/quarz.c \
+	$(4DO_DIR)/vdlp.c \
+	$(4DO_DIR)/XBUS.c \
+	$(4DO_DIR)/DiagPort.c \
+	$(4DO_DIR)/frame.c \
+	$(4DO_DIR)/bitop.c \
+	$(4DO_DIR)/SPORT.c
 
 ifneq ($(STATIC_LINKING), 1)
-SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
-				 $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
-				 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
-				 $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
-				 $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
-				 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
-				 $(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
-				 $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
-				 $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
-				 $(LIBRETRO_COMM_DIR)/file/file_path.c
+SOURCES_C += \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
+	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c
 endif

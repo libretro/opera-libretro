@@ -72,8 +72,6 @@ struct GetFrameBitmapParams
 #pragma pack(pop)
 
 #define EXT_READ_ROMS           1
-#define EXT_READ_NVRAM          2
-#define EXT_WRITE_NVRAM         3
 #define EXT_SWAPFRAME           5       //frame swap (in mutlithreaded) or frame draw(single treaded)
 #define EXT_PUSH_SAMPLE         6       //sends sample to the buffer
 #define EXT_GET_PBUSLEN         7
@@ -96,7 +94,6 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FDP_DO_LOAD             6       //load state from buffer, returns !NULL if everything went smooth
 #define FDP_GET_SAVE_SIZE       7       //return size of savestatemachine
 #define FDP_DO_SAVE             8       //save state to buffer
-#define FDP_GETP_NVRAM          9       //returns ptr to NVRAM 32K
 #define FDP_GETP_RAMS           10       //returns ptr to RAM 3M
 #define FDP_GETP_ROMS           11       //returns ptr to ROM 2M
 #define FDP_GETP_PROFILE        12       //returns profile pointer, sizeof = 3M/4

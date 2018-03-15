@@ -13,11 +13,13 @@
 #pragma pack(1)
 #endif
 
+#include <libretro.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
-#include <libretro.h>
 #include "cuefile.h"
+#include "nvram.h"
+#include "retro_callbacks.h"
 
 #include "libfreedo/freedocore.h"
 #include "libfreedo/IsoXBUS.h"
@@ -29,7 +31,6 @@ extern int ARM_CLOCK;
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
 #define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
-#define NVRAM_SIZE 32 * 1024
 
 #define INPUTBUTTONL     (1<<4)
 #define INPUTBUTTONR     (1<<5)
@@ -70,11 +71,9 @@ static int videoWidth, videoHeight;
 static int32_t sampleBuffer[TEMP_BUFFER_SIZE];
 static unsigned int sampleCurrent;
 
-static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
-static retro_environment_t environ_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 
 void retro_set_environment(retro_environment_t cb)
@@ -83,6 +82,7 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { "4do_cpu_overclock",        "CPU overclock; 1x|2x|4x" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
+      { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
       { "4do_hack_timing_1",        "Timing Hack 1 (Crash 'n Burn); disabled|enabled" },
       { "4do_hack_timing_3",        "Timing Hack 3 (Dinopark Tycoon); disabled|enabled" },
       { "4do_hack_timing_5",        "Timing Hack 5 (Microcosm); disabled|enabled" },
@@ -91,12 +91,13 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, NULL },
    };
 
-   environ_cb = cb;
-   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   retro_set_environment_cb(cb);
+
+   retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
 
    vfs_iface_info.required_interface_version = 1;
    vfs_iface_info.iface                      = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+   if (retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
      filestream_vfs_init(&vfs_iface_info);
 }
 
@@ -105,21 +106,6 @@ void retro_set_audio_sample(retro_audio_sample_t cb) { }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
-
-static const unsigned char nvram_header[] =
-{
-   0x01,0x5a,0x5a,0x5a,0x5a,0x5a,0x02,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0x6e,0x76,0x72,0x61,0x6d,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0xff,0xff,0xff,0xff,0,0,0,1,
-   0,0,0x80,0,0xff,0xff,0xff,0xfe,0,0,0,0,0,0,0,1,
-   0,0,0,0,0,0,0,0x84,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0x85,0x5a,2,0xb6,0,0,0,0x98,0,0,0,0x98,
-   0,0,0,0x14,0,0,0,0x14,0x7A,0xa5,0x65,0xbd,0,0,0,0x84,
-   0,0,0,0x84,0,0,0x76,0x68,0,0,0,0x14
-};
 
 static void fsReadBios(const char *bios_path, void *prom)
 {
@@ -147,7 +133,7 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
    if (cue_file)
    {
       cd_format = cue_file->cd_format;
-      log_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
+      retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
    }
    else
    {
@@ -167,9 +153,9 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
       else
       {
          cd_format = MODE1_2048;
-         log_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
+         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
       }
-      log_cb(RETRO_LOG_INFO, "[4DO]: File format guessed by file size is %s", cue_get_cd_format_name(cd_format));
+      retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format guessed by file size is %s", cue_get_cd_format_name(cd_format));
    }
 
    switch (cd_format)
@@ -190,7 +176,7 @@ static void fsDetectCDFormat(const char *path, cueFile *cue_file)
          break;
    }
 
-   log_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
+   retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
 }
 
 
@@ -253,7 +239,7 @@ static unsigned int fsReadDiscSize(void)
    size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
       (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
 
-   log_cb(RETRO_LOG_INFO, "[4DO]: disc size: %d sectors\n", size);
+   retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: disc size: %d sectors\n", size);
 
    return size;
 }
@@ -316,9 +302,6 @@ static void *fdcCallback(int procedure, void *data)
    {
       case EXT_READ_ROMS:
          fsReadBios(biosPath, data);
-         break;
-      case EXT_READ_NVRAM:
-      case EXT_WRITE_NVRAM:
          break;
       case EXT_SWAPFRAME:
         Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
@@ -494,8 +477,12 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
-   _3do_Save(data);
-   return true;
+  if(size < _3do_SaveSize())
+    return false;
+
+  _3do_Save(data);
+
+  return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
@@ -523,7 +510,7 @@ environ_enabled(const char *key)
 
   var.key   = key;
   var.value = NULL;
-  rv = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
   if(rv && var.value)
     return (strcmp(var.value,"enabled") == 0);
 
@@ -560,7 +547,7 @@ check_env_4do_cpu_overclock(void)
   var.key   = "4do_cpu_overclock";
   var.value = NULL;
 
-  rv = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
   if(rv && var.value)
     {
       if (!strcmp(var.value, "1x"))
@@ -581,6 +568,33 @@ check_env_set_reset_bits(const char *key,
   *input = (environ_enabled(key) ?
             (*input | bitmask) :
             (*input & ~bitmask));
+}
+
+static
+bool
+check_env_nvram_per_game(void)
+{
+  int rv;
+  struct retro_variable var;
+
+  var.key   = "4do_nvram_storage";
+  var.value = NULL;
+
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if(rv && var.value)
+    {
+      if(strcmp(var.value,"per game"))
+        return false;
+    }
+
+  return true;
+}
+
+static
+bool
+check_env_nvram_shared(void)
+{
+  return !check_env_nvram_per_game();
 }
 
 static
@@ -632,12 +646,12 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!info)
       return false;
 
-   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+   retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   if (!retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      if (log_cb)
-         log_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
+      if (retro_log_printf_cb)
+         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
       return false;
    }
 
@@ -652,11 +666,11 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!fsOpenIso(full_path))
       return false;
 
-   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
+   retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
    if (!system_directory_c)
    {
-      if (log_cb)
-         log_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
+      if (retro_log_printf_cb)
+         retro_log_printf_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
    }
    else
    {
@@ -673,8 +687,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
       if (!fp)
       {
-         if (log_cb)
-            log_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
+         if (retro_log_printf_cb)
+            retro_log_printf_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
          return false;
       }
 
@@ -688,7 +702,9 @@ bool retro_load_game(const struct retro_game_info *info)
    _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 
    /* XXX: Is this really a frontend responsibility? */
-   memcpy(Getp_NVRAM(), nvram_header, sizeof(nvram_header));
+   nvram_init(Getp_NVRAM());
+   if(check_env_nvram_shared())
+     retro_nvram_load();
 
    return true;
 }
@@ -703,6 +719,9 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game(void)
 {
+   if(check_env_nvram_shared())
+     retro_nvram_save();
+
    _freedo_Interface(FDP_DESTROY, (void*)0);
    fsCloseIso();
 
@@ -729,67 +748,79 @@ unsigned retro_api_version(void)
    return RETRO_API_VERSION;
 }
 
-void *retro_get_memory_data(unsigned id)
+void*
+retro_get_memory_data(unsigned id)
 {
-   if (id != RETRO_MEMORY_SAVE_RAM)
-      return NULL;
+  if(id != RETRO_MEMORY_SAVE_RAM)
+    return NULL;
+  if(check_env_nvram_shared())
+    return NULL;
 
-   return Getp_NVRAM();
+  return Getp_NVRAM();
 }
 
-size_t retro_get_memory_size(unsigned id)
+size_t
+retro_get_memory_size(unsigned id)
 {
-   if (id != RETRO_MEMORY_SAVE_RAM)
+  if(id != RETRO_MEMORY_SAVE_RAM)
       return 0;
+  if(check_env_nvram_shared())
+    return 0;
 
    return NVRAM_SIZE;
 }
 
-void retro_init(void)
+void
+retro_init(void)
 {
-   struct retro_log_callback log;
-   unsigned level                = 5;
-   uint64_t serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
+  struct retro_log_callback log;
+  unsigned level = 5;
+  uint64_t serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
-      log_cb = log.log;
-   else
-      log_cb = NULL;
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
+    retro_set_log_printf_cb(log.log);
 
-   cue_log_cb = log_cb;
-
-   environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
-   environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
 }
 
 void retro_deinit(void)
 {
 }
 
-void retro_reset(void)
+void
+retro_reset(void)
 {
-   _freedo_Interface(FDP_DESTROY, NULL);
+  if(check_env_nvram_shared())
+    retro_nvram_save();
 
-   currentSector = 0;
+  _freedo_Interface(FDP_DESTROY, NULL);
 
-   sampleCurrent = 0;
-   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
+  currentSector = 0;
 
-   check_variables();
-   initVideo();
+  sampleCurrent = 0;
+  memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
-   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+  check_variables();
+  initVideo();
+
+  _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+
+  nvram_init(Getp_NVRAM());
+  if(check_env_nvram_shared())
+    retro_nvram_load();
 }
 
-void retro_run(void)
+void
+retro_run(void)
 {
-   bool updated = false;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-      check_variables();
+  bool updated = false;
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&updated) && updated)
+    check_variables();
 
-   update_input();
+  update_input();
 
-   _freedo_Interface(FDP_DO_EXECFRAME, frame); /* FDP_DO_EXECFRAME_MT ? */
+  _freedo_Interface(FDP_DO_EXECFRAME, frame); /* FDP_DO_EXECFRAME_MT ? */
 
-   video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
+  video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
 }
