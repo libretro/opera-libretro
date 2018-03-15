@@ -764,7 +764,7 @@ retro_get_memory_size(unsigned id)
 {
   if(id != RETRO_MEMORY_SAVE_RAM)
       return 0;
-  if(check_env_nvram_per_game() == false)
+  if(check_env_nvram_shared())
     return 0;
 
    return NVRAM_SIZE;
