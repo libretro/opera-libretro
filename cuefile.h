@@ -19,5 +19,4 @@ cueFile    *cue_get(const char *path);
 const char *cue_get_cd_format_name(CD_format cd_format);
 int         cue_is_cue_path(const char *path);
 
-extern retro_log_printf_t cue_log_cb;
 #endif
