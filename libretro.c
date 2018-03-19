@@ -20,6 +20,7 @@
 #include "cuefile.h"
 #include "nvram.h"
 #include "retro_callbacks.h"
+#include "retro_cdimage.h"
 
 #include "libfreedo/freedocore.h"
 #include "libfreedo/IsoXBUS.h"
@@ -60,10 +61,8 @@ extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
 extern void* Getp_NVRAM();
 
-static int cd_sector_size;
-static int cd_sector_offset;
+static struct cdimage_t cdimage;
 
-static RFILE *fcdrom;
 static int currentSector;
 
 static uint32_t *videoBuffer;
@@ -124,124 +123,6 @@ static void fsReadBios(const char *bios_path, void *prom)
    (void)readcount;
 
    filestream_close(bios1);
-}
-
-static void fsDetectCDFormat(const char *path, cueFile *cue_file)
-{
-   CD_format cd_format;
-
-   if (cue_file)
-   {
-      cd_format = cue_file->cd_format;
-      retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format from cue file resolved to %s", cue_get_cd_format_name(cd_format));
-   }
-   else
-   {
-      int size = 0;
-      RFILE *fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
-      if (fp)
-      {
-         filestream_seek(fp, 0L, RETRO_VFS_SEEK_POSITION_END);
-         size = filestream_tell(fp);
-         filestream_close(fp);
-      }
-      if (size % SECTOR_SIZE_2048 == 0) /* most standard guess first */
-         cd_format = MODE1_2048;
-      else if (size % SECTOR_SIZE_2352 == 0)
-         cd_format = MODE1_2352;
-      else
-      {
-         cd_format = MODE1_2048;
-         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format cannot be detected, using default");
-      }
-      retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: File format guessed by file size is %s", cue_get_cd_format_name(cd_format));
-   }
-
-   switch (cd_format)
-   {
-      case MODE1_2048:
-         cd_sector_size = SECTOR_SIZE_2048;
-         cd_sector_offset = SECTOR_OFFSET_MODE1_2048;
-         break;
-      case MODE1_2352:
-         cd_sector_size = SECTOR_SIZE_2352;
-         cd_sector_offset = SECTOR_OFFSET_MODE1_2352;
-         break;
-      case MODE2_2352:
-         cd_sector_size = SECTOR_SIZE_2352;
-         cd_sector_offset = SECTOR_OFFSET_MODE2_2352;
-         break;
-      case CUE_MODE_UNKNOWN:
-         break;
-   }
-
-   retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: Using sector size %i offset %i", cd_sector_size, cd_sector_offset);
-}
-
-
-static int fsOpenIso(const char *path)
-{
-   const char *cd_image_path = NULL;
-   cueFile *cue_file         = cue_get(path);
-
-   fsDetectCDFormat(path, cue_file);
-
-   cd_image_path             = cue_is_cue_path(path) ? cue_file->cd_image : path;
-   fcdrom                    = filestream_open(cd_image_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   free(cue_file);
-
-   if(!fcdrom)
-      return 0;
-
-   return 1;
-}
-
-static int fsCloseIso(void)
-{
-   filestream_close(fcdrom);
-   return 1;
-}
-
-static int fsReadBlock(void *buffer, int sector)
-{
-   filestream_seek(fcdrom, (cd_sector_size * sector) + cd_sector_offset,
-         RETRO_VFS_SEEK_POSITION_START);
-   filestream_read(fcdrom, buffer, SECTOR_SIZE_2048);
-   filestream_rewind(fcdrom);
-
-   return 1;
-}
-
-static char *fsReadSize(void)
-{
-   char *buffer = (char *)malloc(sizeof(char) * 4);
-
-   filestream_rewind(fcdrom);
-   filestream_seek(fcdrom, 80 + cd_sector_offset,
-         RETRO_VFS_SEEK_POSITION_START);
-   filestream_read(fcdrom, buffer, 4);
-   filestream_rewind(fcdrom);
-
-   return buffer;
-}
-
-static unsigned int fsReadDiscSize(void)
-{
-   unsigned int size;
-   unsigned int temp;
-   char *ssize = fsReadSize();
-
-   memcpy(&temp, ssize, 4);
-
-   free(ssize);
-   size = (temp & 0x000000FFU) << 24 | (temp & 0x0000FF00U) << 8 |
-      (temp & 0x00FF0000U) >> 8 | (temp & 0xFF000000U) >> 24;
-
-   retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: disc size: %d sectors\n", size);
-
-   return size;
 }
 
 static void initVideo(void)
@@ -349,10 +230,11 @@ static void *fdcCallback(int procedure, void *data)
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       case EXT_READ2048:
-         fsReadBlock(data, currentSector);
-         break;
+        retro_cdimage_read(&cdimage,currentSector,data,2048);
+        break;
       case EXT_GET_DISC_SIZE:
-         return (void *)(intptr_t)fsReadDiscSize();
+        return (void*)retro_cdimage_get_number_of_logical_blocks(&cdimage);
+        break;
       case EXT_ON_SECTOR:
          currentSector = *((int*)&data);
          break;
@@ -449,7 +331,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #endif
    info->library_version = "1.3.2.4" GIT_VERSION;
    info->need_fullpath = true;
-   info->valid_extensions = "iso|img|bin|cue";
+   info->valid_extensions = "iso|bin|chd|cue";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -612,6 +494,7 @@ check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+  int rv;
    enum retro_pixel_format fmt          = RETRO_PIXEL_FORMAT_XRGB8888;
    const char *system_directory_c       = NULL;
    const char *full_path                = NULL;
@@ -663,8 +546,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    *biosPath = '\0';
 
-   if (!fsOpenIso(full_path))
-      return false;
+   rv = retro_cdimage_open(full_path,&cdimage);
+   if(rv == -1)
+     return false;
 
    retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
    if (!system_directory_c)
@@ -723,7 +607,8 @@ void retro_unload_game(void)
      retro_nvram_save();
 
    _freedo_Interface(FDP_DESTROY, (void*)0);
-   fsCloseIso();
+
+   retro_cdimage_close(&cdimage);
 
    if (isodrive)
       free(isodrive);

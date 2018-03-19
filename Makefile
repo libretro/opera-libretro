@@ -51,7 +51,7 @@ ifneq (,$(findstring unix,$(platform)))
 
     TARGET := $(TARGET_NAME)_libretro.so
     fpic := -fPIC
-    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+    SHARED := -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
 
 
     # Raspberry Pi
