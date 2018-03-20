@@ -46,7 +46,7 @@ uint32_t _madam_GetCELCycles(void);
 uint32_t * _madam_GetRegs(void);
 int _madam_HandleCEL(void);
 void _madam_Init(uint8_t* memory);
-void _madam_KeyPressed(uint8_t* data, uint32_t num);
+uint8_t *_madam_PBUSData(void);
 void _madam_Poke(uint32_t addr, uint32_t val);
 uint32_t _madam_Peek(uint32_t addr);
 

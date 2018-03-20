@@ -197,30 +197,30 @@ static void *fdcCallback(int procedure, void *data)
             audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
          }
          break;
-      case EXT_GET_PBUSLEN:
-         return (void*)16;
-      case EXT_GETP_PBUSDATA:
+      case EXT_SET_PBUSDATA:
          {
-            /* Set up raw data to return */
-            unsigned char *pbusData = (unsigned char *)
-               malloc(sizeof(unsigned char) * 16);
+            uint8_t *pbusData = data;
 
-            pbusData[0x0] = 0x00;
-            pbusData[0x1] = 0x48;
-            pbusData[0x2] = CalculateDeviceLowByte(0);
-            pbusData[0x3] = CalculateDeviceHighByte(0);
-            pbusData[0x4] = CalculateDeviceLowByte(2);
-            pbusData[0x5] = CalculateDeviceHighByte(2);
-            pbusData[0x6] = CalculateDeviceLowByte(1);
-            pbusData[0x7] = CalculateDeviceHighByte(1);
-            pbusData[0x8] = CalculateDeviceLowByte(4);
-            pbusData[0x9] = CalculateDeviceHighByte(4);
-            pbusData[0xA] = CalculateDeviceLowByte(3);
-            pbusData[0xB] = CalculateDeviceHighByte(3);
-            pbusData[0xC] = 0x00;
-            pbusData[0xD] = 0x80;
-            pbusData[0xE] = CalculateDeviceLowByte(5);
-            pbusData[0xF] = CalculateDeviceHighByte(5);
+            pbusData[0x00] = 0x00;
+            pbusData[0x01] = 0x48;
+            pbusData[0x02] = CalculateDeviceLowByte(0);
+            pbusData[0x03] = CalculateDeviceHighByte(0);
+            pbusData[0x04] = CalculateDeviceLowByte(2);
+            pbusData[0x05] = CalculateDeviceHighByte(2);
+            pbusData[0x06] = CalculateDeviceLowByte(1);
+            pbusData[0x07] = CalculateDeviceHighByte(1);
+            pbusData[0x08] = CalculateDeviceLowByte(4);
+            pbusData[0x09] = CalculateDeviceHighByte(4);
+            pbusData[0x0A] = CalculateDeviceLowByte(3);
+            pbusData[0x0B] = CalculateDeviceHighByte(3);
+            pbusData[0x0C] = 0x00;
+            pbusData[0x0D] = 0x80;
+            pbusData[0x0E] = CalculateDeviceLowByte(5);
+            pbusData[0x0F] = CalculateDeviceHighByte(5);
+            pbusData[0x10] = CalculateDeviceLowByte(7);
+            pbusData[0x11] = CalculateDeviceHighByte(7);
+            pbusData[0x12] = CalculateDeviceLowByte(6);
+            pbusData[0x13] = CalculateDeviceHighByte(6);
 
             return pbusData;
          }
