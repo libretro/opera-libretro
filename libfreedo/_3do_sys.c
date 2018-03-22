@@ -152,7 +152,6 @@ void _3do_InternalFrame(int cycles)
       if(line==_clio_v1line())
       {
          _clio_GenerateFiq(1<<1,0);
-         io_interface(EXT_SET_PBUSDATA,_madam_PBUSData());
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!skipframe)

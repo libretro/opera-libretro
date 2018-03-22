@@ -74,7 +74,6 @@ struct GetFrameBitmapParams
 #define EXT_READ_ROMS           1
 #define EXT_SWAPFRAME           5       //frame swap (in mutlithreaded) or frame draw(single treaded)
 #define EXT_PUSH_SAMPLE         6       //sends sample to the buffer
-#define EXT_SET_PBUSDATA        8
 #define EXT_KPRINT              9
 #define EXT_DEBUG_PRINT         10
 #define EXT_FRAMETRIGGER_MT     12      //multitasking

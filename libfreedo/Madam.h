@@ -32,13 +32,34 @@ Felix Lazarev
 #define FSM_INPROCESS 2
 #define FSM_SUSPENDED 3
 
+#define MADAM_PBUS_CONTROLLER1_OFFSET 0x02
+#define MADAM_PBUS_CONTROLLER2_OFFSET 0x06
+#define MADAM_PBUS_CONTROLLER3_OFFSET 0x04
+#define MADAM_PBUS_CONTROLLER4_OFFSET 0x0A
+#define MADAM_PBUS_CONTROLLER5_OFFSET 0x08
+#define MADAM_PBUS_CONTROLLER6_OFFSET 0x0E
+#define MADAM_PBUS_CONTROLLER7_OFFSET 0x12
+#define MADAM_PBUS_CONTROLLER8_OFFSET 0x10
+
+#define MADAM_PBUS_BYTE0_SHIFT_L        0x02
+#define MADAM_PBUS_BYTE0_SHIFT_R        0x03
+#define MADAM_PBUS_BYTE0_SHIFT_X        0x04
+#define MADAM_PBUS_BYTE0_SHIFT_P        0x05
+#define MADAM_PBUS_BYTE0_SHIFT_C        0x06
+#define MADAM_PBUS_BYTE0_SHIFT_B        0x07
+#define MADAM_PBUS_BYTE1_SHIFT_A        0x00
+#define MADAM_PBUS_BYTE1_SHIFT_LEFT     0x01
+#define MADAM_PBUS_BYTE1_SHIFT_RIGHT    0x02
+#define MADAM_PBUS_BYTE1_SHIFT_UP       0x03
+#define MADAM_PBUS_BYTE1_SHIFT_DOWN     0x04
+#define MADAM_PBUS_BYTE1_CONNECTED_MASK 0x80
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 uint32_t Get_madam_FSM(void);
 void Set_madam_FSM(uint32_t val);
-
 
 void _madam_SetMapping(uint32_t flag);
 void _madam_Reset(void);
@@ -47,6 +68,7 @@ uint32_t * _madam_GetRegs(void);
 int _madam_HandleCEL(void);
 void _madam_Init(uint8_t* memory);
 uint8_t *_madam_PBUSData(void);
+uint8_t *_madam_PBUSData_reset(void);
 void _madam_Poke(uint32_t addr, uint32_t val);
 uint32_t _madam_Peek(uint32_t addr);
 
@@ -58,4 +80,4 @@ void _madam_Load(void *buff);
 }
 #endif
 
-#endif 
+#endif

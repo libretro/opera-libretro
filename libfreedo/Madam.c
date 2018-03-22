@@ -1044,6 +1044,47 @@ void HandleDMA8(void)
    }
 }
 
+/*
+ * Controller data info
+ *
+ * 20 bytes data total
+ * Each controller uses 2 bytes
+ *
+ * Controller 1 uses offsets 0x02 & 0x03
+ * Controller 2 uses offsets 0x06 & 0x07
+ * Controller 3 uses offsets 0x04 & 0x05
+ * Controller 4 uses offsets 0x0A & 0x0B
+ * Controller 5 uses offsets 0x08 & 0x09
+ * Controller 6 uses offsets 0x0E & 0x0F
+ * Controller 7 uses offsets 0x12 & 0x13
+ * Controller 8 uses offsets 0x10 & 0x11
+ *
+ * Offset 0x00, 0x01, 0x0C, 0x0D should be set to 0x00, 0x48, 0x00,
+ * 0x80 respectively. It is currently not clear what those offsets or
+ * values mean.
+ *
+ * It's not (publicly) known how the lightgun or mouse work.
+ *
+ * byte 0 layout:
+ *  - bit 0: unknown / unused
+ *  - bit 1: unknown / unused
+ *  - bit 2: L
+ *  - bit 3: R
+ *  - bit 4: X (Select)
+ *  - bit 5: P (Start)
+ *  - bit 6: C
+ *  - bit 7: B
+ * byte 1 layout:
+ *  - bit 0: A
+ *  - bit 1: Left
+ *  - bit 2: Right
+ *  - bit 3: Up
+ *  - bit 4: Down
+ *  - bit 5: unknown / unused
+ *  - bit 6: unknown / unused
+ *  - bit 7: controller connectivity?
+ */
+
 void DMAPBus(void)
 {
    unsigned int i=0;
@@ -1068,6 +1109,19 @@ void DMAPBus(void)
    }
 
    mregs[0x574]=0xfffffffc;
+}
+
+uint8_t*
+_madam_PBUSData_reset(void)
+{
+  /* 5 x 4 bytes = 20 bytes */
+  ((uint32_t*)PBUSQueue)[0] = 0;
+  ((uint32_t*)PBUSQueue)[1] = 0;
+  ((uint32_t*)PBUSQueue)[2] = 0;
+  ((uint32_t*)PBUSQueue)[3] = 0;
+  ((uint32_t*)PBUSQueue)[4] = 0;
+
+  return PBUSQueue;
 }
 
 uint8_t*
