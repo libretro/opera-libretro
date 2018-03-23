@@ -1,19 +1,15 @@
-#include "retro_cdimage.h"
-
-#include "file/file_path.h"
-#include "retro_endianness.h"
-#include "streams/chd_stream.h"
-#include "streams/interface_stream.h"
-
-#include "libretro.h"
-
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
-#define min(a,b) \
-  ({ __typeof__ (a) _a = (a);   \
-     __typeof__ (b) _b = (b);   \
-     _a < _b ? _a : _b; })
+#include <file/file_path.h>
+#include <retro_endianness.h>
+#include <streams/chd_stream.h>
+#include <streams/interface_stream.h>
+#include <retro_miscellaneous.h>
+
+#include <libretro.h>
+
+#include "retro_cdimage.h"
 
 int
 retro_cdimage_open_chd(const char       *path_,
@@ -171,8 +167,8 @@ retro_cdimage_read(struct cdimage_t *cdimage_,
   int rv;
   size_t pos;
 
-  bufsize_ = min(bufsize_,cdimage_->sector_size);
-  pos = ((sector_ * cdimage_->sector_size) + cdimage_->sector_offset);
+  bufsize_ = MIN(bufsize_, cdimage_->sector_size);
+  pos      = ((sector_ * cdimage_->sector_size) + cdimage_->sector_offset);
 
   rv = intfstream_seek(cdimage_->fp,pos,RETRO_VFS_SEEK_POSITION_START);
   if(rv == -1)
