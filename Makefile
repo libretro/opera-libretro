@@ -1,4 +1,5 @@
 DEBUG = 0
+HAVE_CHD = 1
 
 ifeq ($(platform),)
 platform = unix
