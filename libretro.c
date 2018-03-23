@@ -14,6 +14,7 @@
 #endif
 
 #include <libretro.h>
+#include <retro_inline.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
@@ -179,20 +180,13 @@ static void *fdcCallback(int procedure, void *data)
 }
 
 /* See Madam.c for details on bitfields being set below */
-static
-inline
-uint8_t
-retro_poll_joypad(const int port_,
-                  const int id_)
+static INLINE uint8_t retro_poll_joypad(const int port_,
+      const int id_)
 {
   return retro_input_state_cb(port_,RETRO_DEVICE_JOYPAD,0,id_);
 }
 
-static
-inline
-void
-retro_poll_input(const int port_,
-                 uint8_t   buttons_[2])
+static INLINE void retro_poll_input(const int port_, uint8_t   buttons_[2])
 {
   buttons_[0] =
     ((retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L)      << MADAM_PBUS_BYTE0_SHIFT_L)     |
