@@ -26,31 +26,13 @@
 #include "libfreedo/IsoXBUS.h"
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
+#include "libfreedo/Madam.h"
 
 extern int ARM_CLOCK;
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
 #define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
-
-#define INPUTBUTTONL     (1<<4)
-#define INPUTBUTTONR     (1<<5)
-#define INPUTBUTTONX     (1<<6)
-#define INPUTBUTTONP     (1<<7)
-#define INPUTBUTTONC     (1<<8)
-#define INPUTBUTTONB     (1<<9)
-#define INPUTBUTTONA     (1<<10)
-#define INPUTBUTTONLEFT  (1<<11)
-#define INPUTBUTTONRIGHT (1<<12)
-#define INPUTBUTTONUP    (1<<13)
-#define INPUTBUTTONDOWN  (1<<14)
-
-typedef struct
-{
-   int buttons; /* buttons bitfield */
-}inputState;
-
-inputState internal_input_state[6];
 
 static char biosPath[1024];
 static struct VDLFrame *frame;
@@ -71,9 +53,10 @@ static int32_t sampleBuffer[TEMP_BUFFER_SIZE];
 static unsigned int sampleCurrent;
 
 static retro_video_refresh_t video_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
+
+static bool x_button_also_p;
+static int  controller_count;
 
 void retro_set_environment(retro_environment_t cb)
 {
@@ -82,6 +65,8 @@ void retro_set_environment(retro_environment_t cb)
       { "4do_cpu_overclock",        "CPU overclock; 1x|2x|4x" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
+      { "4do_x_button_also_p",      "Button X also acts as P; disabled|enabled" },
+      { "4do_controller_count",     "Controller Count; 1|2|3|4|5|6|7|8|0" },
       { "4do_hack_timing_1",        "Timing Hack 1 (Crash 'n Burn); disabled|enabled" },
       { "4do_hack_timing_3",        "Timing Hack 3 (Dinopark Tycoon); disabled|enabled" },
       { "4do_hack_timing_5",        "Timing Hack 5 (Microcosm); disabled|enabled" },
@@ -103,8 +88,18 @@ void retro_set_environment(retro_environment_t cb)
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
-void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
-void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
+
+void
+retro_set_input_poll(retro_input_poll_t cb)
+{
+  retro_set_input_poll_cb(cb);
+}
+
+void
+retro_set_input_state(retro_input_state_t cb)
+{
+  retro_set_input_state_cb(cb);
+}
 
 static void fsReadBios(const char *bios_path, void *prom)
 {
@@ -136,46 +131,6 @@ static void initVideo(void)
    memset(frame, 0, sizeof(struct VDLFrame));
 }
 
-/* Input helper functions */
-static int CheckDownButton(int deviceNumber,int button)
-{
-   if(internal_input_state[deviceNumber].buttons&button)
-      return 1;
-   return 0;
-}
-
-static char CalculateDeviceLowByte(int deviceNumber)
-{
-   char returnValue = 0;
-
-   returnValue |= 0x01 & 0; /* unknown */
-   returnValue |= 0x02 & 0; /* unknown */
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONL) ? (char)0x04 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONR) ? (char)0x08 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONX) ? (char)0x10 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONP) ? (char)0x20 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONC) ? (char)0x40 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONB) ? (char)0x80 : (char)0;
-
-   return returnValue;
-}
-
-static char CalculateDeviceHighByte(int deviceNumber)
-{
-   char returnValue = 0;
-
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONA)     ? (char)0x01 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONLEFT)  ? (char)0x02 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONRIGHT) ? (char)0x04 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONUP)    ? (char)0x08 : (char)0;
-   returnValue |= CheckDownButton(deviceNumber, INPUTBUTTONDOWN)  ? (char)0x10 : (char)0;
-   returnValue |= 0x20 & 0; /* unknown */
-   returnValue |= 0x40 & 0; /* unknown */
-   returnValue |= 0x80;     /* This last bit seems to indicate power and/or connectivity. */
-
-   return returnValue;
-}
-
 /* libfreedo callback */
 static void *fdcCallback(int procedure, void *data)
 {
@@ -197,33 +152,6 @@ static void *fdcCallback(int procedure, void *data)
             audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
          }
          break;
-      case EXT_GET_PBUSLEN:
-         return (void*)16;
-      case EXT_GETP_PBUSDATA:
-         {
-            /* Set up raw data to return */
-            unsigned char *pbusData = (unsigned char *)
-               malloc(sizeof(unsigned char) * 16);
-
-            pbusData[0x0] = 0x00;
-            pbusData[0x1] = 0x48;
-            pbusData[0x2] = CalculateDeviceLowByte(0);
-            pbusData[0x3] = CalculateDeviceHighByte(0);
-            pbusData[0x4] = CalculateDeviceLowByte(2);
-            pbusData[0x5] = CalculateDeviceHighByte(2);
-            pbusData[0x6] = CalculateDeviceLowByte(1);
-            pbusData[0x7] = CalculateDeviceHighByte(1);
-            pbusData[0x8] = CalculateDeviceLowByte(4);
-            pbusData[0x9] = CalculateDeviceHighByte(4);
-            pbusData[0xA] = CalculateDeviceLowByte(3);
-            pbusData[0xB] = CalculateDeviceHighByte(3);
-            pbusData[0xC] = 0x00;
-            pbusData[0xD] = 0x80;
-            pbusData[0xE] = CalculateDeviceLowByte(5);
-            pbusData[0xF] = CalculateDeviceHighByte(5);
-
-            return pbusData;
-         }
       case EXT_KPRINT:
          break;
       case EXT_FRAMETRIGGER_MT:
@@ -250,72 +178,73 @@ static void *fdcCallback(int procedure, void *data)
    return (void*)0;
 }
 
-static void update_input(void)
+/* See Madam.c for details on bitfields being set below */
+static
+inline
+uint8_t
+retro_poll_joypad(const int port_,
+                  const int id_)
 {
-   unsigned i;
-   if (!input_poll_cb)
-      return;
+  return retro_input_state_cb(port_,RETRO_DEVICE_JOYPAD,0,id_);
+}
 
-   input_poll_cb();
+static
+inline
+void
+retro_poll_input(const int port_,
+                 uint8_t   buttons_[2])
+{
+  buttons_[0] =
+    ((retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L)      << MADAM_PBUS_BYTE0_SHIFT_L)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R)      << MADAM_PBUS_BYTE0_SHIFT_R)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT) << MADAM_PBUS_BYTE0_SHIFT_X)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_START)  << MADAM_PBUS_BYTE0_SHIFT_P)     |
+     ((x_button_also_p &&
+       retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_X))    << MADAM_PBUS_BYTE0_SHIFT_P)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_A)      << MADAM_PBUS_BYTE0_SHIFT_C)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_B)      << MADAM_PBUS_BYTE0_SHIFT_B));
+  buttons_[1] =
+    ((retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_Y)      << MADAM_PBUS_BYTE1_SHIFT_A)     |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_LEFT)   << MADAM_PBUS_BYTE1_SHIFT_LEFT)  |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_RIGHT)  << MADAM_PBUS_BYTE1_SHIFT_RIGHT) |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_UP)     << MADAM_PBUS_BYTE1_SHIFT_UP)    |
+     (retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_DOWN)   << MADAM_PBUS_BYTE1_SHIFT_DOWN)  |
+     MADAM_PBUS_BYTE1_CONNECTED_MASK);
+}
 
-   /* Can possibly support up to 6 players but is currently set for 2 */
-   for (i = 0; i < 2; i++)
-   {
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
-         internal_input_state[i].buttons |= INPUTBUTTONUP;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONUP;
+static
+void
+update_input(void)
+{
+  uint8_t *buttons;
 
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))
-         internal_input_state[i].buttons |= INPUTBUTTONDOWN;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONDOWN;
+  retro_input_poll_cb();
 
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))
-         internal_input_state[i].buttons |= INPUTBUTTONLEFT;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONLEFT;
+  buttons = _madam_PBUSData_reset();
 
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
-         internal_input_state[i].buttons |= INPUTBUTTONRIGHT;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONRIGHT;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
-         internal_input_state[i].buttons |= INPUTBUTTONA;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONA;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
-         internal_input_state[i].buttons |= INPUTBUTTONB;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONB;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
-         internal_input_state[i].buttons |= INPUTBUTTONC;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONC;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L))
-         internal_input_state[i].buttons |= INPUTBUTTONL;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONL;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
-         internal_input_state[i].buttons |= INPUTBUTTONR;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONR;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START))
-         internal_input_state[i].buttons |= INPUTBUTTONP;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONP;
-
-      if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
-         internal_input_state[i].buttons |= INPUTBUTTONX;
-      else
-         internal_input_state[i].buttons &= ~INPUTBUTTONX;
-   }
+  buttons[0x00] = 0x00;
+  buttons[0x01] = 0x48;
+  buttons[0x0C] = 0x00;
+  buttons[0x0D] = 0x80;
+  switch(controller_count)
+    {
+    case 8:
+      retro_poll_input(7,&buttons[MADAM_PBUS_CONTROLLER8_OFFSET]);
+    case 7:
+      retro_poll_input(6,&buttons[MADAM_PBUS_CONTROLLER7_OFFSET]);
+    case 6:
+      retro_poll_input(5,&buttons[MADAM_PBUS_CONTROLLER6_OFFSET]);
+    case 5:
+      retro_poll_input(4,&buttons[MADAM_PBUS_CONTROLLER5_OFFSET]);
+    case 4:
+      retro_poll_input(3,&buttons[MADAM_PBUS_CONTROLLER4_OFFSET]);
+    case 3:
+      retro_poll_input(2,&buttons[MADAM_PBUS_CONTROLLER3_OFFSET]);
+    case 2:
+      retro_poll_input(1,&buttons[MADAM_PBUS_CONTROLLER2_OFFSET]);
+    case 1:
+      retro_poll_input(0,&buttons[MADAM_PBUS_CONTROLLER1_OFFSET]);
+    }
 }
 
 /************************************
@@ -421,7 +350,7 @@ static
 void
 check_env_4do_cpu_overclock(void)
 {
-  int                   rv;
+  int rv;
   struct retro_variable var;
 
   ARM_CLOCK = ARM_FREQUENCY;
@@ -439,6 +368,33 @@ check_env_4do_cpu_overclock(void)
       else if (!strcmp(var.value, "4x"))
         ARM_CLOCK = ARM_FREQUENCY * 4;
     }
+}
+
+static
+void
+check_env_4do_x_button_also_p(void)
+{
+  x_button_also_p = environ_enabled("4do_x_button_also_p");
+}
+
+static
+void
+check_env_4do_controller_count(void)
+{
+  int rv;
+  struct retro_variable var;
+
+  controller_count = 0;
+
+  var.key   = "4do_controller_count";
+  var.value = NULL;
+
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if(rv && var.value)
+    controller_count = atoi(var.value);
+
+  if((controller_count < 0) || (controller_count > 8))
+    controller_count = 1;
 }
 
 static
@@ -485,6 +441,8 @@ check_variables(void)
 {
    check_env_4do_high_resolution();
    check_env_4do_cpu_overclock();
+   check_env_4do_x_button_also_p();
+   check_env_4do_controller_count();
    check_env_set_reset_bits("4do_hack_timing_1",&fixmode,FIX_BIT_TIMING_1);
    check_env_set_reset_bits("4do_hack_timing_3",&fixmode,FIX_BIT_TIMING_3);
    check_env_set_reset_bits("4do_hack_timing_5",&fixmode,FIX_BIT_TIMING_5);
@@ -492,44 +450,49 @@ check_variables(void)
    check_env_set_reset_bits("4do_hack_graphics_step_y",&fixmode,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
+#define CONTROLLER_DESC(PORT) \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "D-Pad Left" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     "D-Pad Up" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "D-Pad Down" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  "D-Pad Right" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "A" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "C" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "L" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "R" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "X (Stop)" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  "P (Play/Pause)" }
+
+static
+void
+retro_setup_input_descriptions(void)
+{
+   struct retro_input_descriptor desc[] =
+     {
+       CONTROLLER_DESC(0),
+       CONTROLLER_DESC(1),
+       CONTROLLER_DESC(2),
+       CONTROLLER_DESC(3),
+       CONTROLLER_DESC(4),
+       CONTROLLER_DESC(5),
+       CONTROLLER_DESC(6),
+       CONTROLLER_DESC(7)
+     };
+
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,desc);
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
-  int rv;
-   enum retro_pixel_format fmt          = RETRO_PIXEL_FORMAT_XRGB8888;
-   const char *system_directory_c       = NULL;
-   const char *full_path                = NULL;
-   struct retro_input_descriptor desc[] = {
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "C" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,     "A" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "L" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "R" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,    "X (Stop)" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,    "P (Play/Pause)" },
-
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "C" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,     "A" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "L" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "R" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,    "X (Stop)" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,    "P (Play/Pause)" },
-
-      { 0 },
-   };
+   int rv;
+   enum retro_pixel_format  fmt                = RETRO_PIXEL_FORMAT_XRGB8888;
+   const char              *system_directory_c = NULL;
+   const char              *full_path          = NULL;
 
    if (!info)
       return false;
 
-   retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+   retro_setup_input_descriptions();
 
    if (!retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {

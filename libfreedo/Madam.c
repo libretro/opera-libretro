@@ -79,7 +79,7 @@ extern int speedfixes;
 #define PMODE_ZERO  ((0x00000002)<<CCB_POVER_SHIFT)
 #define PMODE_ONE   ((0x00000003)<<CCB_POVER_SHIFT)
 
-//  === CCBCTL0 flags ===   
+//  === CCBCTL0 flags ===
 #define B15POS_MASK   0xC0000000
 #define B0POS_MASK    0x30000000
 #define SWAPHV        0x08000000
@@ -94,25 +94,25 @@ extern int speedfixes;
 #define CFBD_SHIFT    22
 #define PDCLSB_SHIFT  20
 
-//  B15POS_MASK definitions   
+//  B15POS_MASK definitions
 #define B15POS_0    0x00000000
 #define B15POS_1    0x40000000
 #define B15POS_PDC  0xC0000000
 
-//  B0POS_MASK definitions   
+//  B0POS_MASK definitions
 #define B0POS_0     0x00000000
 #define B0POS_1     0x10000000
 #define B0POS_PPMP  0x20000000
 #define B0POS_PDC   0x30000000
 
 /*
-//  CFBDLSB_MASK definitions   
+//  CFBDLSB_MASK definitions
 #define CFBDLSB_0      0x00000000
 #define CFBDLSB_CFBD0  0x00400000
 #define CFBDLSB_CFBD4  0x00800000
 #define CFBDLSB_CFBD5  0x00C00000
 
-//  PDCLSB_MASK definitions   
+//  PDCLSB_MASK definitions
 #define PDCLSB_0     0x00000000
 #define PDCLSB_PDC0  0x00100000
 #define PDCLSB_PDC4  0x00200000
@@ -1044,6 +1044,47 @@ void HandleDMA8(void)
    }
 }
 
+/*
+ * Controller data info
+ *
+ * 20 bytes data total
+ * Each controller uses 2 bytes
+ *
+ * Controller 1 uses offsets 0x02 & 0x03
+ * Controller 2 uses offsets 0x06 & 0x07
+ * Controller 3 uses offsets 0x04 & 0x05
+ * Controller 4 uses offsets 0x0A & 0x0B
+ * Controller 5 uses offsets 0x08 & 0x09
+ * Controller 6 uses offsets 0x0E & 0x0F
+ * Controller 7 uses offsets 0x12 & 0x13
+ * Controller 8 uses offsets 0x10 & 0x11
+ *
+ * Offset 0x00, 0x01, 0x0C, 0x0D should be set to 0x00, 0x48, 0x00,
+ * 0x80 respectively. It is currently not clear what those offsets or
+ * values mean.
+ *
+ * It's not (publicly) known how the lightgun or mouse work.
+ *
+ * byte 0 layout:
+ *  - bit 0: unknown / unused
+ *  - bit 1: unknown / unused
+ *  - bit 2: L
+ *  - bit 3: R
+ *  - bit 4: X (Select)
+ *  - bit 5: P (Start)
+ *  - bit 6: C
+ *  - bit 7: B
+ * byte 1 layout:
+ *  - bit 0: A
+ *  - bit 1: Left
+ *  - bit 2: Right
+ *  - bit 3: Up
+ *  - bit 4: Down
+ *  - bit 5: unknown / unused
+ *  - bit 6: unknown / unused
+ *  - bit 7: controller connectivity?
+ */
+
 void DMAPBus(void)
 {
    unsigned int i=0;
@@ -1055,10 +1096,12 @@ void DMAPBus(void)
    mregs[0x570]+=4;
    mregs[0x578]+=4;
 
-   while((int)mregs[0x574]>0)
+   while((int)mregs[0x574] > 0)
    {
-      if(i<5) WriteIO(mregs[0x570],((unsigned int*)PBUSQueue)[i]);
-      else WriteIO(mregs[0x570],0xffffffff);
+      if(i < (sizeof(PBUSQueue) / sizeof(uint32_t)))
+        WriteIO(mregs[0x570],((uint32_t*)PBUSQueue)[i]);
+      else
+        WriteIO(mregs[0x570],0xffffffff);
       mregs[0x574]-=4;
       mregs[0x570]+=4;
       mregs[0x578]+=4;
@@ -1068,15 +1111,24 @@ void DMAPBus(void)
    mregs[0x574]=0xfffffffc;
 }
 
-void _madam_KeyPressed(uint8_t* data, unsigned int num)
+uint8_t*
+_madam_PBUSData_reset(void)
 {
-   if(num>16)
-      num=16;
-   if(num)
-      memcpy(PBUSQueue,data,num);
-   memset(&PBUSQueue[num],-1,20-num);
+  /* 5 x 4 bytes = 20 bytes */
+  ((uint32_t*)PBUSQueue)[0] = 0;
+  ((uint32_t*)PBUSQueue)[1] = 0;
+  ((uint32_t*)PBUSQueue)[2] = 0;
+  ((uint32_t*)PBUSQueue)[3] = 0;
+  ((uint32_t*)PBUSQueue)[4] = 0;
+
+  return PBUSQueue;
 }
 
+uint8_t*
+_madam_PBUSData(void)
+{
+  return PBUSQueue;
+}
 
 void _madam_Init(uint8_t *memory)
 {
@@ -1343,7 +1395,7 @@ unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, 
    // Substitute the VH values from the frame buffer if requested.
    if (CCBCTL0 & CFBDSUB)
    {
-      // TODO: This should be re-enabled sometime. However, it currently 
+      // TODO: This should be re-enabled sometime. However, it currently
       //       causes the wing commander 3 movies to screw up again! There
       //       must be some missing mbehavior elsewhere.
       //VHOutput = (pframe_input & 0x8001);
@@ -1820,7 +1872,7 @@ void  DrawPackedCel_New(void)
 
    }
    else
-   {    
+   {
       if(speedfixes>=0&&speedfixes<=100001) speedfixes=100000;
       for(currentrow=0;currentrow<SPRHI;currentrow++)
       {

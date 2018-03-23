@@ -152,7 +152,6 @@ void _3do_InternalFrame(int cycles)
       if(line==_clio_v1line())
       {
          _clio_GenerateFiq(1<<1,0);
-         _madam_KeyPressed((uint8_t*)io_interface(EXT_GETP_PBUSDATA,NULL),(intptr_t)io_interface(EXT_GET_PBUSLEN,NULL));
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!skipframe)
@@ -322,7 +321,7 @@ void *_freedo_Interface(int procedure, void *datum)
          break;
       case FDP_SET_TEXQUALITY:
          __tex__scaler=(intptr_t)datum;
-         break; 
+         break;
          //	case FDP_SET_FIX_MODE:
          //		fixmode=(intptr_t)datum;
          //		break;
