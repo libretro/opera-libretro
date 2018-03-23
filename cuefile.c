@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "libretro.h"
+
+#include <libretro.h>
 
 #include "cuefile.h"
 #include "retro_callbacks.h"
