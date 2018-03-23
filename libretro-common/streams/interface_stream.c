@@ -69,7 +69,11 @@ ssize_t intfstream_get_size(intfstream_internal_t *intf)
       case INTFSTREAM_MEMORY:
          return intf->memory.buf.size;
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
         return chdstream_get_size(intf->chd.fp);
+#else
+        break;
+#endif
    }
 
    return 0;
