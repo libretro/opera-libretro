@@ -1,13 +1,12 @@
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 4DO_DIR           := $(CORE_DIR)/libfreedo
 DEPS_DIR          := $(CORE_DIR)/deps
-CHD_DIR           := $(DEPS_DIR)/chd
 
 INCFLAGS := \
          -I$(CORE_DIR) \
          -I$(CORE_DIR)/libfreedo \
          -I$(LIBRETRO_COMM_DIR)/include \
-         -I$(CHD_DIR)
+         -I$(DEPS_DIR)
 
 ifneq (,$(findstring msvc2003,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
@@ -75,11 +74,12 @@ FLAGS += \
 	-DHAVE_LROUND
 
 INCFLAGS += \
-	-I$(CHD_DIR)/crypto \
-	-I$(CHD_DIR)/flac-1.3.2/include \
-	-I$(CHD_DIR)/flac-1.3.2/src/libFLAC/include \
-	-I$(CHD_DIR)/lzma-16.04/C \
-	-I$(CHD_DIR)/libchdr
+	-I$(DEPS_DIR)/crypto \
+	-I$(DEPS_DIR)/flac-1.3.2/include \
+	-I$(DEPS_DIR)/flac-1.3.2/src/libFLAC/include \
+	-I$(DEPS_DIR)/lzma-16.04/C \
+	-I$(DEPS_DIR)/libchdr \
+	-I$(DEPS_DIR)/zlib
 
 ifeq ($(platform), win)
 	FLAGS += -DHAVE_FSEEKO
@@ -87,73 +87,73 @@ endif
 
 ifeq ($(WINDOWS_VERSION), 1)
 	SOURCES_C += \
-		$(CHD_DIR)/flac-1.3.2/src/libFLAC/windows_unicode_filenames.c
+		$(DEPS_DIR)/flac-1.3.2/src/libFLAC/windows_unicode_filenames.c
 endif
 
 SOURCES_C += \
-        $(CHD_DIR)/crypto/md5.c \
-        $(CHD_DIR)/crypto/sha1.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/bitmath.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/bitreader.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/cpu.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/crc.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/fixed.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/fixed_intrin_sse2.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/fixed_intrin_ssse3.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/float.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/format.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/lpc.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_avx2.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse2.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse41.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/md5.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/memory.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/metadata_iterators.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/metadata_object.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/stream_decoder.c \
-        $(CHD_DIR)/flac-1.3.2/src/libFLAC/window.c \
-        $(CHD_DIR)/lzma-16.04/C/Alloc.c \
-        $(CHD_DIR)/lzma-16.04/C/Bra86.c \
-        $(CHD_DIR)/lzma-16.04/C/Bra.c \
-        $(CHD_DIR)/lzma-16.04/C/BraIA64.c \
-        $(CHD_DIR)/lzma-16.04/C/CpuArch.c \
-        $(CHD_DIR)/lzma-16.04/C/Delta.c \
-        $(CHD_DIR)/lzma-16.04/C/LzFind.c \
-        $(CHD_DIR)/lzma-16.04/C/Lzma86Dec.c \
-        $(CHD_DIR)/lzma-16.04/C/Lzma86Enc.c \
-        $(CHD_DIR)/lzma-16.04/C/LzmaDec.c \
-        $(CHD_DIR)/lzma-16.04/C/LzmaEnc.c \
-        $(CHD_DIR)/lzma-16.04/C/LzmaLib.c \
-        $(CHD_DIR)/lzma-16.04/C/Sort.c \
-        $(CHD_DIR)/libchdr/bitstream.c \
-        $(CHD_DIR)/libchdr/cdrom.c \
-        $(CHD_DIR)/libchdr/chd.c \
-        $(CHD_DIR)/libchdr/flac.c \
-        $(CHD_DIR)/libchdr/huffman.c
+        $(DEPS_DIR)/crypto/md5.c \
+        $(DEPS_DIR)/crypto/sha1.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/bitmath.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/bitreader.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/cpu.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/crc.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/fixed.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/fixed_intrin_sse2.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/fixed_intrin_ssse3.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/float.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/format.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/lpc.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_avx2.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse2.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse41.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/lpc_intrin_sse.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/md5.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/memory.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/metadata_iterators.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/metadata_object.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/stream_decoder.c \
+        $(DEPS_DIR)/flac-1.3.2/src/libFLAC/window.c \
+        $(DEPS_DIR)/lzma-16.04/C/Alloc.c \
+        $(DEPS_DIR)/lzma-16.04/C/Bra86.c \
+        $(DEPS_DIR)/lzma-16.04/C/Bra.c \
+        $(DEPS_DIR)/lzma-16.04/C/BraIA64.c \
+        $(DEPS_DIR)/lzma-16.04/C/CpuArch.c \
+        $(DEPS_DIR)/lzma-16.04/C/Delta.c \
+        $(DEPS_DIR)/lzma-16.04/C/LzFind.c \
+        $(DEPS_DIR)/lzma-16.04/C/Lzma86Dec.c \
+        $(DEPS_DIR)/lzma-16.04/C/Lzma86Enc.c \
+        $(DEPS_DIR)/lzma-16.04/C/LzmaDec.c \
+        $(DEPS_DIR)/lzma-16.04/C/LzmaEnc.c \
+        $(DEPS_DIR)/lzma-16.04/C/LzmaLib.c \
+        $(DEPS_DIR)/lzma-16.04/C/Sort.c \
+        $(DEPS_DIR)/libchdr/bitstream.c \
+        $(DEPS_DIR)/libchdr/cdrom.c \
+        $(DEPS_DIR)/libchdr/chd.c \
+        $(DEPS_DIR)/libchdr/flac.c \
+        $(DEPS_DIR)/libchdr/huffman.c
 
 ifeq ($(platform), win)
 	SOURCES_C += \
-		$(CHD_DIR)/flac-1.3.2/src/libFLAC/windows_unicode_filenames.c
+		$(DEPS_DIR)/flac-1.3.2/src/libFLAC/windows_unicode_filenames.c
 endif
 
 endif
 
 ifneq ($(STATIC_LINKING), 1)
 SOURCES_C += \
-	$(CHD_DIR)/zlib/adler32.c \
-	$(CHD_DIR)/zlib/compress.c \
-	$(CHD_DIR)/zlib/crc32.c \
-	$(CHD_DIR)/zlib/deflate.c \
-	$(CHD_DIR)/zlib/gzclose.c \
-	$(CHD_DIR)/zlib/gzlib.c \
-	$(CHD_DIR)/zlib/gzread.c \
-	$(CHD_DIR)/zlib/gzwrite.c \
-	$(CHD_DIR)/zlib/inffast.c \
-	$(CHD_DIR)/zlib/inflate.c \
-	$(CHD_DIR)/zlib/inftrees.c \
-	$(CHD_DIR)/zlib/trees.c \
-	$(CHD_DIR)/zlib/uncompr.c \
-	$(CHD_DIR)/zlib/zutil.c
+	$(DEPS_DIR)/zlib/adler32.c \
+	$(DEPS_DIR)/zlib/compress.c \
+	$(DEPS_DIR)/zlib/crc32.c \
+	$(DEPS_DIR)/zlib/deflate.c \
+	$(DEPS_DIR)/zlib/gzclose.c \
+	$(DEPS_DIR)/zlib/gzlib.c \
+	$(DEPS_DIR)/zlib/gzread.c \
+	$(DEPS_DIR)/zlib/gzwrite.c \
+	$(DEPS_DIR)/zlib/inffast.c \
+	$(DEPS_DIR)/zlib/inflate.c \
+	$(DEPS_DIR)/zlib/inftrees.c \
+	$(DEPS_DIR)/zlib/trees.c \
+	$(DEPS_DIR)/zlib/uncompr.c \
+	$(DEPS_DIR)/zlib/zutil.c
 endif
 
