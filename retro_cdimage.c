@@ -80,11 +80,11 @@ retro_cdimage_open_cue(const char       *path_,
   if(cue_file == NULL)
     return -1;
 
-  ext = path_get_extension(path_);
+  ext = path_get_extension(cue_file->cd_image);
   if(!strcasecmp(ext,"iso"))
-    rv = retro_cdimage_open_iso(path_,cdimage_);
+    rv = retro_cdimage_open_iso(cue_file->cd_image,cdimage_);
   else if(!strcasecmp(ext,"bin"))
-    rv = retro_cdimage_open_bin(path_,cdimage_);
+    rv = retro_cdimage_open_bin(cue_file->cd_image,cdimage_);
   else
     rv = -1;
 
