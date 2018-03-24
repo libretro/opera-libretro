@@ -18,7 +18,6 @@
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
-#include "cuefile.h"
 #include "nvram.h"
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
