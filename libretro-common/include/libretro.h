@@ -1088,8 +1088,12 @@ struct retro_vfs_interface_info
 
 enum retro_hw_render_interface_type
 {
-   RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
-   RETRO_HW_RENDER_INTERFACE_DUMMY = INT_MAX
+	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
+	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
+	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
+	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
+	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
 };
 
 /* Base struct. All retro_hw_render_interface_* types
@@ -1103,7 +1107,7 @@ struct retro_hw_render_interface
 
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_led_interface * --
-                                            * Gets an interface which is used by a libretro core to set 
+                                            * Gets an interface which is used by a libretro core to set
                                             * state of LEDs.
                                             */
 
@@ -1113,6 +1117,15 @@ struct retro_led_interface
     retro_set_led_state_t set_led_state;
 };
 
+#define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* int * --
+                                            * Queries the frontend if audio and video are enabled or not.
+                                            * If not enabled, the frontend will discard the audio or video,
+                                            * so the core may decide to skip producing audio or video.
+                                            * Bit 0 (value 1) is set if Video is enabled,
+                                            * Bit 1 (value 2) is set if Audio is enabled.
+                                            * Other bits are reserved for future use.
+                                            */
 
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --
@@ -1841,6 +1854,10 @@ enum retro_hw_context_type
 
    /* Vulkan, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE. */
    RETRO_HW_CONTEXT_VULKAN           = 6,
+
+   /* Direct3D, set version_major to select the type of interface
+    * returned by RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_DIRECT3D         = 7,
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
