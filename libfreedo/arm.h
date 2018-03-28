@@ -30,9 +30,9 @@ Felix Lazarev
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 int _arm_Execute(void);
 void _arm_Reset(void);
@@ -55,8 +55,6 @@ unsigned int _arm_SaveSize(void);
 void _arm_Save(void *buff);
 void _arm_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

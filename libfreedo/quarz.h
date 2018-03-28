@@ -28,11 +28,11 @@ Felix Lazarev
 
 #include <boolean.h>
 
+#include "extern_c.h"
+
 #define ARM_FREQUENCY 12500000
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_BEGIN
 
 void  _qrz_Init(void);
 
@@ -50,9 +50,6 @@ uint32_t _qrz_SaveSize(void);
 void _qrz_Save(void *buff);
 void _qrz_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif
- 

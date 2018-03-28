@@ -27,9 +27,9 @@ Felix Lazarev
 #include <stdint.h>
 #include <boolean.h>
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 uint32_t _dsp_Loop(void);
 
@@ -47,8 +47,6 @@ unsigned int _dsp_SaveSize(void);
 void _dsp_Save(void *buff);
 void _dsp_Load(void *buff);
 
-#ifdef __cplusplus 
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

@@ -24,6 +24,8 @@ Felix Lazarev
 #ifndef ISO_3DO_HEADER
 #define ISO_3DO_HEADER
 
+#include "extern_c.h"
+
 #define XBP_INIT		0	//plugin init, returns plugin version
 #define XBP_RESET		1	//plugin reset with parameter(image path)
 #define XBP_SET_COMMAND	2	//XBUS
@@ -124,9 +126,7 @@ enum MEI_CDROM_Error_Codes {
 #define Address_Abs_MSF   1
 #define Address_Track_MSF 2
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_BEGIN
 
 #pragma pack(push,1)
 //drive specific
@@ -185,8 +185,6 @@ struct cdrom_Device
 
 extern struct cdrom_Device *isodrive;
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif
