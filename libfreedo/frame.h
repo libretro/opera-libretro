@@ -5,12 +5,14 @@
 
 #include "extern_c.h"
 
+#include "vdlp.h"
+
 EXTERN_C_BEGIN
 
 void _frame_Init(void);
 
 void Get_Frame_Bitmap(
-	struct VDLFrame* sourceFrame,
+	vdlp_frame_t* sourceFrame,
 	void* destinationBitmap,
 	int copyWidth,
 	int copyHeight);

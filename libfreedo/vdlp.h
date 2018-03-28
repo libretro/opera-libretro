@@ -26,28 +26,47 @@
   *  Allen Wright
   *  John Sammons
   *  Felix Lazarev
-*/
+  */
 
 /* VDLP.h: interface for the CVDLP class. */
 
-#ifndef	VDLP_3DO_HEADER
-#define VDLP_3DO_HEADER
-
-#include "freedocore.h"
+#pragma once
 
 #include "extern_c.h"
 
+#include <stdint.h>
+
+struct vdlp_line_s
+{
+  uint16_t line[320*4];
+  uint8_t  xCLUTB[32];
+  uint8_t  xCLUTG[32];
+  uint8_t  xCLUTR[32];
+  uint32_t xOUTCONTROLL;
+  uint32_t xCLUTDMA;
+  uint32_t xBACKGROUND;
+};
+
+typedef struct vdlp_line_s vdlp_line_t;
+
+struct vdlp_frame_s
+{
+  vdlp_line_t  lines[240*4];
+  unsigned int src_w;
+  unsigned int src_h;
+};
+
+typedef struct vdlp_frame_s vdlp_frame_t;
+
 EXTERN_C_BEGIN
 
-void _vdl_Init(uint8_t *vramstart);
-void _vdl_ProcessVDL( uint32_t addr);
+void     freedo_vdlp_init(uint8_t *vram_);
 
-void _vdl_DoLineNew(int line, struct VDLFrame *frame);
+void     freedo_vdlp_process(const uint32_t addr_);
+void     freedo_vdlp_process_line(int line_, vdlp_frame_t *frame_);
 
-uint32_t _vdl_SaveSize(void);
-void _vdl_Save(void *buff);
-void _vdl_Load(void *buff);
+uint32_t freedo_vdlp_state_size(void);
+void     freedo_vdlp_state_save(void *buf_);
+void     freedo_vdlp_state_load(const void *buf_);
 
 EXTERN_C_END
-
-#endif

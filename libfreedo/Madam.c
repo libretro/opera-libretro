@@ -33,6 +33,7 @@ Felix Lazarev
 #include "arm.h"
 
 #include "bitop.h"
+#include "hack_flags.h"
 struct BitReaderBig bitoper;
 
 extern int HightResMode;
@@ -613,7 +614,7 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
             HandleDMA8();
             break;
          case 0x580:
-            _vdl_ProcessVDL(val);
+            freedo_vdlp_process(val);
             return;
          case 0x584:
          case 0x588:

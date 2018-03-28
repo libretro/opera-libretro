@@ -36,6 +36,7 @@
 #include "SPORT.h"
 
 #include "freedocore.h"
+#include "hack_flags.h"
 
 extern int fixmode;
 extern int cnbfix;

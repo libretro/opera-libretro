@@ -81,7 +81,7 @@ int _3do_Init(void)
    for(i= (1024*1024*2)-4; i >= 0; i -= 4)
       *(int *)(rom+i) =_bswap(*(int *)(rom+i));
 
-   _vdl_Init(Memory+0x200000);   // Visible only VRAM to it
+   freedo_vdlp_init(Memory+0x200000);   // Visible only VRAM to it
    _sport_Init(Memory+0x200000);  // Visible only VRAM to it
    _madam_Init(Memory);
 
@@ -126,7 +126,7 @@ int _3do_Init(void)
    return 0;
 }
 
-struct VDLFrame *curr_frame;
+vdlp_frame_t *curr_frame;
 bool skipframe;
 
 void _3do_InternalFrame(int cycles)
@@ -142,7 +142,7 @@ void _3do_InternalFrame(int cycles)
       line=_qrz_VDCurrLine();
       _clio_UpdateVCNT(line, _qrz_VDHalfFrame());
       if(!skipframe)
-         _vdl_DoLineNew(line,curr_frame);
+         freedo_vdlp_process_line(line,curr_frame);
       if(line==16 && skipframe)
          io_interface(EXT_FRAMETRIGGER_MT,NULL);
 
@@ -155,13 +155,13 @@ void _3do_InternalFrame(int cycles)
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!skipframe)
-            curr_frame = (struct VDLFrame*)io_interface(EXT_SWAPFRAME,curr_frame);
+            curr_frame = (vdlp_frame_t*)io_interface(EXT_SWAPFRAME,curr_frame);
          //if(!scipframe)io_interface(EXT_SWAPFRAME,curr_frame);
       }
    }
 }
 
-void _3do_Frame(struct VDLFrame *frame, bool __skipframe)
+void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
 {
    int i   = 0;
    int cnt = 0;
@@ -200,7 +200,7 @@ uint32_t _3do_SaveSize(void)
 {
    uint32_t tmp=_arm_SaveSize();
 
-   tmp+=_vdl_SaveSize();
+   tmp+=freedo_vdlp_state_size();
    tmp+=_dsp_SaveSize();
    tmp+=_clio_SaveSize();
    tmp+=_qrz_SaveSize();
@@ -219,7 +219,7 @@ void _3do_Save(void *buff)
    indexes[0]=0x97970101;
    indexes[1]=16*4;
    indexes[2]=indexes[1]+_arm_SaveSize();
-   indexes[3]=indexes[2]+_vdl_SaveSize();
+   indexes[3]=indexes[2]+freedo_vdlp_state_size();
    indexes[4]=indexes[3]+_dsp_SaveSize();
    indexes[5]=indexes[4]+_clio_SaveSize();
    indexes[6]=indexes[5]+_qrz_SaveSize();
@@ -228,7 +228,7 @@ void _3do_Save(void *buff)
    indexes[9]=indexes[8]+_xbus_SaveSize();
 
    _arm_Save(&data[indexes[1]]);
-   _vdl_Save(&data[indexes[2]]);
+   freedo_vdlp_state_save(&data[indexes[2]]);
    _dsp_Save(&data[indexes[3]]);
    _clio_Save(&data[indexes[4]]);
    _qrz_Save(&data[indexes[5]]);
@@ -246,7 +246,7 @@ bool _3do_Load(void *buff)
       return false;
 
    _arm_Load(&data[indexes[1]]);
-   _vdl_Load(&data[indexes[2]]);
+   freedo_vdlp_state_load(&data[indexes[2]]);
    _dsp_Load(&data[indexes[3]]);
    _clio_Load(&data[indexes[4]]);
    _qrz_Load(&data[indexes[5]]);
@@ -288,14 +288,14 @@ void *_freedo_Interface(int procedure, void *datum)
          _3do_Destroy();
          break;
       case FDP_DO_EXECFRAME:
-         _3do_Frame((struct VDLFrame*)datum, false);
+         _3do_Frame((vdlp_frame_t*)datum, false);
          break;
       case FDP_DO_EXECFRAME_MT:
-         _3do_Frame((struct VDLFrame*)datum, true);
+         _3do_Frame((vdlp_frame_t*)datum, true);
          break;
       case FDP_DO_FRAME_MT:
          line=0;
-         while(line<256)_vdl_DoLineNew(line++,(struct VDLFrame*)datum);
+         while(line<256)freedo_vdlp_process_line(line++,(vdlp_frame_t*)datum);
          break;
       case FDP_GET_SAVE_SIZE:
          _3do_SaveSize();

@@ -31,12 +31,15 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <boolean.h>
 #include <retro_inline.h>
 
+#include "hack_flags.h"
 #include "vdlp.h"
 #include "arm.h"
 
 extern int HightResMode;
+extern int fixmode;
 
 /* === VDL Palette data === */
 #define VDL_CONTROL     0x80000000
@@ -58,7 +61,6 @@ extern int HightResMode;
 #define VDL_REDONLY     0x60000000
 #define VDL_GREENONLY   0x40000000
 #define VDL_BLUEONLY    0x20000000
-
 
 #pragma pack(push,1)
 
@@ -103,19 +105,22 @@ struct VDLDatum
 static struct VDLDatum vdl;
 static uint8_t *vram;
 
-uint32_t _vdl_SaveSize(void)
+uint32_t
+freedo_vdlp_state_size(void)
 {
   return sizeof(struct VDLDatum);
 }
 
-void _vdl_Save(void *buff)
+void
+freedo_vdlp_state_save(void *buf_)
 {
-  memcpy(buff,&vdl,sizeof(struct VDLDatum));
+  memcpy(buf_,&vdl,sizeof(struct VDLDatum));
 }
 
-void _vdl_Load(void *buff)
+void
+freedo_vdlp_state_load(const void *buf_)
 {
-  memcpy(&vdl,buff,sizeof(struct VDLDatum));
+  memcpy(&vdl,buf_,sizeof(struct VDLDatum));
 }
 
 #define CLUTB vdl.CLUTB
@@ -131,12 +136,12 @@ void _vdl_Load(void *buff)
 #define CLUTDMA vdl.CLUTDMA
 #define linedelay vdl.linedelay
 
-
 uint32_t vmreadw(uint32_t addr);
 
-void _vdl_ProcessVDL( uint32_t addr)
+void
+freedo_vdlp_process(const uint32_t addr_)
 {
-  HEADVDL=addr;
+  HEADVDL = addr_;
 }
 
 static const uint32_t HOWMAYPIXELEXPECTPERLINE[8] =
@@ -248,10 +253,12 @@ static INLINE uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
   return ((((~addr)&2)<<(18+HightResMode))+((addr>>2)<<1)+1024*512*line)<<HightResMode;
 }
 
-void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
+void
+freedo_vdlp_process_line(int           line2x_,
+                         vdlp_frame_t *frame_)
 {
   int y,i;
-  int line=line2x&0x7ff;
+  int line=line2x_&0x7ff;
 
   if(line==0)
     {
@@ -274,8 +281,8 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
             {
               uint16_t *dst1,*dst2;
               uint32_t *src1,*src2,*src3,*src4;
-              dst1=frame->lines[(y<<1)].line;
-              dst2=frame->lines[(y<<1)+1].line;
+              dst1=frame_->lines[(y<<1)].line;
+              dst2=frame_->lines[(y<<1)+1].line;
               src1=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
               src2=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF)+1024*1024);
               src3=(uint32_t*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+2*1024*1024);
@@ -293,26 +300,26 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
             {
               uint16_t *dst;
               uint32_t *src;
-              dst=frame->lines[y].line;
+              dst=frame_->lines[y].line;
               src=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
               i=320;
               while(i--)
                 *dst++=*(uint16_t*)(src++);
             }
-          memcpy(frame->lines[(y<<HightResMode)].xCLUTB,CLUTB,32);
-          memcpy(frame->lines[(y<<HightResMode)].xCLUTG,CLUTG,32);
-          memcpy(frame->lines[(y<<HightResMode)].xCLUTR,CLUTR,32);
+          memcpy(frame_->lines[(y<<HightResMode)].xCLUTB,CLUTB,32);
+          memcpy(frame_->lines[(y<<HightResMode)].xCLUTG,CLUTG,32);
+          memcpy(frame_->lines[(y<<HightResMode)].xCLUTR,CLUTR,32);
           if(HightResMode)
-            memcpy(frame->lines[(y<<HightResMode)+1].xCLUTB,frame->lines[(y<<HightResMode)].xCLUTB,32*3);
+            memcpy(frame_->lines[(y<<HightResMode)+1].xCLUTB,frame_->lines[(y<<HightResMode)].xCLUTB,32*3);
         }
-      frame->lines[(y<<HightResMode)].xOUTCONTROLL=OUTCONTROLL;
-      frame->lines[(y<<HightResMode)].xCLUTDMA=CLUTDMA.raw;
-      frame->lines[(y<<HightResMode)].xBACKGROUND=BACKGROUND;
+      frame_->lines[(y<<HightResMode)].xOUTCONTROLL=OUTCONTROLL;
+      frame_->lines[(y<<HightResMode)].xCLUTDMA=CLUTDMA.raw;
+      frame_->lines[(y<<HightResMode)].xBACKGROUND=BACKGROUND;
       if(HightResMode)
         {
-          frame->lines[(y<<HightResMode)+1].xOUTCONTROLL=OUTCONTROLL;
-          frame->lines[(y<<HightResMode)+1].xCLUTDMA=CLUTDMA.raw;
-          frame->lines[(y<<HightResMode)+1].xBACKGROUND=BACKGROUND;
+          frame_->lines[(y<<HightResMode)+1].xOUTCONTROLL=OUTCONTROLL;
+          frame_->lines[(y<<HightResMode)+1].xCLUTDMA=CLUTDMA.raw;
+          frame_->lines[(y<<HightResMode)+1].xBACKGROUND=BACKGROUND;
         }
 
     } // //if((y>=0) && (y<240))
@@ -340,7 +347,8 @@ void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
 }
 
 
-void _vdl_Init(uint8_t *vramstart)
+void
+freedo_vdlp_init(uint8_t *vram_)
 {
   uint32_t i;
 
@@ -360,7 +368,7 @@ void _vdl_Init(uint8_t *vramstart)
       0x002C0000, 0x002B0000
     };
 
-  vram = vramstart;
+  vram = vram_;
   HEADVDL=0xB0000;
 
   for(i = 0;i < (sizeof(StartupVDL)/4); i++)
