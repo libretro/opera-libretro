@@ -1,29 +1,34 @@
 /*
   www.freedo.org
-The first and only working 3DO multiplayer emulator.
+  The first and only working 3DO multiplayer emulator.
 
-The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
-*   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-*   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-    of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-*   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-    or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
 
-Project authors:
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
 
-Alexander Troosh
-Maxim Grishin
-Allen Wright
-John Sammons
-Felix Lazarev
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
+
+  Project authors:
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
-// VDLP.h: interface for the CVDLP class.
-//
-//////////////////////////////////////////////////////////////////////
+/* VDLP.h: interface for the CVDLP class. */
 
 #ifndef	VDLP_3DO_HEADER
 #define VDLP_3DO_HEADER
