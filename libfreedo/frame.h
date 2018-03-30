@@ -3,9 +3,9 @@
 #ifndef	FRAME_3DO_HEADER
 #define FRAME_3DO_HEADER
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 void _frame_Init(void);
 
@@ -15,8 +15,6 @@ void Get_Frame_Bitmap(
 	int copyWidth,
 	int copyHeight);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

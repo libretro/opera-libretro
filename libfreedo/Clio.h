@@ -32,9 +32,9 @@ Felix Lazarev
 
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 int _clio_v0line(void);
 int _clio_v1line(void);
@@ -63,8 +63,6 @@ uint32_t _clio_SaveSize(void);
 void _clio_Save(void *buff);
 void _clio_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

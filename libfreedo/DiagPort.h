@@ -30,17 +30,15 @@ Felix Lazarev
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 void _diag_Init(int testcode);
 
 unsigned int  _diag_Get(void);
 void _diag_Send(unsigned int val);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

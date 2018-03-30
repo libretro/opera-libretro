@@ -30,9 +30,9 @@ Felix Lazarev
 
 #include "IsoXBUS.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 typedef void* (*_xbus_device)(int, void*);
 int _xbus_Attach(_xbus_device dev);
@@ -57,8 +57,6 @@ uint32_t _xbus_SaveSize(void);
 void _xbus_Save(void *buff);
 void _xbus_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

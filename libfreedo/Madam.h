@@ -28,6 +28,8 @@ Felix Lazarev
 #ifndef	MADAM_3DO_HEADER
 #define MADAM_3DO_HEADER
 
+#include "extern_c.h"
+
 #define FSM_IDLE 1
 #define FSM_INPROCESS 2
 #define FSM_SUSPENDED 3
@@ -54,9 +56,7 @@ Felix Lazarev
 #define MADAM_PBUS_BYTE1_SHIFT_DOWN     0x04
 #define MADAM_PBUS_BYTE1_CONNECTED_MASK 0x80
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_BEGIN
 
 uint32_t Get_madam_FSM(void);
 void Set_madam_FSM(uint32_t val);
@@ -76,8 +76,6 @@ uint32_t _madam_SaveSize(void);
 void _madam_Save(void *buff);
 void _madam_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif

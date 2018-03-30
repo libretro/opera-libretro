@@ -26,9 +26,9 @@ Felix Lazarev
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 struct BitReaderBig
 {
@@ -46,8 +46,6 @@ void BitReaderBig_SetBitRate(struct BitReaderBig *bit, uint8_t bits);
 
 void BitReaderBig_Skip(struct BitReaderBig *bit, uint32_t bits);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif

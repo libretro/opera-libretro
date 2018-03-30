@@ -30,9 +30,9 @@ Felix Lazarev
 
 #include "freedocore.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 void _vdl_Init(uint8_t *vramstart);
 void _vdl_ProcessVDL( uint32_t addr);
@@ -43,8 +43,6 @@ uint32_t _vdl_SaveSize(void);
 void _vdl_Save(void *buff);
 void _vdl_Load(void *buff);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
-#endif 
+#endif

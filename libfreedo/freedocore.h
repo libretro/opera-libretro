@@ -27,6 +27,8 @@ Felix Lazarev
 #include <stdint.h>
 #include <boolean.h>
 
+#include "extern_c.h"
+
 #pragma pack(push,1)
 
 struct VDLLine
@@ -115,10 +117,7 @@ typedef void* (*_ext_Interface)(int, void*);
 
 #define BIOS_ANVIL (0x40)
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+EXTERN_C_BEGIN
 
 void *_freedo_Interface(int procedure, void *datum);
 
@@ -126,8 +125,6 @@ extern int fixmode;
 extern int biosanvil;
 extern int isanvil;
 
-#ifdef __cplusplus
-};
-#endif
+EXTERN_C_END
 
 #endif
