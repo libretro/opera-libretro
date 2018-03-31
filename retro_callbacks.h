@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED
+#define LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED
 
 #include <libretro.h>
 
@@ -13,3 +14,5 @@ void retro_set_environment_cb(retro_environment_t cb);
 void retro_set_input_poll_cb(retro_input_poll_t cb);
 void retro_set_input_state_cb(retro_input_state_t cb);
 void retro_set_log_printf_cb(retro_log_printf_t cb);
+
+#endif /* LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED */

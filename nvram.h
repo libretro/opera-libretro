@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LIBFREEDO_NVRAM_H_INCLUDED
+#define LIBFREEDO_NVRAM_H_INCLUDED
 
 #include <stdint.h>
 #include <string.h>
@@ -51,3 +52,5 @@ int nvram_load(void         *nvram,
 
 void retro_nvram_save(void);
 void retro_nvram_load(void);
+
+#endif /* LIBFREEDO_NVRAM_H_INCLUDED */
