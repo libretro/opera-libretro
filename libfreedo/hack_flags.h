@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LIBFREEDO_HACK_FLAGS_H_INCLUDED
+#define LIBFREEDO_HACK_FLAGS_H_INCLUDED
 
 #define FIX_BIT_TIMING_1        (0x00000001)
 /* #define FIX_BIT_TIMING_2        (0x00000002) */
@@ -10,3 +11,5 @@
 
 // Preserve Y coordinate rather than X between CELs.
 #define FIX_BIT_GRAPHICS_STEP_Y (0x00080000)
+
+#endif /* LIBFREEDO_HACK_FLAGS_H_INCLUDED */

@@ -30,7 +30,8 @@
 
 /* VDLP.h: interface for the CVDLP class. */
 
-#pragma once
+#ifndef LIBFREEDO_VDLP_H_INCLUDED
+#define LIBFREEDO_VDLP_H_INCLUDED
 
 #include "extern_c.h"
 
@@ -70,3 +71,5 @@ void     freedo_vdlp_state_save(void *buf_);
 void     freedo_vdlp_state_load(const void *buf_);
 
 EXTERN_C_END
+
+#endif /* LIBFREEDO_VDLP_H_INCLUDED */
