@@ -27,6 +27,8 @@ Felix Lazarev
 #include "Clio.h"
 #include "vdlp.h"
 
+#include "freedocore.h"
+
 //#define NTSC_CLOCK      12270000        //818*500(строк)  //15  √ц
 //#define PAL_CLOCK       14750000        //944*625(строк)  //15625 √ц
 

@@ -3,6 +3,7 @@
 
 #include "freedocore.h"
 #include "frame.h"
+#include "vdlp.h"
 
 uint8_t FIXED_CLUTR[32];
 uint8_t FIXED_CLUTG[32];
@@ -20,7 +21,7 @@ void _frame_Init(void)
 }
 
 void Get_Frame_Bitmap(
-	struct VDLFrame* sourceFrame,
+        vdlp_frame_t* sourceFrame,
 	void* destinationBitmap,
 	int copyWidth,
 	int copyHeight)
@@ -30,7 +31,7 @@ void Get_Frame_Bitmap(
 
    for (i = 0; i < copyHeight; i++)
    {
-      struct VDLLine* linePtr = (struct VDLLine*)&sourceFrame->lines[i];
+      vdlp_line_t* linePtr = (vdlp_line_t*)&sourceFrame->lines[i];
       int16_t *srcPtr = (int16_t*)linePtr;
       bool allowFixedClut = (linePtr->xOUTCONTROLL & 0x2000000) > 0;
       for (pix = 0; pix < copyWidth; pix++)

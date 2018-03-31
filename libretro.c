@@ -28,6 +28,8 @@
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
 #include "libfreedo/Madam.h"
+#include "libfreedo/vdlp.h"
+#include "libfreedo/hack_flags.h"
 
 extern int ARM_CLOCK;
 
@@ -36,7 +38,7 @@ extern int ARM_CLOCK;
 #define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
 
 static char biosPath[1024];
-static struct VDLFrame *frame;
+static vdlp_frame_t *frame;
 
 extern int HightResMode;
 extern unsigned int _3do_SaveSize(void);
@@ -127,9 +129,9 @@ static void initVideo(void)
       videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
 
    if (!frame)
-      frame = (struct VDLFrame*)malloc(sizeof(struct VDLFrame));
+      frame = (vdlp_frame_t*)malloc(sizeof(vdlp_frame_t));
 
-   memset(frame, 0, sizeof(struct VDLFrame));
+   memset(frame, 0, sizeof(vdlp_frame_t));
 }
 
 /* libfreedo callback */

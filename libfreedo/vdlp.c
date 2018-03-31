@@ -1,35 +1,47 @@
 /*
   www.freedo.org
-The first and only working 3DO multiplayer emulator.
+  The first and only working 3DO multiplayer emulator.
 
-The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
-*   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-*   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-    of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-*   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-    or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
 
-Project authors:
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
 
-Alexander Troosh
-Maxim Grishin
-Allen Wright
-John Sammons
-Felix Lazarev
-*/
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
+
+  Project authors:
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
+  */
+
+#include "arm.h"
+#include "hack_flags.h"
+#include "vdlp.h"
+
+#include <boolean.h>
+#include <retro_inline.h>
 
 #include <stdint.h>
 #include <string.h>
 
-#include <retro_inline.h>
-
-#include "vdlp.h"
-#include "arm.h"
-
 extern int HightResMode;
+extern int fixmode;
+
+#define VRAM_OFFSET (1024 * 1024 * 2)
 
 /* === VDL Palette data === */
 #define VDL_CONTROL     0x80000000
@@ -40,305 +52,360 @@ extern int HightResMode;
 #define VDL_G_MASK      0x0000FF00
 #define VDL_B_MASK      0x000000FF
 
-#define VDL_B_SHIFT       0
-#define VDL_G_SHIFT       8
-#define VDL_R_SHIFT       16
-#define VDL_PEN_SHIFT     24
-#define VDL_RGBSEL_SHIFT  29
+#define VDL_B_SHIFT      0
+#define VDL_G_SHIFT      8
+#define VDL_R_SHIFT      16
+#define VDL_PEN_SHIFT    24
+#define VDL_RGBSEL_SHIFT 29
 
 /* VDL_RGBCTL_MASK definitions */
-#define VDL_FULLRGB     0x00000000
-#define VDL_REDONLY     0x60000000
-#define VDL_GREENONLY   0x40000000
-#define VDL_BLUEONLY    0x20000000
-
-
-#pragma pack(push,1)
+#define VDL_FULLRGB   0x00000000
+#define VDL_REDONLY   0x60000000
+#define VDL_GREENONLY 0x40000000
+#define VDL_BLUEONLY  0x20000000
 
 struct cdmaw
 {
-   uint32_t	lines:9;//0-8
-   uint32_t	numword:6;//9-14
-   uint32_t	prevover:1;//15
-   uint32_t	currover:1;//16
-   uint32_t	prevtick:1;//17
-   uint32_t  abs:1;//18
-   uint32_t  vmode:1;//19
-   uint32_t  pad0:1;//20
-   uint32_t  enadma:1;//21
-   uint32_t  pad1:1;//22
-   uint32_t  modulo:3;//23-25
-   uint32_t  pad2:6;//26-31
+  uint32_t lines:9;             //0-8
+  uint32_t numword:6;           //9-14
+  uint32_t prevover:1;          //15
+  uint32_t currover:1;          //16
+  uint32_t prevtick:1;          //17
+  uint32_t abs:1;               //18
+  uint32_t vmode:1;             //19
+  uint32_t pad0:1;              //20
+  uint32_t enadma:1;            //21
+  uint32_t pad1:1;              //22
+  uint32_t modulo:3;            //23-25
+  uint32_t pad2:6;              //26-31
 };
+
 union CDMW
 {
-   uint32_t raw;
-   struct cdmaw  dmaw;
+  uint32_t     raw;
+  struct cdmaw dmaw;
 };
 
-struct VDLDatum
+struct vdlp_datum_s
 {
-   uint8_t CLUTB[32];
-   uint8_t CLUTG[32];
-   uint8_t CLUTR[32];
-   uint32_t BACKGROUND;
-   uint32_t HEADVDL;
-   uint32_t MODULO;
-   uint32_t CURRENTVDL;
-   uint32_t CURRENTBMP;
-   uint32_t PREVIOUSBMP;
-   uint32_t OUTCONTROLL;
-   union CDMW CLUTDMA;
-   int linedelay;
+  uint8_t    CLUTB[32];
+  uint8_t    CLUTG[32];
+  uint8_t    CLUTR[32];
+  uint32_t   BACKGROUND;
+  uint32_t   HEADVDL;
+  uint32_t   MODULO;
+  uint32_t   CURRENTVDL;
+  uint32_t   CURRENTBMP;
+  uint32_t   PREVIOUSBMP;
+  uint32_t   OUTCONTROLL;
+  union CDMW CLUTDMA;
+  int        line_delay;
 };
-#pragma pack(pop)
 
-static struct VDLDatum vdl;
-static uint8_t *vram;
+typedef struct vdlp_datum_s vdlp_datum_t;
 
-uint32_t _vdl_SaveSize(void)
-{
-   return sizeof(struct VDLDatum);
-}
-
-void _vdl_Save(void *buff)
-{
-   memcpy(buff,&vdl,sizeof(struct VDLDatum));
-}
-
-void _vdl_Load(void *buff)
-{
-   memcpy(&vdl,buff,sizeof(struct VDLDatum));
-}
-
-#define CLUTB vdl.CLUTB
-#define CLUTG vdl.CLUTG
-#define CLUTR vdl.CLUTR
-#define BACKGROUND vdl.BACKGROUND
-#define HEADVDL vdl.HEADVDL
-#define MODULO vdl.MODULO
-#define CURRENTVDL vdl.CURRENTVDL
-#define CURRENTBMP vdl.CURRENTBMP
+#define CLUTB       vdl.CLUTB
+#define CLUTG       vdl.CLUTG
+#define CLUTR       vdl.CLUTR
+#define BACKGROUND  vdl.BACKGROUND
+#define HEADVDL     vdl.HEADVDL
+#define MODULO      vdl.MODULO
+#define CURRENTVDL  vdl.CURRENTVDL
+#define CURRENTBMP  vdl.CURRENTBMP
 #define PREVIOUSBMP vdl.PREVIOUSBMP
 #define OUTCONTROLL vdl.OUTCONTROLL
-#define CLUTDMA vdl.CLUTDMA
-#define linedelay vdl.linedelay
+#define CLUTDMA     vdl.CLUTDMA
+#define LINE_DELAY  vdl.line_delay
 
+static vdlp_datum_t vdl;
+static uint8_t *VRAM = NULL;
+static bool LOAD_CLUT = false;
+static const uint32_t PIXELS_PER_LINE_MODULO[8] =
+  {320, 384, 512, 640, 1024, 320, 320, 320};
 
-uint32_t vmreadw(uint32_t addr);
-
-void _vdl_ProcessVDL( uint32_t addr)
+static
+INLINE
+uint32_t
+vram_read32(const uint32_t addr_)
 {
-   HEADVDL=addr;
+  return _mem_read32(VRAM_OFFSET + (addr_ & 0x000FFFFF));
 }
 
-static const uint32_t HOWMAYPIXELEXPECTPERLINE[8] =
-{320, 384, 512, 640, 1024, 320, 320, 320};
-
-// ###### Per line implementation ######
-
-bool doloadclut=false;
-
-static INLINE void VDLExec(void)
+static
+INLINE
+void
+vram_write32(const uint32_t addr_,
+             const uint32_t datum_)
 {
-   int i;
-   uint32_t NEXTVDL;
-   uint8_t ifgnorflag=0;
-   uint32_t tmp = vmreadw(CURRENTVDL);
+  _mem_write32((VRAM_OFFSET + (addr_ & 0x000FFFFF)),datum_);
+}
 
-   if(tmp==0) // End of list
-   {
-      linedelay=511;
-      doloadclut=false;
-   }
-   else
-   {
-      int nmcmd;
+static
+INLINE
+void
+vdlp_clut_reset(void)
+{
+  int i;
 
-      CLUTDMA.raw=tmp;
+  for(i = 0; i < 32; i++)
+    CLUTB[i] = CLUTG[i] = CLUTR[i] = (((i & 0x1F) << 3) | ((i >> 2) & 7));
+}
 
-      if(CLUTDMA.dmaw.currover)
-      {
-         if(fixmode&FIX_BIT_TIMING_5)
-            CURRENTBMP=vmreadw(CURRENTVDL+8);
-         else
-            CURRENTBMP=vmreadw(CURRENTVDL+4);
-      }
-      if(CLUTDMA.dmaw.prevover)
-      {
-         if(fixmode&FIX_BIT_TIMING_5)
-            PREVIOUSBMP=vmreadw(CURRENTVDL+4);
-         else
-            PREVIOUSBMP=vmreadw(CURRENTVDL+8);
-      }
-      if(CLUTDMA.dmaw.abs)
-      {
-         NEXTVDL=(CURRENTVDL+vmreadw(CURRENTVDL+12)+16);
-         //CDebug::DPrint("Relative offset??\n");
-      }
-      else
-         NEXTVDL=vmreadw(CURRENTVDL+12);
+static
+INLINE
+void
+vdlp_execute_last_vdl(void)
+{
+  LINE_DELAY = 511;
+  LOAD_CLUT  = false;
+}
 
-      CURRENTVDL+=16;
+static
+INLINE
+void
+vdlp_execute_next_vdl(const uint32_t vdl_)
+{
+  int i;
+  int numcmd;
+  uint32_t NEXTVDL;
+  uint32_t ignore_flag;
 
-      nmcmd = CLUTDMA.dmaw.numword;	//nmcmd-=4;?
+  ignore_flag = 0;
+  CLUTDMA.raw = vdl_;
 
-      for(i = 0; i < nmcmd; i++)
-      {
-         int cmd=vmreadw(CURRENTVDL);
-         CURRENTVDL+=4;
+  if(CLUTDMA.dmaw.currover)
+    CURRENTBMP = ((fixmode & FIX_BIT_TIMING_5) ?
+                  vram_read32(CURRENTVDL+8) :
+                  vram_read32(CURRENTVDL+4));
 
-         if(!(cmd&VDL_CONTROL))
-         {	//color value
+  if(CLUTDMA.dmaw.prevover)
+    PREVIOUSBMP = ((fixmode & FIX_BIT_TIMING_5) ?
+                   vram_read32(CURRENTVDL+4) :
+                   vram_read32(CURRENTVDL+8));
 
-            uint32_t coloridx=(cmd&VDL_PEN_MASK)>>VDL_PEN_SHIFT;
+  NEXTVDL = ((CLUTDMA.dmaw.abs) ?
+             (CURRENTVDL+vram_read32(CURRENTVDL+12)+16) :
+             vram_read32(CURRENTVDL+12));
 
-            if((cmd&VDL_RGBCTL_MASK)==VDL_FULLRGB)
+  CURRENTVDL += 16;
+
+  numcmd = CLUTDMA.dmaw.numword; //numcmd-=4;?
+
+  for(i = 0; i < numcmd; i++)
+    {
+      uint32_t cmd;
+
+      cmd = vram_read32(CURRENTVDL);
+      CURRENTVDL += 4;
+
+      if(!(cmd & VDL_CONTROL))
+        {
+          const uint32_t idx = ((cmd & VDL_PEN_MASK) >> VDL_PEN_SHIFT);
+
+          switch(cmd & VDL_RGBCTL_MASK)
             {
-               CLUTR[coloridx]=(cmd&VDL_R_MASK)>>VDL_R_SHIFT;
-               CLUTG[coloridx]=(cmd&VDL_G_MASK)>>VDL_G_SHIFT;
-               CLUTB[coloridx]=(cmd&VDL_B_MASK)>>VDL_B_SHIFT;
+            case VDL_FULLRGB:
+              CLUTR[idx] = ((cmd & VDL_R_MASK) >> VDL_R_SHIFT);
+              CLUTG[idx] = ((cmd & VDL_G_MASK) >> VDL_G_SHIFT);
+              CLUTB[idx] = ((cmd & VDL_B_MASK) >> VDL_B_SHIFT);
+              break;
+            case VDL_REDONLY:
+              CLUTR[idx] = ((cmd & VDL_R_MASK) >> VDL_R_SHIFT);
+              break;
+            case VDL_GREENONLY:
+              CLUTG[idx] = ((cmd & VDL_G_MASK) >> VDL_G_SHIFT);
+              break;
+            case VDL_BLUEONLY:
+              CLUTB[idx] = ((cmd & VDL_B_MASK) >> VDL_B_SHIFT);
+              break;
             }
-            else if((cmd&VDL_RGBCTL_MASK)==VDL_REDONLY)
-               CLUTR[coloridx]=(cmd&VDL_R_MASK)>>VDL_R_SHIFT;
-            else if((cmd&VDL_RGBCTL_MASK)==VDL_GREENONLY)
-               CLUTG[coloridx]=(cmd&VDL_G_MASK)>>VDL_G_SHIFT;
-            else if((cmd&VDL_RGBCTL_MASK)==VDL_BLUEONLY)
-               CLUTB[coloridx]=(cmd&VDL_B_MASK)>>VDL_B_SHIFT;
-         }
-         else if((cmd&0xff000000)==VDL_BACKGROUND)
-         {
-            if(ifgnorflag)continue;
-            BACKGROUND=((     cmd&0xFF    )<<16)|
-               (( cmd&0xFF00 )) |
-               (((cmd>>16)&0xFF) );
-         }
-         else if((cmd&0xE0000000)==0xc0000000)
-         {
-            if(ifgnorflag)continue;
-            OUTCONTROLL=cmd;
+        }
+      else if((cmd & 0xFF000000) == VDL_BACKGROUND)
+        {
+          if(ignore_flag)
+            continue;
+          BACKGROUND = (((cmd & 0x000000FF) << 16) |
+                        ((cmd & 0x0000FF00) <<  0) |
+                        ((cmd & 0x00FF0000) >> 16));
+        }
+      else if((cmd & 0xE0000000) == 0xC0000000)
+        {
+          if(ignore_flag)
+            continue;
+          OUTCONTROLL = cmd;
+          ignore_flag = (OUTCONTROLL & 2);
+        }
+      else if(cmd == 0xFFFFFFFF)
+        {
+          if(ignore_flag)
+            continue;
+          vdlp_clut_reset();
+        }
+    }
 
-            ifgnorflag=OUTCONTROLL&2;
-         }
-         else if((uint32_t)cmd==0xffffffff)
-         {
-            uint32_t j;
-            if (ifgnorflag)
-               continue;
-            for(j = 0;j < 32; j++)
-               CLUTB[j]=CLUTG[j]=CLUTR[j]=((j&0x1f)<<3)|((j>>2)&7);
-         }
-      }//for(i<nmcmd)
-      CURRENTVDL=NEXTVDL;
-
-      MODULO=HOWMAYPIXELEXPECTPERLINE[CLUTDMA.dmaw.modulo];
-      doloadclut=((linedelay=CLUTDMA.dmaw.lines)!=0);
-   }
+  CURRENTVDL = NEXTVDL;
+  MODULO     = PIXELS_PER_LINE_MODULO[CLUTDMA.dmaw.modulo];
+  LOAD_CLUT = ((LINE_DELAY = CLUTDMA.dmaw.lines) != 0);
 }
 
-static INLINE uint32_t VRAMOffEval(uint32_t addr, uint32_t line)
+static
+INLINE
+void
+vdlp_execute(void)
 {
-   return ((((~addr)&2)<<(18+HightResMode))+((addr>>2)<<1)+1024*512*line)<<HightResMode;
+  uint32_t tmp;
+
+  tmp = vram_read32(CURRENTVDL);
+  if(tmp == 0)  /* End of list */
+    vdlp_execute_last_vdl();
+  else
+    vdlp_execute_next_vdl(tmp);
 }
 
-void _vdl_DoLineNew(int line2x, struct VDLFrame *frame)
+static
+INLINE
+void
+vdlp_process_line_320(int           line_,
+                      vdlp_frame_t *frame_)
 {
-   int y,i;
-   int line=line2x&0x7ff;
+  vdlp_line_t *line;
 
-   if(line==0)
-   {
-      doloadclut=true;
-      linedelay=0;
-      CURRENTVDL=HEADVDL;
-      VDLExec();
-   }
+  line = &frame_->lines[line_];
+  if(CLUTDMA.dmaw.enadma)
+    {
+      int i;
+      uint16_t *dst;
+      uint32_t *src;
 
-   y=(line-(16));
+      dst = line->line;
+      src = (uint32_t*)(VRAM + ((PREVIOUSBMP^2) & 0x0FFFFF));
 
-   if(linedelay==0 /*&& doloadclut*/)
-      VDLExec();
+      for(i = 0; i < 320; i++)
+        *dst++ = *(uint16_t*)(src++);
 
-   if((y>=0) && (y<240))  // 256???
-   {
-      if(CLUTDMA.dmaw.enadma)
-      {
-         if(HightResMode)
-         {
-            uint16_t *dst1,*dst2;
-            uint32_t *src1,*src2,*src3,*src4;
-            dst1=frame->lines[(y<<1)].line;
-            dst2=frame->lines[(y<<1)+1].line;
-            src1=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
-            src2=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF)+1024*1024);
-            src3=(uint32_t*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+2*1024*1024);
-            src4=(uint32_t*)(vram+((CURRENTBMP^2) & 0x0FFFFF)+3*1024*1024);
-            i=320;
-            while(i--)
-            {
-               *dst1++=*(uint16_t*)(src1++);
-               *dst1++=*(uint16_t*)(src2++);
-               *dst2++=*(uint16_t*)(src3++);
-               *dst2++=*(uint16_t*)(src4++);
-            }
-         }
-         else
-         {
-            uint16_t *dst;
-            uint32_t *src;
-            dst=frame->lines[y].line;
-            src=(uint32_t*)(vram+((PREVIOUSBMP^2) & 0x0FFFFF));
-            i=320;
-            while(i--)
-               *dst++=*(uint16_t*)(src++);
-         }
-         memcpy(frame->lines[(y<<HightResMode)].xCLUTB,CLUTB,32);
-         memcpy(frame->lines[(y<<HightResMode)].xCLUTG,CLUTG,32);
-         memcpy(frame->lines[(y<<HightResMode)].xCLUTR,CLUTR,32);
-         if(HightResMode)
-            memcpy(frame->lines[(y<<HightResMode)+1].xCLUTB,frame->lines[(y<<HightResMode)].xCLUTB,32*3);
-      }
-      frame->lines[(y<<HightResMode)].xOUTCONTROLL=OUTCONTROLL;
-      frame->lines[(y<<HightResMode)].xCLUTDMA=CLUTDMA.raw;
-      frame->lines[(y<<HightResMode)].xBACKGROUND=BACKGROUND;
-      if(HightResMode)
-      {
-         frame->lines[(y<<HightResMode)+1].xOUTCONTROLL=OUTCONTROLL;
-         frame->lines[(y<<HightResMode)+1].xCLUTDMA=CLUTDMA.raw;
-         frame->lines[(y<<HightResMode)+1].xBACKGROUND=BACKGROUND;
-      }
+      memcpy(line->xCLUTR,CLUTR,32);
+      memcpy(line->xCLUTG,CLUTG,32);
+      memcpy(line->xCLUTB,CLUTB,32);
+    }
 
-   } // //if((y>=0) && (y<240))
+  line->xOUTCONTROLL = OUTCONTROLL;
+  line->xCLUTDMA     = CLUTDMA.raw;
+  line->xBACKGROUND  = BACKGROUND;
+}
 
-   if(CURRENTBMP & 2)
-      CURRENTBMP+=MODULO*4 - 2;
-   else
-      CURRENTBMP+=2;
+static
+INLINE
+void
+vdlp_process_line_640(int           line_,
+                      vdlp_frame_t *frame_)
+{
+  vdlp_line_t *line0;
+  vdlp_line_t *line1;
 
-   if(!CLUTDMA.dmaw.prevtick)
-   {
-      PREVIOUSBMP=CURRENTBMP;
-   }
-   else
-   {
+  line0 = &frame_->lines[(line_ << 1) + 0];
+  line1 = &frame_->lines[(line_ << 1) + 1];
+  if(CLUTDMA.dmaw.enadma)
+    {
+      int i;
+      uint16_t *dst1;
+      uint16_t *dst2;
+      uint32_t *src1;
+      uint32_t *src2;
+      uint32_t *src3;
+      uint32_t *src4;
+
+      dst1 = line0->line;
+      dst2 = line1->line;
+      src1 = (uint32_t*)(VRAM + ((PREVIOUSBMP^2) & 0x0FFFFF) + (0*1024*1024));
+      src2 = (uint32_t*)(VRAM + ((PREVIOUSBMP^2) & 0x0FFFFF) + (1*1024*1024));
+      src3 = (uint32_t*)(VRAM + ((PREVIOUSBMP^2) & 0x0FFFFF) + (2*1024*1024));
+      src4 = (uint32_t*)(VRAM + ((PREVIOUSBMP^2) & 0x0FFFFF) + (3*1024*1024));
+
+      for(i = 0; i < 320; i++)
+        {
+          *dst1++ = *(uint16_t*)(src1++);
+          *dst1++ = *(uint16_t*)(src2++);
+          *dst2++ = *(uint16_t*)(src3++);
+          *dst2++ = *(uint16_t*)(src4++);
+        }
+
+      memcpy(line0->xCLUTR,CLUTR,32);
+      memcpy(line0->xCLUTG,CLUTG,32);
+      memcpy(line0->xCLUTB,CLUTB,32);
+      memcpy(line1->xCLUTR,CLUTR,32);
+      memcpy(line1->xCLUTG,CLUTG,32);
+      memcpy(line1->xCLUTB,CLUTB,32);
+    }
+
+  line0->xOUTCONTROLL = line1->xOUTCONTROLL = OUTCONTROLL;
+  line0->xCLUTDMA     = line1->xCLUTDMA     = CLUTDMA.raw;
+  line0->xBACKGROUND  = line1->xBACKGROUND  = BACKGROUND;
+}
+
+static
+INLINE
+void
+vdlp_process_line(int           line_,
+                  vdlp_frame_t *frame_)
+{
+  if(HightResMode)
+    vdlp_process_line_640(line_,frame_);
+  else
+    vdlp_process_line_320(line_,frame_);
+}
+
+void
+freedo_vdlp_process_line(int           line_,
+                         vdlp_frame_t *frame_)
+{
+  int y;
+
+  line_ &= 0x07FF;
+  if(line_ == 0)
+    {
+      LOAD_CLUT  = true;
+      LINE_DELAY = 0;
+      CURRENTVDL = HEADVDL;
+      vdlp_execute();
+    }
+
+  y = (line_ - 16);
+
+  if(LINE_DELAY == 0 /*&& LOAD_CLUT*/)
+    vdlp_execute();
+
+  if((y >= 0) && (y < 240))  // 256???
+    vdlp_process_line(y,frame_);
+
+  if(CURRENTBMP & 2)
+    CURRENTBMP += ((MODULO * 4) - 2);
+  else
+    CURRENTBMP += 2;
+
+  if(!CLUTDMA.dmaw.prevtick)
+    {
+      PREVIOUSBMP = CURRENTBMP;
+    }
+  else
+    {
       if(PREVIOUSBMP & 2)
-         PREVIOUSBMP+=MODULO*4 - 2;
+        PREVIOUSBMP += ((MODULO * 4) - 2);
       else
-         PREVIOUSBMP+=2;
-   }
+        PREVIOUSBMP += 2;
+    }
 
-
-   linedelay--;
-   OUTCONTROLL&=~1; //Vioff1ln
+  LINE_DELAY--;
+  OUTCONTROLL &= ~1; //Vioff1ln
 }
 
 
-void _vdl_Init(uint8_t *vramstart)
+void
+freedo_vdlp_init(uint8_t *vram_)
 {
-   uint32_t i;
+  uint32_t i;
 
-   static const uint32_t StartupVDL[]=
-   { // Startup VDL at addres 0x2B0000
+  static const uint32_t StartupVDL[]=
+    { // Startup VDL at address 0x2B0000
       0x00004410, 0x002C0000, 0x002C0000, 0x002B0098,
       0x00000000, 0x01080808, 0x02101010, 0x03191919,
       0x04212121, 0x05292929, 0x06313131, 0x073A3A3A,
@@ -351,22 +418,37 @@ void _vdl_Init(uint8_t *vramstart)
       0xE0010101, 0xC001002C, 0x002180EF, 0x002C0000,
       0x002C0000, 0x002B00A8, 0x00000000, 0x002C0000,
       0x002C0000, 0x002B0000
-   };
+    };
 
-   vram = vramstart;
-   HEADVDL=0xB0000;
+  VRAM    = vram_;
+  HEADVDL = 0xB0000;
 
-   for(i = 0;i < (sizeof(StartupVDL)/4); i++)
-      _mem_write32(HEADVDL+i*4+1024*1024*2,StartupVDL[i]);
+  for(i = 0; i < (sizeof(StartupVDL)/4); i++)
+    vram_write32((HEADVDL + (i * 4)),StartupVDL[i]);
 
-   //memcpy(vram+HEADVDL, StartupVDL, sizeof(StartupVDL));
-
-
-   for(i = 0; i < 32; i++)
-      CLUTB[i] = CLUTG[i] = CLUTR[i] = ((i&0x1f)<<3) | ((i>>2)&7);
+  vdlp_clut_reset();
 }
 
-uint32_t vmreadw(uint32_t addr)
+void
+freedo_vdlp_process(const uint32_t addr_)
 {
-   return _mem_read32((addr&0xfffff)+1024*1024*2);
+  HEADVDL = addr_;
+}
+
+uint32_t
+freedo_vdlp_state_size(void)
+{
+  return sizeof(vdlp_datum_t);
+}
+
+void
+freedo_vdlp_state_save(void *buf_)
+{
+  memcpy(buf_,&vdl,sizeof(vdlp_datum_t));
+}
+
+void
+freedo_vdlp_state_load(const void *buf_)
+{
+  memcpy(&vdl,buf_,sizeof(vdlp_datum_t));
 }
