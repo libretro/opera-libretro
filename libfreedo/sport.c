@@ -4,21 +4,28 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
 #include <stdint.h>
@@ -26,112 +33,116 @@
 
 #include "sport.h"
 
-static uint32_t gSPORTCOLOR;
-static uint32_t gSPORTSOURCE=0;
-static uint32_t gSPORTDESTINATION=0;
-static uint8_t  *VRAM;
+struct sport_s
+{
+  uint32_t color;
+  uint32_t source;
+  uint32_t destination;
+};
+
+typedef struct sport_s sport_t;
 
 extern int HightResMode;
 
-uint32_t _sport_SaveSize(void)
+static sport_t  SPORT = {0};
+static uint8_t *VRAM;
+
+uint32_t freedo_sport_state_size(void)
 {
-  return 12;
+  return sizeof(sport_t);
 }
 
-void _sport_Save(void *buff)
+void freedo_sport_state_save(void *buf_)
 {
-  ((uint32_t*)buff)[0]=gSPORTCOLOR;
-  ((uint32_t*)buff)[1]=gSPORTSOURCE;
-  ((uint32_t*)buff)[2]=gSPORTDESTINATION;
+  memcpy(buf_,&SPORT,sizeof(sport_t));
 }
 
-void _sport_Load(void *buff)
+void freedo_sport_state_load(const void *buf_)
 {
-  gSPORTCOLOR=((uint32_t*)buff)[0];
-  gSPORTSOURCE=((uint32_t*)buff)[1];
-  gSPORTDESTINATION=((uint32_t*)buff)[2];
+  memcpy(&SPORT,buf_,sizeof(sport_t));
 }
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-void _sport_Init(uint8_t *vmem)
+void freedo_sport_init(uint8_t * const vram_)
 {
-  VRAM=vmem;
+  VRAM=vram_;
 }
 
-int _sport_SetSource(uint32_t index) //take source for SPORT
+int freedo_sport_set_source(const uint32_t idx_) //take source for SPORT
 {
-  gSPORTSOURCE=(index<<7);
+  SPORT.source=(idx_<<7);
   return 0;
 }
 
-void _sport_WriteAccess(uint32_t index, uint32_t mask)
+void freedo_sport_write_access(const uint32_t idx_, const uint32_t mask_)
 {
   int i;
   uint32_t tmp,ctmp;
+  uint32_t idx = idx_;
 
-  if((index & ~0x1FFF)==0x4000) //SPORT flash write
+  if((idx & ~0x1FFF)==0x4000) //SPORT flash write
     {
-      index&=0x7ff;
-      index<<=7;
-      if(mask == 0xFFFFffff)
+      idx&=0x7ff;
+      idx<<=7;
+      if(mask_ == 0xFFFFffff)
         {
           for(i = 0; i < 512; i++)
-            ((uint32_t*)VRAM)[index+i]=gSPORTCOLOR;
+            ((uint32_t*)VRAM)[idx+i]=SPORT.color;
         }
-      else  // mask is not 0xFFFFffff
+      else  // mask_ is not 0xFFFFffff
         {
           for(i=0;i<512;i++)
             {
-              tmp=((uint32_t*)VRAM)[index+i];
-              tmp=((tmp^gSPORTCOLOR)&mask)^gSPORTCOLOR;
-              ((uint32_t*)VRAM)[index+i]=tmp;
+              tmp=((uint32_t*)VRAM)[idx+i];
+              tmp=((tmp^SPORT.color)&mask_)^SPORT.color;
+              ((uint32_t*)VRAM)[idx+i]=tmp;
             }
         }
       if(!HightResMode)
         return;
-      memcpy(&((uint32_t*)VRAM)[index+1024*256], &((uint32_t*)VRAM)[index], 2048);
-      memcpy(&((uint32_t*)VRAM)[index+2*1024*256], &((uint32_t*)VRAM)[index], 2048);
-      memcpy(&((uint32_t*)VRAM)[index+3*1024*256], &((uint32_t*)VRAM)[index], 2048);
+      memcpy(&((uint32_t*)VRAM)[idx+1024*256], &((uint32_t*)VRAM)[idx], 2048);
+      memcpy(&((uint32_t*)VRAM)[idx+2*1024*256], &((uint32_t*)VRAM)[idx], 2048);
+      memcpy(&((uint32_t*)VRAM)[idx+3*1024*256], &((uint32_t*)VRAM)[idx], 2048);
       return;
     }
 
 
-  if(!(index & ~0x1FFF)) //SPORT copy page
+  if(!(idx & ~0x1FFF)) //SPORT copy page
     {
-      gSPORTDESTINATION=(index &0x7ff)<<7;
-      if(mask == 0xFFFFffff)
+      SPORT.destination=(idx &0x7ff)<<7;
+      if(mask_ == 0xFFFFffff)
         {
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION],&((uint32_t*)VRAM)[gSPORTSOURCE],512*4);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination],&((uint32_t*)VRAM)[SPORT.source],512*4);
           if(!HightResMode)
             return;
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+1024*256], &((uint32_t*)VRAM)[gSPORTSOURCE+1024*256], 2048);
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+2*1024*256], &((uint32_t*)VRAM)[gSPORTSOURCE+2*1024*256], 2048);
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+3*1024*256], &((uint32_t*)VRAM)[gSPORTSOURCE+3*1024*256], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+1024*256], &((uint32_t*)VRAM)[SPORT.source+1024*256], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+2*1024*256], &((uint32_t*)VRAM)[SPORT.source+2*1024*256], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+3*1024*256], &((uint32_t*)VRAM)[SPORT.source+3*1024*256], 2048);
         }
-      else  // mask != 0xFFFFffff
+      else  // mask_ != 0xFFFFffff
         {
           for(i=0;i<512;i++)
             {
-              tmp=((uint32_t*)VRAM)[gSPORTDESTINATION+i];
-              ctmp=((uint32_t*)VRAM)[gSPORTSOURCE+i];
-              tmp=((tmp^ctmp)&mask)^ctmp;
-              ((uint32_t*)VRAM)[gSPORTDESTINATION+i]=tmp;
+              tmp=((uint32_t*)VRAM)[SPORT.destination+i];
+              ctmp=((uint32_t*)VRAM)[SPORT.source+i];
+              tmp=((tmp^ctmp)&mask_)^ctmp;
+              ((uint32_t*)VRAM)[SPORT.destination+i]=tmp;
             }
           if(!HightResMode)
             return;
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+1024*256], &((uint32_t*)VRAM)[gSPORTDESTINATION], 2048);
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+2*1024*256], &((uint32_t*)VRAM)[gSPORTDESTINATION], 2048);
-          memcpy(&((uint32_t*)VRAM)[gSPORTDESTINATION+3*1024*256], &((uint32_t*)VRAM)[gSPORTDESTINATION], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+1024*256], &((uint32_t*)VRAM)[SPORT.destination], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+2*1024*256], &((uint32_t*)VRAM)[SPORT.destination], 2048);
+          memcpy(&((uint32_t*)VRAM)[SPORT.destination+3*1024*256], &((uint32_t*)VRAM)[SPORT.destination], 2048);
         }
       return;
     }
 
-  if((index & ~0x1FFF)==0x2000) //SPORT set color!!!
+  if((idx & ~0x1FFF)==0x2000) //SPORT set color!!!
     {
-      gSPORTCOLOR=mask;
+      SPORT.color=mask_;
       return;
     }
 }

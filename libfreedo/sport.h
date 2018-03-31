@@ -4,44 +4,51 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
-// SPORT.h: interface for the SPORT class.
-//
-//////////////////////////////////////////////////////////////////////
+/* sport.h: interface for the SPORT class. */
 
-#ifndef	SPORT_3DO_HEADER
-#define  SPORT_3DO_HEADER
+#ifndef LIBFREEDO_SPORT_H_INCLUDED
+#define LIBFREEDO_SPORT_H_INCLUDED
 
 #include "extern_c.h"
 
+#include <stdint.h>
+
 EXTERN_C_BEGIN
 
-void _sport_Init(uint8_t *vmem);
+void     freedo_sport_init(uint8_t * const vram_);
 
-int _sport_SetSource(uint32_t index);
+int      freedo_sport_set_source(const uint32_t idx_);
 
-void _sport_WriteAccess(uint32_t index, uint32_t mask);
+void     freedo_sport_write_access(const uint32_t idx_, const uint32_t mask_);
 
-uint32_t _sport_SaveSize(void);
-void _sport_Save(void *buff);
-void _sport_Load(void *buff);
+uint32_t freedo_sport_state_size(void);
+void     freedo_sport_state_save(void *buf_);
+void     freedo_sport_state_load(const void *buf_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBFREEDO_SPORT_H_INCLUDED */
