@@ -33,7 +33,7 @@
 #include "Madam.h"
 #include "Clio.h"
 #include "DiagPort.h"
-#include "SPORT.h"
+#include "sport.h"
 
 #include "freedocore.h"
 #include "hack_flags.h"

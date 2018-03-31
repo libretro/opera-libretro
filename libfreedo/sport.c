@@ -24,7 +24,7 @@ Felix Lazarev
 #include <stdint.h>
 #include <string.h>
 
-#include "SPORT.h"
+#include "sport.h"
 
 static uint32_t gSPORTCOLOR;
 static uint32_t gSPORTSOURCE=0;
