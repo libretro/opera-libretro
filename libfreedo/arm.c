@@ -1719,7 +1719,7 @@ uint32_t mreadw(uint32_t addr)
    if (!((index=(addr^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
    {
       if (!((index=(addr^0x03200000)) & ~0x1FFF))
-         return freedo_sport_set_source(index);
+         return (freedo_sport_set_source(index),0);
          //          io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  Unknow read access to SPORT  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());
          //!!Exeption!!
       return 0xBADACCE5;

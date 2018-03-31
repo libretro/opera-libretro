@@ -41,8 +41,7 @@ EXTERN_C_BEGIN
 
 void     freedo_sport_init(uint8_t * const vram_);
 
-int      freedo_sport_set_source(const uint32_t idx_);
-
+void     freedo_sport_set_source(const uint32_t idx_);
 void     freedo_sport_write_access(const uint32_t idx_, const uint32_t mask_);
 
 uint32_t freedo_sport_state_size(void);
