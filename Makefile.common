@@ -32,7 +32,7 @@ SOURCES_C += \
 	$(4DO_DIR)/DiagPort.c \
 	$(4DO_DIR)/frame.c \
 	$(4DO_DIR)/bitop.c \
-	$(4DO_DIR)/SPORT.c
+	$(4DO_DIR)/sport.c
 
 ifneq ($(STATIC_LINKING), 1)
 SOURCES_C += \
@@ -154,4 +154,3 @@ SOURCES_C += \
 	$(DEPS_DIR)/zlib/uncompr.c \
 	$(DEPS_DIR)/zlib/zutil.c
 endif
-

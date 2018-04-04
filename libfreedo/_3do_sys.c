@@ -33,7 +33,7 @@
 #include "Clio.h"
 #include "frame.h"
 #include "Madam.h"
-#include "SPORT.h"
+#include "sport.h"
 #include "XBUS.h"
 #include "DiagPort.h"
 #include "quarz.h"
@@ -82,7 +82,7 @@ int _3do_Init(void)
       *(int *)(rom+i) =_bswap(*(int *)(rom+i));
 
    freedo_vdlp_init(Memory+0x200000);   // Visible only VRAM to it
-   _sport_Init(Memory+0x200000);  // Visible only VRAM to it
+   freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
    _madam_Init(Memory);
 
    _xbus_Init(_xbplug_MainDevice);
@@ -204,7 +204,7 @@ uint32_t _3do_SaveSize(void)
    tmp+=_dsp_SaveSize();
    tmp+=_clio_SaveSize();
    tmp+=_qrz_SaveSize();
-   tmp+=_sport_SaveSize();
+   tmp+=freedo_sport_state_size();
    tmp+=_madam_SaveSize();
    tmp+=_xbus_SaveSize();
    tmp+=16*4;
@@ -223,7 +223,7 @@ void _3do_Save(void *buff)
    indexes[4]=indexes[3]+_dsp_SaveSize();
    indexes[5]=indexes[4]+_clio_SaveSize();
    indexes[6]=indexes[5]+_qrz_SaveSize();
-   indexes[7]=indexes[6]+_sport_SaveSize();
+   indexes[7]=indexes[6]+freedo_sport_state_size();
    indexes[8]=indexes[7]+_madam_SaveSize();
    indexes[9]=indexes[8]+_xbus_SaveSize();
 
@@ -232,7 +232,7 @@ void _3do_Save(void *buff)
    _dsp_Save(&data[indexes[3]]);
    _clio_Save(&data[indexes[4]]);
    _qrz_Save(&data[indexes[5]]);
-   _sport_Save(&data[indexes[6]]);
+   freedo_sport_state_save(&data[indexes[6]]);
    _madam_Save(&data[indexes[7]]);
    _xbus_Save(&data[indexes[8]]);
 
@@ -250,7 +250,7 @@ bool _3do_Load(void *buff)
    _dsp_Load(&data[indexes[3]]);
    _clio_Load(&data[indexes[4]]);
    _qrz_Load(&data[indexes[5]]);
-   _sport_Load(&data[indexes[6]]);
+   freedo_sport_state_load(&data[indexes[6]]);
    _madam_Load(&data[indexes[7]]);
    _xbus_Load(&data[indexes[8]]);
 
