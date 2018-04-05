@@ -121,7 +121,7 @@ int _3do_Init(void)
       */
    _xbus_DevLoad(0,NULL);
 
-   _qrz_Init();
+   freedo_quarz_init();
 
    return 0;
 }
@@ -132,15 +132,15 @@ bool skipframe;
 void _3do_InternalFrame(int cycles)
 {
    int line;
-   _qrz_PushARMCycles(cycles);
-   if(_qrz_QueueDSP())
+   freedo_quarz_push_cycles(cycles);
+   if(freedo_quarz_queue_dsp())
       io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)_dsp_Loop());
-   if(_qrz_QueueTimer())
+   if(freedo_quarz_queue_timer())
       _clio_DoTimers();
-   if(_qrz_QueueVDL())
+   if(freedo_quarz_queue_vdl())
    {
-      line=_qrz_VDCurrLine();
-      _clio_UpdateVCNT(line, _qrz_VDHalfFrame());
+      line=freedo_quarz_vd_current_line();
+      _clio_UpdateVCNT(line, freedo_quarz_vd_half_frame());
       if(!skipframe)
          freedo_vdlp_process_line(line,curr_frame);
       if(line==16 && skipframe)
@@ -203,7 +203,7 @@ uint32_t _3do_SaveSize(void)
    tmp+=freedo_vdlp_state_size();
    tmp+=_dsp_SaveSize();
    tmp+=_clio_SaveSize();
-   tmp+=_qrz_SaveSize();
+   tmp+=freedo_quarz_state_size();
    tmp+=freedo_sport_state_size();
    tmp+=_madam_SaveSize();
    tmp+=_xbus_SaveSize();
@@ -222,7 +222,7 @@ void _3do_Save(void *buff)
    indexes[3]=indexes[2]+freedo_vdlp_state_size();
    indexes[4]=indexes[3]+_dsp_SaveSize();
    indexes[5]=indexes[4]+_clio_SaveSize();
-   indexes[6]=indexes[5]+_qrz_SaveSize();
+   indexes[6]=indexes[5]+freedo_quarz_state_size();
    indexes[7]=indexes[6]+freedo_sport_state_size();
    indexes[8]=indexes[7]+_madam_SaveSize();
    indexes[9]=indexes[8]+_xbus_SaveSize();
@@ -231,7 +231,7 @@ void _3do_Save(void *buff)
    freedo_vdlp_state_save(&data[indexes[2]]);
    _dsp_Save(&data[indexes[3]]);
    _clio_Save(&data[indexes[4]]);
-   _qrz_Save(&data[indexes[5]]);
+   freedo_quarz_state_save(&data[indexes[5]]);
    freedo_sport_state_save(&data[indexes[6]]);
    _madam_Save(&data[indexes[7]]);
    _xbus_Save(&data[indexes[8]]);
@@ -249,7 +249,7 @@ bool _3do_Load(void *buff)
    freedo_vdlp_state_load(&data[indexes[2]]);
    _dsp_Load(&data[indexes[3]]);
    _clio_Load(&data[indexes[4]]);
-   _qrz_Load(&data[indexes[5]]);
+   freedo_quarz_state_load(&data[indexes[5]]);
    freedo_sport_state_load(&data[indexes[6]]);
    _madam_Load(&data[indexes[7]]);
    _xbus_Load(&data[indexes[8]]);

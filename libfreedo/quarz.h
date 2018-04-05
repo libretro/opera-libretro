@@ -24,31 +24,31 @@
 #ifndef QUARZ_3DO_HEADER_DEFINTION
 #define QUARZ_3DO_HEADER_DEFINTION
 
-#include <stdint.h>
+#include "extern_c.h"
 
 #include <boolean.h>
 
-#include "extern_c.h"
+#include <stdint.h>
 
 #define ARM_FREQUENCY 12500000
 
 EXTERN_C_BEGIN
 
-void  _qrz_Init(void);
+void     freedo_quarz_init(void);
 
-int  _qrz_VDCurrLine(void);
-int  _qrz_VDHalfFrame(void);
-int  _qrz_VDCurrOverline(void);
+int      freedo_quarz_vd_current_line(void);
+int      freedo_quarz_vd_half_frame(void);
+int      freedo_quarz_vd_current_overline(void);
 
-bool  _qrz_QueueVDL(void);
-bool  _qrz_QueueDSP(void);
-bool  _qrz_QueueTimer(void);
+bool     freedo_quarz_queue_vdl(void);
+bool     freedo_quarz_queue_dsp(void);
+bool     freedo_quarz_queue_timer(void);
 
-void  _qrz_PushARMCycles(uint32_t clks);
+void     freedo_quarz_push_cycles(const uint32_t clks_);
 
-uint32_t _qrz_SaveSize(void);
-void _qrz_Save(void *buff);
-void _qrz_Load(void *buff);
+uint32_t freedo_quarz_state_size(void);
+void     freedo_quarz_state_save(void *buf_);
+void     freedo_quarz_state_load(const void *buf_);
 
 EXTERN_C_END
 

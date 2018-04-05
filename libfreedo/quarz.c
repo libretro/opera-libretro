@@ -45,121 +45,115 @@ extern int unknownflag11;
 extern int speedfixes;
 extern int fixmode;
 
-#pragma pack(push,1)
-struct QDatum
+struct quarz_datum_s
 {
   uint32_t qrz_AccARM;
   uint32_t qrz_AccDSP;
   uint32_t qrz_AccVDL;
   uint32_t qrz_TCount;
-  uint32_t VDL_CLOCK, qrz_vdlline, VDL_HS,VDL_FS;
+  uint32_t VDL_CLOCK;
+  uint32_t qrz_vdlline;
+  uint32_t VDL_HS;
+  uint32_t VDL_FS;
 };
-#pragma pack(pop)
 
-static struct QDatum quarz;
+typedef struct quarz_datum_s quarz_datum_t;
 
-uint32_t _qrz_SaveSize(void)
+static quarz_datum_t QUARZ;
+
+uint32_t freedo_quarz_state_size(void)
 {
-  return sizeof(struct QDatum);
+  return sizeof(quarz_datum_t);
 }
 
-void _qrz_Save(void *buff)
+void freedo_quarz_state_save(void *buf_)
 {
-  memcpy(buff,&quarz,sizeof(struct QDatum));
+  memcpy(buf_,&QUARZ,sizeof(quarz_datum_t));
 }
 
-void _qrz_Load(void *buff)
+void freedo_quarz_state_load(const void *buf_)
 {
-  memcpy(&quarz,buff,sizeof(struct QDatum));
+  memcpy(&QUARZ,buf_,sizeof(quarz_datum_t));
 }
 
-#define qrz_AccARM quarz.qrz_AccARM
-#define qrz_AccDSP quarz.qrz_AccDSP
-#define qrz_AccVDL quarz.qrz_AccVDL
-#define qrz_TCount quarz.qrz_TCount
-#define VDL_CLOCK quarz.VDL_CLOCK
-#define qrz_vdlline quarz.qrz_vdlline
-#define VDL_HS quarz.VDL_HS
-#define VDL_FS quarz.VDL_FS
-
-void  _qrz_Init(void)
+void freedo_quarz_init(void)
 {
-  qrz_AccVDL=qrz_AccDSP=0;
-  qrz_AccARM=0;
+  QUARZ.qrz_AccVDL=QUARZ.qrz_AccDSP=0;
+  QUARZ.qrz_AccARM=0;
 
-  VDL_FS=526;
-  VDL_CLOCK=VDL_FS*30;
-  VDL_HS=VDL_FS/2;
+  QUARZ.VDL_FS=526;
+  QUARZ.VDL_CLOCK=QUARZ.VDL_FS*30;
+  QUARZ.VDL_HS=QUARZ.VDL_FS/2;
 
-  qrz_TCount=0;
-  qrz_vdlline=0;
+  QUARZ.qrz_TCount=0;
+  QUARZ.qrz_vdlline=0;
 }
 
-int  _qrz_VDCurrLine(void)
+int freedo_quarz_vd_current_line(void)
 {
-  return qrz_vdlline%(VDL_HS/*+(VDL_HS/2)*/);
+  return QUARZ.qrz_vdlline%(QUARZ.VDL_HS/*+(VDL_HS/2)*/);
 }
 
-int  _qrz_VDHalfFrame(void)
+int freedo_quarz_vd_half_frame(void)
 {
-  return qrz_vdlline/(VDL_HS);
+  return QUARZ.qrz_vdlline/(QUARZ.VDL_HS);
 }
 
-int  _qrz_VDCurrOverline(void)
+int freedo_quarz_vd_current_overline(void)
 {
-  return qrz_vdlline;
+  return QUARZ.qrz_vdlline;
 }
 
-bool  _qrz_QueueVDL(void)
+bool freedo_quarz_queue_vdl(void)
 {
-  if(qrz_AccVDL>>24)
+  if(QUARZ.qrz_AccVDL>>24)
     {
-      qrz_AccVDL-=0x1000000;
-      qrz_vdlline++;
-      qrz_vdlline%=VDL_FS;
+      QUARZ.qrz_AccVDL-=0x1000000;
+      QUARZ.qrz_vdlline++;
+      QUARZ.qrz_vdlline%=QUARZ.VDL_FS;
       return true;
     }
   return false;
 }
 
-bool  _qrz_QueueDSP(void)
+bool freedo_quarz_queue_dsp(void)
 {
-  if(qrz_AccDSP>>24)
+  if(QUARZ.qrz_AccDSP>>24)
     {
       //if(HightResMode!=0) qrz_AccDSP-=0x1000000/1.3;
       //else
-      qrz_AccDSP-=0x1000000;
+      QUARZ.qrz_AccDSP-=0x1000000;
       return true;
     }
   return false;
 }
 
-bool  _qrz_QueueTimer(void)
+bool freedo_quarz_queue_timer(void)
 {
   //uint32_t cnt=_clio_GetTimerDelay();
-  if(qrz_TCount>>24)//=cnt)
+  if(QUARZ.qrz_TCount>>24)//=cnt)
     {
-      qrz_TCount-=0x1000000;//cnt;
+      QUARZ.qrz_TCount-=0x1000000;//cnt;
       return true;
     }
   return false;
 }
 
-void  _qrz_PushARMCycles(uint32_t clks)
+void freedo_quarz_push_cycles(const uint32_t clks_)
 {
   int timers = 21000000; /* default */
   int     sp = 0;
-  uint32_t arm=(clks<<24)/(ARM_CLOCK);
-  qrz_AccARM+=arm*(ARM_CLOCK);
-  if( (qrz_AccARM>>24) != clks )
+  uint32_t arm=(clks_<<24)/(ARM_CLOCK);
+  QUARZ.qrz_AccARM+=arm*(ARM_CLOCK);
+  if( (QUARZ.qrz_AccARM>>24) != clks_ )
     {
       arm++;
-      qrz_AccARM+=ARM_CLOCK;
-      qrz_AccARM&=0xffffff;
+      QUARZ.qrz_AccARM+=ARM_CLOCK;
+      QUARZ.qrz_AccARM&=0xffffff;
     }
-  qrz_AccDSP+=arm*SND_CLOCK;
-  qrz_AccVDL+=arm*(VDL_CLOCK);
+  QUARZ.qrz_AccDSP+=arm*SND_CLOCK;
+  QUARZ.qrz_AccVDL+=arm*(QUARZ.VDL_CLOCK);
 
   if(_clio_GetTimerDelay())
-    qrz_TCount += arm*((timers)/(_clio_GetTimerDelay()));
+    QUARZ.qrz_TCount += arm*((timers)/(_clio_GetTimerDelay()));
 }
