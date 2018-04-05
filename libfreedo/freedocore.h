@@ -81,7 +81,6 @@ typedef void* (*_ext_Interface)(int, void*);
 #define FDP_GETP_ROMS           11       //returns ptr to ROM 2M
 #define FDP_GETP_PROFILE        12       //returns profile pointer, sizeof = 3M/4
 #define FDP_BUGTEMPORALFIX      13
-#define FDP_SET_ARMCLOCK        14
 #define FDP_SET_TEXQUALITY      15
 #define FDP_GETP_WRCOUNT        16
 #define FDP_SET_FIX_MODE        17

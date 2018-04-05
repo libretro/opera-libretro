@@ -31,8 +31,6 @@
 #include "libfreedo/vdlp.h"
 #include "libfreedo/hack_flags.h"
 
-extern int ARM_CLOCK;
-
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
 #define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
@@ -349,8 +347,6 @@ check_env_4do_cpu_overclock(void)
   int rv;
   struct retro_variable var;
 
-  ARM_CLOCK = ARM_FREQUENCY;
-
   var.key   = "4do_cpu_overclock";
   var.value = NULL;
 
@@ -358,11 +354,11 @@ check_env_4do_cpu_overclock(void)
   if(rv && var.value)
     {
       if (!strcmp(var.value, "1x"))
-        ARM_CLOCK = ARM_FREQUENCY;
+        freedo_quarz_cpu_set_freq_mul(1.0);
       else if (!strcmp(var.value, "2x"))
-        ARM_CLOCK = ARM_FREQUENCY * 2;
+        freedo_quarz_cpu_set_freq_mul(2.0);
       else if (!strcmp(var.value, "4x"))
-        ARM_CLOCK = ARM_FREQUENCY * 4;
+        freedo_quarz_cpu_set_freq_mul(4.0);
     }
 }
 

@@ -27,6 +27,7 @@
 #include "XBUS.h"
 #include "arm.h"
 #include "DSP.h"
+#include "quarz.h"
 
 #define DECREMENT    0x1
 #define RELOAD       0x2
@@ -34,7 +35,6 @@
 #define FLABLODE     0x8
 int lsize, flagtime;
 int TIMER_VAL=0; //0x415
-extern int ARM_CLOCK;
 extern int FMVFIX;
 
 #define RELOAD_VAL   0x10
@@ -179,7 +179,7 @@ int _clio_Poke(uint32_t addr, uint32_t val)
       {
          cregs[0x50]&=~val;
          return 0;
-      } 
+      }
 #endif
       else if(addr==0x60)
       {
@@ -266,7 +266,7 @@ int _clio_Poke(uint32_t addr, uint32_t val)
             if(TIMER_VAL<5800)
                TIMER_VAL+=0x33;
             lsize+=0x33;
-            flagtime=(ARM_CLOCK/2000000);
+            flagtime=(freedo_quarz_cpu_get_freq()/2000000);
             break;
          default:
             if(!cregs[0x304])
