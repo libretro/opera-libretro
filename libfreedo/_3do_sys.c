@@ -34,7 +34,7 @@
 #include "frame.h"
 #include "Madam.h"
 #include "sport.h"
-#include "XBUS.h"
+#include "xbus.h"
 #include "DiagPort.h"
 #include "quarz.h"
 

@@ -24,7 +24,7 @@
 #include <string.h>
 #include "Clio.h"
 #include "Madam.h"
-#include "XBUS.h"
+#include "xbus.h"
 #include "arm.h"
 #include "DSP.h"
 #include "quarz.h"

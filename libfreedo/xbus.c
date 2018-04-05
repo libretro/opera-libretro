@@ -24,7 +24,7 @@ Felix Lazarev
 #include <stdint.h>
 #include <string.h>
 
-#include "XBUS.h"
+#include "xbus.h"
 #include "Clio.h"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
