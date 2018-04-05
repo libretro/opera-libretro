@@ -29,9 +29,8 @@
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-#pragma pack(push,1)
 
-struct XBUSDatum
+struct xbus_datum_s
 {
   uint8_t XBSEL;
   uint8_t XBSELH;
@@ -42,7 +41,8 @@ struct XBUSDatum
   uint8_t CmdF[7];
   uint8_t CmdPtrF;
 };
-#pragma pack(pop)
+
+typedef struct xbus_datum_s xbus_datum_t;
 
 #define XBSEL xbus.XBSEL
 #define XBSELH xbus.XBSELH
@@ -53,8 +53,8 @@ struct XBUSDatum
 #define CmdF xbus.CmdF
 #define CmdPtrF xbus.CmdPtrF
 
-static struct XBUSDatum xbus;
-static _xbus_device xdev[16];
+static xbus_datum_t       xbus;
+static freedo_xbus_device xdev[16];
 
 #define POLSTMASK	0x01
 #define POLDTMASK	0x02
@@ -67,12 +67,11 @@ static _xbus_device xdev[16];
 
 void ExecuteCommandF(void);
 
-void _xbus_SetCommandFIFO(uint32_t val)
+void freedo_xbus_set_cmd_FIFO(const uint32_t val_)
 {
-
   if(xdev[XBSEL])
     {
-      (*xdev[XBSEL])(XBP_SET_COMMAND,(void*)(uintptr_t)val);
+      (*xdev[XBSEL])(XBP_SET_COMMAND,(void*)(uintptr_t)val_);
       if((*xdev[XBSEL])(XBP_FIQ,NULL))
         _clio_GenerateFiq(4,0);
     }
@@ -80,7 +79,7 @@ void _xbus_SetCommandFIFO(uint32_t val)
     {
       if (CmdPtrF<7)
         {
-          CmdF[CmdPtrF]=(uint8_t)val;
+          CmdF[CmdPtrF]=(uint8_t)val_;
           CmdPtrF++;
         }
       if(CmdPtrF>=7)
@@ -91,14 +90,14 @@ void _xbus_SetCommandFIFO(uint32_t val)
     }
 }
 
-uint32_t _xbus_GetDataFIFO(void)
+uint32_t freedo_xbus_get_data_FIFO(void)
 {
   if(xdev[XBSEL])
     return (intptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
   return 0;
 }
 
-uint32_t _xbus_GetPoll(void)
+uint32_t freedo_xbus_get_poll(void)
 {
   uint32_t res = 0x30;
 
@@ -113,7 +112,7 @@ uint32_t _xbus_GetPoll(void)
   return res;
 }
 
-uint32_t _xbus_GetRes(void)
+uint32_t freedo_xbus_get_res(void)
 {
   if(xdev[XBSEL])
     return (intptr_t)(*xdev[XBSEL])(XBP_RESERV, NULL);
@@ -144,7 +143,7 @@ void ExecuteCommandF(void)
     _clio_GenerateFiq(4,0);
 }
 
-uint32_t _xbus_GetStatusFIFO(void)
+uint32_t freedo_xbus_get_status_FIFO(void)
 {
   uint32_t res=0;
 
@@ -171,33 +170,33 @@ uint32_t _xbus_GetStatusFIFO(void)
   return res;
 }
 
-void _xbus_SetDataFIFO(uint32_t val)
+void freedo_xbus_set_data_FIFO(uint32_t val_)
 {
   if(xdev[XBSEL])
-    (*xdev[XBSEL])(XBP_SET_DATA,(void*)(uintptr_t)val);
+    (*xdev[XBSEL])(XBP_SET_DATA,(void*)(uintptr_t)val_);
 }
 
-void _xbus_SetPoll(uint32_t val)
+void freedo_xbus_set_poll(uint32_t val_)
 {
   if(XBSEL==0xf)
     {
       POLF&=0xF0;
-      POLF|=(val&0xf);
+      POLF|=(val_&0xf);
     }
   if(xdev[XBSEL])
     {
-      (*xdev[XBSEL])(XBP_SET_POLL,(void*)(uintptr_t)val);
+      (*xdev[XBSEL])(XBP_SET_POLL,(void*)(uintptr_t)val_);
       if((*xdev[XBSEL])(XBP_FIQ,NULL)) _clio_GenerateFiq(4,0);
     }
 }
 
-void _xbus_SetSEL(uint32_t val)
+void freedo_xbus_set_sel(uint32_t val_)
 {
-  XBSEL=(uint8_t)val&0xf;
-  XBSELH=(uint8_t)val&0xf0;
+  XBSEL=(uint8_t)val_&0xf;
+  XBSELH=(uint8_t)val_&0xf0;
 }
 
-void _xbus_Init(_xbus_device zero_dev)
+void freedo_xbus_init(freedo_xbus_device zero_dev)
 {
   int i;
 
@@ -206,10 +205,10 @@ void _xbus_Init(_xbus_device zero_dev)
   for(i = 0; i < 15; i++)
     xdev[i] = NULL;
 
-  _xbus_Attach(zero_dev);
+  freedo_xbus_attach(zero_dev);
 }
 
-int _xbus_Attach(_xbus_device dev)
+int freedo_xbus_attach(freedo_xbus_device dev)
 {
   int i;
   for(i=0;i<16;i++)
@@ -227,17 +226,17 @@ int _xbus_Attach(_xbus_device dev)
   return i;
 }
 
-void _xbus_DevLoad(int dev, const char * name)
+void freedo_xbus_device_load(int dev, const char * name)
 {
   (*xdev[dev])(XBP_RESET,(void*)name);
 }
 
-void _xbus_DevEject(int dev)
+void freedo_xbus_device_eject(int dev)
 {
   (*xdev[dev])(XBP_RESET,NULL);
 }
 
-void _xbus_Destroy(void)
+void freedo_xbus_destroy(void)
 {
   unsigned i;
   for(i=0; i < 16; i++)
@@ -250,9 +249,9 @@ void _xbus_Destroy(void)
     }
 }
 
-uint32_t _xbus_SaveSize(void)
+uint32_t freedo_xbus_state_size(void)
 {
-  uint32_t tmp=sizeof(struct XBUSDatum);
+  uint32_t tmp=sizeof(xbus_datum_t);
   int i;
   tmp+=16*4;
   for(i=0;i<15;i++)
@@ -264,11 +263,11 @@ uint32_t _xbus_SaveSize(void)
   return tmp;
 }
 
-void _xbus_Save(void *buff)
+void freedo_xbus_state_save(void *buf_)
 {
   int i,off,j,tmp;
-  memcpy(buff,&xbus,sizeof(struct XBUSDatum));
-  j=off=sizeof(struct XBUSDatum);
+  memcpy(buf_,&xbus,sizeof(xbus_datum_t));
+  j=off=sizeof(xbus_datum_t);
   off+=16*4;
 
   for(i=0;i<15;i++)
@@ -276,28 +275,28 @@ void _xbus_Save(void *buff)
       if(!xdev[i])
         {
           tmp=0;
-          memcpy(&((uint8_t*)buff)[j+i*4],&tmp,4);
+          memcpy(&((uint8_t*)buf_)[j+i*4],&tmp,4);
         }
       else
         {
-          (*xdev[i])(XBP_GET_SAVEDATA,&((uint8_t*)buff)[off]);
-          memcpy(&((uint8_t*)buff)[j+i*4],&off,4);
+          (*xdev[i])(XBP_GET_SAVEDATA,&((uint8_t*)buf_)[off]);
+          memcpy(&((uint8_t*)buf_)[j+i*4],&off,4);
           off += (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE, NULL);
         }
     }
 }
 
-void _xbus_Load(void *buff)
+void freedo_xbus_state_load(const void *buf_)
 {
   int i,offd;
 
-  int j=sizeof(struct XBUSDatum);
+  int j=sizeof(xbus_datum_t);
 
-  memcpy(&xbus,buff,j);
+  memcpy(&xbus,buf_,j);
 
   for(i=0;i<15;i++)
     {
-      memcpy(&offd,&((uint8_t*)buff)[j+i*4],4);
+      memcpy(&offd,&((uint8_t*)buf_)[j+i*4],4);
 
       if(!xdev[i])
         continue;
@@ -305,6 +304,6 @@ void _xbus_Load(void *buff)
       if(!offd)
         (*xdev[i])(XBP_RESET,NULL);
       else
-        (*xdev[i])(XBP_SET_SAVEDATA,&((uint8_t*)buff)[offd]);
+        (*xdev[i])(XBP_SET_SAVEDATA,&((uint8_t*)buf_)[offd]);
     }
 }

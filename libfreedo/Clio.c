@@ -290,23 +290,23 @@ int _clio_Poke(uint32_t addr, uint32_t val)
    }
    else if((addr>=0x500) && (addr<0x540))
    {
-      _xbus_SetSEL(val);
+      freedo_xbus_set_sel(val);
 
       return 0;
    }
    else if((addr>=0x540) && (addr<0x580))
    {
-      _xbus_SetPoll(val);
+      freedo_xbus_set_poll(val);
       return 0;
    }
    else if((addr>=0x580) && (addr<0x5c0))
    {
-      _xbus_SetCommandFIFO(val); // on FIFO Filled execute the command
+      freedo_xbus_set_cmd_FIFO(val); // on FIFO Filled execute the command
       return 0;
    }
    else if((addr>=0x5c0) && (addr<0x600))
    {
-      _xbus_SetDataFIFO(val); // on FIFO Filled execute the command
+      freedo_xbus_set_data_FIFO(val); // on FIFO Filled execute the command
       return 0;
    }
    else if(addr==0x28)
@@ -434,15 +434,15 @@ uint32_t _clio_Peek(uint32_t addr)
    else if (addr==0x414)
       return 0x4000; //TO CHECK!!! requested by CDROMDIPIR
    else if((addr>=0x500) && (addr<0x540))
-      return _xbus_GetRes();
+      return freedo_xbus_get_res();
    else if((addr>=0x540) && (addr<0x580))
    {
-      return _xbus_GetPoll();
+      return freedo_xbus_get_poll();
    }
    else if((addr>=0x580) && (addr<0x5c0))
-      return _xbus_GetStatusFIFO();
+      return freedo_xbus_get_status_FIFO();
    else if((addr>=0x5c0) && (addr<0x600))
-      return _xbus_GetDataFIFO();
+      return freedo_xbus_get_data_FIFO();
    else if(addr==0x0)
       return 0x02020000;
    else if((addr>=0x3800)&&(addr<=0x3bff))//0x0340 3800 … 0x0340 3BFF
@@ -554,10 +554,10 @@ void HandleDMA(uint32_t val)
       {
          while(len>=0)
          {
-            b3=_xbus_GetDataFIFO();
-            b2=_xbus_GetDataFIFO();
-            b1=_xbus_GetDataFIFO();
-            b0=_xbus_GetDataFIFO();
+            b3=freedo_xbus_get_data_FIFO();
+            b2=freedo_xbus_get_data_FIFO();
+            b1=freedo_xbus_get_data_FIFO();
+            b0=freedo_xbus_get_data_FIFO();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);
@@ -581,10 +581,10 @@ void HandleDMA(uint32_t val)
       {
          while(len>=0)
          {
-            b3=_xbus_GetDataFIFO();
-            b2=_xbus_GetDataFIFO();
-            b1=_xbus_GetDataFIFO();
-            b0=_xbus_GetDataFIFO();
+            b3=freedo_xbus_get_data_FIFO();
+            b2=freedo_xbus_get_data_FIFO();
+            b1=freedo_xbus_get_data_FIFO();
+            b0=freedo_xbus_get_data_FIFO();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);

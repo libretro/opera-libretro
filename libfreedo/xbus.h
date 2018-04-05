@@ -21,12 +21,10 @@
   Felix Lazarev
 */
 
-// XBUS.h: interface for the CXBUS class.
-//
-//////////////////////////////////////////////////////////////////////
+/* xbus.h: interface for the CXBUS class. */
 
-#ifndef	XBUS_3DO_HEADER
-#define  XBUS_3DO_HEADER
+#ifndef LIBFREEDO_XBUS_H_INCLUDED
+#define LIBFREEDO_XBUS_H_INCLUDED
 
 #include "IsoXBUS.h"
 
@@ -34,28 +32,31 @@
 
 EXTERN_C_BEGIN
 
-typedef void* (*_xbus_device)(int, void*);
-int _xbus_Attach(_xbus_device dev);
+typedef void* (*freedo_xbus_device)(int, void*);
 
-void _xbus_DevLoad(int dev, const char * name);
-void _xbus_DevEject(int dev);
+void     freedo_xbus_init(freedo_xbus_device zero_dev);
+void     freedo_xbus_destroy(void);
 
-void _xbus_Init(_xbus_device zero_dev);
-void _xbus_Destroy(void);
+int      freedo_xbus_attach(freedo_xbus_device dev);
 
-void _xbus_SetSEL(uint32_t val);
-void _xbus_SetPoll(uint32_t val);
-void _xbus_SetCommandFIFO(uint32_t val);
-void _xbus_SetDataFIFO(uint32_t val);
+void     freedo_xbus_device_load(int dev, const char *name);
+void     freedo_xbus_device_eject(int dev);
 
-uint32_t _xbus_GetStatusFIFO(void);
-uint32_t _xbus_GetRes(void);
-uint32_t _xbus_GetPoll(void);
-uint32_t _xbus_GetDataFIFO(void);
+void     freedo_xbus_set_sel(const uint32_t val_);
+uint32_t freedo_xbus_get_res(void);
 
-uint32_t _xbus_SaveSize(void);
-void _xbus_Save(void *buff);
-void _xbus_Load(void *buff);
+void     freedo_xbus_set_poll(const uint32_t val_);
+uint32_t freedo_xbus_get_poll(void);
+
+void     freedo_xbus_set_cmd_FIFO(const uint32_t val_);
+uint32_t freedo_xbus_get_status_FIFO(void);
+
+void     freedo_xbus_set_data_FIFO(const uint32_t val_);
+uint32_t freedo_xbus_get_data_FIFO(void);
+
+uint32_t freedo_xbus_state_size(void);
+void     freedo_xbus_state_save(void *buf_);
+void     freedo_xbus_state_load(const void *buf_);
 
 EXTERN_C_END
 
