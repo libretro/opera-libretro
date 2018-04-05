@@ -43,8 +43,6 @@ _ext_Interface  io_interface;
 extern void* Getp_NVRAM(void);
 extern void* Getp_ROMS(void);
 extern void* Getp_RAMS(void);
-extern int ARM_CLOCK;
-extern int THE_ARM_CLOCK;
 extern int FMVFIX;
 extern int lsize;
 extern int flagtime;
@@ -187,7 +185,7 @@ void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
          i += cnt;
          cnt = 0;
       }
-   }while(i < (ARM_CLOCK/60));
+   }while(i < (freedo_quarz_cpu_get_freq()/60));
 }
 
 void _3do_Destroy()
@@ -315,9 +313,6 @@ void *_freedo_Interface(int procedure, void *datum)
          Getp_ROMS();
          break;
       case FDP_GETP_PROFILE:
-         break;
-      case FDP_SET_ARMCLOCK:
-         ARM_CLOCK=(intptr_t)datum;
          break;
       case FDP_SET_TEXQUALITY:
          __tex__scaler=(intptr_t)datum;
