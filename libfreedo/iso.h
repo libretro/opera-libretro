@@ -1,24 +1,24 @@
 /*
   www.freedo.org
-The first and only working 3DO multiplayer emulator.
+  The first and only working 3DO multiplayer emulator.
 
-The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
-*   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-*   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-    of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-*   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-    or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
+  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
+  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
+  or any other material published by FreeDO is strictly forbidden without owners approval.
 
-The above notes are taking precedence over GNU LGPL in conflicting situations.
+  The above notes are taking precedence over GNU LGPL in conflicting situations.
 
-Project authors:
+  Project authors:
 
-Alexander Troosh
-Maxim Grishin
-Allen Wright
-John Sammons
-Felix Lazarev
+  Alexander Troosh
+  Maxim Grishin
+  Allen Wright
+  John Sammons
+  Felix Lazarev
 */
 
 #ifndef ISO_3DO_HEADER
@@ -47,30 +47,30 @@ Felix Lazarev
 #define REQSIZE	2048
 
 enum MEI_CDROM_Error_Codes {
-   MEI_CDROM_no_error = 0x00,
-   MEI_CDROM_recv_retry = 0x01,
-   MEI_CDROM_recv_ecc = 0x02,
-   MEI_CDROM_not_ready = 0x03,
-   MEI_CDROM_toc_error = 0x04,
-   MEI_CDROM_unrecv_error = 0x05,
-   MEI_CDROM_seek_error = 0x06,
-   MEI_CDROM_track_error = 0x07,
-   MEI_CDROM_ram_error = 0x08,
-   MEI_CDROM_diag_error = 0x09,
-   MEI_CDROM_focus_error = 0x0A,
-   MEI_CDROM_clv_error = 0x0B,
-   MEI_CDROM_data_error = 0x0C,
-   MEI_CDROM_address_error = 0x0D,
-   MEI_CDROM_cdb_error = 0x0E,
-   MEI_CDROM_end_address = 0x0F,
-   MEI_CDROM_mode_error = 0x10,
-   MEI_CDROM_media_changed = 0x11,
-   MEI_CDROM_hard_reset = 0x12,
-   MEI_CDROM_rom_error = 0x13,
-   MEI_CDROM_cmd_error = 0x14,
-   MEI_CDROM_disc_out = 0x15,
-   MEI_CDROM_hardware_error = 0x16,
-   MEI_CDROM_illegal_request = 0x17
+  MEI_CDROM_no_error = 0x00,
+  MEI_CDROM_recv_retry = 0x01,
+  MEI_CDROM_recv_ecc = 0x02,
+  MEI_CDROM_not_ready = 0x03,
+  MEI_CDROM_toc_error = 0x04,
+  MEI_CDROM_unrecv_error = 0x05,
+  MEI_CDROM_seek_error = 0x06,
+  MEI_CDROM_track_error = 0x07,
+  MEI_CDROM_ram_error = 0x08,
+  MEI_CDROM_diag_error = 0x09,
+  MEI_CDROM_focus_error = 0x0A,
+  MEI_CDROM_clv_error = 0x0B,
+  MEI_CDROM_data_error = 0x0C,
+  MEI_CDROM_address_error = 0x0D,
+  MEI_CDROM_cdb_error = 0x0E,
+  MEI_CDROM_end_address = 0x0F,
+  MEI_CDROM_mode_error = 0x10,
+  MEI_CDROM_media_changed = 0x11,
+  MEI_CDROM_hard_reset = 0x12,
+  MEI_CDROM_rom_error = 0x13,
+  MEI_CDROM_cmd_error = 0x14,
+  MEI_CDROM_disc_out = 0x15,
+  MEI_CDROM_hardware_error = 0x16,
+  MEI_CDROM_illegal_request = 0x17
 };
 
 
@@ -133,54 +133,54 @@ EXTERN_C_BEGIN
 //disc data
 struct TOCEntry
 {
-   uint8_t res0;
-   uint8_t CDCTL;
-   uint8_t TRKNUM;
-   uint8_t res1;
-   uint8_t mm;
-   uint8_t ss;
-   uint8_t ff;
-   uint8_t res2;
+  uint8_t res0;
+  uint8_t CDCTL;
+  uint8_t TRKNUM;
+  uint8_t res1;
+  uint8_t mm;
+  uint8_t ss;
+  uint8_t ff;
+  uint8_t res2;
 };
 
 //disc data
 struct DISCStc{
-   uint8_t curabsmsf[3]; //BIN form
-   uint8_t curtrack;
-   uint8_t nextmsf[3]; //BIN form
-   uint8_t tempmsf[3]; //BIN form
-   int32_t  tempblk;
-   int32_t  templba;
-   uint8_t currenterror;
-   uint8_t currentxbus;
-   uint32_t  currentoffset;
-   uint32_t  currentblocksize;
-   uint8_t currentspeed;
-   uint8_t  totalmsf[3];//BIN form
-   uint8_t  firsttrk;
-   uint8_t  lasttrk;
-   uint8_t  discid;
-   uint8_t  sesmsf[3]; //BIN form
-   struct TOCEntry DiscTOC[100];
+  uint8_t curabsmsf[3]; //BIN form
+  uint8_t curtrack;
+  uint8_t nextmsf[3]; //BIN form
+  uint8_t tempmsf[3]; //BIN form
+  int32_t  tempblk;
+  int32_t  templba;
+  uint8_t currenterror;
+  uint8_t currentxbus;
+  uint32_t  currentoffset;
+  uint32_t  currentblocksize;
+  uint8_t currentspeed;
+  uint8_t  totalmsf[3];//BIN form
+  uint8_t  firsttrk;
+  uint8_t  lasttrk;
+  uint8_t  discid;
+  uint8_t  sesmsf[3]; //BIN form
+  struct TOCEntry DiscTOC[100];
 };
 
 struct cdrom_Device
 {
-   uint8_t Poll;
-   uint8_t XbusStatus;
-   uint8_t StatusLen;
-   int32_t  DataLen;
-   int32_t  DataPtr;
-   uint32_t olddataptr;
-   uint8_t CmdPtr;
-   uint8_t Status[256];
-   uint8_t Data[REQSIZE];
-   uint8_t Command[7];
-   int8_t STATCYC;
-   int32_t Requested;
-   uint32_t MEIStatus;
-   struct DISCStc DISC;
-   uint32_t curr_sector;
+  uint8_t Poll;
+  uint8_t XbusStatus;
+  uint8_t StatusLen;
+  int32_t  DataLen;
+  int32_t  DataPtr;
+  uint32_t olddataptr;
+  uint8_t CmdPtr;
+  uint8_t Status[256];
+  uint8_t Data[REQSIZE];
+  uint8_t Command[7];
+  int8_t STATCYC;
+  int32_t Requested;
+  uint32_t MEIStatus;
+  struct DISCStc DISC;
+  uint32_t curr_sector;
 };
 
 extern struct cdrom_Device *isodrive;
