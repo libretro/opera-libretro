@@ -64,7 +64,7 @@ static INLINE uint32_t _bswap(uint32_t x)
    return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
 }
 
-extern void* _xbplug_MainDevice(int proc, void* data);
+extern void* xbus_plugin_main_cdrom_device(int proc_, void* data_);
 
 int _3do_Init(void)
 {
@@ -83,7 +83,7 @@ int _3do_Init(void)
    freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
    _madam_Init(Memory);
 
-   freedo_xbus_init(_xbplug_MainDevice);
+   freedo_xbus_init(xbus_plugin_main_cdrom_device);
 
    _clio_Init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
    _dsp_Init();

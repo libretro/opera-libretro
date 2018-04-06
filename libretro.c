@@ -565,10 +565,6 @@ void retro_unload_game(void)
 
    retro_cdimage_close(&cdimage);
 
-   if (isodrive)
-      free(isodrive);
-   isodrive = NULL;
-
    if (videoBuffer)
       free(videoBuffer);
    videoBuffer = NULL;

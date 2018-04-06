@@ -128,10 +128,9 @@ enum MEI_CDROM_Error_Codes {
 
 EXTERN_C_BEGIN
 
-#pragma pack(push,1)
 //drive specific
 //disc data
-struct TOCEntry
+struct iso_toc_entry_s
 {
   uint8_t res0;
   uint8_t CDCTL;
@@ -143,8 +142,11 @@ struct TOCEntry
   uint8_t res2;
 };
 
+typedef struct iso_toc_entry_s iso_toc_entry_t;
+
 //disc data
-struct DISCStc{
+struct iso_disc_data_s
+{
   uint8_t curabsmsf[3]; //BIN form
   uint8_t curtrack;
   uint8_t nextmsf[3]; //BIN form
@@ -161,10 +163,12 @@ struct DISCStc{
   uint8_t  lasttrk;
   uint8_t  discid;
   uint8_t  sesmsf[3]; //BIN form
-  struct TOCEntry DiscTOC[100];
+  iso_toc_entry_t DiscTOC[100];
 };
 
-struct cdrom_Device
+typedef struct iso_disc_data_s iso_disc_data_t;
+
+struct iso_cdrom_device_s
 {
   uint8_t Poll;
   uint8_t XbusStatus;
@@ -179,11 +183,11 @@ struct cdrom_Device
   int8_t STATCYC;
   int32_t Requested;
   uint32_t MEIStatus;
-  struct DISCStc DISC;
+  iso_disc_data_t DISC;
   uint32_t curr_sector;
 };
 
-extern struct cdrom_Device *isodrive;
+typedef struct iso_cdrom_device_s iso_cdrom_device_t;
 
 EXTERN_C_END
 
