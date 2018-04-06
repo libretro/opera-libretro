@@ -34,7 +34,7 @@
 #include "frame.h"
 #include "Madam.h"
 #include "sport.h"
-#include "XBUS.h"
+#include "xbus.h"
 #include "DiagPort.h"
 #include "quarz.h"
 
@@ -83,7 +83,7 @@ int _3do_Init(void)
    freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
    _madam_Init(Memory);
 
-   _xbus_Init(_xbplug_MainDevice);
+   freedo_xbus_init(_xbplug_MainDevice);
 
    _clio_Init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
    _dsp_Init();
@@ -117,7 +117,7 @@ int _3do_Init(void)
       F1	REVISION TEST
       FF	TEST END (halt)
       */
-   _xbus_DevLoad(0,NULL);
+   freedo_xbus_device_load(0,NULL);
 
    freedo_quarz_init();
 
@@ -191,7 +191,7 @@ void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
 void _3do_Destroy()
 {
    _arm_Destroy();
-   _xbus_Destroy();
+   freedo_xbus_destroy();
 }
 
 uint32_t _3do_SaveSize(void)
@@ -204,7 +204,7 @@ uint32_t _3do_SaveSize(void)
    tmp+=freedo_quarz_state_size();
    tmp+=freedo_sport_state_size();
    tmp+=_madam_SaveSize();
-   tmp+=_xbus_SaveSize();
+   tmp+=freedo_xbus_state_size();
    tmp+=16*4;
    return tmp;
 }
@@ -223,7 +223,7 @@ void _3do_Save(void *buff)
    indexes[6]=indexes[5]+freedo_quarz_state_size();
    indexes[7]=indexes[6]+freedo_sport_state_size();
    indexes[8]=indexes[7]+_madam_SaveSize();
-   indexes[9]=indexes[8]+_xbus_SaveSize();
+   indexes[9]=indexes[8]+freedo_xbus_state_size();
 
    _arm_Save(&data[indexes[1]]);
    freedo_vdlp_state_save(&data[indexes[2]]);
@@ -232,7 +232,7 @@ void _3do_Save(void *buff)
    freedo_quarz_state_save(&data[indexes[5]]);
    freedo_sport_state_save(&data[indexes[6]]);
    _madam_Save(&data[indexes[7]]);
-   _xbus_Save(&data[indexes[8]]);
+   freedo_xbus_state_save(&data[indexes[8]]);
 
 }
 
@@ -250,7 +250,7 @@ bool _3do_Load(void *buff)
    freedo_quarz_state_load(&data[indexes[5]]);
    freedo_sport_state_load(&data[indexes[6]]);
    _madam_Load(&data[indexes[7]]);
-   _xbus_Load(&data[indexes[8]]);
+   freedo_xbus_state_load(&data[indexes[8]]);
 
    return true;
 }

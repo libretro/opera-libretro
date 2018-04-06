@@ -26,7 +26,7 @@
   *  Allen Wright
   *  John Sammons
   *  Felix Lazarev
-  */
+*/
 
 /* VDLP.h: interface for the CVDLP class. */
 
