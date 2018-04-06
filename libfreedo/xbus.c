@@ -4,297 +4,330 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
+
+#include "Clio.h"
+#include "xbus.h"
 
 #include <stdint.h>
 #include <string.h>
 
-#include "xbus.h"
-#include "Clio.h"
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
+#define POLSTMASK 0x01
+#define POLDTMASK 0x02
+#define POLMAMASK 0x04
+#define POLREMASK 0x08
+#define POLST	  0x10
+#define POLDT	  0x20
+#define POLMA	  0x40
+#define POLRE	  0x80
 
 struct xbus_datum_s
 {
-  uint8_t XBSEL;
-  uint8_t XBSELH;
-  uint8_t POLF;
-  uint8_t POLDEVF;
-  uint8_t STDEVF[255];  //status of devices
-  uint8_t STLENF; //pointer in fifo
-  uint8_t CmdF[7];
-  uint8_t CmdPtrF;
+  uint8_t xb_sel_l;
+  uint8_t xb_sel_h;
+  uint8_t polf;
+  uint8_t poldevf;
+  uint8_t stdevf[255]; // status of devices
+  uint8_t stlenf; // pointer in FIFO
+  uint8_t cmdf[7];
+  uint8_t cmdptrf;
 };
 
 typedef struct xbus_datum_s xbus_datum_t;
 
-#define XBSEL xbus.XBSEL
-#define XBSELH xbus.XBSELH
-#define POLF xbus.POLF
-#define POLDEVF xbus.POLDEVF
-#define STDEVF xbus.STDEVF
-#define STLENF xbus.STLENF
-#define CmdF xbus.CmdF
-#define CmdPtrF xbus.CmdPtrF
-
-static xbus_datum_t       xbus;
+static xbus_datum_t       XBUS;
 static freedo_xbus_device xdev[16];
 
-#define POLSTMASK	0x01
-#define POLDTMASK	0x02
-#define POLMAMASK	0x04
-#define POLREMASK	0x08
-#define POLST		0x10
-#define POLDT		0x20
-#define POLMA		0x40
-#define POLRE		0x80
-
-void ExecuteCommandF(void);
-
-void freedo_xbus_set_cmd_FIFO(const uint32_t val_)
+void
+xbus_execute_command_f(void)
 {
-  if(xdev[XBSEL])
+  if(XBUS.cmdf[0] == 0x83)
     {
-      (*xdev[XBSEL])(XBP_SET_COMMAND,(void*)(uintptr_t)val_);
-      if((*xdev[XBSEL])(XBP_FIQ,NULL))
-        _clio_GenerateFiq(4,0);
-    }
-  else if(XBSEL==0xf)
-    {
-      if (CmdPtrF<7)
-        {
-          CmdF[CmdPtrF]=(uint8_t)val_;
-          CmdPtrF++;
-        }
-      if(CmdPtrF>=7)
-        {
-          ExecuteCommandF();
-          CmdPtrF=0;
-        }
-    }
-}
-
-uint32_t freedo_xbus_get_data_FIFO(void)
-{
-  if(xdev[XBSEL])
-    return (intptr_t)(*xdev[XBSEL])(XBP_GET_DATA,NULL);
-  return 0;
-}
-
-uint32_t freedo_xbus_get_poll(void)
-{
-  uint32_t res = 0x30;
-
-  if(XBSEL==0xf)
-    res = POLF;
-  else if(xdev[XBSEL])
-    res = (intptr_t)(*xdev[XBSEL])(XBP_GET_POLL, NULL);
-
-  if(XBSELH&0x80)
-    res &= 0xf;
-
-  return res;
-}
-
-uint32_t freedo_xbus_get_res(void)
-{
-  if(xdev[XBSEL])
-    return (intptr_t)(*xdev[XBSEL])(XBP_RESERV, NULL);
-  return 0;
-}
-
-void ExecuteCommandF(void)
-{
-  if(CmdF[0]==0x83)
-    {
-      STLENF=12;
-      STDEVF[0]=0x83;
-      STDEVF[1]=0x01;
-      STDEVF[2]=0x01;
-      STDEVF[3]=0x01;
-      STDEVF[4]=0x01;
-      STDEVF[5]=0x01;
-      STDEVF[6]=0x01;
-      STDEVF[7]=0x01;
-      STDEVF[8]=0x01;
-      STDEVF[9]=0x01;
-      STDEVF[10]=0x01;
-      STDEVF[11]=0x01;
-      POLDEVF|=POLST;
+      XBUS.stlenf      = 12;
+      XBUS.stdevf[0]   = 0x83;
+      XBUS.stdevf[1]   = 0x01;
+      XBUS.stdevf[2]   = 0x01;
+      XBUS.stdevf[3]   = 0x01;
+      XBUS.stdevf[4]   = 0x01;
+      XBUS.stdevf[5]   = 0x01;
+      XBUS.stdevf[6]   = 0x01;
+      XBUS.stdevf[7]   = 0x01;
+      XBUS.stdevf[8]   = 0x01;
+      XBUS.stdevf[9]   = 0x01;
+      XBUS.stdevf[10]  = 0x01;
+      XBUS.stdevf[11]  = 0x01;
+      XBUS.poldevf    |= POLST;
     }
 
-  if(((POLDEVF&POLST) && (POLDEVF&POLSTMASK)) || ((POLDEVF&POLDT) && (POLDEVF&POLDTMASK)))
+  if(((XBUS.poldevf & POLST)      &&
+      (XBUS.poldevf & POLSTMASK)) ||
+     ((XBUS.poldevf & POLDT)      &&
+      (XBUS.poldevf & POLDTMASK)))
     _clio_GenerateFiq(4,0);
 }
 
-uint32_t freedo_xbus_get_status_FIFO(void)
+void
+freedo_xbus_set_cmd_FIFO(const uint32_t val_)
 {
-  uint32_t res=0;
-
-  if(xdev[XBSEL])
-    res=(intptr_t)(*xdev[XBSEL])(XBP_GET_STATUS,NULL);
-  else if(XBSEL==0xf)
+  if(xdev[XBUS.xb_sel_l])
     {
-      if(STLENF>0)
-        {
-          res=STDEVF[0];
-          STLENF--;
-          if(STLENF>0)
-            {
-              int i;
-              for(i = 0; i < STLENF; i++)
-                STDEVF[i] = STDEVF[i+1];
-            }
-          else
-            POLDEVF&=~POLST;
-        }
-      return res;
+      xdev[XBUS.xb_sel_l](XBP_SET_COMMAND,(void*)(uintptr_t)val_);
+      if(xdev[XBUS.xb_sel_l](XBP_FIQ,NULL))
+        _clio_GenerateFiq(4,0);
     }
+  else if(XBUS.xb_sel_l == 0x0F)
+    {
+      if (XBUS.cmdptrf < 7)
+        {
+          XBUS.cmdf[XBUS.cmdptrf] = (uint8_t)val_;
+          XBUS.cmdptrf++;
+        }
+
+      if(XBUS.cmdptrf >= 7)
+        {
+          xbus_execute_command_f();
+          XBUS.cmdptrf = 0;
+        }
+    }
+}
+
+uint32_t
+freedo_xbus_get_data_FIFO(void)
+{
+  if(xdev[XBUS.xb_sel_l])
+    return (uintptr_t)xdev[XBUS.xb_sel_l](XBP_GET_DATA,NULL);
+
+  return 0;
+}
+
+uint32_t
+freedo_xbus_get_poll(void)
+{
+  uint32_t res = 0x30;
+
+  if(XBUS.xb_sel_l == 0x0F)
+    res = XBUS.polf;
+  else if(xdev[XBUS.xb_sel_l])
+    res = (uintptr_t)xdev[XBUS.xb_sel_l](XBP_GET_POLL,NULL);
+
+  if(XBUS.xb_sel_h & 0x80)
+    res &= 0x0F;
 
   return res;
 }
 
-void freedo_xbus_set_data_FIFO(uint32_t val_)
+uint32_t
+freedo_xbus_get_res(void)
 {
-  if(xdev[XBSEL])
-    (*xdev[XBSEL])(XBP_SET_DATA,(void*)(uintptr_t)val_);
+  if(xdev[XBUS.xb_sel_l])
+    return (uintptr_t)xdev[XBUS.xb_sel_l](XBP_RESERV,NULL);
+  return 0;
 }
 
-void freedo_xbus_set_poll(uint32_t val_)
+
+uint32_t
+freedo_xbus_get_status_FIFO(void)
 {
-  if(XBSEL==0xf)
+  uint32_t rv;
+
+  rv = 0;
+  if(xdev[XBUS.xb_sel_l])
     {
-      POLF&=0xF0;
-      POLF|=(val_&0xf);
+      rv = (uintptr_t)xdev[XBUS.xb_sel_l](XBP_GET_STATUS,NULL);
     }
-  if(xdev[XBSEL])
+  else if(XBUS.xb_sel_l == 0x0F)
     {
-      (*xdev[XBSEL])(XBP_SET_POLL,(void*)(uintptr_t)val_);
-      if((*xdev[XBSEL])(XBP_FIQ,NULL)) _clio_GenerateFiq(4,0);
+      if(XBUS.stlenf > 0)
+        {
+          rv = XBUS.stdevf[0];
+          XBUS.stlenf--;
+          if(XBUS.stlenf > 0)
+            {
+              int i;
+              for(i = 0; i < XBUS.stlenf; i++)
+                XBUS.stdevf[i] = XBUS.stdevf[i+1];
+            }
+          else
+            {
+              XBUS.poldevf &= ~POLST;
+            }
+        }
+    }
+
+  return rv;
+}
+
+void
+freedo_xbus_set_data_FIFO(const uint32_t val_)
+{
+  if(xdev[XBUS.xb_sel_l])
+    xdev[XBUS.xb_sel_l](XBP_SET_DATA,(void*)(uintptr_t)val_);
+}
+
+void
+freedo_xbus_set_poll(const uint32_t val_)
+{
+  if(XBUS.xb_sel_l == 0x0F)
+    {
+      XBUS.polf &= 0xF0;
+      XBUS.polf |= (val_ & 0x0F);
+    }
+
+  if(xdev[XBUS.xb_sel_l])
+    {
+      xdev[XBUS.xb_sel_l](XBP_SET_POLL,(void*)(uintptr_t)val_);
+      if(xdev[XBUS.xb_sel_l](XBP_FIQ,NULL))
+        _clio_GenerateFiq(4,0);
     }
 }
 
-void freedo_xbus_set_sel(uint32_t val_)
+void
+freedo_xbus_set_sel(uint32_t val_)
 {
-  XBSEL=(uint8_t)val_&0xf;
-  XBSELH=(uint8_t)val_&0xf0;
+  XBUS.xb_sel_l = ((uint8_t)val_ & 0x0F);
+  XBUS.xb_sel_h = ((uint8_t)val_ & 0xF0);
 }
 
-void freedo_xbus_init(freedo_xbus_device zero_dev)
+void
+freedo_xbus_init(freedo_xbus_device zero_dev_)
 {
   int i;
 
-  POLF=0xf;
+  XBUS.polf = 0x0F;
 
   for(i = 0; i < 15; i++)
     xdev[i] = NULL;
 
-  freedo_xbus_attach(zero_dev);
+  freedo_xbus_attach(zero_dev_);
 }
 
-int freedo_xbus_attach(freedo_xbus_device dev)
+int
+freedo_xbus_attach(freedo_xbus_device dev_)
 {
   int i;
-  for(i=0;i<16;i++)
+
+  for(i = 0; i < 16; i++)
     {
       if(!xdev[i])
         break;
     }
 
-  if(i==16)
+  if(i == 16)
     return -1;
 
-  xdev[i]=dev;
-  (*xdev[i])(XBP_INIT,NULL);
+  xdev[i] = dev_;
+  xdev[i](XBP_INIT,NULL);
 
   return i;
 }
 
-void freedo_xbus_device_load(int dev, const char * name)
+void
+freedo_xbus_device_load(const int   dev_,
+                        const char *name_)
 {
-  (*xdev[dev])(XBP_RESET,(void*)name);
+  xdev[dev_](XBP_RESET,(void*)name_);
 }
 
-void freedo_xbus_device_eject(int dev)
+void
+freedo_xbus_device_eject(const int dev_)
 {
-  (*xdev[dev])(XBP_RESET,NULL);
+  xdev[dev_](XBP_RESET,NULL);
 }
 
-void freedo_xbus_destroy(void)
+void
+freedo_xbus_destroy(void)
 {
   unsigned i;
-  for(i=0; i < 16; i++)
+
+  for(i = 0; i < 16; i++)
     {
       if(xdev[i])
         {
-          (*xdev[i])(XBP_DESTROY,NULL);
-          xdev[i]=NULL;
+          xdev[i](XBP_DESTROY,NULL);
+          xdev[i] = NULL;
         }
     }
 }
 
-uint32_t freedo_xbus_state_size(void)
+uint32_t
+freedo_xbus_state_size(void)
 {
-  uint32_t tmp=sizeof(xbus_datum_t);
   int i;
-  tmp+=16*4;
-  for(i=0;i<15;i++)
+  uint32_t tmp = sizeof(xbus_datum_t);
+
+  tmp += (16 * 4);
+  for(i = 0; i < 15; i++)
     {
       if(!xdev[i])
         continue;
-      tmp+= (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE,NULL);
+      tmp += (uintptr_t)xdev[i](XBP_GET_SAVESIZE,NULL);
     }
+
   return tmp;
 }
 
 void freedo_xbus_state_save(void *buf_)
 {
-  int i,off,j,tmp;
-  memcpy(buf_,&xbus,sizeof(xbus_datum_t));
-  j=off=sizeof(xbus_datum_t);
-  off+=16*4;
+  uint32_t i;
+  uint32_t j;
+  uint32_t off;
+  uint32_t tmp;
 
-  for(i=0;i<15;i++)
+  memcpy(buf_,&XBUS,sizeof(xbus_datum_t));
+
+  j = off = sizeof(xbus_datum_t);
+  off += (16 * 4);
+
+  for(i = 0; i < 15; i++)
     {
       if(!xdev[i])
         {
-          tmp=0;
+          tmp = 0;
           memcpy(&((uint8_t*)buf_)[j+i*4],&tmp,4);
         }
       else
         {
-          (*xdev[i])(XBP_GET_SAVEDATA,&((uint8_t*)buf_)[off]);
+          xdev[i](XBP_GET_SAVEDATA,&((uint8_t*)buf_)[off]);
           memcpy(&((uint8_t*)buf_)[j+i*4],&off,4);
-          off += (intptr_t)(*xdev[i])(XBP_GET_SAVESIZE, NULL);
+          off += (uintptr_t)xdev[i](XBP_GET_SAVESIZE,NULL);
         }
     }
 }
 
-void freedo_xbus_state_load(const void *buf_)
+void
+freedo_xbus_state_load(const void *buf_)
 {
-  int i,offd;
+  uint32_t i;
+  uint32_t j;
+  uint32_t offd;
 
-  int j=sizeof(xbus_datum_t);
+  j = sizeof(xbus_datum_t);
 
-  memcpy(&xbus,buf_,j);
+  memcpy(&XBUS,buf_,j);
 
-  for(i=0;i<15;i++)
+  for(i = 0; i < 15; i++)
     {
       memcpy(&offd,&((uint8_t*)buf_)[j+i*4],4);
 
@@ -302,8 +335,8 @@ void freedo_xbus_state_load(const void *buf_)
         continue;
 
       if(!offd)
-        (*xdev[i])(XBP_RESET,NULL);
+        xdev[i](XBP_RESET,NULL);
       else
-        (*xdev[i])(XBP_SET_SAVEDATA,&((uint8_t*)buf_)[offd]);
+        xdev[i](XBP_SET_SAVEDATA,&((uint8_t*)buf_)[offd]);
     }
 }
