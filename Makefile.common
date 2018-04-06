@@ -24,7 +24,7 @@ SOURCES_C += \
 	$(4DO_DIR)/arm.c \
 	$(4DO_DIR)/Clio.c \
 	$(4DO_DIR)/DSP.c \
-	$(4DO_DIR)/Iso.c \
+	$(4DO_DIR)/iso.c \
 	$(4DO_DIR)/Madam.c \
 	$(4DO_DIR)/quarz.c \
 	$(4DO_DIR)/vdlp.c \

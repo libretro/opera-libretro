@@ -24,7 +24,7 @@
 #include "retro_cdimage.h"
 
 #include "libfreedo/freedocore.h"
-#include "libfreedo/IsoXBUS.h"
+#include "libfreedo/iso.h"
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
 #include "libfreedo/Madam.h"

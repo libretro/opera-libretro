@@ -33,7 +33,7 @@
 #ifndef LIBFREEDO_XBUS_H_INCLUDED
 #define LIBFREEDO_XBUS_H_INCLUDED
 
-#include "IsoXBUS.h"
+#include "iso.h"
 
 #include "extern_c.h"
 

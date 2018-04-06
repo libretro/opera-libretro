@@ -30,7 +30,7 @@
 
 #include <boolean.h>
 
-#include "IsoXBUS.h"
+#include "iso.h"
 
 #pragma pack(pop)
 
