@@ -301,12 +301,12 @@ int _clio_Poke(uint32_t addr, uint32_t val)
    }
    else if((addr>=0x580) && (addr<0x5c0))
    {
-      freedo_xbus_set_cmd_FIFO(val); // on FIFO Filled execute the command
+      freedo_xbus_fifo_set_cmd(val); // on FIFO Filled execute the command
       return 0;
    }
    else if((addr>=0x5c0) && (addr<0x600))
    {
-      freedo_xbus_set_data_FIFO(val); // on FIFO Filled execute the command
+      freedo_xbus_fifo_set_data(val); // on FIFO Filled execute the command
       return 0;
    }
    else if(addr==0x28)
@@ -440,9 +440,9 @@ uint32_t _clio_Peek(uint32_t addr)
       return freedo_xbus_get_poll();
    }
    else if((addr>=0x580) && (addr<0x5c0))
-      return freedo_xbus_get_status_FIFO();
+      return freedo_xbus_fifo_get_status();
    else if((addr>=0x5c0) && (addr<0x600))
-      return freedo_xbus_get_data_FIFO();
+      return freedo_xbus_fifo_get_data();
    else if(addr==0x0)
       return 0x02020000;
    else if((addr>=0x3800)&&(addr<=0x3bff))//0x0340 3800 … 0x0340 3BFF
@@ -554,10 +554,10 @@ void HandleDMA(uint32_t val)
       {
          while(len>=0)
          {
-            b3=freedo_xbus_get_data_FIFO();
-            b2=freedo_xbus_get_data_FIFO();
-            b1=freedo_xbus_get_data_FIFO();
-            b0=freedo_xbus_get_data_FIFO();
+            b3=freedo_xbus_fifo_get_data();
+            b2=freedo_xbus_fifo_get_data();
+            b1=freedo_xbus_fifo_get_data();
+            b0=freedo_xbus_fifo_get_data();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);
@@ -581,10 +581,10 @@ void HandleDMA(uint32_t val)
       {
          while(len>=0)
          {
-            b3=freedo_xbus_get_data_FIFO();
-            b2=freedo_xbus_get_data_FIFO();
-            b1=freedo_xbus_get_data_FIFO();
-            b0=freedo_xbus_get_data_FIFO();
+            b3=freedo_xbus_fifo_get_data();
+            b2=freedo_xbus_fifo_get_data();
+            b1=freedo_xbus_fifo_get_data();
+            b0=freedo_xbus_fifo_get_data();
 
 #ifdef MSB_FIRST
             _mem_write8(trg,b3);

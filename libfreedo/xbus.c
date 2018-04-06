@@ -57,6 +57,7 @@ struct xbus_datum_s
 
 typedef struct xbus_datum_s xbus_datum_t;
 
+/* FIXME: should not be using globals */
 static xbus_datum_t       XBUS;
 static freedo_xbus_device xdev[16];
 
@@ -89,7 +90,7 @@ xbus_execute_command_f(void)
 }
 
 void
-freedo_xbus_set_cmd_FIFO(const uint32_t val_)
+freedo_xbus_fifo_set_cmd(const uint32_t val_)
 {
   if(xdev[XBUS.xb_sel_l])
     {
@@ -99,7 +100,7 @@ freedo_xbus_set_cmd_FIFO(const uint32_t val_)
     }
   else if(XBUS.xb_sel_l == 0x0F)
     {
-      if (XBUS.cmdptrf < 7)
+      if(XBUS.cmdptrf < 7)
         {
           XBUS.cmdf[XBUS.cmdptrf] = (uint8_t)val_;
           XBUS.cmdptrf++;
@@ -114,7 +115,7 @@ freedo_xbus_set_cmd_FIFO(const uint32_t val_)
 }
 
 uint32_t
-freedo_xbus_get_data_FIFO(void)
+freedo_xbus_fifo_get_data(void)
 {
   if(xdev[XBUS.xb_sel_l])
     return (uintptr_t)xdev[XBUS.xb_sel_l](XBP_GET_DATA,NULL);
@@ -148,7 +149,7 @@ freedo_xbus_get_res(void)
 
 
 uint32_t
-freedo_xbus_get_status_FIFO(void)
+freedo_xbus_fifo_get_status(void)
 {
   uint32_t rv;
 
@@ -180,7 +181,7 @@ freedo_xbus_get_status_FIFO(void)
 }
 
 void
-freedo_xbus_set_data_FIFO(const uint32_t val_)
+freedo_xbus_fifo_set_data(const uint32_t val_)
 {
   if(xdev[XBUS.xb_sel_l])
     xdev[XBUS.xb_sel_l](XBP_SET_DATA,(void*)(uintptr_t)val_);

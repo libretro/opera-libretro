@@ -24,11 +24,12 @@ SOURCES_C += \
 	$(4DO_DIR)/arm.c \
 	$(4DO_DIR)/Clio.c \
 	$(4DO_DIR)/DSP.c \
-	$(4DO_DIR)/iso.c \
+	$(4DO_DIR)/cdrom.c \
 	$(4DO_DIR)/Madam.c \
 	$(4DO_DIR)/quarz.c \
 	$(4DO_DIR)/vdlp.c \
 	$(4DO_DIR)/xbus.c \
+        $(4DO_DIR)/xbus_cdrom_plugin.c \
 	$(4DO_DIR)/DiagPort.c \
 	$(4DO_DIR)/frame.c \
 	$(4DO_DIR)/bitop.c \

@@ -35,6 +35,7 @@
 #include "Madam.h"
 #include "sport.h"
 #include "xbus.h"
+#include "xbus_cdrom_plugin.h"
 #include "DiagPort.h"
 #include "quarz.h"
 
@@ -64,8 +65,6 @@ static INLINE uint32_t _bswap(uint32_t x)
    return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
 }
 
-extern void* xbus_plugin_main_cdrom_device(int proc_, void* data_);
-
 int _3do_Init(void)
 {
    int i;
@@ -83,7 +82,7 @@ int _3do_Init(void)
    freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
    _madam_Init(Memory);
 
-   freedo_xbus_init(xbus_plugin_main_cdrom_device);
+   freedo_xbus_init(xbus_cdrom_plugin);
 
    _clio_Init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
    _dsp_Init();
@@ -253,21 +252,6 @@ bool _3do_Load(void *buff)
    freedo_xbus_state_load(&data[indexes[8]]);
 
    return true;
-}
-
-void _3do_OnSector(uint32_t sector)
-{
-   io_interface(EXT_ON_SECTOR,(void*)(uintptr_t)sector);
-}
-
-void _3do_Read2048(void *buff)
-{
-   io_interface(EXT_READ2048,(void*)buff);
-}
-
-uint32_t _3do_DiscSize(void)
-{
-   return (intptr_t)io_interface(EXT_GET_DISC_SIZE,NULL);
 }
 
 void *_freedo_Interface(int procedure, void *datum)

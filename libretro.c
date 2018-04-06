@@ -24,12 +24,12 @@
 #include "retro_cdimage.h"
 
 #include "libfreedo/freedocore.h"
-#include "libfreedo/iso.h"
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
 #include "libfreedo/Madam.h"
 #include "libfreedo/vdlp.h"
 #include "libfreedo/hack_flags.h"
+#include "libfreedo/cdrom.h"
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
@@ -132,6 +132,27 @@ static void initVideo(void)
    memset(frame, 0, sizeof(vdlp_frame_t));
 }
 
+static
+uint32_t
+cdimage_get_size(void)
+{
+  return retro_cdimage_get_number_of_logical_blocks(&cdimage);
+}
+
+static
+void
+cdimage_set_sector(const uint32_t sector_)
+{
+  currentSector = sector_;
+}
+
+static
+void
+cdimage_read_sector(void *buf_)
+{
+  retro_cdimage_read(&cdimage,currentSector,buf_,2048);
+}
+
 /* libfreedo callback */
 static void *fdcCallback(int procedure, void *data)
 {
@@ -141,7 +162,7 @@ static void *fdcCallback(int procedure, void *data)
          fsReadBios(biosPath, data);
          break;
       case EXT_SWAPFRAME:
-        Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
+         Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
          return frame;
       case EXT_PUSH_SAMPLE:
          /* TODO: fix all this, not right */
@@ -158,15 +179,6 @@ static void *fdcCallback(int procedure, void *data)
       case EXT_FRAMETRIGGER_MT:
          _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
-      case EXT_READ2048:
-        retro_cdimage_read(&cdimage,currentSector,data,2048);
-        break;
-      case EXT_GET_DISC_SIZE:
-        return (void*)retro_cdimage_get_number_of_logical_blocks(&cdimage);
-        break;
-      case EXT_ON_SECTOR:
-         currentSector = *((int*)&data);
-         break;
       case EXT_ARM_SYNC:
 #if 0
          printf("fdcCallback EXT_ARM_SYNC\n");
@@ -176,7 +188,8 @@ static void *fdcCallback(int procedure, void *data)
       default:
          break;
    }
-   return (void*)0;
+
+   return NULL;
 }
 
 /* See Madam.c for details on bitfields being set below */
@@ -618,6 +631,10 @@ retro_init(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
+
+  freedo_cdrom_set_callbacks(cdimage_get_size,
+                             cdimage_set_sector,
+                             cdimage_read_sector);
 }
 
 void retro_deinit(void)
