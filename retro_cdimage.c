@@ -137,9 +137,10 @@ retro_cdimage_open(const char *path_,
   if(ext == NULL)
     return -1;
 
+
   if(!strcasecmp(ext,"chd"))
     return retro_cdimage_open_chd(path_,cdimage_);
-  if(!strcasecmp(ext,"cue"))
+  if(!strcasecmp(ext,"cue") || !strncasecmp(ext, "cd", 2))
     return retro_cdimage_open_cue(path_,cdimage_);
   if(!strcasecmp(ext,"iso"))
     return retro_cdimage_open_iso(path_,cdimage_);

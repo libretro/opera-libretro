@@ -349,7 +349,7 @@ retro_get_system_info(struct retro_system_info *info_)
   info_->library_name     = "4DO";
   info_->library_version  = "1.3.2.4" GIT_VERSION;
   info_->need_fullpath    = true;
-  info_->valid_extensions = "iso|bin|chd|cue";
+  info_->valid_extensions = "iso|bin|chd|cue|m3u";
 }
 
 void
@@ -869,6 +869,7 @@ retro_init(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL,&level);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS,&serialization_quirks);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_control_cb);
 
   freedo_cdrom_set_callbacks(cdimage_get_size,
                              cdimage_set_sector,
