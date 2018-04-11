@@ -30,7 +30,7 @@
 
 #include "freedocore.h"
 
-#include "Clio.h"
+#include "clio.h"
 #include "quarz.h"
 #include "vdlp.h"
 

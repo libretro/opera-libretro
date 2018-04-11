@@ -22,7 +22,7 @@
  */
 
 #include <string.h>
-#include "Clio.h"
+#include "clio.h"
 #include "Madam.h"
 #include "xbus.h"
 #include "arm.h"

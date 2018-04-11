@@ -22,7 +22,7 @@ SOURCES_C := \
 SOURCES_C += \
 	$(4DO_DIR)/_3do_sys.c \
 	$(4DO_DIR)/arm.c \
-	$(4DO_DIR)/Clio.c \
+	$(4DO_DIR)/clio.c \
 	$(4DO_DIR)/DSP.c \
 	$(4DO_DIR)/freedo-cdrom.c \
 	$(4DO_DIR)/Madam.c \

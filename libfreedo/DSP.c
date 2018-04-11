@@ -27,7 +27,7 @@ Felix Lazarev
 
 #include <string.h>
 #include "DSP.h"
-#include "Clio.h"
+#include "clio.h"
 #include "freedocore.h"
 
 #if 0 //20 bit ALU

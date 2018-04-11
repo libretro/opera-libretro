@@ -30,7 +30,7 @@
 #include "arm.h"
 #include "vdlp.h"
 #include "DSP.h"
-#include "Clio.h"
+#include "clio.h"
 #include "frame.h"
 #include "Madam.h"
 #include "sport.h"

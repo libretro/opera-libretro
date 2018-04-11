@@ -28,7 +28,7 @@ Felix Lazarev
 #include <retro_inline.h>
 
 #include "Madam.h"
-#include "Clio.h"
+#include "clio.h"
 #include "vdlp.h"
 #include "arm.h"
 
