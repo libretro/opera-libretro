@@ -104,18 +104,18 @@ retro_set_input_state(retro_input_state_t cb)
 
 static void fsReadBios(const char *bios_path, void *prom)
 {
-   long fsize;
-   int readcount;
-   RFILE *bios1 = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ,
+   int64_t file_size = 0;
+   int64_t readcount = 0;
+   RFILE *bios1      = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!bios1)
       return;
 
    filestream_seek(bios1, 0, RETRO_VFS_SEEK_POSITION_END);
-   fsize = filestream_tell(bios1);
+   file_size = filestream_tell(bios1);
    filestream_rewind(bios1);
-   readcount = filestream_read(bios1, prom, fsize);
+   readcount = filestream_read(bios1, prom, file_size);
    (void)readcount;
 
    filestream_close(bios1);
