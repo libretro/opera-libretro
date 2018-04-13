@@ -44,7 +44,7 @@ extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
 extern void* Getp_NVRAM();
 
-static struct cdimage_t cdimage;
+static cdimage_t cdimage;
 
 static int currentSector;
 
