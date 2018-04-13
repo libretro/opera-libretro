@@ -1,3 +1,5 @@
+#include "retro_cdimage.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,12 +11,23 @@
 
 #include <libretro.h>
 
-#include "retro_cdimage.h"
+static
+void
+cdimage_set_size_and_offset(cdimage_t *cd_,
+                            const int  size_,
+                            const int  offset_)
+{
+  cd_->sector_size   = size_;
+  cd_->sector_offset = offset_;
+}
 
 int
-retro_cdimage_open_chd(const char       *path_,
-                       struct cdimage_t *cdimage_)
+retro_cdimage_open_chd(const char *path_,
+                       cdimage_t  *cdimage_)
 {
+  uint8_t buf[8];
+  uint8_t pattern[8] = { 0x01, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x01, 0x00 };
+
   cdimage_->fp = intfstream_open_chd_track(path_,
                                            RETRO_VFS_FILE_ACCESS_READ,
                                            RETRO_VFS_FILE_ACCESS_HINT_NONE,
@@ -22,15 +35,22 @@ retro_cdimage_open_chd(const char       *path_,
   if(cdimage_->fp == NULL)
     return -1;
 
-  cdimage_->sector_size   = 2448;
-  cdimage_->sector_offset = 0;
+  intfstream_seek(cdimage_->fp,0,RETRO_VFS_SEEK_POSITION_START);
+  intfstream_read(cdimage_->fp,buf,8);
+  intfstream_seek(cdimage_->fp,0,RETRO_VFS_SEEK_POSITION_START);
+
+  /* MODE1 */
+  if(!memcmp(buf,pattern,sizeof(pattern)))
+    cdimage_set_size_and_offset(cdimage_,2448,0);
+  else /* MODE1_RAW */
+    cdimage_set_size_and_offset(cdimage_,2352,16);
 
   return 0;
 }
 
 int
-retro_cdimage_open_iso(const char       *path_,
-                       struct cdimage_t *cdimage_)
+retro_cdimage_open_iso(const char *path_,
+                       cdimage_t  *cdimage_)
 {
   int size;
 
@@ -42,34 +62,25 @@ retro_cdimage_open_iso(const char       *path_,
 
   size = intfstream_get_size(cdimage_->fp);
   if((size % 2048) == 0)
-    {
-      cdimage_->sector_size   = 2048;
-      cdimage_->sector_offset = 0;
-    }
+    cdimage_set_size_and_offset(cdimage_,2048,0);
   else if((size % 2352) == 0)
-    {
-      cdimage_->sector_size   = 2352;
-      cdimage_->sector_offset = 16;
-    }
+    cdimage_set_size_and_offset(cdimage_,2352,16);
   else
-    {
-      cdimage_->sector_size   = 2048;
-      cdimage_->sector_offset = 0;
-    }
+    cdimage_set_size_and_offset(cdimage_,2048,0);
 
   return 0;
 }
 
 int
-retro_cdimage_open_bin(const char       *path_,
-                       struct cdimage_t *cdimage_)
+retro_cdimage_open_bin(const char *path_,
+                       cdimage_t  *cdimage_)
 {
   return retro_cdimage_open_iso(path_,cdimage_);
 }
 
 int
-retro_cdimage_open_cue(const char       *path_,
-                       struct cdimage_t *cdimage_)
+retro_cdimage_open_cue(const char *path_,
+                       cdimage_t  *cdimage_)
 {
   int rv;
   const char *ext;
@@ -97,21 +108,17 @@ retro_cdimage_open_cue(const char       *path_,
   switch(cue_file->cd_format)
     {
     case MODE1_2048:
-      cdimage_->sector_size   = 2048;
-      cdimage_->sector_offset = 0;
+      cdimage_set_size_and_offset(cdimage_,2048,0);
       break;
     case MODE1_2352:
-      cdimage_->sector_size   = 2352;
-      cdimage_->sector_offset = 16;
+      cdimage_set_size_and_offset(cdimage_,2352,16);
       break;
     case MODE2_2352:
-      cdimage_->sector_size   = 2352;
-      cdimage_->sector_offset = 24;
+      cdimage_set_size_and_offset(cdimage_,2352,24);
       break;
     default:
     case CUE_MODE_UNKNOWN:
-      cdimage_->sector_size   = 2048;
-      cdimage_->sector_offset = 0;
+      cdimage_set_size_and_offset(cdimage_,2048,0);
       break;
     }
 
@@ -121,8 +128,8 @@ retro_cdimage_open_cue(const char       *path_,
 }
 
 int
-retro_cdimage_open(const char       *path_,
-                   struct cdimage_t *cdimage_)
+retro_cdimage_open(const char *path_,
+                   cdimage_t  *cdimage_)
 {
   const char *ext;
 
@@ -143,7 +150,7 @@ retro_cdimage_open(const char       *path_,
 }
 
 int
-retro_cdimage_close(struct cdimage_t *cdimage_)
+retro_cdimage_close(cdimage_t *cdimage_)
 {
   int rv;
 
@@ -159,10 +166,10 @@ retro_cdimage_close(struct cdimage_t *cdimage_)
 }
 
 ssize_t
-retro_cdimage_read(struct cdimage_t *cdimage_,
-                   size_t            sector_,
-                   void             *buf_,
-                   size_t            bufsize_)
+retro_cdimage_read(cdimage_t *cdimage_,
+                   size_t     sector_,
+                   void      *buf_,
+                   size_t     bufsize_)
 {
   int rv;
   size_t pos;
@@ -178,7 +185,7 @@ retro_cdimage_read(struct cdimage_t *cdimage_,
 }
 
 ssize_t
-retro_cdimage_get_number_of_logical_blocks(struct cdimage_t *cdimage_)
+retro_cdimage_get_number_of_logical_blocks(cdimage_t *cdimage_)
 {
   int rv;
   size_t pos;
