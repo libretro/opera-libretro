@@ -29,7 +29,7 @@
 #include "libfreedo/Madam.h"
 #include "libfreedo/vdlp.h"
 #include "libfreedo/hack_flags.h"
-#include "libfreedo/cdrom.h"
+#include "libfreedo/freedo-cdrom.h"
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024

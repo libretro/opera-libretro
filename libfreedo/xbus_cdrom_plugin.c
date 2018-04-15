@@ -1,4 +1,4 @@
-#include "cdrom.h"
+#include "freedo-cdrom.h"
 #include "xbus.h"
 
 #include <string.h>
