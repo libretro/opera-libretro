@@ -86,7 +86,7 @@ xbus_execute_command_f(void)
       (XBUS.poldevf & POLSTMASK)) ||
      ((XBUS.poldevf & POLDT)      &&
       (XBUS.poldevf & POLDTMASK)))
-    _clio_GenerateFiq(4,0);
+    freedo_clio_fiq_generate(4,0);
 }
 
 void
@@ -96,7 +96,7 @@ freedo_xbus_fifo_set_cmd(const uint32_t val_)
     {
       xdev[XBUS.xb_sel_l](XBP_SET_COMMAND,(void*)(uintptr_t)val_);
       if(xdev[XBUS.xb_sel_l](XBP_FIQ,NULL))
-        _clio_GenerateFiq(4,0);
+        freedo_clio_fiq_generate(4,0);
     }
   else if(XBUS.xb_sel_l == 0x0F)
     {
@@ -200,7 +200,7 @@ freedo_xbus_set_poll(const uint32_t val_)
     {
       xdev[XBUS.xb_sel_l](XBP_SET_POLL,(void*)(uintptr_t)val_);
       if(xdev[XBUS.xb_sel_l](XBP_FIQ,NULL))
-        _clio_GenerateFiq(4,0);
+        freedo_clio_fiq_generate(4,0);
     }
 }
 

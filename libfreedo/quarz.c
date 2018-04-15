@@ -195,6 +195,6 @@ freedo_quarz_push_cycles(const uint32_t clks_)
   QUARZ.qrz_AccDSP += (arm * SND_CLOCK);
   QUARZ.qrz_AccVDL += (arm * QUARZ.VDL_CLOCK);
 
-  if(_clio_GetTimerDelay())
-    QUARZ.qrz_TCount += (arm * (timers / _clio_GetTimerDelay()));
+  if(freedo_clio_timer_get_delay())
+    QUARZ.qrz_TCount += (arm * (timers / freedo_clio_timer_get_delay()));
 }

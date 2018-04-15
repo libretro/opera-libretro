@@ -4,65 +4,70 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
-// Clio.h: interface for the CClio class.
-//
-//////////////////////////////////////////////////////////////////////
-
-#ifndef	CLIO_3DO_HEADER
-#define CLIO_3DO_HEADER
-
-#include <stdint.h>
-
-#include <boolean.h>
+#ifndef	LIBFREEDO_CLIO_H_INCLUDED
+#define LIBFREEDO_CLIO_H_INCLUDED
 
 #include "extern_c.h"
 
+#include <boolean.h>
+
+#include <stdint.h>
+
 EXTERN_C_BEGIN
 
-int _clio_v0line(void);
-int _clio_v1line(void);
-bool _clio_NeedFIQ(void);
+void     freedo_clio_init(int reason_);
+void     freedo_clio_reset(void);
 
-uint32_t _clio_FIFOStruct(uint32_t addr);
-void _clio_Reset(void);
-void _clio_SetFIFO(uint32_t adr, uint32_t val);
-uint16_t  _clio_GetEOFIFOStat(uint8_t channel);
-uint16_t  _clio_GetEIFIFOStat(uint8_t channel);
-uint16_t  _clio_EIFIFONI(uint16_t channel);
-void  _clio_EOFIFO(uint16_t channel, uint16_t val);
-uint16_t  _clio_EIFIFO(uint16_t channel);
+uint32_t freedo_clio_line_v0(void);
+uint32_t freedo_clio_line_v1(void);
 
-void _clio_Init(int ResetReson);
+bool     freedo_clio_fiq_needed(void);
+void     freedo_clio_fiq_generate(uint32_t reason1_, uint32_t reason2_);
 
-void _clio_DoTimers(void);
-uint32_t _clio_Peek(uint32_t addr);
-int _clio_Poke(uint32_t addr, uint32_t val);
-void _clio_UpdateVCNT(int line, int halfframe);
-void _clio_GenerateFiq(uint32_t reason1, uint32_t reason2);
+void     freedo_clio_fifo_write(uint32_t addr_, uint32_t val_);
+uint32_t freedo_clio_fifo_read(uint32_t addr_);
+void     freedo_clio_fifo_eo(uint16_t channel_, uint16_t val_);
+uint16_t freedo_clio_fifo_ei(uint16_t channel_);
+uint16_t freedo_clio_fifo_eo_status(uint8_t channel_);
+uint16_t freedo_clio_fifo_ei_status(uint8_t channel_);
+uint16_t freedo_clio_fifo_ei_read(uint16_t channel_);
 
-uint32_t _clio_GetTimerDelay(void);
+uint32_t freedo_clio_peek(uint32_t addr_);
+int      freedo_clio_poke(uint32_t addr_, uint32_t val_);
 
-uint32_t _clio_SaveSize(void);
-void _clio_Save(void *buff);
-void _clio_Load(void *buff);
+void     freedo_clio_vcnt_update(int line_, int half_frame_);
+
+uint32_t freedo_clio_timer_get_delay(void);
+void     freedo_clio_timer_execute(void);
+
+uint32_t freedo_clio_state_size(void);
+void     freedo_clio_state_save(void *buf_);
+void     freedo_clio_state_load(const void *buf_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBFREEDO_CLIO_H_INCLUDED */

@@ -621,7 +621,7 @@ void _arm_Reset(void)
    gFIQ=false;		//no FIQ!!!
    gSecondROM=0;
 
-   _clio_Reset();
+   freedo_clio_reset();
    _madam_Reset();
 }
 
@@ -1568,7 +1568,7 @@ Undefine:
 
       }	//condition
 
-      if(!ISF && _clio_NeedFIQ()/*gFIQ*/)
+      if(!ISF && freedo_clio_fiq_needed()/*gFIQ*/)
       {
 
          //Set_madam_FSM(FSM_SUSPENDED);
@@ -1658,7 +1658,7 @@ void mwritew(uint32_t addr, uint32_t val)
    if (!((index=(addr^0x03400000)) & ~0xFFFF)) //clio
       //  if((addr & ~0xFFFFF)==0x03400000) //clio
    {
-      if(_clio_Poke(index,val))
+      if(freedo_clio_poke(index,val))
          REG_PC+=4;  // ???
       return;
    }
@@ -1714,7 +1714,7 @@ uint32_t mreadw(uint32_t addr)
 
 
    if (!((index=(addr^0x03400000)) & ~0xFFFFF)) //clio
-      return _clio_Peek(index);
+      return freedo_clio_peek(index);
 
    if (!((index=(addr^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
    {
