@@ -28,7 +28,7 @@ Felix Lazarev
 #include <retro_inline.h>
 
 #include "Madam.h"
-#include "Clio.h"
+#include "clio.h"
 #include "vdlp.h"
 #include "arm.h"
 
@@ -557,7 +557,7 @@ unsigned int  _madam_Peek(unsigned int addr)
    if((addr>=0x400)&&(addr<=0x53f))
    {
       //we need to return actual fifo status!!!!
-      return _clio_FIFOStruct(addr);
+      return freedo_clio_fifo_read(addr);
    }
 
 
@@ -596,7 +596,7 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
    if((addr>=0x400)&&(addr<=0x53f))
    {
 
-      _clio_SetFIFO(addr,val);
+      freedo_clio_fifo_write(addr,val);
 
       return;
 
@@ -1041,7 +1041,7 @@ void HandleDMA8(void)
       DMAPBus();
       mregs[0x8]&=~0x8000; // dma done
 
-      _clio_GenerateFiq(0,1);
+      freedo_clio_fiq_generate(0,1);
    }
 }
 

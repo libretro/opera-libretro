@@ -30,7 +30,7 @@
 #include "arm.h"
 #include "vdlp.h"
 #include "DSP.h"
-#include "Clio.h"
+#include "clio.h"
 #include "frame.h"
 #include "Madam.h"
 #include "sport.h"
@@ -84,7 +84,7 @@ int _3do_Init(void)
 
    freedo_xbus_init(xbus_cdrom_plugin);
 
-   _clio_Init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
+   freedo_clio_init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
    _dsp_Init();
    _frame_Init();
    _diag_Init(-1);  // Select test, use -1 -- if d'nt need tests
@@ -133,22 +133,22 @@ void _3do_InternalFrame(int cycles)
    if(freedo_quarz_queue_dsp())
       io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)_dsp_Loop());
    if(freedo_quarz_queue_timer())
-      _clio_DoTimers();
+      freedo_clio_timer_execute();
    if(freedo_quarz_queue_vdl())
    {
       line=freedo_quarz_vd_current_line();
-      _clio_UpdateVCNT(line, freedo_quarz_vd_half_frame());
+      freedo_clio_vcnt_update(line, freedo_quarz_vd_half_frame());
       if(!skipframe)
          freedo_vdlp_process_line(line,curr_frame);
       if(line==16 && skipframe)
          io_interface(EXT_FRAMETRIGGER_MT,NULL);
 
-      if(line==_clio_v0line())
-         _clio_GenerateFiq(1<<0,0);
+      if(line==freedo_clio_line_v0())
+         freedo_clio_fiq_generate(1<<0,0);
 
-      if(line==_clio_v1line())
+      if(line==freedo_clio_line_v1())
       {
-         _clio_GenerateFiq(1<<1,0);
+         freedo_clio_fiq_generate(1<<1,0);
          //curr_frame->srcw=320;
          //curr_frame->srch=240;
          if(!skipframe)
@@ -199,7 +199,7 @@ uint32_t _3do_SaveSize(void)
 
    tmp+=freedo_vdlp_state_size();
    tmp+=_dsp_SaveSize();
-   tmp+=_clio_SaveSize();
+   tmp+=freedo_clio_state_size();
    tmp+=freedo_quarz_state_size();
    tmp+=freedo_sport_state_size();
    tmp+=_madam_SaveSize();
@@ -218,7 +218,7 @@ void _3do_Save(void *buff)
    indexes[2]=indexes[1]+_arm_SaveSize();
    indexes[3]=indexes[2]+freedo_vdlp_state_size();
    indexes[4]=indexes[3]+_dsp_SaveSize();
-   indexes[5]=indexes[4]+_clio_SaveSize();
+   indexes[5]=indexes[4]+freedo_clio_state_size();
    indexes[6]=indexes[5]+freedo_quarz_state_size();
    indexes[7]=indexes[6]+freedo_sport_state_size();
    indexes[8]=indexes[7]+_madam_SaveSize();
@@ -227,7 +227,7 @@ void _3do_Save(void *buff)
    _arm_Save(&data[indexes[1]]);
    freedo_vdlp_state_save(&data[indexes[2]]);
    _dsp_Save(&data[indexes[3]]);
-   _clio_Save(&data[indexes[4]]);
+   freedo_clio_state_save(&data[indexes[4]]);
    freedo_quarz_state_save(&data[indexes[5]]);
    freedo_sport_state_save(&data[indexes[6]]);
    _madam_Save(&data[indexes[7]]);
@@ -245,7 +245,7 @@ bool _3do_Load(void *buff)
    _arm_Load(&data[indexes[1]]);
    freedo_vdlp_state_load(&data[indexes[2]]);
    _dsp_Load(&data[indexes[3]]);
-   _clio_Load(&data[indexes[4]]);
+   freedo_clio_state_load(&data[indexes[4]]);
    freedo_quarz_state_load(&data[indexes[5]]);
    freedo_sport_state_load(&data[indexes[6]]);
    _madam_Load(&data[indexes[7]]);

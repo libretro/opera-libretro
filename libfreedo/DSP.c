@@ -27,7 +27,7 @@ Felix Lazarev
 
 #include <string.h>
 #include "DSP.h"
-#include "Clio.h"
+#include "clio.h"
 #include "freedocore.h"
 
 #if 0 //20 bit ALU
@@ -744,7 +744,7 @@ uint32_t _dsp_Loop(void)
       if(1&flags.GenFIQ)
       {
          flags.GenFIQ=false;
-         _clio_GenerateFiq(0x800,0);//AudioFIQ
+         freedo_clio_fiq_generate(0x800,0);//AudioFIQ
          //printf("#!!! AudioFIQ Generated 0x%4.4X\n!!!",val);
       }
 
@@ -832,7 +832,7 @@ uint16_t  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
             val=(fastrand()<<16)|fastrand();
          }
          else
-            val=_clio_EIFIFO(addr&0x0f);
+            val=freedo_clio_fifo_ei(addr&0x0f);
          return val;
       case 0x70:	case 0x71:	case 0x72:	case 0x73:
       case 0x74:	case 0x75:	case 0x76:	case 0x77:
@@ -844,7 +844,7 @@ uint16_t  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
             //printf("#DSP read from CPU!!! chan=0x%x\n",addr&0x0f);
             return IMem[addr];
          }
-         return _clio_EIFIFONI(addr&0x0f);
+         return freedo_clio_fifo_ei_read(addr&0x0f);
       case 0xd0:	case 0xd1:	case 0xd2:	case 0xd3:
       case 0xd4:	case 0xd5:	case 0xd6:	case 0xd7:
       case 0xd8:	case 0xd9:	case 0xda:	case 0xdb:
@@ -859,13 +859,13 @@ uint16_t  ireadh(unsigned int addr) //DSP IREAD (includes EI, I)
          //printf("#DSP read EIFifo status 0x%4.4X\n",addr&0x0f);
          if(CPUSupply[addr&0xf])
             return 2;
-         return _clio_GetEIFIFOStat(addr&0xf);
+         return freedo_clio_fifo_ei_status(addr&0xf);
       case 0xe0:
       case 0xe1:
       case 0xe2:
       case 0xe3:
          //printf("#DSP read EOFifo status 0x%4.4X\n",addr&0x0f);
-         return _clio_GetEOFIFOStat(addr&0x0f);
+         return freedo_clio_fifo_eo_status(addr&0x0f);
       default:
          //printf("#EIRead 0x%3.3X>=0x%4.4X\n",addr, IMem[addr&0x7f]);
          addr-=0x100;
@@ -904,7 +904,7 @@ void  iwriteh(unsigned int addr, uint16_t val) //DSP IWRITE (includes EO,I)
       case 0x3f1:
       case 0x3f2:
       case 0x3f3:
-         _clio_EOFIFO(addr&0x0f,val);
+         freedo_clio_fifo_eo(addr&0x0f,val);
          break;
       case 0x3fd:
          //FLUSH EOFIFO
