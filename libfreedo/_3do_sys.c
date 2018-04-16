@@ -29,7 +29,7 @@
 #include "freedocore.h"
 #include "arm.h"
 #include "vdlp.h"
-#include "DSP.h"
+#include "dsp.h"
 #include "clio.h"
 #include "frame.h"
 #include "Madam.h"

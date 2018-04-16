@@ -28,7 +28,7 @@
   *  Felix Lazarev
 */
 
-#include "DSP.h"
+#include "dsp.h"
 #include "Madam.h"
 #include "arm.h"
 #include "clio.h"
