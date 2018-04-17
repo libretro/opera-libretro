@@ -21,8 +21,8 @@
   Felix Lazarev
 */
 
-#ifndef DSP_3DO_HEADER
-#define DSP_3DO_HEADER
+#ifndef LIBRETRO_DSP_H_INCLUDED
+#define LIBRETRO_DSP_H_INCLUDED
 
 #include <stdint.h>
 #include <boolean.h>
@@ -31,22 +31,25 @@
 
 EXTERN_C_BEGIN
 
-uint32_t _dsp_Loop(void);
+uint32_t freedo_dsp_loop(void);
 
-uint16_t  _dsp_ReadIMem(uint16_t addr);
-void  _dsp_WriteIMem(uint16_t addr, uint16_t val);
-void  _dsp_WriteMemory(uint16_t addr, uint16_t val);
-void  _dsp_SetRunning(bool val);
-void  _dsp_ARMwrite2sema4(unsigned int val);
-unsigned int _dsp_ARMread2sema4(void);
+uint16_t freedo_dsp_imem_read(uint16_t addr_);
+void     freedo_dsp_imem_write(uint16_t addr_, uint16_t val_);
 
-void _dsp_Init(void);
-void _dsp_Reset(void);
+void     freedo_dsp_mem_write(uint16_t addr_, uint16_t val_);
 
-unsigned int _dsp_SaveSize(void);
-void _dsp_Save(void *buff);
-void _dsp_Load(void *buff);
+void     freedo_dsp_set_running(bool val_);
+
+void     freedo_dsp_arm_semaphore_write(uint32_t val_);
+uint32_t freedo_dsp_arm_semaphore_read(void);
+
+void     freedo_dsp_init(void);
+void     freedo_dsp_reset(void);
+
+uint32_t freedo_dsp_state_size(void);
+void     freedo_dsp_state_save(void *buf_);
+void     freedo_dsp_state_load(void *buf_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBRETRO_DSP_H_INCLUDED */

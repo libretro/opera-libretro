@@ -209,17 +209,17 @@ struct DSPDatum
 
 static struct DSPDatum dsp;
 
-unsigned int _dsp_SaveSize(void)
+uint32_t freedo_dsp_state_size(void)
 {
   return sizeof(struct DSPDatum);
 }
 
-void _dsp_Save(void *buff)
+void freedo_dsp_state_save(void *buff)
 {
   memcpy(buff,&dsp,sizeof(struct DSPDatum));
 }
 
-void _dsp_Load(void *buff)
+void freedo_dsp_state_load(void *buff)
 {
   memcpy(&dsp,buff,sizeof(struct DSPDatum));
 }
@@ -242,7 +242,7 @@ int fastrand(void)
   return g_seed & 0xFFFF;
 }
 
-void _dsp_Init(void)
+void freedo_dsp_init(void)
 {
   int a,c;
   union ITAG inst;
@@ -377,7 +377,7 @@ void _dsp_Init(void)
   dregs.DSPPRLD=567;
   dregs.AUDCNT=567;
 
-  _dsp_Reset();
+  freedo_dsp_reset();
 
   dregs.Sema4Status = 0; //?? 8-CPU last, 4-DSP last, 2-CPU ACK, 1 DSP ACK ??
 
@@ -388,7 +388,7 @@ void _dsp_Init(void)
     CPUSupply[i]=0;
 }
 
-void _dsp_Reset(void)
+void freedo_dsp_reset(void)
 {
   dregs.DSPPCNT=dregs.DSPPRLD;
   dregs.PC=0;
@@ -397,7 +397,7 @@ void _dsp_Reset(void)
   flags.nOP_MASK=~0;
 }
 
-uint32_t _dsp_Loop(void)
+uint32_t freedo_dsp_loop(void)
 {
   unsigned int BOP;	//1st & 2nd operand
   unsigned int Y;			//accumulator
@@ -418,7 +418,7 @@ uint32_t _dsp_Loop(void)
       unsigned RBSR = 0;	/* return address */
       bool fExact   = 0;
       bool Work     = true;
-      _dsp_Reset();
+      freedo_dsp_reset();
 
       Flags.raw=0;
 
@@ -755,7 +755,7 @@ uint32_t _dsp_Loop(void)
   return ((IMem[0x3ff]<<16)|IMem[0x3fe]);
 }
 
-void  _dsp_WriteMemory(uint16_t addr, uint16_t val) //CPU writes NMEM of DSP
+void  freedo_dsp_mem_write(uint16_t addr, uint16_t val) //CPU writes NMEM of DSP
 {
   //mwriteh(addr,val);
   //printf("#NWRITE 0x%3.3X<=0x%4.4X\n",addr,val);
@@ -926,12 +926,12 @@ void  iwriteh(unsigned int addr, uint16_t val) //DSP IWRITE (includes EO,I)
     }
 }
 
-void  _dsp_SetRunning(bool val)
+void  freedo_dsp_set_running(bool val)
 {
   flags.Running= val;
 }
 
-void  _dsp_WriteIMem(uint16_t addr, uint16_t val)//CPU writes to EI,I of DSP
+void  freedo_dsp_imem_write(uint16_t addr, uint16_t val)//CPU writes to EI,I of DSP
 {
   if (addr >= 0x70 && addr <= 0x7c)
     {
@@ -955,7 +955,7 @@ void  _dsp_WriteIMem(uint16_t addr, uint16_t val)//CPU writes to EI,I of DSP
     }
 }
 
-void  _dsp_ARMwrite2sema4(unsigned int val)
+void  freedo_dsp_arm_semaphore_write(unsigned int val)
 {
   // How about Sema4ACK? Now don't think about it
   dregs.Sema4Data=val&0xffff;	// ARM write to Sema4Data low 16 bits
@@ -965,7 +965,7 @@ void  _dsp_ARMwrite2sema4(unsigned int val)
 }
 
 
-uint16_t  _dsp_ReadIMem(uint16_t addr) //CPU reads from EO,I of DSP
+uint16_t  freedo_dsp_imem_read(uint16_t addr) //CPU reads from EO,I of DSP
 {
 
   switch(addr)
@@ -989,7 +989,7 @@ uint16_t  _dsp_ReadIMem(uint16_t addr) //CPU reads from EO,I of DSP
 
 }
 
-unsigned int _dsp_ARMread2sema4(void)
+uint32_t freedo_dsp_arm_semaphore_read(void)
 {
   //printf("#Arm read both Sema4Status & Sema4Data\n");
   return (dregs.Sema4Status<<16) | dregs.Sema4Data;

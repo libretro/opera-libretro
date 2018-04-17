@@ -85,7 +85,7 @@ int _3do_Init(void)
    freedo_xbus_init(xbus_cdrom_plugin);
 
    freedo_clio_init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
-   _dsp_Init();
+   freedo_dsp_init();
    _frame_Init();
    _diag_Init(-1);  // Select test, use -1 -- if d'nt need tests
    /*
@@ -131,7 +131,7 @@ void _3do_InternalFrame(int cycles)
    int line;
    freedo_quarz_push_cycles(cycles);
    if(freedo_quarz_queue_dsp())
-      io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)_dsp_Loop());
+      io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)freedo_dsp_loop());
    if(freedo_quarz_queue_timer())
       freedo_clio_timer_execute();
    if(freedo_quarz_queue_vdl())
@@ -198,7 +198,7 @@ uint32_t _3do_SaveSize(void)
    uint32_t tmp=_arm_SaveSize();
 
    tmp+=freedo_vdlp_state_size();
-   tmp+=_dsp_SaveSize();
+   tmp+=freedo_dsp_state_size();
    tmp+=freedo_clio_state_size();
    tmp+=freedo_quarz_state_size();
    tmp+=freedo_sport_state_size();
@@ -217,7 +217,7 @@ void _3do_Save(void *buff)
    indexes[1]=16*4;
    indexes[2]=indexes[1]+_arm_SaveSize();
    indexes[3]=indexes[2]+freedo_vdlp_state_size();
-   indexes[4]=indexes[3]+_dsp_SaveSize();
+   indexes[4]=indexes[3]+freedo_dsp_state_size();
    indexes[5]=indexes[4]+freedo_clio_state_size();
    indexes[6]=indexes[5]+freedo_quarz_state_size();
    indexes[7]=indexes[6]+freedo_sport_state_size();
@@ -226,7 +226,7 @@ void _3do_Save(void *buff)
 
    _arm_Save(&data[indexes[1]]);
    freedo_vdlp_state_save(&data[indexes[2]]);
-   _dsp_Save(&data[indexes[3]]);
+   freedo_dsp_state_save(&data[indexes[3]]);
    freedo_clio_state_save(&data[indexes[4]]);
    freedo_quarz_state_save(&data[indexes[5]]);
    freedo_sport_state_save(&data[indexes[6]]);
@@ -244,7 +244,7 @@ bool _3do_Load(void *buff)
 
    _arm_Load(&data[indexes[1]]);
    freedo_vdlp_state_load(&data[indexes[2]]);
-   _dsp_Load(&data[indexes[3]]);
+   freedo_dsp_state_load(&data[indexes[3]]);
    freedo_clio_state_load(&data[indexes[4]]);
    freedo_quarz_state_load(&data[indexes[5]]);
    freedo_sport_state_load(&data[indexes[6]]);
