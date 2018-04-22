@@ -28,7 +28,7 @@
   *  Felix Lazarev
 */
 
-#include "DSP.h"
+#include "dsp.h"
 #include "Madam.h"
 #include "arm.h"
 #include "clio.h"
@@ -430,8 +430,8 @@ freedo_clio_poke(uint32_t addr_,
       CLIO.dsp_word1   = (val_ >> 16);
       CLIO.dsp_word2   = (val_ & 0xFFFF);
       CLIO.dsp_address = ((addr_ - 0x1800) >> 1);
-      _dsp_WriteMemory(CLIO.dsp_address+0,CLIO.dsp_word1);
-      _dsp_WriteMemory(CLIO.dsp_address+1,CLIO.dsp_word2);
+      freedo_dsp_mem_write(CLIO.dsp_address+0,CLIO.dsp_word1);
+      freedo_dsp_mem_write(CLIO.dsp_address+1,CLIO.dsp_word2);
       return 0;
       /* DSPNRAMWrite 2 DSPW per 1ARMW */
     }
@@ -440,7 +440,7 @@ freedo_clio_poke(uint32_t addr_,
       addr_ &= ~0x800; /* mirrors */
       CLIO.dsp_word1   = (val_ & 0xFFFF);
       CLIO.dsp_address = ((addr_ - 0x2000) >> 2);
-      _dsp_WriteMemory(CLIO.dsp_address,CLIO.dsp_word1);
+      freedo_dsp_mem_write(CLIO.dsp_address,CLIO.dsp_word1);
       return 0;
     }
   else if((addr_ >= 0x3000) && (addr_ <= 0x33FF))
@@ -449,8 +449,8 @@ freedo_clio_poke(uint32_t addr_,
       CLIO.dsp_address &= 0xFF;
       CLIO.dsp_word1    = (val_ >> 16);
       CLIO.dsp_word2    = (val_ & 0xFFFF);
-      _dsp_WriteIMem(CLIO.dsp_address+0,CLIO.dsp_word1);
-      _dsp_WriteIMem(CLIO.dsp_address+1,CLIO.dsp_word2);
+      freedo_dsp_imem_write(CLIO.dsp_address+0,CLIO.dsp_word1);
+      freedo_dsp_imem_write(CLIO.dsp_address+1,CLIO.dsp_word2);
       return 0;
     }
   else if((addr_ >= 0x3400) && (addr_ <= 0x37FF))
@@ -458,22 +458,22 @@ freedo_clio_poke(uint32_t addr_,
       CLIO.dsp_address  = ((addr_ - 0x3400) >> 2);
       CLIO.dsp_address &= 0xFF;
       CLIO.dsp_word1    = (val_ & 0xFFFF);
-      _dsp_WriteIMem(CLIO.dsp_address,CLIO.dsp_word1);
+      freedo_dsp_imem_write(CLIO.dsp_address,CLIO.dsp_word1);
       return 0;
     }
   else if(addr_ == 0x17E8) /* Reset */
     {
-      _dsp_Reset();
+      freedo_dsp_reset();
       return 0;
     }
   else if(addr_ == 0x17D0) /* Write DSP/ARM Semaphore */
     {
-      _dsp_ARMwrite2sema4(val_);
+      freedo_dsp_arm_semaphore_write(val_);
       return 0;
     }
   else if(addr_ == 0x17FC) /* start / stop */
     {
-      _dsp_SetRunning(val_ > 0);
+      freedo_dsp_set_running(val_ > 0);
       return 0;
     }
   else if(addr_ == 0x200)
@@ -561,8 +561,8 @@ freedo_clio_peek(uint32_t addr_)
       CLIO.dsp_address  = ((addr_ - 0x3800) >> 1);
       CLIO.dsp_address &= 0xFF;
       CLIO.dsp_address += 0x300;
-      CLIO.dsp_word1    = _dsp_ReadIMem(CLIO.dsp_address+0);
-      CLIO.dsp_word2    = _dsp_ReadIMem(CLIO.dsp_address+1);
+      CLIO.dsp_word1    = freedo_dsp_imem_read(CLIO.dsp_address+0);
+      CLIO.dsp_word2    = freedo_dsp_imem_read(CLIO.dsp_address+1);
       return ((CLIO.dsp_word1 << 16) | CLIO.dsp_word2);
     }
   else if((addr_ >= 0x3C00) && (addr_ <= 0x3FFF))
@@ -570,12 +570,12 @@ freedo_clio_peek(uint32_t addr_)
       CLIO.dsp_address  = ((addr_ - 0x3C00) >> 2);
       CLIO.dsp_address &= 0xFF;
       CLIO.dsp_address += 0x300;
-      return _dsp_ReadIMem(CLIO.dsp_address);
+      return freedo_dsp_imem_read(CLIO.dsp_address);
     }
   else if(addr_ == 0x17F0)
     return fastrand();
   else if(addr_ == 0x17D0) /* read DSP/ARM semaphore */
-    return _dsp_ARMread2sema4();
+    return freedo_dsp_arm_semaphore_read();
 
   return CLIO.regs[addr_];
 }
