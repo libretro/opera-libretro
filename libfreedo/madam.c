@@ -1,24 +1,24 @@
 /*
   www.freedo.org
-The first and only working 3DO multiplayer emulator.
+  The first and only working 3DO multiplayer emulator.
 
-The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
-*   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-*   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-	of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-*   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-	or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
+  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
+  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
+  or any other material published by FreeDO is strictly forbidden without owners approval.
 
-The above notes are taking precedence over GNU LGPL in conflicting situations.
+  The above notes are taking precedence over GNU LGPL in conflicting situations.
 
-Project authors:
+  Project authors:
 
-Alexander Troosh
-Maxim Grishin
-Allen Wright
-John Sammons
-Felix Lazarev
+  Alexander Troosh
+  Maxim Grishin
+  Allen Wright
+  John Sammons
+  Felix Lazarev
 */
 
 #include <stdint.h>
@@ -228,99 +228,99 @@ extern int speedfixes;
 #pragma pack(push,1)
 
 struct cp1btag{
-   uint16_t	c:1;
-   uint16_t	pad:15;
+  uint16_t	c:1;
+  uint16_t	pad:15;
 };
 struct cp2btag{
-   uint16_t	c:2;
-   uint16_t	pad:14;
+  uint16_t	c:2;
+  uint16_t	pad:14;
 };
 typedef struct cp4btag{
-   uint16_t	c:4;
-   uint16_t	pad:12;
+  uint16_t	c:4;
+  uint16_t	pad:12;
 } cp4b;
 struct cp6btag{
-   uint16_t  c:5;
-   uint16_t  pw:1;
-   uint16_t	pad:10;
+  uint16_t  c:5;
+  uint16_t  pw:1;
+  uint16_t	pad:10;
 };
 struct cp8btag{
-   uint16_t	c:5;
-   uint16_t	mpw:1;
-   uint16_t	m:2;
-   uint16_t	pad:8;
+  uint16_t	c:5;
+  uint16_t	mpw:1;
+  uint16_t	m:2;
+  uint16_t	pad:8;
 };
 struct cp16btag{
-   uint16_t	c:5;
-   uint16_t	mb:3;
-   uint16_t	mg:3;
-   uint16_t	mr:3;
-   uint16_t	pad:1;
-   uint16_t	pw:1;
+  uint16_t	c:5;
+  uint16_t	mb:3;
+  uint16_t	mg:3;
+  uint16_t	mr:3;
+  uint16_t	pad:1;
+  uint16_t	pw:1;
 };
 struct up8btag{
-   uint16_t	b:2;
-   uint16_t	g:3;
-   uint16_t	r:3;
-   uint16_t	pad:8;
+  uint16_t	b:2;
+  uint16_t	g:3;
+  uint16_t	r:3;
+  uint16_t	pad:8;
 };
 struct up16btag{
-   uint16_t	bw:1;
-   uint16_t	b:4;
-   uint16_t	g:5;
-   uint16_t	r:5;
-   uint16_t	p:1;
+  uint16_t	bw:1;
+  uint16_t	b:4;
+  uint16_t	g:5;
+  uint16_t	r:5;
+  uint16_t	p:1;
 };
 struct res16btag{
-   uint16_t	b:5;
-   uint16_t	g:5;
-   uint16_t	r:5;
-   uint16_t	p:1;
+  uint16_t	b:5;
+  uint16_t	g:5;
+  uint16_t	r:5;
+  uint16_t	p:1;
 };
 
 union pdeco{
-   unsigned int	raw;
-   struct cp1btag	c1b;
-   struct cp2btag	c2b;
-   struct cp4btag	c4b;
-   struct cp6btag	c6b;
-   struct cp8btag	c8b;
-   struct cp16btag	c16b;
-   struct up8btag	u8b;
-   struct up16btag	u16b;
-   struct res16btag	r16b;
+  unsigned int	raw;
+  struct cp1btag	c1b;
+  struct cp2btag	c2b;
+  struct cp4btag	c4b;
+  struct cp6btag	c6b;
+  struct cp8btag	c8b;
+  struct cp16btag	c16b;
+  struct up8btag	u8b;
+  struct up16btag	u16b;
+  struct res16btag	r16b;
 };
 
 struct avtag
 {
-   uint8_t NEG:1;
-   uint8_t XTEND:1;
-   uint8_t nCLIP:1;
-   uint8_t dv3:2;
-   uint8_t pad:3;
+  uint8_t NEG:1;
+  uint8_t XTEND:1;
+  uint8_t nCLIP:1;
+  uint8_t dv3:2;
+  uint8_t pad:3;
 };
 
 union AVS
 {
-   struct avtag avsignal;
-   unsigned int raw;
+  struct avtag avsignal;
+  unsigned int raw;
 };
 
 struct pixctag
 {
-   uint8_t	dv2:1;
-   uint8_t	av:5;  // why int don't work???
-   uint8_t	s2:2;
-   uint8_t	dv1:2;
-   uint8_t	mxf:3;
-   uint8_t	ms:2;
-   uint8_t	s1:1;
+  uint8_t	dv2:1;
+  uint8_t	av:5;  // why int don't work???
+  uint8_t	s2:2;
+  uint8_t	dv1:2;
+  uint8_t	mxf:3;
+  uint8_t	ms:2;
+  uint8_t	s1:1;
 };
 
 union	PXC
 {
-   struct pixctag	meaning;
-   unsigned int raw;
+  struct pixctag	meaning;
+  unsigned int raw;
 };
 
 #pragma pack(pop)
@@ -330,39 +330,39 @@ union	PXC
 #pragma pack(push,1)
 struct MADAMDatum
 {
-   uint32_t mregs[2048+64];
-   uint16_t PLUT[32];
-   uint8_t PBUSQueue[20];
-   int32_t RMOD;
-   int32_t WMOD;
-   unsigned int _madam_FSM;
+  uint32_t mregs[2048+64];
+  uint16_t PLUT[32];
+  uint8_t PBUSQueue[20];
+  int32_t RMOD;
+  int32_t WMOD;
+  unsigned int _madam_FSM;
 };
 #pragma pack(pop)
 static struct MADAMDatum madam;
 
 uint32_t Get_madam_FSM(void)
 {
-   return madam._madam_FSM;
+  return madam._madam_FSM;
 }
 
 void Set_madam_FSM(uint32_t val)
 {
-   madam._madam_FSM=val;
+  madam._madam_FSM=val;
 }
 
 uint32_t _madam_SaveSize(void)
 {
-   return sizeof(struct MADAMDatum);
+  return sizeof(struct MADAMDatum);
 }
 
 void _madam_Save(void *buff)
 {
-   memcpy(buff,&madam,sizeof(struct MADAMDatum));
+  memcpy(buff,&madam,sizeof(struct MADAMDatum));
 }
 
 void _madam_Load(void *buff)
 {
-   memcpy(&madam,buff,sizeof(struct MADAMDatum));
+  memcpy(&madam,buff,sizeof(struct MADAMDatum));
 }
 
 #define mregs madam.mregs
@@ -437,17 +437,17 @@ uint32_t MAPPING;
 
 static struct
 {
-   uint32_t plutaCCBbits;
-   uint32_t pixelBitsMask;
-   bool tmask;
+  uint32_t plutaCCBbits;
+  uint32_t pixelBitsMask;
+  bool tmask;
 } pdec;
 
 static struct
 {
-   uint32_t pmode;
-   uint32_t pmodeORmask;
-   uint32_t pmodeANDmask;
-   bool Transparent;
+  uint32_t pmode;
+  uint32_t pmodeORmask;
+  uint32_t pmodeANDmask;
+  bool Transparent;
 } pproj;
 
 unsigned int pbus=0;
@@ -538,7 +538,7 @@ unsigned int pSource;
 
 int FLOAT1612(int a)
 {
-   return a << 4;
+  return a << 4;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -550,105 +550,105 @@ int FLOAT1612(int a)
 
 unsigned int  _madam_Peek(unsigned int addr)
 {
-   //	if((addr>=0x400)&&(addr<=0x53f))
-   //		printf("#Madam Peek [%X]=%X\n",addr,mregs[addr]);
+  //	if((addr>=0x400)&&(addr<=0x53f))
+  //		printf("#Madam Peek [%X]=%X\n",addr,mregs[addr]);
 
 
-   if((addr>=0x400)&&(addr<=0x53f))
-   {
+  if((addr>=0x400)&&(addr<=0x53f))
+    {
       //we need to return actual fifo status!!!!
       return freedo_clio_fifo_read(addr);
-   }
+    }
 
 
-   if(addr==0x28) // STATUS OF CEL
-   {
+  if(addr==0x28) // STATUS OF CEL
+    {
       switch(_madam_FSM)
-      {
-         case FSM_IDLE:
-            return 0x0;
-         case FSM_SUSPENDED:
-            return 0x30;
-         case FSM_INPROCESS:
-            return 0x10;
-      }
-   }
+        {
+        case FSM_IDLE:
+          return 0x0;
+        case FSM_SUSPENDED:
+          return 0x30;
+        case FSM_INPROCESS:
+          return 0x10;
+        }
+    }
 #if 0
-   if(addr>=0x580 && addr<0x5A0)
-   {
+  if(addr>=0x580 && addr<0x5A0)
+    {
       //sprintf(str,"CLUT - MADAM Read madam[0x%X]\n",addr);
       //CDebug::DPrint(str);
-   }
+    }
 #endif
-   return mregs[addr];
+  return mregs[addr];
 }
 
 
 void  _madam_Poke(unsigned int addr, unsigned int val)
 {
-   /*
-      if(addr==0x13c)
-      {
-      sprintf(str,"Switch screen SWI 0x%8X addr 0x%8X\n",last_SWI,val);
-      CDebug::DPrint(str);
-      }*/
+  /*
+    if(addr==0x13c)
+    {
+    sprintf(str,"Switch screen SWI 0x%8X addr 0x%8X\n",last_SWI,val);
+    CDebug::DPrint(str);
+    }*/
 
-   if((addr>=0x400)&&(addr<=0x53f))
-   {
+  if((addr>=0x400)&&(addr<=0x53f))
+    {
 
       freedo_clio_fifo_write(addr,val);
 
       return;
 
-   }
-   else
-      switch(addr)
+    }
+  else
+    switch(addr)
       {
-         case 0x4:
-            val=0x29;
-            mregs[addr]=val;
-            break;
+      case 0x4:
+        val=0x29;
+        mregs[addr]=val;
+        break;
 
-         case 0x8:
-            mregs[addr]=val;
-            HandleDMA8();
-            break;
-         case 0x580:
-            freedo_vdlp_process(val);
-            return;
-         case 0x584:
-         case 0x588:
-         case 0x58C:
-         case 0x590:
-         case 0x594:
-         case 0x598:
-         case 0x59C:
-            //_3do_DPrint(str.print("CLUT - MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val));
-            mregs[addr]=val;
-            return;
-         case 0x0:
-            return;
-         case SPRSTRT:
-            if(_madam_FSM==FSM_IDLE)
-               _madam_FSM=FSM_INPROCESS;
-            return;
+      case 0x8:
+        mregs[addr]=val;
+        HandleDMA8();
+        break;
+      case 0x580:
+        freedo_vdlp_process(val);
+        return;
+      case 0x584:
+      case 0x588:
+      case 0x58C:
+      case 0x590:
+      case 0x594:
+      case 0x598:
+      case 0x59C:
+        //_3do_DPrint(str.print("CLUT - MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val));
+        mregs[addr]=val;
+        return;
+      case 0x0:
+        return;
+      case SPRSTRT:
+        if(_madam_FSM==FSM_IDLE)
+          _madam_FSM=FSM_INPROCESS;
+        return;
 
-         case SPRSTOP:
-            _madam_FSM=FSM_IDLE;
-            NEXTCCB=0;
-            return;
+      case SPRSTOP:
+        _madam_FSM=FSM_IDLE;
+        NEXTCCB=0;
+        return;
 
-         case SPRCNTU:
-            if(_madam_FSM==FSM_SUSPENDED)
-               _madam_FSM=FSM_INPROCESS;
-            return;
+      case SPRCNTU:
+        if(_madam_FSM==FSM_SUSPENDED)
+          _madam_FSM=FSM_INPROCESS;
+        return;
 
-         case SPRPAUS:
-            if(_madam_FSM==FSM_INPROCESS)
-               _madam_FSM=FSM_SUSPENDED;
-            return;
+      case SPRPAUS:
+        if(_madam_FSM==FSM_INPROCESS)
+          _madam_FSM=FSM_SUSPENDED;
+        return;
 
-            //Matrix engine macros
+        //Matrix engine macros
 #define M00  ((float)(signed int)mregs[0x600])
 #define M01  ((float)(signed int)mregs[0x604])
 #define M02  ((float)(signed int)mregs[0x608])
@@ -678,87 +678,87 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
 
 #define Nfrac16 (((int64_t)mregs[0x680]<<32)|(unsigned int)mregs[0x684])
 
-            // Matix engine
-         case 0x7fc:
+        // Matix engine
+      case 0x7fc:
+        {
+          static double Rez0T,Rez1T,Rez2T,Rez3T;
+
+          mregs[0x7fc]=0; // Ours matrix engine already ready
+
+          switch(val) // Cmd
             {
-               static double Rez0T,Rez1T,Rez2T,Rez3T;
-
-               mregs[0x7fc]=0; // Ours matrix engine already ready
-
-               switch(val) // Cmd
-               {
-                  case 0: //printf("#Matrix = NOP\n");
-                     Rez0=Rez0T;
-                     Rez1=Rez1T;
-                     Rez2=Rez2T;
-                     Rez3=Rez3T;
-                     return;   // NOP
+            case 0: //printf("#Matrix = NOP\n");
+              Rez0=Rez0T;
+              Rez1=Rez1T;
+              Rez2=Rez2T;
+              Rez3=Rez3T;
+              return;   // NOP
 
 
-                  case 1: //multiply a 4x4 matrix of 16.16 values by a vector of 16.16 values
+            case 1: //multiply a 4x4 matrix of 16.16 values by a vector of 16.16 values
 
-                     Rez0=Rez0T;
-                     Rez1=Rez1T;
-                     Rez2=Rez2T;
-                     Rez3=Rez3T;
-
-
-                     Rez0T=(int)((M00*V0+M01*V1+M02*V2+M03*V3)/65536.0);
-                     Rez1T=(int)((M10*V0+M11*V1+M12*V2+M13*V3)/65536.0);
-                     Rez2T=(int)((M20*V0+M21*V1+M22*V2+M23*V3)/65536.0);
-                     Rez3T=(int)((M30*V0+M31*V1+M32*V2+M33*V3)/65536.0);
-
-                     return;
-                  case 2: //multiply a 3x3 matrix of 16.16 values by a vector of 16.16 values
-                     Rez0=Rez0T;
-                     Rez1=Rez1T;
-                     Rez2=Rez2T;
-                     Rez3=Rez3T;
-
-                     Rez0T=(int)((M00*V0+M01*V1+M02*V2)/65536.0);
-                     Rez1T=(int)((M10*V0+M11*V1+M12*V2)/65536.0);
-                     Rez2T=(int)((M20*V0+M21*V1+M22*V2)/65536.0);
-                     //printf("#Matrix CMD2, R0=0x%8.8X, R1=0x%8.8X, R2=0x%8.8X\n",Rez0,Rez1,Rez2);
-                     return;
-
-                  case 3: // Multiply a 3x3 matrix of 16.16 values by multiple vectors, then multiply x and y by n/z
-                     {   // Return the result vectors {x*n/z, y*n/z, z}
-                        double M;
-
-                        Rez0=Rez0T;
-                        Rez1=Rez1T;
-                        Rez2=Rez2T;
-                        Rez3=Rez3T;
-
-                        M=Nfrac16;
-
-                        Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
-                        if(Rez2T!=0)
-                           M /= (double)Rez2T;          // n/z
-
-                        Rez0T=(signed int)((M00*V0+M01*V1+M02*V2)/65536.0);
-                        Rez1T=(signed int)((M10*V0+M11*V1+M12*V2)/65536.0);
+              Rez0=Rez0T;
+              Rez1=Rez1T;
+              Rez2=Rez2T;
+              Rez3=Rez3T;
 
 
-                        Rez0T=(double)((Rez0T*M)/65536.0/65536.0); // x * n/z
-                        Rez1T=(double)((Rez1T*M)/65536.0/65536.0); // y * n/z
+              Rez0T=(int)((M00*V0+M01*V1+M02*V2+M03*V3)/65536.0);
+              Rez1T=(int)((M10*V0+M11*V1+M12*V2+M13*V3)/65536.0);
+              Rez2T=(int)((M20*V0+M21*V1+M22*V2+M23*V3)/65536.0);
+              Rez3T=(int)((M30*V0+M31*V1+M32*V2+M33*V3)/65536.0);
 
-                     }
-                     break;
-                  default:
-                     break;
-               }
+              return;
+            case 2: //multiply a 3x3 matrix of 16.16 values by a vector of 16.16 values
+              Rez0=Rez0T;
+              Rez1=Rez1T;
+              Rez2=Rez2T;
+              Rez3=Rez3T;
+
+              Rez0T=(int)((M00*V0+M01*V1+M02*V2)/65536.0);
+              Rez1T=(int)((M10*V0+M11*V1+M12*V2)/65536.0);
+              Rez2T=(int)((M20*V0+M21*V1+M22*V2)/65536.0);
+              //printf("#Matrix CMD2, R0=0x%8.8X, R1=0x%8.8X, R2=0x%8.8X\n",Rez0,Rez1,Rez2);
+              return;
+
+            case 3: // Multiply a 3x3 matrix of 16.16 values by multiple vectors, then multiply x and y by n/z
+              {   // Return the result vectors {x*n/z, y*n/z, z}
+                double M;
+
+                Rez0=Rez0T;
+                Rez1=Rez1T;
+                Rez2=Rez2T;
+                Rez3=Rez3T;
+
+                M=Nfrac16;
+
+                Rez2T=(signed int)((M20*V0+M21*V1+M22*V2)/65536.0); // z
+                if(Rez2T!=0)
+                  M /= (double)Rez2T;          // n/z
+
+                Rez0T=(signed int)((M00*V0+M01*V1+M02*V2)/65536.0);
+                Rez1T=(signed int)((M10*V0+M11*V1+M12*V2)/65536.0);
+
+
+                Rez0T=(double)((Rez0T*M)/65536.0/65536.0); // x * n/z
+                Rez1T=(double)((Rez1T*M)/65536.0/65536.0); // y * n/z
+
+              }
+              break;
+            default:
+              break;
             }
-            break;
-         case 0x130:
-            mregs[addr]=val;	//modulo variables :)
-            RMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
-            val>>=8;
-            WMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
-            break;
-         default:
-            mregs[addr]=val;
-            break;
+        }
+        break;
+      case 0x130:
+        mregs[addr]=val;	//modulo variables :)
+        RMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
+        val>>=8;
+        WMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
+        break;
+      default:
+        mregs[addr]=val;
+        break;
       }
 }
 
@@ -777,43 +777,43 @@ int TEXTURE_WI_LIM, TEXTURE_HI_LIM;
 
 void LoadPLUT(unsigned int pnt,int n)
 {
-   int i;
-   for(i=0;i<n;i++)
-   {
+  int i;
+  for(i=0;i<n;i++)
+    {
 #ifdef MSB_FIRST
       PLUT[i]=_mem_read16((((pnt>>1)+i))<<1);
 #else
       PLUT[i]=_mem_read16((((pnt>>1)+i)^1)<<1);
 #endif
-   }
+    }
 }
 
 int CCBCOUNTER;
 int _madam_HandleCEL(void)
 {
-   __smallcycles=CELCYCLES=0;
-   if(NEXTCCB!=0)
-      CCBCOUNTER=0;
-   STATBITS|=SPRON;
-   Flag=0;
+  __smallcycles=CELCYCLES=0;
+  if(NEXTCCB!=0)
+    CCBCOUNTER=0;
+  STATBITS|=SPRON;
+  Flag=0;
 
 
-   while((NEXTCCB!=0)&&(!Flag))
-      //if(_madam_FSM==FSM_INPROCESS)
-   {
+  while((NEXTCCB!=0)&&(!Flag))
+    //if(_madam_FSM==FSM_INPROCESS)
+    {
       CCBCOUNTER++;
       if((NEXTCCB==0)||(Flag))
-      {
-         _madam_FSM=FSM_IDLE;
-         return CELCYCLES;
-      }
+        {
+          _madam_FSM=FSM_IDLE;
+          return CELCYCLES;
+        }
       //1st step -- parce CCB and load it into registers
       CURRENTCCB=NEXTCCB&0xfffffc;
       if((CURRENTCCB>>20)>2)
-      {
-         _madam_FSM=FSM_IDLE;
-         return CELCYCLES;
-      }
+        {
+          _madam_FSM=FSM_IDLE;
+          return CELCYCLES;
+        }
       OFFSET=CURRENTCCB;
 
 
@@ -823,15 +823,15 @@ int _madam_HandleCEL(void)
 
 
       if(CCBFLAGS&CCB_PXOR)
-      {
-         PXOR1=0;
-         PXOR2=0x1f1f1f1f;
-      }
+        {
+          PXOR1=0;
+          PXOR2=0x1f1f1f1f;
+        }
       else
-      {
-         PXOR1=0xFFffFFff;
-         PXOR2=0;
-      }
+        {
+          PXOR1=0xFFffFFff;
+          PXOR2=0;
+        }
       Flag=0;
       PLUTF=PDATF=NCCBF=0;
 
@@ -839,14 +839,14 @@ int _madam_HandleCEL(void)
 
 
       if(!(CCBFLAGS&CCB_NPABS))
-      {
-         NEXTCCB+=CURRENTCCB+4;
-         NEXTCCB&=0xffffff;
-      }
+        {
+          NEXTCCB+=CURRENTCCB+4;
+          NEXTCCB&=0xffffff;
+        }
       if(NEXTCCB == 0)
-         NCCBF=1;
+        NCCBF=1;
       if((NEXTCCB>>20)>2)
-         NCCBF=1;
+        NCCBF=1;
 
       CURRENTCCB+=4;
 
@@ -855,49 +855,49 @@ int _madam_HandleCEL(void)
       //if((PDATA==0))
       //	PDATF=1;
       if(!(CCBFLAGS&CCB_SPABS))
-      {
-         PDATA+=CURRENTCCB+4;
-         PDATA&=0xffffff;
-      }
+        {
+          PDATA+=CURRENTCCB+4;
+          PDATA&=0xffffff;
+        }
       if((PDATA>>20)>2)
-         PDATF=1;
+        PDATF=1;
       CURRENTCCB+=4;
 
       if((CCBFLAGS&CCB_LDPLUT))
-      {
-         PLUTDATA=mread(CURRENTCCB)&(~3);
-         //if((PLUTDATA==0))
-         //    PLUTF=1;
-         if(!(CCBFLAGS&CCB_PPABS))
-         {
-            PLUTDATA+=CURRENTCCB+4;
-            PLUTDATA&=0xffffff;
-         }
-         if((PLUTDATA>>20)>2)
+        {
+          PLUTDATA=mread(CURRENTCCB)&(~3);
+          //if((PLUTDATA==0))
+          //    PLUTF=1;
+          if(!(CCBFLAGS&CCB_PPABS))
+            {
+              PLUTDATA+=CURRENTCCB+4;
+              PLUTDATA&=0xffffff;
+            }
+          if((PLUTDATA>>20)>2)
             PLUTF=1;
-      }
+        }
       CURRENTCCB+=4;
 
 
       if(NCCBF)
-         CCBFLAGS|=CCB_LAST;
+        CCBFLAGS|=CCB_LAST;
 
 
       if(CCBFLAGS&CCB_LAST)
-         Flag=1;
+        Flag=1;
 
 
       if(CCBFLAGS&CCB_YOXY)
-      {
-         XPOS1616=mread(CURRENTCCB);
-         XPOS=XPOS1616/65536.0;
-         CURRENTCCB+=4;
-         YPOS1616=mread(CURRENTCCB);
-         YPOS=YPOS1616/65536.0;
-         CURRENTCCB+=4;
-      }
+        {
+          XPOS1616=mread(CURRENTCCB);
+          XPOS=XPOS1616/65536.0;
+          CURRENTCCB+=4;
+          YPOS1616=mread(CURRENTCCB);
+          YPOS=YPOS1616/65536.0;
+          CURRENTCCB+=4;
+        }
       else
-         CURRENTCCB+=8;
+        CURRENTCCB+=8;
 
       // Get the VH value for this cel. This is done in case the
       // cel later decides to use the position as the source of
@@ -909,140 +909,140 @@ int _madam_HandleCEL(void)
 
 
       if(CCBFLAGS&CCB_LAST)
-         NEXTCCB=0;
+        NEXTCCB=0;
       if(CCBFLAGS&CCB_LDSIZE)
-      {
-         HDX1616=((int)mread(CURRENTCCB))>>4;
-         HDX=HDX1616/65536.0;
-         CURRENTCCB+=4;
-         HDY1616=((int)mread(CURRENTCCB))>>4;
-         HDY=HDY1616/65536.0;
-         CURRENTCCB+=4;
-         VDX1616=mread(CURRENTCCB);
-         VDX=VDX1616/65536.0;
-         CURRENTCCB+=4;
-         VDY1616=mread(CURRENTCCB);
-         VDY=VDY1616/65536.0;
-         CURRENTCCB+=4;
-      }
+        {
+          HDX1616=((int)mread(CURRENTCCB))>>4;
+          HDX=HDX1616/65536.0;
+          CURRENTCCB+=4;
+          HDY1616=((int)mread(CURRENTCCB))>>4;
+          HDY=HDY1616/65536.0;
+          CURRENTCCB+=4;
+          VDX1616=mread(CURRENTCCB);
+          VDX=VDX1616/65536.0;
+          CURRENTCCB+=4;
+          VDY1616=mread(CURRENTCCB);
+          VDY=VDY1616/65536.0;
+          CURRENTCCB+=4;
+        }
       if(CCBFLAGS&CCB_LDPRS)
-      {
-         HDDX1616=((int)mread(CURRENTCCB))>>4;
-         HDDX=HDDX1616/65536.0;
-         CURRENTCCB+=4;
-         HDDY1616=((int)mread(CURRENTCCB))>>4;
-         HDDY=HDDY1616/65536.0;
-         CURRENTCCB+=4;
-      }
+        {
+          HDDX1616=((int)mread(CURRENTCCB))>>4;
+          HDDX=HDDX1616/65536.0;
+          CURRENTCCB+=4;
+          HDDY1616=((int)mread(CURRENTCCB))>>4;
+          HDDY=HDDY1616/65536.0;
+          CURRENTCCB+=4;
+        }
       if(CCBFLAGS&CCB_LDPPMP)
-      {
-         PIXC=mread(CURRENTCCB);
-         CURRENTCCB+=4;
-      }
+        {
+          PIXC=mread(CURRENTCCB);
+          CURRENTCCB+=4;
+        }
       if(CCBFLAGS&CCB_CCBPRE)
-      {
-         PRE0=mread(CURRENTCCB);
-         CURRENTCCB+=4;
-         if(!(CCBFLAGS&CCB_PACKED))
-         {
-            PRE1=mread(CURRENTCCB);
-            CURRENTCCB+=4;
-         }
-      }
+        {
+          PRE0=mread(CURRENTCCB);
+          CURRENTCCB+=4;
+          if(!(CCBFLAGS&CCB_PACKED))
+            {
+              PRE1=mread(CURRENTCCB);
+              CURRENTCCB+=4;
+            }
+        }
       else if(!PDATF)
-      {
-         PRE0=mread(PDATA);
-         PDATA+=4;
-         if(!(CCBFLAGS&CCB_PACKED))
-         {
-            PRE1=mread(PDATA);
-            PDATA+=4;
-         }
-      }
+        {
+          PRE0=mread(PDATA);
+          PDATA+=4;
+          if(!(CCBFLAGS&CCB_PACKED))
+            {
+              PRE1=mread(PDATA);
+              PDATA+=4;
+            }
+        }
 
       {// PDEC data compute
-         //pdec.mode=PRE0&PRE0_BPP_MASK;
-         switch(PRE0&PRE0_BPP_MASK)
-         {
-            case 0:
-            case 7:
-               continue;
-            case 1:
-               pdec.plutaCCBbits=(CCBFLAGS&0xf)*4;
-               pdec.pixelBitsMask=1; // 1 bit
-               break;
-            case 2:
-               pdec.plutaCCBbits=(CCBFLAGS&0xe)*4;
-               pdec.pixelBitsMask=3; // 2 bit
-               break;
-            default://case 3:
-               pdec.plutaCCBbits=(CCBFLAGS&0x8)*4;
-               pdec.pixelBitsMask=15; // 4 bit
-               break;
-         }
-         pdec.tmask=!(CCBFLAGS&CCB_BGND);
+        //pdec.mode=PRE0&PRE0_BPP_MASK;
+        switch(PRE0&PRE0_BPP_MASK)
+          {
+          case 0:
+          case 7:
+            continue;
+          case 1:
+            pdec.plutaCCBbits=(CCBFLAGS&0xf)*4;
+            pdec.pixelBitsMask=1; // 1 bit
+            break;
+          case 2:
+            pdec.plutaCCBbits=(CCBFLAGS&0xe)*4;
+            pdec.pixelBitsMask=3; // 2 bit
+            break;
+          default://case 3:
+            pdec.plutaCCBbits=(CCBFLAGS&0x8)*4;
+            pdec.pixelBitsMask=15; // 4 bit
+            break;
+          }
+        pdec.tmask=!(CCBFLAGS&CCB_BGND);
 
-         pproj.pmode = (CCBFLAGS&CCB_POVER_MASK);
-         pproj.pmodeORmask= (pproj.pmode==PMODE_ONE )? 0x8000:0x0000;
-         pproj.pmodeANDmask=(pproj.pmode!=PMODE_ZERO)? 0xFFFF:0x7FFF;
+        pproj.pmode = (CCBFLAGS&CCB_POVER_MASK);
+        pproj.pmodeORmask= (pproj.pmode==PMODE_ONE )? 0x8000:0x0000;
+        pproj.pmodeANDmask=(pproj.pmode!=PMODE_ZERO)? 0xFFFF:0x7FFF;
       }
 
       if((CCBFLAGS&CCB_LDPLUT) && !PLUTF) //load PLUT
-      {
-         switch(PRE0&PRE0_BPP_MASK)
-         {
+        {
+          switch(PRE0&PRE0_BPP_MASK)
+            {
             case 1:
-               LoadPLUT(PLUTDATA,2);
-               break;
+              LoadPLUT(PLUTDATA,2);
+              break;
             case 2:
-               LoadPLUT(PLUTDATA,4);
-               break;
+              LoadPLUT(PLUTDATA,4);
+              break;
             case 3:
-               LoadPLUT(PLUTDATA,16);
-               break;
+              LoadPLUT(PLUTDATA,16);
+              break;
             default:
-               LoadPLUT(PLUTDATA,32);
-         };
-      }
+              LoadPLUT(PLUTDATA,32);
+            };
+        }
 
       //ok -- CCB decoded -- let's print out our current status
       //step#2 -- getting CEL data
       //*
       if(!(CCBFLAGS&CCB_SKIP) && !PDATF)
-      {
-         if(CCBFLAGS&CCB_PACKED)
+        {
+          if(CCBFLAGS&CCB_PACKED)
             DrawPackedCel_New();
-         else
-         {
+          else
+            {
 
-            if((PRE1&PRE1_LRFORM)&&(BPP[PRE0&PRE0_BPP_MASK]==16))
-               DrawLRCel_New();
-            else
-               DrawLiteralCel_New();
+              if((PRE1&PRE1_LRFORM)&&(BPP[PRE0&PRE0_BPP_MASK]==16))
+                DrawLRCel_New();
+              else
+                DrawLiteralCel_New();
 
-         }
+            }
 
-      }//if(!(CCBFLAGS& CCB_SKIP))
-   }//while
+        }//if(!(CCBFLAGS& CCB_SKIP))
+    }//while
 
-   //STATBITS&=~SPRON;
-   if((NEXTCCB==0)||(Flag))
-   {
+  //STATBITS&=~SPRON;
+  if((NEXTCCB==0)||(Flag))
+    {
       _madam_FSM=FSM_IDLE;
-   }
+    }
 
-   return CELCYCLES;
+  return CELCYCLES;
 }//HandleCEL
 
 void HandleDMA8(void)
 {
-   if(mregs[0x8]&0x8000)// pbus transfer
-   {
+  if(mregs[0x8]&0x8000)// pbus transfer
+    {
       DMAPBus();
       mregs[0x8]&=~0x8000; // dma done
 
       freedo_clio_fiq_generate(0,1);
-   }
+    }
 }
 
 /*
@@ -1088,17 +1088,17 @@ void HandleDMA8(void)
 
 void DMAPBus(void)
 {
-   unsigned int i=0;
+  unsigned int i=0;
 
-   if((int)mregs[0x574]<0)
-      return;
+  if((int)mregs[0x574]<0)
+    return;
 
-   mregs[0x574]-=4;
-   mregs[0x570]+=4;
-   mregs[0x578]+=4;
+  mregs[0x574]-=4;
+  mregs[0x570]+=4;
+  mregs[0x578]+=4;
 
-   while((int)mregs[0x574] > 0)
-   {
+  while((int)mregs[0x574] > 0)
+    {
       if(i < (sizeof(PBUSQueue) / sizeof(uint32_t)))
         WriteIO(mregs[0x570],((uint32_t*)PBUSQueue)[i]);
       else
@@ -1107,9 +1107,9 @@ void DMAPBus(void)
       mregs[0x570]+=4;
       mregs[0x578]+=4;
       i++;
-   }
+    }
 
-   mregs[0x574]=0xfffffffc;
+  mregs[0x574]=0xfffffffc;
 }
 
 uint8_t*
@@ -1133,39 +1133,39 @@ _madam_PBUSData(void)
 
 void _madam_Init(uint8_t *memory)
 {
-   int i,j,n;
-   ADD=0;
-   debug=0;
-   USECEL=1;
-   CELCYCLES=0;
-   Mem=memory;
+  int i,j,n;
+  ADD=0;
+  debug=0;
+  USECEL=1;
+  CELCYCLES=0;
+  Mem=memory;
 
-   bitoper.bitset = 1;
+  bitoper.bitset = 1;
 
-   MAPPING=1;
+  MAPPING=1;
 
-   _madam_FSM=FSM_IDLE;
+  _madam_FSM=FSM_IDLE;
 
-   for(i=0;i<2048;i++)
-      mregs[i]=0;
+  for(i=0;i<2048;i++)
+    mregs[i]=0;
 
-   mregs[004]=0x29;		// DRAM dux init
-   mregs[574]=0xfffffffc;
+  mregs[004]=0x29;		// DRAM dux init
+  mregs[574]=0xfffffffc;
 
 #if 1
-   mregs[000]=0x01020000; // for Green matrix engine autodetect
-   //mregs[000]=0x02022000; // for Green matrix engine autodetect
+  mregs[000]=0x01020000; // for Green matrix engine autodetect
+  //mregs[000]=0x02022000; // for Green matrix engine autodetect
 #else
-   mregs[000]=0x01020001; // for ARM soft emu of matrix engine
+  mregs[000]=0x01020001; // for ARM soft emu of matrix engine
 #endif
 
-   for(i=0;i<32;i++)
-      for(j=0;j<8;j++)
-         for(n=0;n<4;n++)
-            PSCALAR[j][n][i]=((i*(j+1))>>PDV(n));
+  for(i=0;i<32;i++)
+    for(j=0;j<8;j++)
+      for(n=0;n<4;n++)
+        PSCALAR[j][n][i]=((i*(j+1))>>PDV(n));
 
-   for(i=0;i<256;i++)
-   {
+  for(i=0;i<256;i++)
+    {
       union pdeco	pix1,pix2;
       uint16_t pres, resamv;
 
@@ -1180,416 +1180,416 @@ void _madam_Init(uint8_t *memory)
       resamv=(pix1.c8b.m<<1)+pix1.c8b.mpw;
       resamv=(resamv<<6)+(resamv<<3)+resamv;
       MAPc8bAMV[i]=resamv;
-   }
-   for(i=0;i<(8*8*8);i++)
-   {
+    }
+  for(i=0;i<(8*8*8);i++)
+    {
       union pdeco pix1;
 
       pix1.raw=i<<5;
       MAPc16bAMV[i]=(pix1.c16b.mr<<6)+(pix1.c16b.mg<<3)+pix1.c16b.mb;
-   }
+    }
 }
 
 extern void _3do_InternalFrame(int cycles);
 
 void exteraclocker(void)
 {
-   if((CELCYCLES-__smallcycles)>>7)
-   {
+  if((CELCYCLES-__smallcycles)>>7)
+    {
       __smallcycles=CELCYCLES;
       //_3do_InternalFrame(64);
-   }
+    }
 }
 
 unsigned int  mread(unsigned int addr)
 {
-   unsigned int val;
+  unsigned int val;
 #ifdef SAFEMEMACCESS
-   //	addr&=0x3FFFFF;
+  //	addr&=0x3FFFFF;
 #endif
-   val=_mem_read32(addr);
-   CELCYCLES+=1;
-   //exteraclocker();
-   return val;
+  val=_mem_read32(addr);
+  CELCYCLES+=1;
+  //exteraclocker();
+  return val;
 }
 
 void  mwrite(unsigned int addr, unsigned int val)
 {
 #ifdef SAFEMEMACCESS
-   addr&=0x3FFFFF;
+  addr&=0x3FFFFF;
 #endif
-   _mem_write32(addr,val);
-   CELCYCLES+=2;
-   //exteraclocker();
+  _mem_write32(addr,val);
+  CELCYCLES+=2;
+  //exteraclocker();
 
 }
 
 void  mwriteh(unsigned int addr, uint16_t val)
 {
 #ifdef SAFEMEMACCESS
-   addr&=0x3fffff;
+  addr&=0x3fffff;
 #endif
-   CELCYCLES+=2;
+  CELCYCLES+=2;
 #ifdef MSB_FIRST
-   _mem_write16((addr),val);
+  _mem_write16((addr),val);
 #else
-   _mem_write16((addr^2),val);
+  _mem_write16((addr^2),val);
 #endif
-   //exteraclocker();
+  //exteraclocker();
 }
 
 uint16_t  mreadh(unsigned int addr)
 {
 #ifdef SAFEMEMACCESS
-   //	addr&=0x3FFFFF;
+  //	addr&=0x3FFFFF;
 #endif
-   CELCYCLES+=1;
-   //exteraclocker();
+  CELCYCLES+=1;
+  //exteraclocker();
 #ifdef MSB_FIRST
-   return _mem_read16((addr));
+  return _mem_read16((addr));
 #else
-   return _mem_read16((addr^2));
+  return _mem_read16((addr^2));
 #endif
 }
 
 unsigned int  readPLUTDATA(unsigned int offset)
 {
-   CELCYCLES+=4;
-   if(PLUTDATA==0)
-      return 0;
-   return *(uint16_t*)(PLUTDATA+(offset^2));
-   //return ((uint16_t*)PAL_EXP)[((offset^2)>>1)];
+  CELCYCLES+=4;
+  if(PLUTDATA==0)
+    return 0;
+  return *(uint16_t*)(PLUTDATA+(offset^2));
+  //return ((uint16_t*)PAL_EXP)[((offset^2)>>1)];
 }
 
 unsigned int  PDEC(unsigned int pixel, uint16_t * amv)
 {
-   union pdeco	pix1;
-   uint16_t resamv,pres;
+  union pdeco	pix1;
+  uint16_t resamv,pres;
 
-   pix1.raw=pixel;
+  pix1.raw=pixel;
 
-   switch(PRE0&PRE0_BPP_MASK)
-   {
-      default:
-         //case 1: // 1 bit
-         //case 2: // 2 bits
-         //case 3: // 4 bits
-         pres=PLUT[(pdec.plutaCCBbits+((pix1.raw&pdec.pixelBitsMask)*2))>>1];
-         resamv=0x49;
-         break;
+  switch(PRE0&PRE0_BPP_MASK)
+    {
+    default:
+      //case 1: // 1 bit
+      //case 2: // 2 bits
+      //case 3: // 4 bits
+      pres=PLUT[(pdec.plutaCCBbits+((pix1.raw&pdec.pixelBitsMask)*2))>>1];
+      resamv=0x49;
+      break;
 
-      case 4:   // 6 bits
+    case 4:   // 6 bits
 
-         pres=PLUT[pix1.c6b.c];
-         pres=(pres&0x7FFF)+(pix1.c6b.pw<<15); //pmode=pix1.c6b.pw; ???
+      pres=PLUT[pix1.c6b.c];
+      pres=(pres&0x7FFF)+(pix1.c6b.pw<<15); //pmode=pix1.c6b.pw; ???
 
-         resamv=0x49;
-         break;
+      resamv=0x49;
+      break;
 
-      case 5:   // 8 bits
+    case 5:   // 8 bits
 
-         if(PRE0&PRE0_LINEAR)
-         {
-            // (Uncoded 8 bit CEL)
+      if(PRE0&PRE0_LINEAR)
+        {
+          // (Uncoded 8 bit CEL)
 
-            pres=MAPu8b[pix1.raw&0xFF];
+          pres=MAPu8b[pix1.raw&0xFF];
 
-            resamv=0x49;
-         }
-         else
-         {
-            // (Coded 8 bit CEL)
+          resamv=0x49;
+        }
+      else
+        {
+          // (Coded 8 bit CEL)
 
-            pres=PLUT[pix1.c8b.c];
+          pres=PLUT[pix1.c8b.c];
 
-            resamv=MAPc8bAMV[pix1.raw&0xFF];
-         }
-         break;
+          resamv=MAPc8bAMV[pix1.raw&0xFF];
+        }
+      break;
 
-      case 6:  // 16 bits
-      case 7:
-         //*amv=0;
-         //pres=0;
-         //Transparent=0;
-         if((PRE0&PRE0_LINEAR))
-         {
-            // (Uncoded 16 bit CEL)
+    case 6:  // 16 bits
+    case 7:
+      //*amv=0;
+      //pres=0;
+      //Transparent=0;
+      if((PRE0&PRE0_LINEAR))
+        {
+          // (Uncoded 16 bit CEL)
 
-            pres=pix1.raw;
-            //pres&=0x7ffe;
+          pres=pix1.raw;
+          //pres&=0x7ffe;
 
-            //pres=0x11;
-            // pres=(pres&0x7fff)+(pix1.u16b.p<<15);//pmode=pix1.u16b.p; ???
-            resamv=0x49;
+          //pres=0x11;
+          // pres=(pres&0x7fff)+(pix1.u16b.p<<15);//pmode=pix1.u16b.p; ???
+          resamv=0x49;
 
-         }
-         else
-         {
-            // (Uncoded 16 bit CEL)
+        }
+      else
+        {
+          // (Uncoded 16 bit CEL)
 
-            pres=PLUT[pix1.c16b.c];
-            pres=(pres&0x7fff)|(pixel&0x8000);
-            resamv=MAPc16bAMV[(pix1.raw>>5)&0x1FF];
-            //nop: pres=(pres&0x7fff)+(pix1.c16b.pw<<15);//pmode=pix1.c16b.pw; ???
-         }
+          pres=PLUT[pix1.c16b.c];
+          pres=(pres&0x7fff)|(pixel&0x8000);
+          resamv=MAPc16bAMV[(pix1.raw>>5)&0x1FF];
+          //nop: pres=(pres&0x7fff)+(pix1.c16b.pw<<15);//pmode=pix1.c16b.pw; ???
+        }
 
-         break;
-   }
+      break;
+    }
 
-   *amv=resamv;
+  *amv=resamv;
 
-   // (Conceptual end of DECODER)
+  // (Conceptual end of DECODER)
 
-   //////////////////////
-   // TODO: Do PROJECTOR functions now?
-   // They'll be done before using the PROCESSOR.
-
-
-
-   //if(!(PRE1&PRE1_NOSWAP) && (CCBCTL0&(1<<27)))
-   //			pres=(pres&0x7ffe)|((pres&0x8000)>>15)|((pres&1)<<15);
-
-   //if(!(CCBCTL0&0x80000000))pres=(pres&0x7fff)|((CCBCTL0>>15)&0x8000);
-
-   //pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
+  //////////////////////
+  // TODO: Do PROJECTOR functions now?
+  // They'll be done before using the PROCESSOR.
 
 
-   pproj.Transparent=( ((pres&0x7fff)==0x0) & pdec.tmask );
 
-   return pres;
+  //if(!(PRE1&PRE1_NOSWAP) && (CCBCTL0&(1<<27)))
+  //			pres=(pres&0x7ffe)|((pres&0x8000)>>15)|((pres&1)<<15);
+
+  //if(!(CCBCTL0&0x80000000))pres=(pres&0x7fff)|((CCBCTL0>>15)&0x8000);
+
+  //pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
+
+
+  pproj.Transparent=( ((pres&0x7fff)==0x0) & pdec.tmask );
+
+  return pres;
 }
 
 unsigned int  PPROJ_OUTPUT(unsigned int pdec_output, unsigned int pproc_output, unsigned int pframe_input)
 {
-   int b15mode;
-   int b0mode;
-   unsigned int VHOutput;
+  int b15mode;
+  int b0mode;
+  unsigned int VHOutput;
 
-   ///////////////////////////
-   // CCB_PLUTPOS flag
-   // Determine projector's originating source of VH values.
-   if (CCBFLAGS & CCB_PLUTPOS)
-   {
+  ///////////////////////////
+  // CCB_PLUTPOS flag
+  // Determine projector's originating source of VH values.
+  if (CCBFLAGS & CCB_PLUTPOS)
+    {
       // Use pixel decoder output.
       VHOutput = (pdec_output & 0x8001);
-   }
-   else
-   {
+    }
+  else
+    {
       // Use VH values determined from the CEL's origin.
       VHOutput = CEL_ORIGIN_VH_VALUE;
-   }
+    }
 
-   //////////////////////////
-   // SWAPHV flag
-   // Swap the H and V values now if requested.
-   if (CCBCTL0 & SWAPHV)
-   {
+  //////////////////////////
+  // SWAPHV flag
+  // Swap the H and V values now if requested.
+  if (CCBCTL0 & SWAPHV)
+    {
       // TODO: I have read that PRE1 is only set for unpacked CELs.
       //       So... should this be ignored if using packed CELs? I don't know.
       if (!(PRE1&PRE1_NOSWAP))
-         VHOutput=(VHOutput>>15)|((VHOutput&1)<<15);
-   }
+        VHOutput=(VHOutput>>15)|((VHOutput&1)<<15);
+    }
 
 #if 0
-   //////////////////////////
-   // CFBDSUB flag
-   // Substitute the VH values from the frame buffer if requested.
-   if (CCBCTL0 & CFBDSUB)
-   {
+  //////////////////////////
+  // CFBDSUB flag
+  // Substitute the VH values from the frame buffer if requested.
+  if (CCBCTL0 & CFBDSUB)
+    {
       // TODO: This should be re-enabled sometime. However, it currently
       //       causes the wing commander 3 movies to screw up again! There
       //       must be some missing mbehavior elsewhere.
       //VHOutput = (pframe_input & 0x8001);
-   }
+    }
 #endif
 
 
-   //////////////////////////
-   // B15POS_MASK settings
-   // Substitute the V value explicitly if requested.
-   b15mode = (CCBCTL0 & B15POS_MASK);
-   if (b15mode == B15POS_PDC)
-   {
+  //////////////////////////
+  // B15POS_MASK settings
+  // Substitute the V value explicitly if requested.
+  b15mode = (CCBCTL0 & B15POS_MASK);
+  if (b15mode == B15POS_PDC)
+    {
       // Don't touch it.
-   }
-   else if (b15mode == B15POS_0)
-   {
+    }
+  else if (b15mode == B15POS_0)
+    {
       VHOutput = (VHOutput & ~0x8000);
-   }
-   else if (b15mode == B15POS_1)
-   {
+    }
+  else if (b15mode == B15POS_1)
+    {
       VHOutput |= 0x8000;
-   }
+    }
 
-   //////////////////////////
-   // B15POS_MASK settings
-   // Substitute the H value explicitly if requested.
-   b0mode = (CCBCTL0 & B0POS_MASK);
-   if (b0mode == B0POS_PDC)
-   {
+  //////////////////////////
+  // B15POS_MASK settings
+  // Substitute the H value explicitly if requested.
+  b0mode = (CCBCTL0 & B0POS_MASK);
+  if (b0mode == B0POS_PDC)
+    {
       // Don't touch it.
-   }
-   else if (b0mode == B0POS_PPMP)
-   {
+    }
+  else if (b0mode == B0POS_PPMP)
+    {
       // Use LSB from pixel processor output.
       VHOutput = (VHOutput & ~0x1) | (pproc_output & 0x1);
-   }
-   else if (b0mode == B0POS_0)
-   {
+    }
+  else if (b0mode == B0POS_0)
+    {
       VHOutput = (VHOutput & ~0x1);
-   }
-   else if (b0mode == B0POS_1)
-   {
+    }
+  else if (b0mode == B0POS_1)
+    {
       VHOutput |= 0x01;
-   }
+    }
 
-   return (pproc_output & 0x7FFE) | VHOutput;
+  return (pproc_output & 0x7FFE) | VHOutput;
 }
 
 unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 {
-   union AVS AV;
-   union PXC pixc;
+  union AVS AV;
+  union PXC pixc;
 
-   union pdeco	input1,out,pix1;
+  union pdeco	input1,out,pix1;
 
 #pragma pack(push,1)
-   union
-   {
-      unsigned int raw;
-      struct
-      {
-         int8_t R;
-         int8_t B;
-         int8_t G;
-         int8_t a;
-      };
-   } color1, color2, AOP, BOP;
+  union
+  {
+    unsigned int raw;
+    struct
+    {
+      int8_t R;
+      int8_t B;
+      int8_t G;
+      int8_t a;
+    };
+  } color1, color2, AOP, BOP;
 #pragma pack(pop)
 
-   // Set PMODE according to the values set up in the CCBFLAGS word.
-   // (This merely uses masks here because it's faster).
-   // This is a duty of the PROJECTOR, but we'll do it here because its easier.
-   pixel = (pixel|pproj.pmodeORmask)&pproj.pmodeANDmask;
+  // Set PMODE according to the values set up in the CCBFLAGS word.
+  // (This merely uses masks here because it's faster).
+  // This is a duty of the PROJECTOR, but we'll do it here because its easier.
+  pixel = (pixel|pproj.pmodeORmask)&pproj.pmodeANDmask;
 
-   pixc.raw=PIXC&0xffff;
-   if((pixel&0x8000))
-      pixc.raw=PIXC>>16;
+  pixc.raw=PIXC&0xffff;
+  if((pixel&0x8000))
+    pixc.raw=PIXC>>16;
 
-   //pres,fpix
+  //pres,fpix
 
-   //now let's select the sources
-   //1. av
-   //2. input1
-   //3. input2
-   //pixc.raw=0;
+  //now let's select the sources
+  //1. av
+  //2. input1
+  //3. input2
+  //pixc.raw=0;
 
-   if(CCBFLAGS&CCB_USEAV)
-      AV.raw=pixc.meaning.av;
-   else
-   {
+  if(CCBFLAGS&CCB_USEAV)
+    AV.raw=pixc.meaning.av;
+  else
+    {
       AV.avsignal.dv3=0;
       AV.avsignal.nCLIP=0;
       AV.avsignal.XTEND=0;
       AV.avsignal.NEG=0;
-   }
+    }
 
-   if(!pixc.meaning.s1)
-      input1.raw=pixel;
-   else
-      input1.raw=fpix;
+  if(!pixc.meaning.s1)
+    input1.raw=pixel;
+  else
+    input1.raw=fpix;
 
-   switch(pixc.meaning.s2)
-   {
-      case 0:
-         color2.raw=0;
-         break;
-      case 1:
-         color2.R=color2.G=color2.B=(pixc.meaning.av>>AV.avsignal.dv3);
-         break;
-      case 2:
-         pix1.raw=fpix;
-         color2.R=(pix1.r16b.r)>>AV.avsignal.dv3;
-         color2.G=(pix1.r16b.g)>>AV.avsignal.dv3;
-         color2.B=(pix1.r16b.b)>>AV.avsignal.dv3;
-         break;
-      case 3:
-         pix1.raw=pixel;
-         color2.R=(pix1.r16b.r)>>AV.avsignal.dv3;
-         color2.G=(pix1.r16b.g)>>AV.avsignal.dv3;
-         color2.B=(pix1.r16b.b)>>AV.avsignal.dv3;
-         break;
-   }
-
-
-   switch(pixc.meaning.ms)
-   {
-      case 0:
-         color1.R=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.r];
-         color1.G=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.g];
-         color1.B=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.b];
-         break;
-      case 1:
-         color1.R=PSCALAR[(amv>>6)&7][pixc.meaning.dv1][input1.r16b.r];
-         color1.G=PSCALAR[(amv>>3)&7][pixc.meaning.dv1][input1.r16b.g];
-         color1.B=PSCALAR[amv&7][pixc.meaning.dv1][input1.r16b.b];
-         break;
-      case 2:
-         pix1.raw=pixel;
-         color1.R=PSCALAR[pix1.r16b.r>>2][pix1.r16b.r&3][input1.r16b.r];
-         color1.G=PSCALAR[pix1.r16b.g>>2][pix1.r16b.g&3][input1.r16b.g];
-         color1.B=PSCALAR[pix1.r16b.b>>2][pix1.r16b.b&3][input1.r16b.b];
-         break;
-      case 3:
-         color1.R=PSCALAR[4][pixc.meaning.dv1][input1.r16b.r];
-         color1.G=PSCALAR[4][pixc.meaning.dv1][input1.r16b.g];
-         color1.B=PSCALAR[4][pixc.meaning.dv1][input1.r16b.b];
-         break;
-   }
-
-   /*
-   // Use this to render magenta for testing.
-   if (false)
-   {
-   union pdeco fakeColor;
-   fakeColor.r16b.r = 0x1b;
-   fakeColor.r16b.g = 0x00;
-   fakeColor.r16b.b = 0x1b;
-   fakeColor.r16b.p = 1;
-
-   return fakeColor.raw;
-   }
-   */
-
-   //ok -- we got the sources -- now RGB processing
-   //AOP/BOP calculation
-   AOP.raw=color1.raw&PXOR1;
-   color1.raw&=PXOR2;
+  switch(pixc.meaning.s2)
+    {
+    case 0:
+      color2.raw=0;
+      break;
+    case 1:
+      color2.R=color2.G=color2.B=(pixc.meaning.av>>AV.avsignal.dv3);
+      break;
+    case 2:
+      pix1.raw=fpix;
+      color2.R=(pix1.r16b.r)>>AV.avsignal.dv3;
+      color2.G=(pix1.r16b.g)>>AV.avsignal.dv3;
+      color2.B=(pix1.r16b.b)>>AV.avsignal.dv3;
+      break;
+    case 3:
+      pix1.raw=pixel;
+      color2.R=(pix1.r16b.r)>>AV.avsignal.dv3;
+      color2.G=(pix1.r16b.g)>>AV.avsignal.dv3;
+      color2.B=(pix1.r16b.b)>>AV.avsignal.dv3;
+      break;
+    }
 
 
-   if(AV.avsignal.NEG)
-      BOP.raw=color2.raw^0x00ffffff;
-   else
-   {
+  switch(pixc.meaning.ms)
+    {
+    case 0:
+      color1.R=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.r];
+      color1.G=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.g];
+      color1.B=PSCALAR[pixc.meaning.mxf][pixc.meaning.dv1][input1.r16b.b];
+      break;
+    case 1:
+      color1.R=PSCALAR[(amv>>6)&7][pixc.meaning.dv1][input1.r16b.r];
+      color1.G=PSCALAR[(amv>>3)&7][pixc.meaning.dv1][input1.r16b.g];
+      color1.B=PSCALAR[amv&7][pixc.meaning.dv1][input1.r16b.b];
+      break;
+    case 2:
+      pix1.raw=pixel;
+      color1.R=PSCALAR[pix1.r16b.r>>2][pix1.r16b.r&3][input1.r16b.r];
+      color1.G=PSCALAR[pix1.r16b.g>>2][pix1.r16b.g&3][input1.r16b.g];
+      color1.B=PSCALAR[pix1.r16b.b>>2][pix1.r16b.b&3][input1.r16b.b];
+      break;
+    case 3:
+      color1.R=PSCALAR[4][pixc.meaning.dv1][input1.r16b.r];
+      color1.G=PSCALAR[4][pixc.meaning.dv1][input1.r16b.g];
+      color1.B=PSCALAR[4][pixc.meaning.dv1][input1.r16b.b];
+      break;
+    }
+
+  /*
+  // Use this to render magenta for testing.
+  if (false)
+  {
+  union pdeco fakeColor;
+  fakeColor.r16b.r = 0x1b;
+  fakeColor.r16b.g = 0x00;
+  fakeColor.r16b.b = 0x1b;
+  fakeColor.r16b.p = 1;
+
+  return fakeColor.raw;
+  }
+  */
+
+  //ok -- we got the sources -- now RGB processing
+  //AOP/BOP calculation
+  AOP.raw=color1.raw&PXOR1;
+  color1.raw&=PXOR2;
+
+
+  if(AV.avsignal.NEG)
+    BOP.raw=color2.raw^0x00ffffff;
+  else
+    {
       BOP.raw=color2.raw^color1.raw;
-   }
+    }
 
-   if(AV.avsignal.XTEND)
-   {
+  if(AV.avsignal.XTEND)
+    {
       BOP.R=(BOP.R<<3)>>3;
       BOP.B=(BOP.B<<3)>>3;
       BOP.G=(BOP.G<<3)>>3;
-   }
+    }
 
-   color2.R=(AOP.R+BOP.R+AV.avsignal.NEG)>>pixc.meaning.dv2;
-   color2.G=(AOP.G+BOP.G+AV.avsignal.NEG)>>pixc.meaning.dv2;
-   color2.B=(AOP.B+BOP.B+AV.avsignal.NEG)>>pixc.meaning.dv2;
+  color2.R=(AOP.R+BOP.R+AV.avsignal.NEG)>>pixc.meaning.dv2;
+  color2.G=(AOP.G+BOP.G+AV.avsignal.NEG)>>pixc.meaning.dv2;
+  color2.B=(AOP.B+BOP.B+AV.avsignal.NEG)>>pixc.meaning.dv2;
 
 
-   //fprintf(flog,"%d %d %02x\t%02d %02d %02d\n", pixc.meaning.s2, pixc.meaning.ms, AV.raw, color2.R, color2.G, color2.B);
+  //fprintf(flog,"%d %d %02x\t%02d %02d %02d\n", pixc.meaning.s2, pixc.meaning.ms, AV.raw, color2.R, color2.G, color2.B);
 
-   if(!AV.avsignal.nCLIP)
-   {
+  if(!AV.avsignal.nCLIP)
+    {
       if(color2.R<0)  color2.R=0;
       else if(color2.R>31) color2.R=31;
 
@@ -1599,185 +1599,185 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
       if(color2.B<0)  color2.B=0;
       else if(color2.B>31) color2.B=31;
 
-   }
+    }
 
 
 
-   out.raw=0;
-   out.r16b.r=color2.R;
-   out.r16b.g=color2.G;
-   out.r16b.b=color2.B;
+  out.raw=0;
+  out.r16b.r=color2.R;
+  out.r16b.g=color2.G;
+  out.r16b.b=color2.B;
 
-   // TODO: Is this something the PROJECTOR should do?
-   if(!(CCBFLAGS&CCB_NOBLK) && out.raw==0) out.raw=1<<10;
+  // TODO: Is this something the PROJECTOR should do?
+  if(!(CCBFLAGS&CCB_NOBLK) && out.raw==0) out.raw=1<<10;
 
-   //if(!(PRE1&PRE1_NOSWAP) && (CCBCTL0&(1<<27)))
-   //out.raw=(out.raw&0x7ffe)|((out.raw&0x8000)>>15)|((out.raw&1)<<15);
+  //if(!(PRE1&PRE1_NOSWAP) && (CCBCTL0&(1<<27)))
+  //out.raw=(out.raw&0x7ffe)|((out.raw&0x8000)>>15)|((out.raw&1)<<15);
 
-   //if(!(CCBCTL0&0x80000000))out.raw=(out.raw&0x7fff)|((CCBCTL0>>15)&0x8000);
+  //if(!(CCBCTL0&0x80000000))out.raw=(out.raw&0x7fff)|((CCBCTL0>>15)&0x8000);
 
-   return out.raw;
+  return out.raw;
 }
 
 
 
 unsigned int * _madam_GetRegs(void)
 {
-   return mregs;
+  return mregs;
 }
 
 void  DrawPackedCel_New(void)
 {
-   //if(isanvil==2&&biosanvil==2)  //for later
-   uint16_t CURPIX,LAMV;
+  //if(isanvil==2&&biosanvil==2)  //for later
+  uint16_t CURPIX,LAMV;
 
-   int lastaddr;
-   int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
+  int lastaddr;
+  int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
 
-   unsigned int start = PDATA;
+  unsigned int start = PDATA;
 
-   sf=100000;
+  sf=100000;
 
-   nrows=(PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT;
+  nrows=(PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT;
 
-   bpp=BPP[PRE0&PRE0_BPP_MASK];
-   offsetl=2;
+  bpp=BPP[PRE0&PRE0_BPP_MASK];
+  offsetl=2;
 
-   if(bpp < 8)
-      offsetl=1;
+  if(bpp < 8)
+    offsetl=1;
 
-   pixcount=0;
+  pixcount=0;
 
-   compsize=30;
+  compsize=30;
 
-   SPRHI=nrows+1;
-   calcx=0;
+  SPRHI=nrows+1;
+  calcx=0;
 
-   if(TestInitVisual(1))
-      return;
-   xvert=XPOS1616;
-   yvert=YPOS1616;
+  if(TestInitVisual(1))
+    return;
+  xvert=XPOS1616;
+  yvert=YPOS1616;
 
-   if(TEXEL_FUN_NUMBER==0)
-   {
+  if(TEXEL_FUN_NUMBER==0)
+    {
       //return;
       for(currentrow=0;currentrow<(TEXTURE_HI_LIM);currentrow++)
-      {
-         int scipw, wcnt;
+        {
+          int scipw, wcnt;
 
-         BitReaderBig_AttachBuffer(&bitoper, start);
-         offset = BitReaderBig_Read(&bitoper, offsetl << 3);
+          BitReaderBig_AttachBuffer(&bitoper, start);
+          offset = BitReaderBig_Read(&bitoper, offsetl << 3);
 
-         //BITCALC=((offset+2)<<2)<<5;
-         lastaddr=start+((offset+2)<<2);
-         eor=0;
-         xcur=xvert;
-         ycur=yvert;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
+          //BITCALC=((offset+2)<<2)<<5;
+          lastaddr=start+((offset+2)<<2);
+          eor=0;
+          xcur=xvert;
+          ycur=yvert;
+          xvert+=VDX1616;
+          yvert+=VDY1616;
 
-         if(TEXTURE_HI_START)
-         {
-            TEXTURE_HI_START--;
-            start = lastaddr;
-            continue;
-         }
-         scipw = TEXTURE_WI_START;
-         wcnt  = scipw;
-
-         while(!eor)//while not end of row
-         {
-
-            type= BitReaderBig_Read(&bitoper, 2);
-            if( (int)(bitoper.point + start) >= (lastaddr))type=0;
-
-            pixcount = BitReaderBig_Read(&bitoper, 6)+1;
-
-            if(scipw)
+          if(TEXTURE_HI_START)
             {
-               if(type==0) break;
-               if(scipw>=(int)(pixcount))
-               {
-                  scipw-=(pixcount);
-                  if(HDX1616)xcur+=HDX1616*(pixcount);
-                  if(HDY1616)ycur+=HDY1616*(pixcount);
-                  if(type==1)
-                     BitReaderBig_Skip(&bitoper, bpp*pixcount);
-                  else if(type==3)
-                     BitReaderBig_Skip(&bitoper, bpp);
-                  continue;
-               }
-               else
-               {
-                  if(HDX1616)xcur+=HDX1616*(scipw);
-                  if(HDY1616)ycur+=HDY1616*(scipw);
-                  pixcount-=scipw;
-                  if(type==1)
-                     BitReaderBig_Skip(&bitoper, bpp*scipw);
-                  scipw=0;
-               }
+              TEXTURE_HI_START--;
+              start = lastaddr;
+              continue;
             }
-            //if(wcnt>=TEXTURE_WI_LIM)break;
-            wcnt+=(pixcount);
-            if(wcnt>TEXTURE_WI_LIM)
+          scipw = TEXTURE_WI_START;
+          wcnt  = scipw;
+
+          while(!eor)//while not end of row
             {
-               pixcount-=(wcnt-TEXTURE_WI_LIM);
-               //if(pixcount>>31)break;
-            }
-            switch(type)
-            {
-               case 0: //end of row
+
+              type= BitReaderBig_Read(&bitoper, 2);
+              if( (int)(bitoper.point + start) >= (lastaddr))type=0;
+
+              pixcount = BitReaderBig_Read(&bitoper, 6)+1;
+
+              if(scipw)
+                {
+                  if(type==0) break;
+                  if(scipw>=(int)(pixcount))
+                    {
+                      scipw-=(pixcount);
+                      if(HDX1616)xcur+=HDX1616*(pixcount);
+                      if(HDY1616)ycur+=HDY1616*(pixcount);
+                      if(type==1)
+                        BitReaderBig_Skip(&bitoper, bpp*pixcount);
+                      else if(type==3)
+                        BitReaderBig_Skip(&bitoper, bpp);
+                      continue;
+                    }
+                  else
+                    {
+                      if(HDX1616)xcur+=HDX1616*(scipw);
+                      if(HDY1616)ycur+=HDY1616*(scipw);
+                      pixcount-=scipw;
+                      if(type==1)
+                        BitReaderBig_Skip(&bitoper, bpp*scipw);
+                      scipw=0;
+                    }
+                }
+              //if(wcnt>=TEXTURE_WI_LIM)break;
+              wcnt+=(pixcount);
+              if(wcnt>TEXTURE_WI_LIM)
+                {
+                  pixcount-=(wcnt-TEXTURE_WI_LIM);
+                  //if(pixcount>>31)break;
+                }
+              switch(type)
+                {
+                case 0: //end of row
                   eor=1;
                   break;
-               case 1: //PACK_LITERAL
+                case 1: //PACK_LITERAL
                   for(pix=0;pix<pixcount;pix++)
-                  {
-                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
-                     if(!pproj.Transparent)
-                     {
-                        unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-                        unsigned pixel      = PPROC(CURPIX,framePixel,LAMV);
-                        pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-                        mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+                    {
+                      CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+                      if(!pproj.Transparent)
+                        {
+                          unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                          unsigned pixel      = PPROC(CURPIX,framePixel,LAMV);
+                          pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+                          mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
 
-                     }
-                     xcur+=HDX1616;
-                     ycur+=HDY1616;
+                        }
+                      xcur+=HDX1616;
+                      ycur+=HDY1616;
 
-                  }
+                    }
 
                   break;
-               case 2: //PACK_TRANSPARENT
+                case 2: //PACK_TRANSPARENT
                   //	calcx+=(pixcount+1);
                   if(HDX1616)xcur+=HDX1616*(pixcount);
                   if(HDY1616)ycur+=HDY1616*(pixcount);
 
                   break;
-               case 3: //PACK_REPEAT
+                case 3: //PACK_REPEAT
                   CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(CURPIX>32300&&CURPIX<33500&&(CURPIX>32760||CURPIX<32750)){
-                     if(speedfixes>=0&&sdf==0&&speedfixes<=200001&&unknownflag11==0)speedfixes=200000;}
+                    if(speedfixes>=0&&sdf==0&&speedfixes<=200001&&unknownflag11==0)speedfixes=200000;}
                   if(unknownflag11>0&&sdf==0&&CURPIX<30000&&CURPIX>29000) speedfixes=-200000;
                   if(!pproj.Transparent)
-                  {
+                    {
 
-                     TexelDraw_Line(CURPIX, LAMV, xcur, ycur, (pixcount));
+                      TexelDraw_Line(CURPIX, LAMV, xcur, ycur, (pixcount));
 
-                  }
+                    }
                   if(HDX1616)xcur+=HDX1616*(pixcount);
                   if(HDY1616)ycur+=HDY1616*(pixcount);
 
                   break;
-            }//type
-            if(wcnt>=TEXTURE_WI_LIM)break;
-         }//eor
+                }//type
+              if(wcnt>=TEXTURE_WI_LIM)break;
+            }//eor
 
-         start=lastaddr;
+          start=lastaddr;
 
-      }
-   }
-   else if(TEXEL_FUN_NUMBER==1)
-   {
+        }
+    }
+  else if(TEXEL_FUN_NUMBER==1)
+    {
       //dinopark
       int drawHeight;
 
@@ -1785,155 +1785,155 @@ void  DrawPackedCel_New(void)
 
       drawHeight = VDY1616;
       if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
-         drawHeight = (1 << 16);
+        drawHeight = (1 << 16);
 
       for(currentrow=0;currentrow<SPRHI;currentrow++)
-      {
+        {
 
-         BitReaderBig_AttachBuffer(&bitoper, start);
-         offset = BitReaderBig_Read(&bitoper, offsetl<<3);
+          BitReaderBig_AttachBuffer(&bitoper, start);
+          offset = BitReaderBig_Read(&bitoper, offsetl<<3);
 
-         BITCALC=((offset+2)<<2)<<5;
-         lastaddr=start+((offset+2)<<2);
+          BITCALC=((offset+2)<<2)<<5;
+          lastaddr=start+((offset+2)<<2);
 
-         eor=0;
+          eor=0;
 
-         xcur=xvert;
-         ycur=yvert;
-         xvert+=VDX1616;
-         yvert+=VDY1616;
+          xcur=xvert;
+          ycur=yvert;
+          xvert+=VDX1616;
+          yvert+=VDY1616;
 
-         while(!eor)//while not end of row
-         {
-            int __pix;
-
-            type = BitReaderBig_Read(&bitoper, 2);
-            if( (bitoper.point +start) >= (lastaddr))
-               type=0;
-
-            __pix= BitReaderBig_Read(&bitoper, 6)+1;
-
-            switch(type)
+          while(!eor)//while not end of row
             {
-               case 0: //end of row
+              int __pix;
+
+              type = BitReaderBig_Read(&bitoper, 2);
+              if( (bitoper.point +start) >= (lastaddr))
+                type=0;
+
+              __pix= BitReaderBig_Read(&bitoper, 6)+1;
+
+              switch(type)
+                {
+                case 0: //end of row
                   eor=1;
                   break;
-               case 1: //PACK_LITERAL
+                case 1: //PACK_LITERAL
                   while(__pix)
-                  {
-                     __pix--;
-                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+                    {
+                      __pix--;
+                      CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
-                     if(!pproj.Transparent)
-                     {
-#if 0
-                        if (drawHeight != VDY1616 && YPOS < 0)
+                      if(!pproj.Transparent)
                         {
-                           int sfdjlk = 0;
-                        }
+#if 0
+                          if (drawHeight != VDY1616 && YPOS < 0)
+                            {
+                              int sfdjlk = 0;
+                            }
 #endif
 
-                        if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+(HDX1616+VDX1616))>>16, (ycur+(HDY1616+drawHeight))>>16))
-                           break;
-                     }
-                     xcur+=HDX1616;
-                     ycur+=HDY1616;
+                          if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+(HDX1616+VDX1616))>>16, (ycur+(HDY1616+drawHeight))>>16))
+                            break;
+                        }
+                      xcur+=HDX1616;
+                      ycur+=HDY1616;
 
-                  }
+                    }
 
                   break;
-               case 2: //PACK_TRANSPARENT
+                case 2: //PACK_TRANSPARENT
                   //	calcx+=(pixcount+1);
                   xcur+=HDX1616*(__pix);
                   ycur+=HDY1616*(__pix);
                   __pix=0;
 
                   break;
-               case 3: //PACK_REPEAT
+                case 3: //PACK_REPEAT
                   CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(!pproj.Transparent)
-                  {
+                    {
 
-                     if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+(HDX1616*(__pix))+VDX1616)>>16, (ycur+(HDY1616*(__pix))+drawHeight)>>16))break;
+                      if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+(HDX1616*(__pix))+VDX1616)>>16, (ycur+(HDY1616*(__pix))+drawHeight)>>16))break;
 
-                  }
+                    }
                   xcur+=HDX1616*(__pix);
                   ycur+=HDY1616*(__pix);
                   __pix=0;
                   break;
-            }//type
-            if(__pix)break;
-         }//eor
+                }//type
+              if(__pix)break;
+            }//eor
 
 
-         start=lastaddr;
+          start=lastaddr;
 
 
-      }
+        }
 
-   }
-   else
-   {
+    }
+  else
+    {
       if(speedfixes>=0&&speedfixes<=100001) speedfixes=100000;
       for(currentrow=0;currentrow<SPRHI;currentrow++)
-      {
+        {
 
-         BitReaderBig_AttachBuffer(&bitoper, start);
-         offset = BitReaderBig_Read(&bitoper, offsetl<<3);
+          BitReaderBig_AttachBuffer(&bitoper, start);
+          offset = BitReaderBig_Read(&bitoper, offsetl<<3);
 
-         BITCALC=((offset+2)<<2)<<5;
-         lastaddr=start+((offset+2)<<2);
+          BITCALC=((offset+2)<<2)<<5;
+          lastaddr=start+((offset+2)<<2);
 
-         eor=0;
+          eor=0;
 
-         xcur=xvert;
-         ycur=yvert;
-         hdx=HDX1616;
-         hdy=HDY1616;
+          xcur=xvert;
+          ycur=yvert;
+          hdx=HDX1616;
+          hdy=HDY1616;
 
-         xvert+=VDX1616;
-         yvert+=VDY1616;
-         HDX1616+=HDDX1616;
-         HDY1616+=HDDY1616;
+          xvert+=VDX1616;
+          yvert+=VDY1616;
+          HDX1616+=HDDX1616;
+          HDY1616+=HDDY1616;
 
 
-         xdown=xvert;
-         ydown=yvert;
+          xdown=xvert;
+          ydown=yvert;
 
-         while(!eor)//while not end of row
-         {
-            int __pix;
-
-            type= BitReaderBig_Read(&bitoper, 2);
-            if( (bitoper.point + start) >= (lastaddr))type=0;
-
-            __pix= BitReaderBig_Read(&bitoper, 6)+1;
-
-            switch(type)
+          while(!eor)//while not end of row
             {
-               case 0: //end of row
+              int __pix;
+
+              type= BitReaderBig_Read(&bitoper, 2);
+              if( (bitoper.point + start) >= (lastaddr))type=0;
+
+              __pix= BitReaderBig_Read(&bitoper, 6)+1;
+
+              switch(type)
+                {
+                case 0: //end of row
                   eor=1;
                   break;
-               case 1: //PACK_LITERAL
+                case 1: //PACK_LITERAL
 
                   while(__pix)
-                  {
-                     CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
-                     __pix--;
-                     //   if(speedfixes>=0&&speedfixes<=100001) speedfixes=300000;
-                     if(!pproj.Transparent)
-                     {
-                        if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                           break;
-                     }
-                     xcur+=hdx;
-                     ycur+=hdy;
-                     xdown+=HDX1616;
-                     ydown+=HDY1616;
-                  }
+                    {
+                      CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+                      __pix--;
+                      //   if(speedfixes>=0&&speedfixes<=100001) speedfixes=300000;
+                      if(!pproj.Transparent)
+                        {
+                          if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
+                            break;
+                        }
+                      xcur+=hdx;
+                      ycur+=hdy;
+                      xdown+=HDX1616;
+                      ydown+=HDY1616;
+                    }
                   //pixcount=0;
                   break;
-               case 2: //PACK_TRANSPARENT
+                case 2: //PACK_TRANSPARENT
                   if(speedfixes>=0&&sdf>0/*&&speedfixes<=100001*/)    speedfixes=300000;
                   //	calcx+=(pixcount+1);
                   xcur+=hdx*(__pix);
@@ -1943,399 +1943,399 @@ void  DrawPackedCel_New(void)
                   __pix=0;
 
                   break;
-               case 3: //PACK_REPEAT
+                case 3: //PACK_REPEAT
                   CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
                   if(speedfixes>=0&&speedfixes<200001&&((CURPIX>10000&&CURPIX<11000)&&sdf==0/*||(CURPIX>10500&&CURPIX<10650)*/))speedfixes=200000;//(CURPIX>10450&&CURPIX<10470)
                   if(!pproj.Transparent)
-                  {
-                     while(__pix)
-                     {
-                        __pix--;
-                        if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                           break;
-                        xcur+=hdx;
-                        ycur+=hdy;
-                        xdown+=HDX1616;
-                        ydown+=HDY1616;
-                     }
-                  }
+                    {
+                      while(__pix)
+                        {
+                          __pix--;
+                          if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
+                            break;
+                          xcur+=hdx;
+                          ycur+=hdy;
+                          xdown+=HDX1616;
+                          ydown+=HDY1616;
+                        }
+                    }
                   else
-                  {
-                     xcur+=hdx*__pix;
-                     ycur+=hdy*__pix;
-                     xdown+=HDX1616*__pix;
-                     ydown+=HDY1616*__pix;
-                     __pix=0;
-                  }
+                    {
+                      xcur+=hdx*__pix;
+                      ycur+=hdy*__pix;
+                      xdown+=HDX1616*__pix;
+                      ydown+=HDY1616*__pix;
+                      __pix=0;
+                    }
                   //pixcount=0;
 
                   break;
-            };//type
-            if(__pix) break;
-         }//eor
+                };//type
+              if(__pix) break;
+            }//eor
 
-         start=lastaddr;
+          start=lastaddr;
 
-      }
-   }
-   SPRWI++;
+        }
+    }
+  SPRWI++;
 
-   if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
-   {
+  if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
+    {
       YPOS1616=ycur;
       YPOS=YPOS1616/65536.0;
-   }
-   else
-   {
+    }
+  else
+    {
       XPOS1616=xcur;
       XPOS=XPOS1616/65536.0;
-   }
+    }
 }
 
 void  DrawLiteralCel_New(void)
 {
-   int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
-   uint16_t CURPIX,LAMV;
+  int xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
+  uint16_t CURPIX,LAMV;
 
-   sf=100000;
-   bpp=BPP[PRE0&PRE0_BPP_MASK];
-   offsetl=2;
-   if(bpp < 8)
-      offsetl=1;
-   pixcount=0;
-   offset=(offsetl==1)?((PRE1&PRE1_WOFFSET8_MASK)>>PRE1_WOFFSET8_SHIFT):((PRE1&PRE1_WOFFSET10_MASK)>>PRE1_WOFFSET10_SHIFT);
-
-
-   SPRWI=1+(PRE1&PRE1_TLHPCNT_MASK);
-   SPRHI=((PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT)+1;
-
-   if(TestInitVisual(0))
-      return;
-   xvert=XPOS1616;
-   yvert=YPOS1616;
-
-   switch (TEXEL_FUN_NUMBER)
-   {
-      case 0:
-         {
-            unsigned i;
-
-            //  if(speedfixes>=0&&speedfixes<=100001)   speedfixes=300000;
-            sdf=100000;
-            SPRWI-=((PRE0>>24)&0xf);
-            xvert+=TEXTURE_HI_START*VDX1616;
-            yvert+=TEXTURE_HI_START*VDY1616;
-            PDATA+=((offset+2)<<2)*TEXTURE_HI_START;
-            if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
-            for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
-            {
-               unsigned j;
-
-               BitReaderBig_AttachBuffer(&bitoper, PDATA);
-               BITCALC=((offset+2)<<2)<<5;
-               xcur=xvert+TEXTURE_WI_START*HDX1616;
-               ycur=yvert+TEXTURE_WI_START*HDY1616;
-               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-               if(TEXTURE_WI_START)
-                  BitReaderBig_Skip(&bitoper, bpp*(TEXTURE_WI_START));
-
-               xvert+=VDX1616;
-               yvert+=VDY1616;
+  sf=100000;
+  bpp=BPP[PRE0&PRE0_BPP_MASK];
+  offsetl=2;
+  if(bpp < 8)
+    offsetl=1;
+  pixcount=0;
+  offset=(offsetl==1)?((PRE1&PRE1_WOFFSET8_MASK)>>PRE1_WOFFSET8_SHIFT):((PRE1&PRE1_WOFFSET10_MASK)>>PRE1_WOFFSET10_SHIFT);
 
 
-               for(j=TEXTURE_WI_START;j<SPRWI;j++)
-               {
-                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+  SPRWI=1+(PRE1&PRE1_TLHPCNT_MASK);
+  SPRHI=((PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT)+1;
 
-                  if(!pproj.Transparent)
-                  {
-                     unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-                     unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
-                     pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-                     mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+  if(TestInitVisual(0))
+    return;
+  xvert=XPOS1616;
+  yvert=YPOS1616;
 
-                  }
-                  xcur+=HDX1616;
-                  ycur+=HDY1616;
+  switch (TEXEL_FUN_NUMBER)
+    {
+    case 0:
+      {
+        unsigned i;
 
-               }
-               PDATA+=(offset+2)<<2;
+        //  if(speedfixes>=0&&speedfixes<=100001)   speedfixes=300000;
+        sdf=100000;
+        SPRWI-=((PRE0>>24)&0xf);
+        xvert+=TEXTURE_HI_START*VDX1616;
+        yvert+=TEXTURE_HI_START*VDY1616;
+        PDATA+=((offset+2)<<2)*TEXTURE_HI_START;
+        if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
+        for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
+          {
+            unsigned j;
 
-            }
-         }
-         break;
-      case 1:
-         {
-            int drawHeight;
-            unsigned i, j;
-
-            SPRWI-=((PRE0>>24)&0xf);
-
-            drawHeight = VDY1616;
-            if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
-               drawHeight = (1 << 16);
-
-            for(i=0;i<SPRHI;i++)
-            {
-
-               BitReaderBig_AttachBuffer(&bitoper, PDATA);
-               BITCALC=((offset+2)<<2)<<5;
-               xcur=xvert;
-               ycur=yvert;
-               xvert+=VDX1616;
-               yvert+=VDY1616;
-               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-
-
-               for(j=0;j<SPRWI;j++)
-               {
-
-                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
-
-
-                  if(!pproj.Transparent)
-                  {
-                     if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))break;
-
-                  }
-                  xcur+=HDX1616;
-                  ycur+=HDY1616;
-
-               }
-               PDATA+=(offset+2)<<2;
-
-            }
-         }
-         break;
-      default:
-         {
-            unsigned i, j;
-
-            SPRWI-=((PRE0>>24)&0xf);
-            for(i=0;i<SPRHI;i++)
-            {
-               BitReaderBig_AttachBuffer(&bitoper, PDATA);
-               BITCALC=((offset+2)<<2)<<5;
-
-               xcur=xvert;
-               ycur=yvert;
-               hdx=HDX1616;
-               hdy=HDY1616;
-
-               xvert+=VDX1616;
-               yvert+=VDY1616;
-               HDX1616+=HDDX1616;
-               HDY1616+=HDDY1616;
-
-               BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
-
-
-               xdown=xvert;
-               ydown=yvert;
-
-               for(j=0;j<SPRWI;j++)
-               {
-
-                  CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
-
-                  if(!pproj.Transparent)
-                  {
-                     if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                        break;
-                     if(speedfixes<1||(speedfixes>=0&&speedfixes<200001)){
-                        if (CURPIX>30000&&CURPIX<40000)speedfixes=0;
-                        else speedfixes=-100000;}
-                  }
-                  xcur+=hdx;
-                  ycur+=hdy;
-                  xdown+=HDX1616;
-                  ydown+=HDY1616;
-               }
-               PDATA+=(((offset+2)<<2)/*scipstr*/);
-
-
-            }
-         }
-         break;
-   }
-
-   if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
-   {
-      YPOS1616=ycur;
-      YPOS=YPOS1616/65536.0;
-   }
-   else
-   {
-      XPOS1616=xcur;
-      XPOS=XPOS1616/65536.0;
-   }
-}
-
-void  DrawLRCel_New(void)
-{
-   int i,j,xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
-   uint16_t CURPIX,LAMV;
-
-   sf=100000;
-   bpp=BPP[PRE0&PRE0_BPP_MASK];
-   offsetl=2;	if(bpp < 8)	offsetl=1;
-   pixcount=0;
-   offset=(offsetl==1)?((PRE1&PRE1_WOFFSET8_MASK)>>PRE1_WOFFSET8_SHIFT):((PRE1&PRE1_WOFFSET10_MASK)>>PRE1_WOFFSET10_SHIFT);
-   offset+=2;
-
-   SPRWI=1+(PRE1&PRE1_TLHPCNT_MASK);
-   SPRHI=(((PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT)<<1)+2;   //doom fix
-
-   if(TestInitVisual(0))return;
-   xvert=XPOS1616;
-   yvert=YPOS1616;
-
-   switch (TEXEL_FUN_NUMBER)
-   {
-      case 0:
-         xvert+=TEXTURE_HI_START*VDX1616;
-         yvert+=TEXTURE_HI_START*VDY1616;
-         //if(SPRHI>TEXTURE_HI_LIM)SPRHI=TEXTURE_HI_LIM;
-         if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
-         for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
-         {
+            BitReaderBig_AttachBuffer(&bitoper, PDATA);
+            BITCALC=((offset+2)<<2)<<5;
             xcur=xvert+TEXTURE_WI_START*HDX1616;
             ycur=yvert+TEXTURE_WI_START*HDY1616;
+            BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+            if(TEXTURE_WI_START)
+              BitReaderBig_Skip(&bitoper, bpp*(TEXTURE_WI_START));
+
             xvert+=VDX1616;
             yvert+=VDY1616;
 
 
             for(j=TEXTURE_WI_START;j<SPRWI;j++)
-            {
-               CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+              {
+                CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
 
-               if(!pproj.Transparent)
-               {
-                  unsigned framePixel;
-                  unsigned pixel;
-
-                  if(fixmode&FIX_BIT_TIMING_6)
-                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,RMOD)));
-                  else
-                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
-                  pixel = PPROC(CURPIX,framePixel,LAMV);
-                  pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-                  mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
-               }
-
-               xcur+=HDX1616;
-               ycur+=HDY1616;
-            }
-
-         }
-         break;
-      case 1:
-         {
-            int drawHeight;
-            drawHeight = VDY1616;
-            if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
-               drawHeight = (1 << 16);
-
-            for(i=0;i<SPRHI;i++)
-            {
-               xcur=xvert;
-               ycur=yvert;
-               xvert+=VDX1616;
-               yvert+=VDY1616;
-
-
-               for(j=0;j<SPRWI;j++)
-               {
-
-                  CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
-
-                  if(!pproj.Transparent)
+                if(!pproj.Transparent)
                   {
-
-                     if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))
-                        break;
+                    unsigned framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                    unsigned pixel = PPROC(CURPIX,framePixel,LAMV);
+                    pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+                    mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
 
                   }
-                  xcur+=HDX1616;
-                  ycur+=HDY1616;
+                xcur+=HDX1616;
+                ycur+=HDY1616;
 
+              }
+            PDATA+=(offset+2)<<2;
 
-               }
+          }
+      }
+      break;
+    case 1:
+      {
+        int drawHeight;
+        unsigned i, j;
 
-            }
-         }
-         break;
-      default:
-         for(i=0;i<SPRHI;i++)
-         {
+        SPRWI-=((PRE0>>24)&0xf);
 
+        drawHeight = VDY1616;
+        if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
+          drawHeight = (1 << 16);
 
+        for(i=0;i<SPRHI;i++)
+          {
+
+            BitReaderBig_AttachBuffer(&bitoper, PDATA);
+            BITCALC=((offset+2)<<2)<<5;
             xcur=xvert;
             ycur=yvert;
             xvert+=VDX1616;
             yvert+=VDY1616;
-            xdown=xvert;
-            ydown=yvert;
-            hdx=HDX1616;
-            hdy=HDY1616;
-            HDX1616+=HDDX1616;
-            HDY1616+=HDDY1616;
+            BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
 
 
             for(j=0;j<SPRWI;j++)
+              {
+
+                CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+
+
+                if(!pproj.Transparent)
+                  {
+                    if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))break;
+
+                  }
+                xcur+=HDX1616;
+                ycur+=HDY1616;
+
+              }
+            PDATA+=(offset+2)<<2;
+
+          }
+      }
+      break;
+    default:
+      {
+        unsigned i, j;
+
+        SPRWI-=((PRE0>>24)&0xf);
+        for(i=0;i<SPRHI;i++)
+          {
+            BitReaderBig_AttachBuffer(&bitoper, PDATA);
+            BITCALC=((offset+2)<<2)<<5;
+
+            xcur=xvert;
+            ycur=yvert;
+            hdx=HDX1616;
+            hdy=HDY1616;
+
+            xvert+=VDX1616;
+            yvert+=VDY1616;
+            HDX1616+=HDDX1616;
+            HDY1616+=HDDY1616;
+
+            BitReaderBig_Skip(&bitoper, bpp*(((PRE0>>24)&0xf)));
+
+
+            xdown=xvert;
+            ydown=yvert;
+
+            for(j=0;j<SPRWI;j++)
+              {
+
+                CURPIX=PDEC(BitReaderBig_Read(&bitoper, bpp),&LAMV);
+
+                if(!pproj.Transparent)
+                  {
+                    if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
+                      break;
+                    if(speedfixes<1||(speedfixes>=0&&speedfixes<200001)){
+                      if (CURPIX>30000&&CURPIX<40000)speedfixes=0;
+                      else speedfixes=-100000;}
+                  }
+                xcur+=hdx;
+                ycur+=hdy;
+                xdown+=HDX1616;
+                ydown+=HDY1616;
+              }
+            PDATA+=(((offset+2)<<2)/*scipstr*/);
+
+
+          }
+      }
+      break;
+    }
+
+  if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
+    {
+      YPOS1616=ycur;
+      YPOS=YPOS1616/65536.0;
+    }
+  else
+    {
+      XPOS1616=xcur;
+      XPOS=XPOS1616/65536.0;
+    }
+}
+
+void  DrawLRCel_New(void)
+{
+  int i,j,xcur,ycur,xvert,yvert,xdown,ydown,hdx,hdy;
+  uint16_t CURPIX,LAMV;
+
+  sf=100000;
+  bpp=BPP[PRE0&PRE0_BPP_MASK];
+  offsetl=2;	if(bpp < 8)	offsetl=1;
+  pixcount=0;
+  offset=(offsetl==1)?((PRE1&PRE1_WOFFSET8_MASK)>>PRE1_WOFFSET8_SHIFT):((PRE1&PRE1_WOFFSET10_MASK)>>PRE1_WOFFSET10_SHIFT);
+  offset+=2;
+
+  SPRWI=1+(PRE1&PRE1_TLHPCNT_MASK);
+  SPRHI=(((PRE0&PRE0_VCNT_MASK)>>PRE0_VCNT_SHIFT)<<1)+2;   //doom fix
+
+  if(TestInitVisual(0))return;
+  xvert=XPOS1616;
+  yvert=YPOS1616;
+
+  switch (TEXEL_FUN_NUMBER)
+    {
+    case 0:
+      xvert+=TEXTURE_HI_START*VDX1616;
+      yvert+=TEXTURE_HI_START*VDY1616;
+      //if(SPRHI>TEXTURE_HI_LIM)SPRHI=TEXTURE_HI_LIM;
+      if(SPRWI>TEXTURE_WI_LIM)SPRWI=TEXTURE_WI_LIM;
+      for(i=TEXTURE_HI_START;i<TEXTURE_HI_LIM;i++)
+        {
+          xcur=xvert+TEXTURE_WI_START*HDX1616;
+          ycur=yvert+TEXTURE_WI_START*HDY1616;
+          xvert+=VDX1616;
+          yvert+=VDY1616;
+
+
+          for(j=TEXTURE_WI_START;j<SPRWI;j++)
             {
-               CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+              CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
 
-               if(!pproj.Transparent)
-               {
+              if(!pproj.Transparent)
+                {
+                  unsigned framePixel;
+                  unsigned pixel;
+
+                  if(fixmode&FIX_BIT_TIMING_6)
+                    framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,RMOD)));
+                  else
+                    framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD)));
+                  pixel = PPROC(CURPIX,framePixel,LAMV);
+                  pixel = PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+                  mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,WMOD)),pixel);
+                }
+
+              xcur+=HDX1616;
+              ycur+=HDY1616;
+            }
+
+        }
+      break;
+    case 1:
+      {
+        int drawHeight;
+        drawHeight = VDY1616;
+        if (CCBFLAGS&CCB_MARIA && drawHeight > (1 << 16))
+          drawHeight = (1 << 16);
+
+        for(i=0;i<SPRHI;i++)
+          {
+            xcur=xvert;
+            ycur=yvert;
+            xvert+=VDX1616;
+            yvert+=VDY1616;
+
+
+            for(j=0;j<SPRWI;j++)
+              {
+
+                CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+
+                if(!pproj.Transparent)
+                  {
+
+                    if(TexelDraw_Scale(CURPIX, LAMV, xcur>>16, ycur>>16, (xcur+HDX1616+VDX1616)>>16, (ycur+HDY1616+drawHeight)>>16))
+                      break;
+
+                  }
+                xcur+=HDX1616;
+                ycur+=HDY1616;
+
+
+              }
+
+          }
+      }
+      break;
+    default:
+      for(i=0;i<SPRHI;i++)
+        {
+
+
+          xcur=xvert;
+          ycur=yvert;
+          xvert+=VDX1616;
+          yvert+=VDY1616;
+          xdown=xvert;
+          ydown=yvert;
+          hdx=HDX1616;
+          hdy=HDY1616;
+          HDX1616+=HDDX1616;
+          HDY1616+=HDDY1616;
+
+
+          for(j=0;j<SPRWI;j++)
+            {
+              CURPIX=PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+
+              if(!pproj.Transparent)
+                {
                   if(TexelDraw_Arbitrary(CURPIX, LAMV, xcur, ycur, xcur+hdx, ycur+hdy, xdown+HDX1616, ydown+HDY1616, xdown, ydown))
-                     break;
-               }
+                    break;
+                }
 
-               xcur+=hdx;
-               ycur+=hdy;
-               xdown+=HDX1616;
-               ydown+=HDY1616;
+              xcur+=hdx;
+              ycur+=hdy;
+              xdown+=HDX1616;
+              ydown+=HDY1616;
 
 
             }
 
 
-         }
-         break;
-   }
+        }
+      break;
+    }
 
-   if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
-   {
+  if (fixmode&FIX_BIT_GRAPHICS_STEP_Y)
+    {
       YPOS1616=ycur;
       YPOS=YPOS1616/65536.0;
-   }
-   else
-   {
+    }
+  else
+    {
       XPOS1616=xcur;
       XPOS=XPOS1616/65536.0;
-   }
+    }
 }
 
 unsigned int _madam_GetCELCycles(void)
 {
-   unsigned int val=CELCYCLES; // 1 word = 2 CELCYCLES, 1 hword= 1 CELCYCLE, 8 CELCYCLE=1 CPU SCYCLE
-   CELCYCLES=0;
-   return val;
+  unsigned int val=CELCYCLES; // 1 word = 2 CELCYCLES, 1 hword= 1 CELCYCLE, 8 CELCYCLE=1 CPU SCYCLE
+  CELCYCLES=0;
+  return val;
 }
 
 
 void _madam_Reset(void)
 {
-   unsigned i;
-   for(i = 0; i < 2048; i++)
-      mregs[i] = 0;
+  unsigned i;
+  for(i = 0; i < 2048; i++)
+    mregs[i] = 0;
 }
 
 
 void _madam_SetMapping(unsigned int flag)
 {
-   MAPPING=flag;
+  MAPPING=flag;
 }
 
 
@@ -2347,50 +2347,50 @@ void _madam_SetMapping(unsigned int flag)
 
 unsigned int TexelCCWTest(double hdx, double hdy, double vdx, double vdy)
 {
-   if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0.0)
-      return CCB_ACCW;
-   return CCB_ACW;
+  if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0.0)
+    return CCB_ACCW;
+  return CCB_ACW;
 }
 
 bool QuardCCWTest(int wdt)
 {
-   unsigned int tmp;
-   if(((CCBFLAGS&CCB_ACCW)) && ((CCBFLAGS&CCB_ACW)))
-      return false;
+  unsigned int tmp;
+  if(((CCBFLAGS&CCB_ACCW)) && ((CCBFLAGS&CCB_ACW)))
+    return false;
 
-   tmp=TexelCCWTest(HDX,HDY,VDX,VDY);
-   if(tmp!=TexelCCWTest(HDX,HDY,VDX+(HDDX)*(float)wdt,VDY+(HDDY)*(float)wdt))
-      return false;
-   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX,VDY))
-      return false;
-   if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX+(HDDX)*(float)SPRHI*(float)wdt,VDY+(HDDY)*(float)SPRHI*(float)wdt))
-      return false;
-   if(tmp==(CCBFLAGS&(CCB_ACCW|CCB_ACW)))
-      return true;
-   return false;
+  tmp=TexelCCWTest(HDX,HDY,VDX,VDY);
+  if(tmp!=TexelCCWTest(HDX,HDY,VDX+(HDDX)*(float)wdt,VDY+(HDDY)*(float)wdt))
+    return false;
+  if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX,VDY))
+    return false;
+  if(tmp!=TexelCCWTest(HDX+(HDDX)*SPRHI,HDY+(HDDY)*SPRHI,VDX+(HDDX)*(float)SPRHI*(float)wdt,VDY+(HDDY)*(float)SPRHI*(float)wdt))
+    return false;
+  if(tmp==(CCBFLAGS&(CCB_ACCW|CCB_ACW)))
+    return true;
+  return false;
 }
 
 static INLINE int __abs(int val)
 {
-   if(val>0)
-      return val;
-   return -val;
+  if(val>0)
+    return val;
+  return -val;
 }
 
 int TestInitVisual(int packed)
 {
-   int xpoints[4],ypoints[4];
+  int xpoints[4],ypoints[4];
 
-   if((!(CCBFLAGS&CCB_ACCW)) && (!(CCBFLAGS&CCB_ACW)))
-      return -1;
+  if((!(CCBFLAGS&CCB_ACCW)) && (!(CCBFLAGS&CCB_ACW)))
+    return -1;
 
-   if(!packed)
-   {
+  if(!packed)
+    {
       xpoints[0]=XPOS1616>>16;
       xpoints[1]=(XPOS1616+HDX1616*SPRWI)>>16;
       xpoints[2]=(XPOS1616+VDX1616*SPRHI)>>16;
       xpoints[3]=(XPOS1616+VDX1616*SPRHI+
-            (HDX1616+HDDX1616*SPRHI)*SPRWI)>>16;
+                  (HDX1616+HDDX1616*SPRHI)*SPRWI)>>16;
       if(xpoints[0]<0 && xpoints[1]<0 && xpoints[2]<0 && xpoints[3]<0) return -1;
       if(xpoints[0]>CLIPXVAL && xpoints[1]>CLIPXVAL && xpoints[2]>CLIPXVAL && xpoints[3]>CLIPXVAL) return -1;
 
@@ -2399,12 +2399,12 @@ int TestInitVisual(int packed)
       ypoints[1]=(YPOS1616+HDY1616*SPRWI)>>16;
       ypoints[2]=(YPOS1616+VDY1616*SPRHI)>>16;
       ypoints[3]=(YPOS1616+VDY1616*SPRHI+
-            (HDY1616+HDDY1616*SPRHI)*SPRWI)>>16;
+                  (HDY1616+HDDY1616*SPRHI)*SPRWI)>>16;
       if(ypoints[0]<0 && ypoints[1]<0 && ypoints[2]<0 && ypoints[3]<0) return -1;
       if(ypoints[0]>CLIPYVAL && ypoints[1]>CLIPYVAL && ypoints[2]>CLIPYVAL && ypoints[3]>CLIPYVAL) return -1;
-   }
-   else
-   {
+    }
+  else
+    {
       xpoints[0]=XPOS1616>>16;
       xpoints[1]=(XPOS1616+VDX1616*SPRHI)>>16;
       if( xpoints[0]<0 && xpoints[1]<0 && HDX1616<=0 && HDDX1616<=0 ) return -1;
@@ -2414,485 +2414,485 @@ int TestInitVisual(int packed)
       ypoints[1]=(YPOS1616+VDY1616*SPRHI)>>16;
       if(ypoints[0]<0 && ypoints[1]<0 && HDY1616<=0 && HDDY1616<=0 ) return -1;
       if(ypoints[0]>CLIPYVAL && ypoints[1]>CLIPYVAL && HDY1616>=0 && HDDY1616>=0 ) return -1;
-   }
+    }
 
-   if(HDDX1616==0 && HDDY1616==0)
-   {
+  if(HDDX1616==0 && HDDY1616==0)
+    {
       if(HDX1616==0 && VDY1616==0)
-      {
-         if((HDY1616<0 && VDX1616>0)||(HDY1616>0 && VDX1616<0))
-         {
-            if((CCBFLAGS&CCB_ACW))
+        {
+          if((HDY1616<0 && VDX1616>0)||(HDY1616>0 && VDX1616<0))
             {
-               if(__abs(HDY1616)==0x10000 && __abs(VDX1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
-               {
-                  return Init_Line_Map();
-                  //return 0;
-               }
-               else
-               {
-                  Init_Scale_Map();
-                  return 0;
-               }
+              if((CCBFLAGS&CCB_ACW))
+                {
+                  if(__abs(HDY1616)==0x10000 && __abs(VDX1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
+                    {
+                      return Init_Line_Map();
+                      //return 0;
+                    }
+                  else
+                    {
+                      Init_Scale_Map();
+                      return 0;
+                    }
+                }
             }
-         }
-         else
-         {
-            if((CCBFLAGS&CCB_ACCW))
+          else
             {
-               if(__abs(HDY1616)==0x10000 && __abs(VDX1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
-               {
-                  return Init_Line_Map();
-                  //return 0;
-               }
-               else
-               {
-                  Init_Scale_Map();
-                  return 0;
-               }
+              if((CCBFLAGS&CCB_ACCW))
+                {
+                  if(__abs(HDY1616)==0x10000 && __abs(VDX1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
+                    {
+                      return Init_Line_Map();
+                      //return 0;
+                    }
+                  else
+                    {
+                      Init_Scale_Map();
+                      return 0;
+                    }
+                }
+
             }
-
-         }
-         return -1;
+          return -1;
 
 
-      }
+        }
       else if(HDY1616==0 && VDX1616==0)
-      {
+        {
 
-         if((HDX1616<0 && VDY1616>0)||(HDX1616>0 && VDY1616<0))
-         {
-            if((CCBFLAGS&CCB_ACCW))
+          if((HDX1616<0 && VDY1616>0)||(HDX1616>0 && VDY1616<0))
             {
-               if(__abs(HDX1616)==0x10000 &&	__abs(VDY1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
-               {
-                  return Init_Line_Map();
-                  //return 0;
-               }
-               else
-               {
-                  Init_Scale_Map();
-                  return 0;
-               }
+              if((CCBFLAGS&CCB_ACCW))
+                {
+                  if(__abs(HDX1616)==0x10000 &&	__abs(VDY1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
+                    {
+                      return Init_Line_Map();
+                      //return 0;
+                    }
+                  else
+                    {
+                      Init_Scale_Map();
+                      return 0;
+                    }
+                }
             }
-         }
-         else
-         {
-            if((CCBFLAGS&CCB_ACW))
+          else
             {
-               if(__abs(HDX1616)==0x10000 &&	__abs(VDY1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
-               {
-                  return Init_Line_Map();
-                  //return 0;
-               }
-               else
-               {
-                  Init_Scale_Map();
-                  return 0;
-               }
+              if((CCBFLAGS&CCB_ACW))
+                {
+                  if(__abs(HDX1616)==0x10000 &&	__abs(VDY1616)==0x10000 && !((YPOS1616|XPOS1616)&0xffff))
+                    {
+                      return Init_Line_Map();
+                      //return 0;
+                    }
+                  else
+                    {
+                      Init_Scale_Map();
+                      return 0;
+                    }
+                }
             }
-         }
-         return -1;
+          return -1;
 
 
-      }
-   }
+        }
+    }
 
-   if(QuardCCWTest((!packed)?SPRWI:2048))return -1;
-   Init_Arbitrary_Map();
+  if(QuardCCWTest((!packed)?SPRWI:2048))return -1;
+  Init_Arbitrary_Map();
 
 
-   return 0;
+  return 0;
 
 }
 
 int Init_Line_Map(void)
 {
-   TEXEL_FUN_NUMBER=0;
-   TEXTURE_WI_START=0;
-   TEXTURE_HI_START=0;
-   TEXTURE_HI_LIM=SPRHI;
-   if(HDX1616<0)
-      XPOS1616-=0x8000;
-   else if(VDX1616<0)
-      XPOS1616-=0x8000;
+  TEXEL_FUN_NUMBER=0;
+  TEXTURE_WI_START=0;
+  TEXTURE_HI_START=0;
+  TEXTURE_HI_LIM=SPRHI;
+  if(HDX1616<0)
+    XPOS1616-=0x8000;
+  else if(VDX1616<0)
+    XPOS1616-=0x8000;
 
-   if(HDY1616<0)
-      YPOS1616-=0x8000;
-   else if(VDY1616<0)
-      YPOS1616-=0x8000;
+  if(HDY1616<0)
+    YPOS1616-=0x8000;
+  else if(VDY1616<0)
+    YPOS1616-=0x8000;
 
-   if(VDX1616<0)
-   {
+  if(VDX1616<0)
+    {
       if((((XPOS1616) - ((SPRHI - 1) << 16)) >> 16) < 0)
-         TEXTURE_HI_LIM=(XPOS1616>>16)+1;
+        TEXTURE_HI_LIM=(XPOS1616>>16)+1;
       if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
-   }
-   else if(VDX1616>0)
-   {
+    }
+  else if(VDX1616>0)
+    {
       if(((XPOS1616+(SPRHI<<16))>>16)>CLIPXVAL)
-         TEXTURE_HI_LIM=CLIPXVAL-(XPOS1616>>16)+1;
-   }
-   if(VDY1616<0)
-   {
+        TEXTURE_HI_LIM=CLIPXVAL-(XPOS1616>>16)+1;
+    }
+  if(VDY1616<0)
+    {
       if((((YPOS1616) - ((SPRHI - 1) << 16)) >> 16) < 0)
-         TEXTURE_HI_LIM=(YPOS1616>>16)+1;
+        TEXTURE_HI_LIM=(YPOS1616>>16)+1;
       if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
-   }
-   else if(VDY1616>0)
-   {
+    }
+  else if(VDY1616>0)
+    {
       if(((YPOS1616+(SPRHI<<16))>>16)>CLIPYVAL)
-         TEXTURE_HI_LIM=CLIPYVAL-(YPOS1616>>16)+1;
-   }
+        TEXTURE_HI_LIM=CLIPYVAL-(YPOS1616>>16)+1;
+    }
 
-   if(HDX1616<0)
-      TEXTURE_WI_LIM=(XPOS1616>>16)+1;
-   else if(HDX1616>0)
-      TEXTURE_WI_LIM=CLIPXVAL-(XPOS1616>>16)+1;
+  if(HDX1616<0)
+    TEXTURE_WI_LIM=(XPOS1616>>16)+1;
+  else if(HDX1616>0)
+    TEXTURE_WI_LIM=CLIPXVAL-(XPOS1616>>16)+1;
 
-   if(HDY1616<0)
-      TEXTURE_WI_LIM=(YPOS1616>>16)+1;
-   else if(HDY1616>0)
-      TEXTURE_WI_LIM=CLIPYVAL-(YPOS1616>>16)+1;
+  if(HDY1616<0)
+    TEXTURE_WI_LIM=(YPOS1616>>16)+1;
+  else if(HDY1616>0)
+    TEXTURE_WI_LIM=CLIPYVAL-(YPOS1616>>16)+1;
 
 
-   if(XPOS1616<0)
-   {
+  if(XPOS1616<0)
+    {
       if(HDX1616<0)return -1;
       else if(HDX1616>0)
-         TEXTURE_WI_START=-(XPOS1616>>16);
+        TEXTURE_WI_START=-(XPOS1616>>16);
 
       if(VDX1616<0)return -1;
       else if(VDX1616>0)
-         TEXTURE_HI_START=-(XPOS1616>>16);
-   }
-   else if((XPOS1616>>16)>CLIPXVAL)
-   {
+        TEXTURE_HI_START=-(XPOS1616>>16);
+    }
+  else if((XPOS1616>>16)>CLIPXVAL)
+    {
       if(HDX1616>0)return -1;
       else if(HDX1616<0)
-         TEXTURE_WI_START=(XPOS1616>>16)-CLIPXVAL;
+        TEXTURE_WI_START=(XPOS1616>>16)-CLIPXVAL;
 
       if(VDX1616>0)return -1;
       else if(VDX1616<0)
-         TEXTURE_HI_START=(XPOS1616>>16)-CLIPXVAL;
+        TEXTURE_HI_START=(XPOS1616>>16)-CLIPXVAL;
 
-   }
-   if(YPOS1616<0)
-   {
+    }
+  if(YPOS1616<0)
+    {
       if(HDY1616<0)return -1;
       else if(HDY1616>0)
-         TEXTURE_WI_START=-(YPOS1616>>16);
+        TEXTURE_WI_START=-(YPOS1616>>16);
 
       if(VDY1616<0)return -1;
       else if(VDY1616>0)
-         TEXTURE_HI_START=-(YPOS1616>>16);
-   }
-   else if((YPOS1616>>16)>CLIPYVAL)
-   {
+        TEXTURE_HI_START=-(YPOS1616>>16);
+    }
+  else if((YPOS1616>>16)>CLIPYVAL)
+    {
       if(HDY1616>0)return -1;
       else if(HDY1616<0)
-         TEXTURE_WI_START=(YPOS1616>>16)-CLIPYVAL;
+        TEXTURE_WI_START=(YPOS1616>>16)-CLIPYVAL;
 
       if(VDY1616>0)return -1;
       else if(VDY1616<0)
-         TEXTURE_HI_START=(YPOS1616>>16)-CLIPYVAL;
-   }
-   //if(TEXTURE_WI_START<((PRE0>>24)&0xf))
-   //        TEXTURE_WI_START=((PRE0>>24)&0xf);
-   //TEXTURE_WI_START+=(PRE0>>24)&0xf;
-   //if(TEXTURE_WI_START<0)TEXTURE_WI_START=0;
-   //if(TEXTURE_HI_START<0)TEXTURE_HI_START=0;
-   //if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
-   if(TEXTURE_WI_LIM<=0)return -1;
-   return 0;
+        TEXTURE_HI_START=(YPOS1616>>16)-CLIPYVAL;
+    }
+  //if(TEXTURE_WI_START<((PRE0>>24)&0xf))
+  //        TEXTURE_WI_START=((PRE0>>24)&0xf);
+  //TEXTURE_WI_START+=(PRE0>>24)&0xf;
+  //if(TEXTURE_WI_START<0)TEXTURE_WI_START=0;
+  //if(TEXTURE_HI_START<0)TEXTURE_HI_START=0;
+  //if(TEXTURE_HI_LIM>SPRHI)TEXTURE_HI_LIM=SPRHI;
+  if(TEXTURE_WI_LIM<=0)return -1;
+  return 0;
 }
 
 void Init_Scale_Map(void)
 {
-   int deltax,deltay;
-   TEXEL_FUN_NUMBER=1;
-   if(HDX1616<0)
-      XPOS1616-=0x8000;
-   else if(VDX1616<0)
-      XPOS1616-=0x8000;
+  int deltax,deltay;
+  TEXEL_FUN_NUMBER=1;
+  if(HDX1616<0)
+    XPOS1616-=0x8000;
+  else if(VDX1616<0)
+    XPOS1616-=0x8000;
 
-   if(HDY1616<0)
-      YPOS1616-=0x8000;
-   else if(VDY1616<0)
-      YPOS1616-=0x8000;
+  if(HDY1616<0)
+    YPOS1616-=0x8000;
+  else if(VDY1616<0)
+    YPOS1616-=0x8000;
 
-   deltax=HDX1616+VDX1616;
-   deltay=HDY1616+VDY1616;
-   if(deltax<0)TEXEL_INCX=-1;
-   else TEXEL_INCX=1;
-   if(deltay<0)TEXEL_INCY=-1;
-   else TEXEL_INCY=1;
+  deltax=HDX1616+VDX1616;
+  deltay=HDY1616+VDY1616;
+  if(deltax<0)TEXEL_INCX=-1;
+  else TEXEL_INCX=1;
+  if(deltay<0)TEXEL_INCY=-1;
+  else TEXEL_INCY=1;
 
-   TEXEL_INCX<<=2;
+  TEXEL_INCX<<=2;
 
-   TEXTURE_WI_START=0;
-   TEXTURE_HI_START=0;
+  TEXTURE_WI_START=0;
+  TEXTURE_HI_START=0;
 }
 
 void Init_Arbitrary_Map(void)
 {
-   TEXEL_FUN_NUMBER=2;
-   TEXTURE_WI_START=0;
-   TEXTURE_HI_START=0;
+  TEXEL_FUN_NUMBER=2;
+  TEXTURE_WI_START=0;
+  TEXTURE_HI_START=0;
 }
 
 int  TexelDraw_Line(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int cnt)
 {
-   int i=0;
-   unsigned int pixel;
-   unsigned int curr=0xffffffff;
+  int i=0;
+  unsigned int pixel;
+  unsigned int curr=0xffffffff;
 
-   xcur>>=16;
-   ycur>>=16;
+  xcur>>=16;
+  ycur>>=16;
 
-   for(i=0;i<cnt;i++,xcur+=(HDX1616>>16),ycur+=(HDY1616>>16))
-   {
+  for(i=0;i<cnt;i++,xcur+=(HDX1616>>16),ycur+=(HDY1616>>16))
+    {
       unsigned next = mreadh((PIXSOURCE+XY2OFF((xcur)<<2,ycur,RMOD)));
 
       if(next!=curr)
-      {
-         curr=next;
-         pixel=PPROC(CURPIX,next,LAMV);
-      }
+        {
+          curr=next;
+          pixel=PPROC(CURPIX,next,LAMV);
+        }
       //pixel=PPROC(CURPIX,mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,RMOD))),LAMV);
       pixel = PPROJ_OUTPUT(CURPIX, pixel, next);
       mwriteh((FBTARGET+XY2OFF((xcur)<<2,ycur,WMOD)),pixel);
-   }
-   return 0;
+    }
+  return 0;
 }
 
 static INLINE uint16_t readPIX(uint32_t src, int i, int j)
 {
-   src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
-   if(HightResMode)
-      return *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
-   return *((uint16_t*)&Mem[src^2]);
+  src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+  if(HightResMode)
+    return *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
+  return *((uint16_t*)&Mem[src^2]);
 }
 
 static INLINE void writePIX(uint32_t src, int i, int j, uint16_t pix)
 {
-   src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
-   if(HightResMode)
-      *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
-   else
-      *((uint16_t*)&Mem[src^2])=pix;
+  src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+  if(HightResMode)
+    *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
+  else
+    *((uint16_t*)&Mem[src^2])=pix;
 }
 
 
 int  TexelDraw_Scale(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int deltax, int deltay)
 {
-   int i,j;
-   unsigned int pixel;
-   unsigned int framePixel;
-   if((fixmode&FIX_BIT_TIMING_3))
-   {
+  int i,j;
+  unsigned int pixel;
+  unsigned int framePixel;
+  if((fixmode&FIX_BIT_TIMING_3))
+    {
       deltay*=5;
       ycur*=5;
-   }
+    }
 
-   if((HDX1616<0) && (deltax)<0 && xcur<0)
-      return -1;
-   else if((HDY1616<0) && (deltay)<0 && ycur<0 )
-      return -1;
-   else if((HDX1616>0) && (deltax)>(CLIPXVAL) && (xcur)>(CLIPXVAL))
-      return -1;
-   else if((HDY1616>0) && ((deltay))>(CLIPYVAL) && (ycur)>(CLIPYVAL))
-      return -1;
+  if((HDX1616<0) && (deltax)<0 && xcur<0)
+    return -1;
+  else if((HDY1616<0) && (deltay)<0 && ycur<0 )
+    return -1;
+  else if((HDX1616>0) && (deltax)>(CLIPXVAL) && (xcur)>(CLIPXVAL))
+    return -1;
+  else if((HDY1616>0) && ((deltay))>(CLIPYVAL) && (ycur)>(CLIPYVAL))
+    return -1;
 
-   if((((int)xcur))==(((int)deltax)))
-      return 0;
+  if((((int)xcur))==(((int)deltax)))
+    return 0;
 
-   for(i=((int)ycur);i!=(((int)deltay));i+=TEXEL_INCY)
-      for(j=(((int)xcur))<<2;j!=((((int)deltax))<<2);j+=TEXEL_INCX)
-         if((TESTCLIP((j<<14),(i<<16))))
-         {
-            framePixel = mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
-            pixel=PPROC(CURPIX,framePixel,LAMV);
-            pixel=PPROJ_OUTPUT(CURPIX, pixel, framePixel);
-            //next=mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
-            //if(next!=curr){curr=next;pixel=PPROC(CURPIX,next,LAMV);}
-            mwriteh((FBTARGET+XY2OFF(j,i,WMOD)),pixel);
+  for(i=((int)ycur);i!=(((int)deltay));i+=TEXEL_INCY)
+    for(j=(((int)xcur))<<2;j!=((((int)deltax))<<2);j+=TEXEL_INCX)
+      if((TESTCLIP((j<<14),(i<<16))))
+        {
+          framePixel = mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
+          pixel=PPROC(CURPIX,framePixel,LAMV);
+          pixel=PPROJ_OUTPUT(CURPIX, pixel, framePixel);
+          //next=mreadh((PIXSOURCE+XY2OFF(j,i,RMOD)));
+          //if(next!=curr){curr=next;pixel=PPROC(CURPIX,next,LAMV);}
+          mwriteh((FBTARGET+XY2OFF(j,i,WMOD)),pixel);
 
-         }
+        }
 
-   return 0;
+  return 0;
 }
 
 static INLINE int TexelCCWTestSmp(int hdx, int hdy, int vdx, int vdy)
 {
-   if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0)
-      return CCB_ACCW;
-   return CCB_ACW;
+  if(((hdx+vdx)*(hdy-vdy)+vdx*vdy-hdx*hdy)<0)
+    return CCB_ACCW;
+  return CCB_ACW;
 }
 
 int  TexelDraw_Arbitrary(uint16_t CURPIX, uint16_t LAMV,
-      int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
+                         int xA, int yA, int xB, int yB, int xC, int yC, int xD, int yD)
 {
-   int miny, maxy, i, xpoints[4], j, maxyt, maxxt, maxx;
-   int updowns[4], jtmp;
-   unsigned int pixel;
-   unsigned int curr=-1, next;
+  int miny, maxy, i, xpoints[4], j, maxyt, maxxt, maxx;
+  int updowns[4], jtmp;
+  unsigned int pixel;
+  unsigned int curr=-1, next;
 
-   xA>>=(16-HightResMode);
-   xB>>=(16-HightResMode);
-   xC>>=(16-HightResMode);
-   xD>>=(16-HightResMode);
-   yA>>=(16-HightResMode);
-   yB>>=(16-HightResMode);
-   yC>>=(16-HightResMode);
-   yD>>=(16-HightResMode);
+  xA>>=(16-HightResMode);
+  xB>>=(16-HightResMode);
+  xC>>=(16-HightResMode);
+  xD>>=(16-HightResMode);
+  yA>>=(16-HightResMode);
+  yB>>=(16-HightResMode);
+  yC>>=(16-HightResMode);
+  yD>>=(16-HightResMode);
 
-   if((xA)==(xB) && (xB)==(xC) && (xC)==(xD)) return 0;
+  if((xA)==(xB) && (xB)==(xC) && (xC)==(xD)) return 0;
 
-   maxxt=((CLIPXVAL+1)<<HightResMode);
-   maxyt=((CLIPYVAL+1)<<HightResMode);
+  maxxt=((CLIPXVAL+1)<<HightResMode);
+  maxyt=((CLIPYVAL+1)<<HightResMode);
 
-   if(HDX1616<0 && HDDX1616<0)
-   {
+  if(HDX1616<0 && HDDX1616<0)
+    {
       if((xA<0) && (xB<0) && (xC<0) && (xD<0))
-         return -1;
-   }
-   if(HDX1616>0 && HDDX1616>0)
-   {
+        return -1;
+    }
+  if(HDX1616>0 && HDDX1616>0)
+    {
       if(((xA)>=maxxt) && ((xB)>=maxxt) && ((xC)>=maxxt) && ((xD)>=maxxt))
-         return -1;
-   }
-   if(HDY1616<0 && HDDY1616<0)
-   {
+        return -1;
+    }
+  if(HDY1616<0 && HDDY1616<0)
+    {
       if((yA<0) && (yB<0) && (yC<0) && (yD<0))
-         return -1;
-   }
-   if(HDY1616>0 && HDDY1616>0)
-   {
+        return -1;
+    }
+  if(HDY1616>0 && HDDY1616>0)
+    {
       if(((yA)>=maxyt) && ((yB)>=maxyt) && ((yC)>=maxyt) && ((yD)>=maxyt))
-         return -1;
-   }
+        return -1;
+    }
 
-   miny=maxy=yA;
-   if(miny>yB)miny=yB;
-   if(miny>yC)miny=yC;
-   if(miny>yD)miny=yD;
-   if(maxy<yB)maxy=yB;
-   if(maxy<yC)maxy=yC;
-   if(maxy<yD)maxy=yD;
+  miny=maxy=yA;
+  if(miny>yB)miny=yB;
+  if(miny>yC)miny=yC;
+  if(miny>yD)miny=yD;
+  if(maxy<yB)maxy=yB;
+  if(maxy<yC)maxy=yC;
+  if(maxy<yD)maxy=yD;
 
-   i=(miny);
-   if(i<0)i=0;
-   if(maxy<maxyt)maxyt=maxy;
+  i=(miny);
+  if(i<0)i=0;
+  if(maxy<maxyt)maxyt=maxy;
 
 
-   for(;i<maxyt;i++)
-   {
+  for(;i<maxyt;i++)
+    {
       int cnt_cross = 0;
       if(i<(yB) && i>=(yA))
-      {
-         xpoints[cnt_cross]=(int)(((((xB-xA)*(i-yA))/(yB-yA))+xA));
-         updowns[cnt_cross++]=1;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xB-xA)*(i-yA))/(yB-yA))+xA));
+          updowns[cnt_cross++]=1;
+        }
       else if(i>=(yB) && i<(yA))
-      {
-         xpoints[cnt_cross]=(int)(((((xA-xB)*(i-yB))/(yA-yB))+xB));
-         updowns[cnt_cross++]=0;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xA-xB)*(i-yB))/(yA-yB))+xB));
+          updowns[cnt_cross++]=0;
+        }
 
       if(i<(yC) && i>=(yB))
-      {
-         xpoints[cnt_cross]=(int)(((((xC-xB)*(i-yB))/(yC-yB))+xB));
-         updowns[cnt_cross++]=1;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xC-xB)*(i-yB))/(yC-yB))+xB));
+          updowns[cnt_cross++]=1;
+        }
       else if(i>=(yC) && i<(yB))
-      {
-         xpoints[cnt_cross]=(int)(((((xB-xC)*(i-yC))/(yB-yC))+xC));
-         updowns[cnt_cross++]=0;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xB-xC)*(i-yC))/(yB-yC))+xC));
+          updowns[cnt_cross++]=0;
+        }
 
       if(i<(yD) && i>=(yC))
-      {
-         xpoints[cnt_cross]=(int)(((((xD-xC)*(i-yC))/(yD-yC))+xC));
-         updowns[cnt_cross++]=1;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xD-xC)*(i-yC))/(yD-yC))+xC));
+          updowns[cnt_cross++]=1;
+        }
       else if(i>=(yD) && i<(yC))
-      {
-         xpoints[cnt_cross]=(int)(((((xC-xD)*(i-yD))/(yC-yD))+xD));
-         updowns[cnt_cross++]=0;
-      }
+        {
+          xpoints[cnt_cross]=(int)(((((xC-xD)*(i-yD))/(yC-yD))+xD));
+          updowns[cnt_cross++]=0;
+        }
 
       if(cnt_cross&1)
-      {
-         if(i<(yA) && i>=(yD))
-         {
-            xpoints[cnt_cross]=(int)(((((xA-xD)*(i-yD))/(yA-yD))+xD));
-            updowns[cnt_cross]=1;
-         }
-         else if(i>=(yA) && i<(yD))
-         {
-            xpoints[cnt_cross]=(int)(((((xD-xA)*(i-yA))/(yD-yA))+xA));
-            updowns[cnt_cross]=0;
-         }
-      }
+        {
+          if(i<(yA) && i>=(yD))
+            {
+              xpoints[cnt_cross]=(int)(((((xA-xD)*(i-yD))/(yA-yD))+xD));
+              updowns[cnt_cross]=1;
+            }
+          else if(i>=(yA) && i<(yD))
+            {
+              xpoints[cnt_cross]=(int)(((((xD-xA)*(i-yA))/(yD-yA))+xA));
+              updowns[cnt_cross]=0;
+            }
+        }
 
       if(cnt_cross!=0)
-      {
+        {
 
-         if(xpoints[0]>xpoints[1])
-         {
-            xpoints[1]+=xpoints[0];
-            xpoints[0]=xpoints[1]-xpoints[0];
-            xpoints[1]=xpoints[1]-xpoints[0];
-
-            jtmp=updowns[0];
-            updowns[0]=updowns[1];
-            updowns[1]=jtmp;
-         }
-         if(cnt_cross>2)
-         {
-            if( ((CCBFLAGS&CCB_ACW)&&updowns[2]==0) ||
-                  ((CCBFLAGS&CCB_ACCW)&&updowns[2]==1))
+          if(xpoints[0]>xpoints[1])
             {
-               j=xpoints[2];
-               if(j<0)j=0;
-               maxx=xpoints[3];
-               if(maxx>maxxt)maxx=maxxt;
-               for(;j<maxx;j++)
-               {
+              xpoints[1]+=xpoints[0];
+              xpoints[0]=xpoints[1]-xpoints[0];
+              xpoints[1]=xpoints[1]-xpoints[0];
+
+              jtmp=updowns[0];
+              updowns[0]=updowns[1];
+              updowns[1]=jtmp;
+            }
+          if(cnt_cross>2)
+            {
+              if( ((CCBFLAGS&CCB_ACW)&&updowns[2]==0) ||
+                  ((CCBFLAGS&CCB_ACCW)&&updowns[2]==1))
+                {
+                  j=xpoints[2];
+                  if(j<0)j=0;
+                  maxx=xpoints[3];
+                  if(maxx>maxxt)maxx=maxxt;
+                  for(;j<maxx;j++)
+                    {
+                      next=readPIX(PIXSOURCE, i, j);
+                      if(next!=curr){curr=next;
+                        pixel=PPROC(CURPIX,next,LAMV);
+                        pixel = PPROJ_OUTPUT(CURPIX, pixel, next);
+                      }
+                      writePIX(FBTARGET, i, j, pixel);
+                    }
+                }
+
+            }
+
+          if( ((CCBFLAGS&CCB_ACW)&&updowns[0]==0) ||
+              ((CCBFLAGS&CCB_ACCW)&&updowns[0]==1))
+            {
+              j=xpoints[0];
+              if(j<0)j=0;
+              maxx=xpoints[1];
+              if(maxx>maxxt)maxx=maxxt;
+
+              for(;j<maxx;j++)
+                {
                   next=readPIX(PIXSOURCE, i, j);
                   if(next!=curr){curr=next;
-                     pixel=PPROC(CURPIX,next,LAMV);
-                     pixel = PPROJ_OUTPUT(CURPIX, pixel, next);
+                    pixel=PPROC(CURPIX,next,LAMV);
+                    pixel=PPROJ_OUTPUT(CURPIX, pixel, next);
                   }
                   writePIX(FBTARGET, i, j, pixel);
-               }
+                }
             }
 
-         }
+        }
 
-         if( ((CCBFLAGS&CCB_ACW)&&updowns[0]==0) ||
-               ((CCBFLAGS&CCB_ACCW)&&updowns[0]==1))
-         {
-            j=xpoints[0];
-            if(j<0)j=0;
-            maxx=xpoints[1];
-            if(maxx>maxxt)maxx=maxxt;
+    }
 
-            for(;j<maxx;j++)
-            {
-               next=readPIX(PIXSOURCE, i, j);
-               if(next!=curr){curr=next;
-                  pixel=PPROC(CURPIX,next,LAMV);
-                  pixel=PPROJ_OUTPUT(CURPIX, pixel, next);
-               }
-               writePIX(FBTARGET, i, j, pixel);
-            }
-         }
-
-      }
-
-   }
-
-   return 0;
+  return 0;
 }
