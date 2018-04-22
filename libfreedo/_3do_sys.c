@@ -32,7 +32,7 @@
 #include "dsp.h"
 #include "clio.h"
 #include "frame.h"
-#include "Madam.h"
+#include "madam.h"
 #include "sport.h"
 #include "xbus.h"
 #include "xbus_cdrom_plugin.h"

@@ -26,7 +26,7 @@
 #include "libfreedo/freedocore.h"
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
-#include "libfreedo/Madam.h"
+#include "libfreedo/madam.h"
 #include "libfreedo/vdlp.h"
 #include "libfreedo/hack_flags.h"
 #include "libfreedo/freedo-cdrom.h"

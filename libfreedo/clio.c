@@ -29,7 +29,7 @@
 */
 
 #include "dsp.h"
-#include "Madam.h"
+#include "madam.h"
 #include "arm.h"
 #include "clio.h"
 #include "quarz.h"

@@ -30,7 +30,7 @@
 #include <retro_inline.h>
 
 #include "arm.h"
-#include "Madam.h"
+#include "madam.h"
 #include "clio.h"
 #include "DiagPort.h"
 #include "sport.h"
