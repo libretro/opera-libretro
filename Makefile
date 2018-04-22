@@ -344,7 +344,7 @@ else
 endif
 
 LDFLAGS += $(fpic) $(SHARED)
-FLAGS += $(fpic) 
+FLAGS += $(fpic)
 FLAGS += $(INCFLAGS) $(INCFLAGS_PLATFORM)
 
 ifeq ($(OLD_GCC), 1)
@@ -369,7 +369,7 @@ FLAGS += $(COREDEFINES) -D__LIBRETRO__ $(WARNINGS)
 CFLAGS += $(FLAGS)
 
 OBJOUT   = -o
-LINKOUT  = -o 
+LINKOUT  = -o
 
 ifneq (,$(findstring msvc,$(platform)))
 	OBJOUT = -Fo

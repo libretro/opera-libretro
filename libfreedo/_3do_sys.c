@@ -53,7 +53,6 @@ int HightResMode=0;
 int fixmode=0;
 int biosanvil=0;
 int isanvil=0;
-int speedfixes=0;
 int sf=0;
 int sdf=0;
 int unknownflag11=0;
