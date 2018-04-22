@@ -25,7 +25,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <retro_inline.h>
+#include "inline.h"
 
 #include "madam.h"
 #include "clio.h"
@@ -146,7 +146,6 @@ extern int speedfixes;
 
 /* Subtract this value from the actual vertical source line count */
 #define PRE0_VCNT_PREFETCH    1
-
 
 /* === Cel second preamble word flags === */
 #define PRE1_WOFFSET8_MASK   0xFF000000
@@ -340,29 +339,29 @@ struct MADAMDatum
 #pragma pack(pop)
 static struct MADAMDatum madam;
 
-uint32_t Get_madam_FSM(void)
+uint32_t freedo_madam_fsm_get(void)
 {
   return madam._madam_FSM;
 }
 
-void Set_madam_FSM(uint32_t val)
+void freedo_madam_fsm_set(uint32_t val_)
 {
-  madam._madam_FSM=val;
+  madam._madam_FSM=val_;
 }
 
-uint32_t _madam_SaveSize(void)
+uint32_t freedo_madam_state_size(void)
 {
   return sizeof(struct MADAMDatum);
 }
 
-void _madam_Save(void *buff)
+void freedo_madam_state_save(void *buf_)
 {
-  memcpy(buff,&madam,sizeof(struct MADAMDatum));
+  memcpy(buf_,&madam,sizeof(struct MADAMDatum));
 }
 
-void _madam_Load(void *buff)
+void freedo_madam_state_load(const void *buf_)
 {
-  memcpy(&madam,buff,sizeof(struct MADAMDatum));
+  memcpy(&madam,buf_,sizeof(struct MADAMDatum));
 }
 
 #define mregs madam.mregs
@@ -536,9 +535,9 @@ unsigned int pSource;
 #define ENGBLEN		mregs[0x5bc]
 #define PAL_EXP		(&mregs[0x5d0])
 
-int FLOAT1612(int a)
+int FLOAT1612(int a_)
 {
-  return a << 4;
+  return a_ << 4;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -548,20 +547,20 @@ int FLOAT1612(int a)
 //void MapCoord(poly *pol);
 //void RenderPoly(void);
 
-unsigned int  _madam_Peek(unsigned int addr)
+unsigned int freedo_madam_peek(uint32_t addr_)
 {
   //	if((addr>=0x400)&&(addr<=0x53f))
   //		printf("#Madam Peek [%X]=%X\n",addr,mregs[addr]);
 
 
-  if((addr>=0x400)&&(addr<=0x53f))
+  if((addr_>=0x400)&&(addr_<=0x53f))
     {
       //we need to return actual fifo status!!!!
-      return freedo_clio_fifo_read(addr);
+      return freedo_clio_fifo_read(addr_);
     }
 
 
-  if(addr==0x28) // STATUS OF CEL
+  if(addr_==0x28) // STATUS OF CEL
     {
       switch(_madam_FSM)
         {
@@ -574,17 +573,17 @@ unsigned int  _madam_Peek(unsigned int addr)
         }
     }
 #if 0
-  if(addr>=0x580 && addr<0x5A0)
+  if(addr_>=0x580 && addr_<0x5A0)
     {
       //sprintf(str,"CLUT - MADAM Read madam[0x%X]\n",addr);
       //CDebug::DPrint(str);
     }
 #endif
-  return mregs[addr];
+  return mregs[addr_];
 }
 
 
-void  _madam_Poke(unsigned int addr, unsigned int val)
+void  freedo_madam_poke(uint32_t addr_, uint32_t val_)
 {
   /*
     if(addr==0x13c)
@@ -593,28 +592,28 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
     CDebug::DPrint(str);
     }*/
 
-  if((addr>=0x400)&&(addr<=0x53f))
+  if((addr_>=0x400)&&(addr_<=0x53f))
     {
 
-      freedo_clio_fifo_write(addr,val);
+      freedo_clio_fifo_write(addr_,val_);
 
       return;
 
     }
   else
-    switch(addr)
+    switch(addr_)
       {
       case 0x4:
-        val=0x29;
-        mregs[addr]=val;
+        val_=0x29;
+        mregs[addr_]=val_;
         break;
 
       case 0x8:
-        mregs[addr]=val;
+        mregs[addr_]=val_;
         HandleDMA8();
         break;
       case 0x580:
-        freedo_vdlp_process(val);
+        freedo_vdlp_process(val_);
         return;
       case 0x584:
       case 0x588:
@@ -623,8 +622,8 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
       case 0x594:
       case 0x598:
       case 0x59C:
-        //_3do_DPrint(str.print("CLUT - MADAM Write madam[0x%X] = 0x%8.8X\n",addr,val));
-        mregs[addr]=val;
+        //_3do_DPrint(str.print("CLUT - MADAM Write madam[0x%X] = 0x%8.8X\n",addr_,val));
+        mregs[addr_]=val_;
         return;
       case 0x0:
         return;
@@ -685,7 +684,7 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
 
           mregs[0x7fc]=0; // Ours matrix engine already ready
 
-          switch(val) // Cmd
+          switch(val_) // Cmd
             {
             case 0: //printf("#Matrix = NOP\n");
               Rez0=Rez0T;
@@ -751,13 +750,13 @@ void  _madam_Poke(unsigned int addr, unsigned int val)
         }
         break;
       case 0x130:
-        mregs[addr]=val;	//modulo variables :)
-        RMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
-        val>>=8;
-        WMOD=((val&1)<<7)+((val&12)<<8)+((val&0x70)<<4);
+        mregs[addr_]=val_;	//modulo variables :)
+        RMOD=((val_&1)<<7)+((val_&12)<<8)+((val_&0x70)<<4);
+        val_>>=8;
+        WMOD=((val_&1)<<7)+((val_&12)<<8)+((val_&0x70)<<4);
         break;
       default:
-        mregs[addr]=val;
+        mregs[addr_]=val_;
         break;
       }
 }
@@ -789,7 +788,7 @@ void LoadPLUT(unsigned int pnt,int n)
 }
 
 int CCBCOUNTER;
-int _madam_HandleCEL(void)
+uint32_t freedo_madam_cel_handle(void)
 {
   __smallcycles=CELCYCLES=0;
   if(NEXTCCB!=0)
@@ -1113,7 +1112,7 @@ void DMAPBus(void)
 }
 
 uint8_t*
-_madam_PBUSData_reset(void)
+freedo_madam_pbus_data_reset(void)
 {
   /* 5 x 4 bytes = 20 bytes */
   ((uint32_t*)PBUSQueue)[0] = 0;
@@ -1126,19 +1125,19 @@ _madam_PBUSData_reset(void)
 }
 
 uint8_t*
-_madam_PBUSData(void)
+freedo_madam_pbus_data_get(void)
 {
   return PBUSQueue;
 }
 
-void _madam_Init(uint8_t *memory)
+void freedo_madam_init(uint8_t *mem_)
 {
   int i,j,n;
   ADD=0;
   debug=0;
   USECEL=1;
   CELCYCLES=0;
-  Mem=memory;
+  Mem=mem_;
 
   bitoper.bitset = 1;
 
@@ -1201,54 +1200,54 @@ void exteraclocker(void)
     }
 }
 
-unsigned int  mread(unsigned int addr)
+unsigned int  mread(unsigned int addr_)
 {
   unsigned int val;
 #ifdef SAFEMEMACCESS
-  //	addr&=0x3FFFFF;
+  //	addr_&=0x3FFFFF;
 #endif
-  val=_mem_read32(addr);
+  val=_mem_read32(addr_);
   CELCYCLES+=1;
   //exteraclocker();
   return val;
 }
 
-void  mwrite(unsigned int addr, unsigned int val)
+void  mwrite(unsigned int addr_, unsigned int val)
 {
 #ifdef SAFEMEMACCESS
-  addr&=0x3FFFFF;
+  addr_&=0x3FFFFF;
 #endif
-  _mem_write32(addr,val);
+  _mem_write32(addr_,val);
   CELCYCLES+=2;
   //exteraclocker();
 
 }
 
-void  mwriteh(unsigned int addr, uint16_t val)
+void  mwriteh(unsigned int addr_, uint16_t val)
 {
 #ifdef SAFEMEMACCESS
-  addr&=0x3fffff;
+  addr_&=0x3fffff;
 #endif
   CELCYCLES+=2;
 #ifdef MSB_FIRST
-  _mem_write16((addr),val);
+  _mem_write16((addr_),val);
 #else
-  _mem_write16((addr^2),val);
+  _mem_write16((addr_^2),val);
 #endif
   //exteraclocker();
 }
 
-uint16_t  mreadh(unsigned int addr)
+uint16_t  mreadh(unsigned int addr_)
 {
 #ifdef SAFEMEMACCESS
-  //	addr&=0x3FFFFF;
+  //	addr_&=0x3FFFFF;
 #endif
   CELCYCLES+=1;
   //exteraclocker();
 #ifdef MSB_FIRST
-  return _mem_read16((addr));
+  return _mem_read16((addr_));
 #else
-  return _mem_read16((addr^2));
+  return _mem_read16((addr_^2));
 #endif
 }
 
@@ -1621,7 +1620,7 @@ unsigned int  PPROC(unsigned int pixel, unsigned int fpix, unsigned int amv)
 
 
 
-unsigned int * _madam_GetRegs(void)
+uint32_t * freedo_madam_registers(void)
 {
   return mregs;
 }
@@ -2325,7 +2324,7 @@ unsigned int _madam_GetCELCycles(void)
 }
 
 
-void _madam_Reset(void)
+void freedo_madam_reset(void)
 {
   unsigned i;
   for(i = 0; i < 2048; i++)
@@ -2333,9 +2332,9 @@ void _madam_Reset(void)
 }
 
 
-void _madam_SetMapping(unsigned int flag)
+void freedo_madam_mapping_set(uint32_t flag_)
 {
-  MAPPING=flag;
+  MAPPING=flag_;
 }
 
 
@@ -2370,21 +2369,21 @@ bool QuardCCWTest(int wdt)
   return false;
 }
 
-static INLINE int __abs(int val)
+static INLINE int __abs(int val_)
 {
-  if(val>0)
-    return val;
-  return -val;
+  if(val_>0)
+    return val_;
+  return -val_;
 }
 
-int TestInitVisual(int packed)
+int TestInitVisual(int packed_)
 {
   int xpoints[4],ypoints[4];
 
   if((!(CCBFLAGS&CCB_ACCW)) && (!(CCBFLAGS&CCB_ACW)))
     return -1;
 
-  if(!packed)
+  if(!packed_)
     {
       xpoints[0]=XPOS1616>>16;
       xpoints[1]=(XPOS1616+HDX1616*SPRWI)>>16;
@@ -2498,7 +2497,7 @@ int TestInitVisual(int packed)
         }
     }
 
-  if(QuardCCWTest((!packed)?SPRWI:2048))return -1;
+  if(QuardCCWTest((!packed_)?SPRWI:2048))return -1;
   Init_Arbitrary_Map();
 
 
@@ -2666,21 +2665,21 @@ int  TexelDraw_Line(uint16_t CURPIX, uint16_t LAMV, int xcur, int ycur, int cnt)
   return 0;
 }
 
-static INLINE uint16_t readPIX(uint32_t src, int i, int j)
+static INLINE uint16_t readPIX(uint32_t src_, int i_, int j_)
 {
-  src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+  src_+=XY2OFF((((j_)>>(HightResMode))<<2),(i_>>HightResMode),WMOD);
   if(HightResMode)
-    return *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024]);
-  return *((uint16_t*)&Mem[src^2]);
+    return *((uint16_t*)&Mem[(src_^2)+(((i_&1)<<1)+((j_)&1))*1024*1024]);
+  return *((uint16_t*)&Mem[src_^2]);
 }
 
-static INLINE void writePIX(uint32_t src, int i, int j, uint16_t pix)
+static INLINE void writePIX(uint32_t src_, int i_, int j_, uint16_t pix_)
 {
-  src+=XY2OFF((((j)>>(HightResMode))<<2),(i>>HightResMode),WMOD);
+  src_+=XY2OFF((((j_)>>(HightResMode))<<2),(i_>>HightResMode),WMOD);
   if(HightResMode)
-    *((uint16_t*)&Mem[(src^2)+(((i&1)<<1)+((j)&1))*1024*1024])=pix;
+    *((uint16_t*)&Mem[(src_^2)+(((i_&1)<<1)+((j_)&1))*1024*1024])=pix_;
   else
-    *((uint16_t*)&Mem[src^2])=pix;
+    *((uint16_t*)&Mem[src_^2])=pix_;
 }
 
 

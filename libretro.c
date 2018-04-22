@@ -227,7 +227,7 @@ update_input(void)
 
   retro_input_poll_cb();
 
-  buttons = _madam_PBUSData_reset();
+  buttons = freedo_madam_pbus_data_reset();
 
   buttons[0x00] = 0x00;
   buttons[0x01] = 0x48;

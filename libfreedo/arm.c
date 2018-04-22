@@ -622,7 +622,7 @@ void _arm_Reset(void)
    gSecondROM=0;
 
    freedo_clio_reset();
-   _madam_Reset();
+   freedo_madam_reset();
 }
 
 int addrr=0;
@@ -1649,7 +1649,7 @@ void mwritew(uint32_t addr, uint32_t val)
    if (!((index=(addr^0x03300000)) & ~0x7FF)) //madam
       //  if((addr & ~0xFFFFF)==0x03300000) //madam
    {
-      _madam_Poke(index,val);
+      freedo_madam_poke(index,val);
 
       return;
    }
@@ -1710,7 +1710,7 @@ uint32_t mreadw(uint32_t addr)
       return _mem_read32(addr);
 
    if (!((index=(addr^0x03300000)) & ~0xFFFFF)) //madam
-      return _madam_Peek(index);
+      return freedo_madam_peek(index);
 
 
    if (!((index=(addr^0x03400000)) & ~0xFFFFF)) //clio

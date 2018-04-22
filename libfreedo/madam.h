@@ -58,23 +58,28 @@
 
 EXTERN_C_BEGIN
 
-uint32_t Get_madam_FSM(void);
-void Set_madam_FSM(uint32_t val);
+void      freedo_madam_init(uint8_t *mem_);
+void      freedo_madam_reset(void);
 
-void _madam_SetMapping(uint32_t flag);
-void _madam_Reset(void);
-uint32_t _madam_GetCELCycles(void);
-uint32_t * _madam_GetRegs(void);
-int _madam_HandleCEL(void);
-void _madam_Init(uint8_t* memory);
-uint8_t *_madam_PBUSData(void);
-uint8_t *_madam_PBUSData_reset(void);
-void _madam_Poke(uint32_t addr, uint32_t val);
-uint32_t _madam_Peek(uint32_t addr);
+uint32_t  freedo_madam_fsm_get(void);
+void      freedo_madam_fsm_set(uint32_t val_);
 
-uint32_t _madam_SaveSize(void);
-void _madam_Save(void *buff);
-void _madam_Load(void *buff);
+void      freedo_madam_mapping_set(uint32_t flag_);
+
+uint32_t  freedo_madam_cel_get_cycles(void);
+uint32_t  freedo_madam_cel_handle(void);
+
+uint32_t *freedo_madam_registers(void);
+
+uint8_t  *freedo_madam_pbus_data_get(void);
+uint8_t  *freedo_madam_pbus_data_reset(void);
+
+void      freedo_madam_poke(uint32_t addr_, uint32_t val_);
+uint32_t  freedo_madam_peek(uint32_t addr_);
+
+uint32_t  freedo_madam_state_size(void);
+void      freedo_madam_state_save(void *buf_);
+void      freedo_madam_state_load(const void *buf_);
 
 EXTERN_C_END
 
