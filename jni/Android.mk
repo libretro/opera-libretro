@@ -16,6 +16,6 @@ endif
 include $(CLEAR_VARS)
 LOCAL_MODULE    := retro
 LOCAL_SRC_FILES := $(SOURCES_C)
-LOCAL_CFLAGS    := $(COREFLAGS)
+LOCAL_CFLAGS    := $(COREFLAGS) $(FLAGS)
 LOCAL_LDFLAGS   := -Wl,-version-script=$(CORE_DIR)/link.T
 include $(BUILD_SHARED_LIBRARY)
