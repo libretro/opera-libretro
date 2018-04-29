@@ -32,7 +32,7 @@
 #include "dsp.h"
 #include "clio.h"
 #include "frame.h"
-#include "Madam.h"
+#include "madam.h"
 #include "sport.h"
 #include "xbus.h"
 #include "xbus_cdrom_plugin.h"
@@ -53,7 +53,6 @@ int HightResMode=0;
 int fixmode=0;
 int biosanvil=0;
 int isanvil=0;
-int speedfixes=0;
 int sf=0;
 int sdf=0;
 int unknownflag11=0;
@@ -80,7 +79,7 @@ int _3do_Init(void)
 
    freedo_vdlp_init(Memory+0x200000);   // Visible only VRAM to it
    freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
-   _madam_Init(Memory);
+   freedo_madam_init(Memory);
 
    freedo_xbus_init(xbus_cdrom_plugin);
 
@@ -169,10 +168,10 @@ void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
 
    do
    {
-      if(Get_madam_FSM()==FSM_INPROCESS)
+      if(freedo_madam_fsm_get()==FSM_INPROCESS)
       {
-         _madam_HandleCEL();
-         Set_madam_FSM(FSM_IDLE);
+         freedo_madam_cel_handle();
+         freedo_madam_fsm_set(FSM_IDLE);
          continue;
       }
 
@@ -202,7 +201,7 @@ uint32_t _3do_SaveSize(void)
    tmp+=freedo_clio_state_size();
    tmp+=freedo_quarz_state_size();
    tmp+=freedo_sport_state_size();
-   tmp+=_madam_SaveSize();
+   tmp+=freedo_madam_state_size();
    tmp+=freedo_xbus_state_size();
    tmp+=16*4;
    return tmp;
@@ -221,7 +220,7 @@ void _3do_Save(void *buff)
    indexes[5]=indexes[4]+freedo_clio_state_size();
    indexes[6]=indexes[5]+freedo_quarz_state_size();
    indexes[7]=indexes[6]+freedo_sport_state_size();
-   indexes[8]=indexes[7]+_madam_SaveSize();
+   indexes[8]=indexes[7]+freedo_madam_state_size();
    indexes[9]=indexes[8]+freedo_xbus_state_size();
 
    _arm_Save(&data[indexes[1]]);
@@ -230,7 +229,7 @@ void _3do_Save(void *buff)
    freedo_clio_state_save(&data[indexes[4]]);
    freedo_quarz_state_save(&data[indexes[5]]);
    freedo_sport_state_save(&data[indexes[6]]);
-   _madam_Save(&data[indexes[7]]);
+   freedo_madam_state_save(&data[indexes[7]]);
    freedo_xbus_state_save(&data[indexes[8]]);
 
 }
@@ -248,7 +247,7 @@ bool _3do_Load(void *buff)
    freedo_clio_state_load(&data[indexes[4]]);
    freedo_quarz_state_load(&data[indexes[5]]);
    freedo_sport_state_load(&data[indexes[6]]);
-   _madam_Load(&data[indexes[7]]);
+   freedo_madam_state_load(&data[indexes[7]]);
    freedo_xbus_state_load(&data[indexes[8]]);
 
    return true;

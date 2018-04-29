@@ -29,7 +29,7 @@
 */
 
 #include "dsp.h"
-#include "Madam.h"
+#include "madam.h"
 #include "arm.h"
 #include "clio.h"
 #include "quarz.h"
@@ -163,8 +163,8 @@ clio_handle_dma(uint32_t val_)
       unsigned trg;
       uint8_t b0,b1,b2,b3;
 
-      trg = _madam_Peek(0x540);
-      len = _madam_Peek(0x544);
+      trg = freedo_madam_peek(0x540);
+      len = freedo_madam_peek(0x544);
       CLIO.regs[0x304] &= ~0x00100000;
       CLIO.regs[0x400] &= ~0x80;
 
@@ -223,7 +223,7 @@ clio_handle_dma(uint32_t val_)
           CLIO.regs[0x400] |= 0x80;
         }
 
-      _madam_Poke(0x544,0xFFFFFFFC);
+      freedo_madam_poke(0x544,0xFFFFFFFC);
       freedo_clio_fiq_generate(1<<29,0);
     }
 }
@@ -645,7 +645,7 @@ void freedo_clio_init(int reason_)
   CLIO.regs[0x0028] = reason_;
   CLIO.regs[0x0400] = 0x80;
   CLIO.regs[0x0220] = 64;
-  MADAM_REGS = _madam_GetRegs();
+  MADAM_REGS = freedo_madam_registers();
   TIMER_VAL  = 0;
 }
 

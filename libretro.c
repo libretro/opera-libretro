@@ -26,7 +26,7 @@
 #include "libfreedo/freedocore.h"
 #include "libfreedo/frame.h"
 #include "libfreedo/quarz.h"
-#include "libfreedo/Madam.h"
+#include "libfreedo/madam.h"
 #include "libfreedo/vdlp.h"
 #include "libfreedo/hack_flags.h"
 #include "libfreedo/freedo-cdrom.h"
@@ -227,7 +227,7 @@ update_input(void)
 
   retro_input_poll_cb();
 
-  buttons = _madam_PBUSData_reset();
+  buttons = freedo_madam_pbus_data_reset();
 
   buttons[0x00] = 0x00;
   buttons[0x01] = 0x48;

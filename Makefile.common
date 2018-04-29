@@ -25,7 +25,7 @@ SOURCES_C += \
 	$(4DO_DIR)/clio.c \
 	$(4DO_DIR)/dsp.c \
 	$(4DO_DIR)/freedo-cdrom.c \
-	$(4DO_DIR)/Madam.c \
+	$(4DO_DIR)/madam.c \
 	$(4DO_DIR)/quarz.c \
 	$(4DO_DIR)/vdlp.c \
 	$(4DO_DIR)/xbus.c \
