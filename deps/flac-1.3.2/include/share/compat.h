@@ -39,6 +39,12 @@
 #ifndef FLAC__SHARE__COMPAT_H
 #define FLAC__SHARE__COMPAT_H
 
+#if defined(_WIN32) && !defined(_XBOX)
+#if !defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER >= 1400)
+#define ATLEAST_VC2005
+#endif
+#endif
+
 #if defined _WIN32 && !defined __CYGWIN__
 /* where MSVC puts unlink() */
 # include <io.h>
@@ -50,10 +56,15 @@
 #include <sys/types.h> /* for off_t */
 #define FLAC__off_t __int64 /* use this instead of off_t to fix the 2 GB limit */
 #if !defined __MINGW32__
+#if defined ATLEAST_VC2005
 #define fseeko _fseeki64
 #define ftello _ftelli64
+#else /* MSVC < 2005 */
+#define fseeko fseek
+#define ftello ftell
+#endif
 #else /* MinGW */
-#if !defined(HAVE_FSEEKO)
+#if !defined(HAVE_FSEEKO) && !defined(__MINGW32__)
 #define fseeko fseeko64
 #define ftello ftello64
 #endif
