@@ -23,13 +23,13 @@
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
 
-#include "libfreedo/freedocore.h"
-#include "libfreedo/frame.h"
-#include "libfreedo/quarz.h"
-#include "libfreedo/madam.h"
-#include "libfreedo/vdlp.h"
+#include "libfreedo/freedo_cdrom.h"
+#include "libfreedo/freedo_core.h"
+#include "libfreedo/freedo_frame.h"
+#include "libfreedo/freedo_madam.h"
+#include "libfreedo/freedo_quarz.h"
+#include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
-#include "libfreedo/freedo-cdrom.h"
 
 #define TEMP_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024

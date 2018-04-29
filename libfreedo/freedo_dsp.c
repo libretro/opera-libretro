@@ -28,9 +28,9 @@
   *  Felix Lazarev
 */
 
-#include "clio.h"
-#include "dsp.h"
-#include "freedocore.h"
+#include "freedo_clio.h"
+#include "freedo_core.h"
+#include "freedo_dsp.h"
 #include "inline.h"
 
 #include <string.h>

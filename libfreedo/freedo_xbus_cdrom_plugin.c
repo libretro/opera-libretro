@@ -1,5 +1,5 @@
-#include "freedo-cdrom.h"
-#include "xbus.h"
+#include "freedo_cdrom.h"
+#include "freedo_xbus.h"
 
 #include <string.h>
 

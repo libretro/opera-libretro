@@ -28,14 +28,13 @@
   *  Felix Lazarev
 */
 
-#include "inline.h"
-
-#include "arm.h"
-#include "bitop.h"
-#include "clio.h"
+#include "freedo_arm.h"
+#include "freedo_bitop.h"
+#include "freedo_clio.h"
+#include "freedo_madam.h"
+#include "freedo_vdlp.h"
 #include "hack_flags.h"
-#include "madam.h"
-#include "vdlp.h"
+#include "inline.h"
 
 #include <math.h>
 #include <stdint.h>

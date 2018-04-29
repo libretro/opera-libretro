@@ -30,10 +30,10 @@
 
 /* cdrom.c: implementation of the CIso class. */
 
-#include "freedo-cdrom.h"
+#include "freedo_cdrom.h"
+#include "inline.h"
 
 #include <boolean.h>
-#include <retro_inline.h>
 
 #include <stdint.h>
 #include <stdlib.h>

@@ -20,20 +20,20 @@ SOURCES_C := \
         $(CORE_DIR)/retro_cdimage.c
 
 SOURCES_C += \
-	$(4DO_DIR)/_3do_sys.c \
-	$(4DO_DIR)/arm.c \
-	$(4DO_DIR)/clio.c \
-	$(4DO_DIR)/dsp.c \
-	$(4DO_DIR)/freedo-cdrom.c \
-	$(4DO_DIR)/madam.c \
-	$(4DO_DIR)/quarz.c \
-	$(4DO_DIR)/vdlp.c \
-	$(4DO_DIR)/xbus.c \
-        $(4DO_DIR)/xbus_cdrom_plugin.c \
-	$(4DO_DIR)/DiagPort.c \
-	$(4DO_DIR)/frame.c \
-	$(4DO_DIR)/bitop.c \
-	$(4DO_DIR)/sport.c
+	$(4DO_DIR)/freedo_3do.c \
+	$(4DO_DIR)/freedo_arm.c \
+	$(4DO_DIR)/freedo_bitop.c \
+	$(4DO_DIR)/freedo_cdrom.c \
+	$(4DO_DIR)/freedo_clio.c \
+	$(4DO_DIR)/freedo_diag_port.c \
+	$(4DO_DIR)/freedo_dsp.c \
+	$(4DO_DIR)/freedo_frame.c \
+	$(4DO_DIR)/freedo_madam.c \
+	$(4DO_DIR)/freedo_quarz.c \
+	$(4DO_DIR)/freedo_sport.c \
+	$(4DO_DIR)/freedo_vdlp.c \
+	$(4DO_DIR)/freedo_xbus.c \
+        $(4DO_DIR)/freedo_xbus_cdrom_plugin.c
 
 ifneq ($(STATIC_LINKING), 1)
 SOURCES_C += \

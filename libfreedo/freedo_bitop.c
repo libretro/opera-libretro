@@ -22,8 +22,9 @@ Felix Lazarev
 */
 
 #include <stdint.h>
-#include "bitop.h"
-#include "arm.h"
+
+#include "freedo_arm.h"
+#include "freedo_bitop.h"
 
 void BitReaderBig_AttachBuffer(struct BitReaderBig *bit, uint32_t buff)
 {

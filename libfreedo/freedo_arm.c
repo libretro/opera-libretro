@@ -27,16 +27,15 @@
 #include <string.h>
 
 #include <boolean.h>
-#include <retro_inline.h>
 
-#include "arm.h"
-#include "madam.h"
-#include "clio.h"
-#include "DiagPort.h"
-#include "sport.h"
-
-#include "freedocore.h"
+#include "freedo_arm.h"
+#include "freedo_clio.h"
+#include "freedo_core.h"
+#include "freedo_diag_port.h"
+#include "freedo_madam.h"
+#include "freedo_sport.h"
 #include "hack_flags.h"
+#include "inline.h"
 
 extern int fixmode;
 extern int cnbfix;

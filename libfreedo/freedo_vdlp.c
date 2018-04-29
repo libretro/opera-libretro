@@ -28,12 +28,12 @@
   *  Felix Lazarev
   */
 
-#include "arm.h"
+#include "freedo_arm.h"
+#include "freedo_vdlp.h"
 #include "hack_flags.h"
-#include "vdlp.h"
+#include "inline.h"
 
 #include <boolean.h>
-#include <retro_inline.h>
 
 #include <stdint.h>
 #include <string.h>

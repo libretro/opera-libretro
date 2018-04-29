@@ -28,8 +28,8 @@
   *  Felix Lazarev
 */
 
-#include "clio.h"
-#include "xbus.h"
+#include "freedo_clio.h"
+#include "freedo_xbus.h"
 
 #include <stdint.h>
 #include <string.h>

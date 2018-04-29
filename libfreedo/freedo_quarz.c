@@ -28,11 +28,10 @@
   *  Felix Lazarev
 */
 
-#include "freedocore.h"
-
-#include "clio.h"
-#include "quarz.h"
-#include "vdlp.h"
+#include "freedo_clio.h"
+#include "freedo_core.h"
+#include "freedo_quarz.h"
+#include "freedo_vdlp.h"
 
 #include <string.h>
 
