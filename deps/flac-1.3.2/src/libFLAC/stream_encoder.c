@@ -678,7 +678,7 @@ static FLAC__StreamEncoderInitStatus init_stream_internal_(
 		if(encoder->protected_->bits_per_sample < 16) {
 			/* @@@ need some data about how to set this here w.r.t. blocksize and sample rate */
 			/* @@@ until then we'll make a guess */
-			encoder->protected_->qlp_coeff_precision = flac_max(FLAC__MIN_QLP_COEFF_PRECISION, 2 + encoder->protected_->bits_per_sample / 2);
+			encoder->protected_->qlp_coeff_precision = MAX(FLAC__MIN_QLP_COEFF_PRECISION, 2 + encoder->protected_->bits_per_sample / 2);
 		}
 		else if(encoder->protected_->bits_per_sample == 16) {
 			if(encoder->protected_->blocksize <= 192)
@@ -1711,7 +1711,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_set_apodization(FLAC__StreamEncoder *en
 		else if(n>15   && 0 == strncmp("partial_tukey("       , specification, 14)) {
 			FLAC__int32 tukey_parts = (FLAC__int32)strtod(specification+14, 0);
 			const char *si_1 = strchr(specification, '/');
-			FLAC__real overlap = si_1?flac_min((FLAC__real)strtod(si_1+1, 0),0.99f):0.1f;
+			FLAC__real overlap = si_1? MIN((FLAC__real)strtod(si_1+1, 0),0.99f):0.1f;
 			FLAC__real overlap_units = 1.0f/(1.0f - overlap) - 1.0f;
 			const char *si_2 = strchr((si_1?(si_1+1):specification), '/');
 			FLAC__real tukey_p = si_2?(FLAC__real)strtod(si_2+1, 0):0.2f;
@@ -1732,7 +1732,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_set_apodization(FLAC__StreamEncoder *en
 		else if(n>16   && 0 == strncmp("punchout_tukey("       , specification, 15)) {
 			FLAC__int32 tukey_parts = (FLAC__int32)strtod(specification+15, 0);
 			const char *si_1 = strchr(specification, '/');
-			FLAC__real overlap = si_1?flac_min((FLAC__real)strtod(si_1+1, 0),0.99f):0.2f;
+			FLAC__real overlap = si_1? MIN((FLAC__real)strtod(si_1+1, 0),0.99f):0.2f;
 			FLAC__real overlap_units = 1.0f/(1.0f - overlap) - 1.0f;
 			const char *si_2 = strchr((si_1?(si_1+1):specification), '/');
 			FLAC__real tukey_p = si_2?(FLAC__real)strtod(si_2+1, 0):0.2f;
@@ -1873,7 +1873,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_set_total_samples_estimate(FLAC__Stream
 	FLAC__ASSERT(0 != encoder->protected_);
 	if(encoder->protected_->state != FLAC__STREAM_ENCODER_UNINITIALIZED)
 		return false;
-	value = flac_min(value, (FLAC__U64L(1) << FLAC__STREAM_METADATA_STREAMINFO_TOTAL_SAMPLES_LEN) - 1);
+	value = MIN(value, (FLAC__U64L(1) << FLAC__STREAM_METADATA_STREAMINFO_TOTAL_SAMPLES_LEN) - 1);
 	encoder->protected_->total_samples_estimate = value;
 	return true;
 }
@@ -2151,7 +2151,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_process(FLAC__StreamEncoder *encoder, c
 	FLAC__ASSERT(encoder->protected_->state == FLAC__STREAM_ENCODER_OK);
 
 	do {
-		const unsigned n = flac_min(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j);
+		const unsigned n = MIN(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j);
 
 		if(encoder->protected_->verify)
 			append_to_verify_fifo_(&encoder->private_->verify.input_fifo, buffer, j, channels, n);
@@ -2218,7 +2218,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_process_interleaved(FLAC__StreamEncoder
 		 */
 		do {
 			if(encoder->protected_->verify)
-				append_to_verify_fifo_interleaved_(&encoder->private_->verify.input_fifo, buffer, j, channels, flac_min(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j));
+				append_to_verify_fifo_interleaved_(&encoder->private_->verify.input_fifo, buffer, j, channels, MIN(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j));
 
 			/* "i <= blocksize" to overread 1 sample; see comment in OVERREAD_ decl */
 			for(i = encoder->private_->current_sample_number; i <= blocksize && j < samples; i++, j++) {
@@ -2253,7 +2253,7 @@ FLAC_API FLAC__bool FLAC__stream_encoder_process_interleaved(FLAC__StreamEncoder
 		 */
 		do {
 			if(encoder->protected_->verify)
-				append_to_verify_fifo_interleaved_(&encoder->private_->verify.input_fifo, buffer, j, channels, flac_min(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j));
+				append_to_verify_fifo_interleaved_(&encoder->private_->verify.input_fifo, buffer, j, channels, MIN(blocksize+OVERREAD_-encoder->private_->current_sample_number, samples-j));
 
 			/* "i <= blocksize" to overread 1 sample; see comment in OVERREAD_ decl */
 			for(i = encoder->private_->current_sample_number; i <= blocksize && j < samples; i++, j++) {
@@ -2599,8 +2599,8 @@ FLAC__bool write_bitbuffer_(FLAC__StreamEncoder *encoder, unsigned samples, FLAC
 	FLAC__bitwriter_clear(encoder->private_->frame);
 
 	if(samples > 0) {
-		encoder->private_->streaminfo.data.stream_info.min_framesize = flac_min(bytes, encoder->private_->streaminfo.data.stream_info.min_framesize);
-		encoder->private_->streaminfo.data.stream_info.max_framesize = flac_max(bytes, encoder->private_->streaminfo.data.stream_info.max_framesize);
+		encoder->private_->streaminfo.data.stream_info.min_framesize = MIN(bytes, encoder->private_->streaminfo.data.stream_info.min_framesize);
+		encoder->private_->streaminfo.data.stream_info.max_framesize = MAX(bytes, encoder->private_->streaminfo.data.stream_info.max_framesize);
 	}
 
 	return true;
@@ -2691,7 +2691,7 @@ FLAC__StreamEncoderWriteStatus write_frame_(FLAC__StreamEncoder *encoder, const 
 		 * when the encoder goes back to write metadata, 'current_frame'
 		 * will drop back to 0.
 		 */
-		encoder->private_->frames_written = flac_max(encoder->private_->frames_written, encoder->private_->current_frame_number+1);
+		encoder->private_->frames_written = MAX(encoder->private_->frames_written, encoder->private_->current_frame_number+1);
 	}
 	else
 		encoder->protected_->state = FLAC__STREAM_ENCODER_CLIENT_ERROR;
@@ -2702,7 +2702,7 @@ FLAC__StreamEncoderWriteStatus write_frame_(FLAC__StreamEncoder *encoder, const 
 /* Gets called when the encoding process has finished so that we can update the STREAMINFO and SEEKTABLE blocks.  */
 void update_metadata_(const FLAC__StreamEncoder *encoder)
 {
-	FLAC__byte b[flac_max(6u, FLAC__STREAM_METADATA_SEEKPOINT_LENGTH)];
+	FLAC__byte b[MAX(6u, FLAC__STREAM_METADATA_SEEKPOINT_LENGTH)];
 	const FLAC__StreamMetadata *metadata = &encoder->private_->streaminfo;
 	const FLAC__uint64 samples = metadata->data.stream_info.total_samples;
 	const unsigned min_framesize = metadata->data.stream_info.min_framesize;
@@ -2867,7 +2867,7 @@ void update_ogg_metadata_(FLAC__StreamEncoder *encoder)
 		FLAC__OGG_MAPPING_NUM_HEADERS_LENGTH +
 		FLAC__STREAM_SYNC_LENGTH
 	;
-	FLAC__byte b[flac_max(6u, FLAC__STREAM_METADATA_SEEKPOINT_LENGTH)];
+	FLAC__byte b[MAX(6u, FLAC__STREAM_METADATA_SEEKPOINT_LENGTH)];
 	const FLAC__StreamMetadata *metadata = &encoder->private_->streaminfo;
 	const FLAC__uint64 samples = metadata->data.stream_info.total_samples;
 	const unsigned min_framesize = metadata->data.stream_info.min_framesize;
@@ -3118,9 +3118,9 @@ FLAC__bool process_subframes_(FLAC__StreamEncoder *encoder, FLAC__bool is_fracti
 	}
 	else {
 		max_partition_order = FLAC__format_get_max_rice_partition_order_from_blocksize(encoder->protected_->blocksize);
-		max_partition_order = flac_min(max_partition_order, encoder->protected_->max_residual_partition_order);
+		max_partition_order = MIN(max_partition_order, encoder->protected_->max_residual_partition_order);
 	}
-	min_partition_order = flac_min(min_partition_order, max_partition_order);
+	min_partition_order = MIN(min_partition_order, max_partition_order);
 
 	/*
 	 * Setup the frame
@@ -3533,8 +3533,8 @@ FLAC__bool process_subframe_(
 									min_qlp_coeff_precision = FLAC__MIN_QLP_COEFF_PRECISION;
 									/* try to keep qlp coeff precision such that only 32-bit math is required for decode of <=16bps(+1bps for side channel) streams */
 									if(subframe_bps <= 17) {
-										max_qlp_coeff_precision = flac_min(32 - subframe_bps - FLAC__bitmath_ilog2(lpc_order), FLAC__MAX_QLP_COEFF_PRECISION);
-										max_qlp_coeff_precision = flac_max(max_qlp_coeff_precision, min_qlp_coeff_precision);
+										max_qlp_coeff_precision = MIN(32 - subframe_bps - FLAC__bitmath_ilog2(lpc_order), FLAC__MAX_QLP_COEFF_PRECISION);
+										max_qlp_coeff_precision = MAX(max_qlp_coeff_precision, min_qlp_coeff_precision);
 									}
 									else
 										max_qlp_coeff_precision = FLAC__MAX_QLP_COEFF_PRECISION;
@@ -3778,7 +3778,7 @@ unsigned evaluate_lpc_subframe_(
 	if(subframe_bps <= 17) {
 		FLAC__ASSERT(order > 0);
 		FLAC__ASSERT(order <= FLAC__MAX_LPC_ORDER);
-		qlp_coeff_precision = flac_min(qlp_coeff_precision, 32 - subframe_bps - FLAC__bitmath_ilog2(order));
+		qlp_coeff_precision = MIN(qlp_coeff_precision, 32 - subframe_bps - FLAC__bitmath_ilog2(order));
 	}
 
 	ret = FLAC__lpc_quantize_coefficients(lp_coeff, order, qlp_coeff_precision, qlp_coeff, &quantization);
@@ -3882,7 +3882,7 @@ unsigned find_best_partition_order_(
 	const unsigned blocksize = residual_samples + predictor_order;
 
 	max_partition_order = FLAC__format_get_max_rice_partition_order_from_blocksize_limited_max_and_predictor_order(max_partition_order, blocksize, predictor_order);
-	min_partition_order = flac_min(min_partition_order, max_partition_order);
+	min_partition_order = MIN(min_partition_order, max_partition_order);
 
 	private_->local_precompute_partition_info_sums(residual, abs_residual_partition_sums, residual_samples, predictor_order, min_partition_order, max_partition_order, bps);
 
@@ -3936,7 +3936,7 @@ unsigned find_best_partition_order_(
 		unsigned partition;
 
 		/* save best parameters and raw_bits */
-		FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(prc, flac_max(6u, best_partition_order));
+		FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(prc, MAX(6u, best_partition_order));
 		memcpy(prc->parameters, private_->partitioned_rice_contents_extra[best_parameters_index].parameters, sizeof(unsigned)*(1<<(best_partition_order)));
 		if(do_escape_coding)
 			memcpy(prc->raw_bits, private_->partitioned_rice_contents_extra[best_parameters_index].raw_bits, sizeof(unsigned)*(1<<(best_partition_order)));
@@ -4064,7 +4064,7 @@ void precompute_partition_info_escapes_(
 		for(i = 0; i < partitions; i++) {
 			m = raw_bits_per_partition[from_partition];
 			from_partition++;
-			raw_bits_per_partition[to_partition] = flac_max(m, raw_bits_per_partition[from_partition]);
+			raw_bits_per_partition[to_partition] = MAX(m, raw_bits_per_partition[from_partition]);
 			from_partition++;
 			to_partition++;
 		}
@@ -4142,7 +4142,7 @@ FLAC__bool set_partitioned_rice_(
 	FLAC__ASSERT(suggested_rice_parameter < FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE2_ESCAPE_PARAMETER);
 	FLAC__ASSERT(rice_parameter_limit <= FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE2_ESCAPE_PARAMETER);
 
-	FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(partitioned_rice_contents, flac_max(6u, partition_order));
+	FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(partitioned_rice_contents, MAX(6u, partition_order));
 	parameters = partitioned_rice_contents->parameters;
 	raw_bits = partitioned_rice_contents->raw_bits;
 

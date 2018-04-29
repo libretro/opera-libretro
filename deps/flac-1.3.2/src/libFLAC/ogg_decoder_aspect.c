@@ -208,7 +208,7 @@ FLAC__OggDecoderAspectReadStatus FLAC__ogg_decoder_aspect_read_callback_wrapper(
 			}
 			else if (ret == 0) {
 				/* need more data */
-				const size_t ogg_bytes_to_read = flac_max(bytes_requested - *bytes, OGG_BYTES_CHUNK);
+				const size_t ogg_bytes_to_read = MAX(bytes_requested - *bytes, OGG_BYTES_CHUNK);
 				char *oggbuf = ogg_sync_buffer(&aspect->sync_state, ogg_bytes_to_read);
 
 				if(0 == oggbuf) {

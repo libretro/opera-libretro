@@ -295,7 +295,7 @@ inline FLAC__bool FLAC__bitwriter_write_zeroes(FLAC__BitWriter *bw, unsigned bit
 		return false;
 	/* first part gets to word alignment */
 	if(bw->bits) {
-		n = flac_min(FLAC__BITS_PER_WORD - bw->bits, bits);
+		n = MIN(FLAC__BITS_PER_WORD - bw->bits, bits);
 		bw->accum <<= n;
 		bits -= n;
 		bw->bits += n;

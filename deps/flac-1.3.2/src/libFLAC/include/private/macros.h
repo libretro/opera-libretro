@@ -32,40 +32,7 @@
 #ifndef FLAC__PRIVATE__MACROS_H
 #define FLAC__PRIVATE__MACROS_H
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-
-#define flac_max(a,b) \
-	({ __typeof__ (a) _a = (a); \
-	__typeof__ (b) _b = (b); \
-	_a > _b ? _a : _b; })
-
-#define MIN_PASTE(A,B) A##B
-#define MIN_IMPL(A,B,L) ({ \
-	__typeof__(A) MIN_PASTE(__a,L) = (A); \
-	__typeof__(B) MIN_PASTE(__b,L) = (B); \
-	MIN_PASTE(__a,L) < MIN_PASTE(__b,L) ? MIN_PASTE(__a,L) : MIN_PASTE(__b,L); \
-	})
-
-#define flac_min(A,B) MIN_IMPL(A,B,__COUNTER__)
-
-/* Whatever other unix that has sys/param.h */
-#elif defined(HAVE_SYS_PARAM_H)
-#define flac_max(a,b) MAX(a,b)
-#define flac_min(a,b) MIN(a,b)
-
-/* Windows VS has them in stdlib.h.. XXX:Untested */
-#elif defined(_MSC_VER)
 #include <stdlib.h>
-#define flac_max(a,b) __max(a,b)
-#define flac_min(a,b) __min(a,b)
-#endif
-
-#ifndef MIN
-#define MIN(x,y)	((x) <= (y) ? (x) : (y))
-#endif
-
-#ifndef MAX
-#define MAX(x,y)	((x) >= (y) ? (x) : (y))
-#endif
+#include <retro_miscellaneous.h>
 
 #endif

@@ -2726,7 +2726,7 @@ FLAC__bool write_metadata_block_data_vorbis_comment_cb_(FLAC__IOHandle handle, F
 	const unsigned num_comments_len = FLAC__STREAM_METADATA_VORBIS_COMMENT_NUM_COMMENTS_LEN / 8;
 	FLAC__byte buffer[4]; /* magic number is asserted below */
 
-	FLAC__ASSERT(flac_max(FLAC__STREAM_METADATA_VORBIS_COMMENT_ENTRY_LENGTH_LEN, FLAC__STREAM_METADATA_VORBIS_COMMENT_NUM_COMMENTS_LEN) / 8 == sizeof(buffer));
+	FLAC__ASSERT(MAX(FLAC__STREAM_METADATA_VORBIS_COMMENT_ENTRY_LENGTH_LEN, FLAC__STREAM_METADATA_VORBIS_COMMENT_NUM_COMMENTS_LEN) / 8 == sizeof(buffer));
 
 	pack_uint32_little_endian_(block->vendor_string.length, buffer, entry_length_len);
 	if(write_cb(buffer, 1, entry_length_len, handle) != entry_length_len)
@@ -3226,7 +3226,7 @@ FLAC__bool copy_n_bytes_from_file_(FILE *file, FILE *tempfile, FLAC__off_t bytes
 
 	FLAC__ASSERT(bytes >= 0);
 	while(bytes > 0) {
-		n = flac_min(sizeof(buffer), (size_t)bytes);
+		n = MIN(sizeof(buffer), (size_t)bytes);
 		if(fread(buffer, 1, n, file) != n) {
 			*status = FLAC__METADATA_SIMPLE_ITERATOR_STATUS_READ_ERROR;
 			return false;
@@ -3248,7 +3248,7 @@ FLAC__bool copy_n_bytes_from_file_cb_(FLAC__IOHandle handle, FLAC__IOCallback_Re
 
 	FLAC__ASSERT(bytes >= 0);
 	while(bytes > 0) {
-		n = flac_min(sizeof(buffer), (size_t)bytes);
+		n = MIN(sizeof(buffer), (size_t)bytes);
 		if(read_cb(buffer, 1, n, handle) != n) {
 			*status = FLAC__METADATA_SIMPLE_ITERATOR_STATUS_READ_ERROR;
 			return false;

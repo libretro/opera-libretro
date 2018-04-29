@@ -122,11 +122,11 @@ unsigned FLAC__fixed_compute_best_predictor_intrin_sse2(const FLAC__int32 data[]
 	total_error_1 = _mm_cvtsi128_si32(total_err1);
 
 	/* prefer higher order */
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+	if(total_error_0 < MIN(MIN(MIN(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 < MIN(MIN(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 < MIN(total_error_3, total_error_4))
 		order = 2;
 	else if(total_error_3 < total_error_4)
 		order = 3;
@@ -220,11 +220,11 @@ unsigned FLAC__fixed_compute_best_predictor_wide_intrin_sse2(const FLAC__int32 d
 	m128i_to_i64(total_error_1, total_err1);
 
 	/* prefer higher order */
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+	if(total_error_0 < MIN(MIN(MIN(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 < MIN(MIN(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 < MIN(total_error_3, total_error_4))
 		order = 2;
 	else if(total_error_3 < total_error_4)
 		order = 3;
