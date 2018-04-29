@@ -1,3 +1,5 @@
+HAVE_CHD = 1
+
 LOCAL_PATH := $(call my-dir)
 
 CORE_DIR := $(LOCAL_PATH)/..
