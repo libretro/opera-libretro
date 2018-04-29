@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include "boolean.h"
 
-#include "freedocore.h"
-#include "frame.h"
-#include "vdlp.h"
+#include "freedo_core.h"
+#include "freedo_frame.h"
+#include "freedo_vdlp.h"
 
 uint8_t FIXED_CLUTR[32];
 uint8_t FIXED_CLUTG[32];

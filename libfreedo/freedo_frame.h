@@ -5,7 +5,7 @@
 
 #include "extern_c.h"
 
-#include "vdlp.h"
+#include "freedo_vdlp.h"
 
 EXTERN_C_BEGIN
 

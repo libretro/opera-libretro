@@ -24,20 +24,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <boolean.h>
-#include <retro_inline.h>
 
-#include "freedocore.h"
-#include "arm.h"
-#include "vdlp.h"
-#include "dsp.h"
-#include "clio.h"
-#include "frame.h"
-#include "madam.h"
-#include "sport.h"
-#include "xbus.h"
-#include "xbus_cdrom_plugin.h"
-#include "DiagPort.h"
-#include "quarz.h"
+#include "freedo_arm.h"
+#include "freedo_clio.h"
+#include "freedo_core.h"
+#include "freedo_diag_port.h"
+#include "freedo_dsp.h"
+#include "freedo_frame.h"
+#include "freedo_madam.h"
+#include "freedo_quarz.h"
+#include "freedo_sport.h"
+#include "freedo_vdlp.h"
+#include "freedo_xbus.h"
+#include "freedo_xbus_cdrom_plugin.h"
+#include "inline.h"
 
 _ext_Interface  io_interface;
 

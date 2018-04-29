@@ -21,7 +21,7 @@
  Felix Lazarev
  */
 
-#include "DiagPort.h"
+#include "freedo_diag_port.h"
 
 static uint16_t SNDDebugFIFO0;
 static uint16_t SNDDebugFIFO1;

@@ -28,12 +28,12 @@
   *  Felix Lazarev
 */
 
-#include "dsp.h"
-#include "madam.h"
-#include "arm.h"
-#include "clio.h"
-#include "quarz.h"
-#include "xbus.h"
+#include "freedo_arm.h"
+#include "freedo_clio.h"
+#include "freedo_dsp.h"
+#include "freedo_madam.h"
+#include "freedo_quarz.h"
+#include "freedo_xbus.h"
 
 #include <string.h>
 

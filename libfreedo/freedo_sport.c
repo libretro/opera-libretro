@@ -26,9 +26,9 @@
   *  Allen Wright
   *  John Sammons
   *  Felix Lazarev
-  */
+*/
 
-#include <retro_inline.h>
+#include "inline.h"
 
 #include <stdint.h>
 #include <string.h>
