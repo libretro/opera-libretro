@@ -162,7 +162,7 @@ static void *fdcCallback(int procedure, void *data)
          fsReadBios(biosPath, data);
          break;
       case EXT_SWAPFRAME:
-         Get_Frame_Bitmap(frame, videoBuffer, videoWidth, videoHeight);
+         freedo_frame_get_bitmap_xrgb_8888(frame,videoBuffer,videoWidth,videoHeight);
          return frame;
       case EXT_PUSH_SAMPLE:
          /* TODO: fix all this, not right */

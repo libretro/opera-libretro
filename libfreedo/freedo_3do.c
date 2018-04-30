@@ -85,7 +85,6 @@ int _3do_Init(void)
 
    freedo_clio_init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
    freedo_dsp_init();
-   _frame_Init();
    _diag_Init(-1);  // Select test, use -1 -- if d'nt need tests
    /*
       00	DIAGNOSTICS TEST	(run of test: 1F, 24, 25, 32, 50, 51, 60, 61, 62, 68, 71, 75, 80, 81, 90)
