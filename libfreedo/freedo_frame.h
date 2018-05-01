@@ -1,7 +1,7 @@
-// Frame.h - For frame extraction and filtering options.
+/* frame extraction and filtering */
 
-#ifndef	FRAME_3DO_HEADER
-#define FRAME_3DO_HEADER
+#ifndef	LIBFREEDO_FRAME_H_INCLUDED
+#define LIBFREEDO_FRAME_H_INCLUDED
 
 #include "extern_c.h"
 
@@ -9,14 +9,12 @@
 
 EXTERN_C_BEGIN
 
-void _frame_Init(void);
-
-void Get_Frame_Bitmap(
-	vdlp_frame_t* sourceFrame,
-	void* destinationBitmap,
-	int copyWidth,
-	int copyHeight);
+void
+freedo_frame_get_bitmap_xrgb_8888(const vdlp_frame_t *src_frame_,
+                                  uint32_t           *dest_,
+                                  uint32_t            width_,
+                                  uint32_t            height_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBFREEDO_FRAME_H_INCLUDED */

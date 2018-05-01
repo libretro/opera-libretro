@@ -26,7 +26,7 @@
   *  Allen Wright
   *  John Sammons
   *  Felix Lazarev
-  */
+*/
 
 #include "freedo_arm.h"
 #include "freedo_vdlp.h"
@@ -123,6 +123,23 @@ static bool LOAD_CLUT = false;
 static const uint32_t PIXELS_PER_LINE_MODULO[8] =
   {320, 384, 512, 640, 1024, 320, 320, 320};
 
+/*
+  for(int i = 0; i < 32; i++)
+    FIXED_CLUT[i] = (((i & 0x1F) << 3) | ((i >> 2) & 7));
+*/
+static const uint8_t FIXED_CLUT[32] =
+  {
+    0x00, 0x08, 0x10, 0x18,
+    0x21, 0x29, 0x31, 0x39,
+    0x42, 0x4A, 0x52, 0x5A,
+    0x63, 0x6B, 0x73, 0x7B,
+    0x84, 0x8C, 0x94, 0x9C,
+    0xA5, 0xAD, 0xB5, 0xBD,
+    0xC6, 0xCE, 0xD6, 0xDE,
+    0xE7, 0xEF, 0xF7, 0xFF
+  };
+
+
 static
 INLINE
 uint32_t
@@ -145,10 +162,9 @@ INLINE
 void
 vdlp_clut_reset(void)
 {
-  int i;
-
-  for(i = 0; i < 32; i++)
-    CLUTB[i] = CLUTG[i] = CLUTR[i] = (((i & 0x1F) << 3) | ((i >> 2) & 7));
+  memcpy(CLUTR,FIXED_CLUT,sizeof(FIXED_CLUT));
+  memcpy(CLUTG,FIXED_CLUT,sizeof(FIXED_CLUT));
+  memcpy(CLUTB,FIXED_CLUT,sizeof(FIXED_CLUT));
 }
 
 static
@@ -189,8 +205,7 @@ vdlp_execute_next_vdl(const uint32_t vdl_)
 
   CURRENTVDL += 16;
 
-  numcmd = CLUTDMA.dmaw.numword; //numcmd-=4;?
-
+  numcmd = CLUTDMA.dmaw.numword;
   for(i = 0; i < numcmd; i++)
     {
       uint32_t cmd;
@@ -220,32 +235,29 @@ vdlp_execute_next_vdl(const uint32_t vdl_)
               break;
             }
         }
-      else if((cmd & 0xFF000000) == VDL_BACKGROUND)
+      else if(!ignore_flag)
         {
-          if(ignore_flag)
-            continue;
-          BACKGROUND = (((cmd & 0x000000FF) << 16) |
-                        ((cmd & 0x0000FF00) <<  0) |
-                        ((cmd & 0x00FF0000) >> 16));
-        }
-      else if((cmd & 0xE0000000) == 0xC0000000)
-        {
-          if(ignore_flag)
-            continue;
-          OUTCONTROLL = cmd;
-          ignore_flag = (OUTCONTROLL & 2);
-        }
-      else if(cmd == 0xFFFFFFFF)
-        {
-          if(ignore_flag)
-            continue;
-          vdlp_clut_reset();
+          if((cmd & 0xFF000000) == VDL_BACKGROUND)
+            {
+              BACKGROUND = (((cmd & 0x000000FF) << 16) |
+                            ((cmd & 0x0000FF00) <<  0) |
+                            ((cmd & 0x00FF0000) >> 16));
+            }
+          else if((cmd & 0xE0000000) == 0xC0000000)
+            {
+              OUTCONTROLL = cmd;
+              ignore_flag = (OUTCONTROLL & 2);
+            }
+          else if(cmd == 0xFFFFFFFF)
+            {
+              vdlp_clut_reset();
+            }
         }
     }
 
   CURRENTVDL = NEXTVDL;
   MODULO     = PIXELS_PER_LINE_MODULO[CLUTDMA.dmaw.modulo];
-  LOAD_CLUT = ((LINE_DELAY = CLUTDMA.dmaw.lines) != 0);
+  LOAD_CLUT  = ((LINE_DELAY = CLUTDMA.dmaw.lines) != 0);
 }
 
 static
@@ -374,7 +386,7 @@ freedo_vdlp_process_line(int           line_,
   if(LINE_DELAY == 0 /*&& LOAD_CLUT*/)
     vdlp_execute();
 
-  if((y >= 0) && (y < 240))  // 256???
+  if((y >= 0) && (y < 240))
     vdlp_process_line(y,frame_);
 
   if(CURRENTBMP & 2)
@@ -423,8 +435,8 @@ freedo_vdlp_init(uint8_t *vram_)
   VRAM    = vram_;
   HEADVDL = 0xB0000;
 
-  for(i = 0; i < (sizeof(StartupVDL)/4); i++)
-    vram_write32((HEADVDL + (i * 4)),StartupVDL[i]);
+  for(i = 0; i < (sizeof(StartupVDL)/sizeof(uint32_t)); i++)
+    vram_write32((HEADVDL + (i * sizeof(uint32_t))),StartupVDL[i]);
 
   vdlp_clut_reset();
 }
