@@ -41,9 +41,6 @@
 
 _ext_Interface  io_interface;
 
-extern void* Getp_NVRAM(void);
-extern void* Getp_ROMS(void);
-extern void* Getp_RAMS(void);
 extern int FMVFIX;
 extern int lsize;
 extern int flagtime;
@@ -72,8 +69,8 @@ int _3do_Init(void)
    if(isanvil==30)biosanvil=1;
    Memory=freedo_arm_init();
 
-   io_interface(EXT_READ_ROMS,Getp_ROMS());
-   rom=(uint8_t*)Getp_ROMS();
+   io_interface(EXT_READ_ROMS,freedo_arm_rom_get());
+   rom=freedo_arm_rom_get();
    for(i= (1024*1024*2)-4; i >= 0; i -= 4)
       *(int *)(rom+i) =_bswap(*(int *)(rom+i));
 
@@ -289,10 +286,10 @@ void *_freedo_Interface(int procedure, void *datum)
          _3do_Load(datum);
          break;
       case FDP_GETP_RAMS:
-         Getp_RAMS();
+         freedo_arm_ram_get();
          break;
       case FDP_GETP_ROMS:
-         Getp_ROMS();
+         freedo_arm_rom_get();
          break;
       case FDP_GETP_PROFILE:
          break;

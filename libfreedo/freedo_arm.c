@@ -4,29 +4,29 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
-
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <boolean.h>
 
 #include "freedo_arm.h"
 #include "freedo_clio.h"
@@ -36,6 +36,12 @@
 #include "freedo_sport.h"
 #include "hack_flags.h"
 #include "inline.h"
+
+#include <boolean.h>
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern int fixmode;
 extern int cnbfix;
@@ -54,7 +60,6 @@ extern int HightResMode;
 #define ARM_MSRF_MASK   0x0dbff000
 #define ARM_MSRF_SIGN   0x0128f000
 
-//режимы процессора----------------------------------------------------------
 #define ARM_MODE_USER   0
 #define ARM_MODE_FIQ    1
 #define ARM_MODE_IRQ    2
@@ -63,7 +68,6 @@ extern int HightResMode;
 #define ARM_MODE_UND    5
 #define ARM_MODE_UNK    0xff
 
-//static AString str;
 const static uint8_t arm_mode_table[]=
   {
     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,
@@ -76,50 +80,41 @@ const static uint8_t arm_mode_table[]=
     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK
   };
 
-//для посчета тактов------------------------------------------------------------
 #define NCYCLE 4
 #define SCYCLE 1
 #define ICYCLE 1
 
 //--------------------------Conditions-------------------------------------------
-//flags - N Z C V  -  31...28
-const static uint16_t cond_flags_cross[]={   //((cond_flags_cross[cond_feald]>>flags)&1)  -- пример проверки
-  0xf0f0, //EQ - Z set (equal)
-  0x0f0f, //NE - Z clear (not equal)
-  0xcccc, //CS - C set (unsigned higher or same)
-  0x3333, //CC - C clear (unsigned lower)
-  0xff00, //N set (negative)
-  0x00ff, //N clear (positive or zero)
-  0xaaaa, //V set (overflow)
-  0x5555, //V clear (no overflow)
-  0x0c0c, //C set and Z clear (unsigned higher)
-  0xf3f3, //C clear or Z set (unsigned lower or same)
-  0xaa55, //N set and V set, or N clear and V clear (greater or equal)
-  0x55aa, //N set and V clear, or N clear and V set (less than)
-  0x0a05, //Z clear, and either N set and V set, or N clear and V clear (greater than)
-  0xf5fa, //Z set, or N set and V clear, or N clear and V set (less than or equal)
-  0xffff, //always
-  0x0000  //never
-};
+// flags - N Z C V  -  31...28
+const static uint16_t cond_flags_cross[]=
+  {
+    0xf0f0, //EQ - Z set (equal)
+    0x0f0f, //NE - Z clear (not equal)
+    0xcccc, //CS - C set (unsigned higher or same)
+    0x3333, //CC - C clear (unsigned lower)
+    0xff00, //N set (negative)
+    0x00ff, //N clear (positive or zero)
+    0xaaaa, //V set (overflow)
+    0x5555, //V clear (no overflow)
+    0x0c0c, //C set and Z clear (unsigned higher)
+    0xf3f3, //C clear or Z set (unsigned lower or same)
+    0xaa55, //N set and V set, or N clear and V clear (greater or equal)
+    0x55aa, //N set and V clear, or N clear and V set (less than)
+    0x0a05, //Z clear, and either N set and V set, or N clear and V clear (greater than)
+    0xf5fa, //Z set, or N set and V clear, or N clear and V set (less than or equal)
+    0xffff, //always
+    0x0000  //never
+  };
 
+#define RAMSIZE   (3 * 1024 * 1024)
+#define ROMSIZE   (1 * 1024 * 1024)
+#define NVRAMSIZE (1024 * 32)
 
-///////////////////////////////////////////////////////////////
-// Global variables;
-///////////////////////////////////////////////////////////////
-#define RAMSIZE     3*1024*1024 //dram1+dram2+vram
-#define ROMSIZE     1*1024*1024 //rom
-#define NVRAMSIZE   (65536>>1)		//nvram at 0x03140000...0x317FFFF
-#define REG_PC	RON_USER[15]
-#define UNDEFVAL 0xBAD12345
-
-#pragma pack(push,1)
-
-struct ARM_CoreState
+struct arm_core_s
 {
-  //console memories------------------------
-  uint8_t *Ram;//[RAMSIZE];
-  uint8_t *Rom;//[ROMSIZE*2];
-  uint8_t *NVRam;//[NVRAMSIZE];
+  uint8_t *ram;
+  uint8_t *rom;
+  uint8_t *nvram;
 
   //ARM60 registers
   uint32_t USER[16];
@@ -132,340 +127,326 @@ struct ARM_CoreState
   uint32_t SPSR[6];
   uint32_t CPSR;
 
-  bool nFIQ; //external interrupt
-  bool SecondROM;	//ROM selector
+  bool nFIQ;                    //external interrupt
+  bool SecondROM;               //ROM selector
   bool MAS_Access_Exept;	//memory exceptions
 };
-#pragma pack(pop)
 
-static struct ARM_CoreState arm;
-static int CYCLES;	//cycle counter
+typedef struct arm_core_s arm_core_t;
 
-//forward decls
-uint32_t rreadusr(uint32_t rn);
-void loadusr(uint32_t rn, uint32_t val);
-uint32_t mreadb(uint32_t addr);
-void mwriteb(uint32_t addr, uint32_t val);
-uint32_t mreadw(uint32_t addr);
-void mwritew(uint32_t addr,uint32_t val);
+static arm_core_t CPU;
+static int        CYCLES;	//cycle counter
 
-#define MAS_Access_Exept	arm.MAS_Access_Exept
-#define pRam	arm.Ram
-#define pRom	arm.Rom
-#define pNVRam	arm.NVRam
-#define RON_USER	arm.USER
-#define RON_CASH	arm.CASH
-#define RON_SVC	arm.SVC
-#define RON_ABT	arm.ABT
-#define RON_FIQ	arm.FIQ
-#define RON_IRQ	arm.IRQ
-#define RON_UND	arm.UND
-#define SPSR	arm.SPSR
-#define CPSR	arm.CPSR
-#define gFIQ	arm.nFIQ
-#define gSecondROM	arm.SecondROM
+static uint32_t readusr(uint32_t rn);
+static void     loadusr(uint32_t rn, uint32_t val);
+static uint32_t mreadb(uint32_t addr);
+static void     mwriteb(uint32_t addr, uint8_t val);
+static uint32_t mreadw(uint32_t addr);
+static void     mwritew(uint32_t addr,uint32_t val);
 
-void* Getp_NVRAM(void)
+uint8_t*
+freedo_arm_nvram_get(void)
 {
-  return pNVRam;
+  return CPU.nvram;
 }
 
-void* Getp_ROMS(void)
+uint8_t*
+freedo_arm_rom_get(void)
 {
-  return pRom;
+  return CPU.rom;
 }
 
-void* Getp_RAMS(void)
+uint8_t*
+freedo_arm_ram_get(void)
 {
-  return pRam;
+  return CPU.ram;
 }
 
-uint32_t freedo_arm_state_size(void)
+uint32_t
+freedo_arm_state_size(void)
 {
-  return sizeof(struct ARM_CoreState) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE;
+  return (sizeof(arm_core_t) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE);
 }
 
-void freedo_arm_state_save(void *buf_)
+void
+freedo_arm_state_save(void *buf_)
 {
-  memcpy(buf_,&arm,sizeof(struct ARM_CoreState));
-  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState),pRam,RAMSIZE);
-  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
-  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
+  memcpy(buf_,&CPU,sizeof(arm_core_t));
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t),CPU.ram,RAMSIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE,CPU.rom,ROMSIZE*2);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE+ROMSIZE*2,CPU.nvram,NVRAMSIZE);
 }
 
-void freedo_arm_state_load(const void *buf_)
+void
+freedo_arm_state_load(const void *buf_)
 {
-  uint8_t *tRam=pRam;
-  uint8_t *tRom=pRom;
-  uint8_t *tNVRam=pNVRam;
-  memcpy(&arm,buf_,sizeof(struct ARM_CoreState));
-  memcpy(tRam,((uint8_t*)buf_)+sizeof(struct ARM_CoreState),RAMSIZE);
-  memcpy(tRom,((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE,ROMSIZE*2);
-  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
+  uint8_t i;
+  uint8_t *tRam   = CPU.ram;
+  uint8_t *tRom   = CPU.rom;
+  uint8_t *tNVRam = CPU.nvram;
 
-  memcpy(tRam+3*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+4*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+5*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+6*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+7*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+8*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+9*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+10*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+11*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+12*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+13*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+14*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+15*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+16*1024*1024,tRam+2*1024*1024, 1024*1024);
-  memcpy(tRam+17*1024*1024,tRam+2*1024*1024, 1024*1024);
+  memcpy(&CPU,buf_,sizeof(arm_core_t));
+  memcpy(tRam,((uint8_t*)buf_)+sizeof(arm_core_t),RAMSIZE);
+  memcpy(tRom,((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE,ROMSIZE*2);
+  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
 
-  pRom=tRom;
-  pRam=tRam;
-  pNVRam=tNVRam;
+  for(i = 3; i < 18; i++)
+    memcpy(tRam + (i * 1024 * 1024),
+           tRam + (2 * 1024 * 1024),
+           1024 * 1024);
+
+  CPU.rom   = tRom;
+  CPU.ram   = tRam;
+  CPU.nvram = tNVRam;
 }
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
-static INLINE void load(uint32_t rn, uint32_t val)
+static
+void
+ARM_RestUserRONS(void)
 {
-  RON_USER[rn]=val;
-}
-
-void ARM_RestUserRONS(void)
-{
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
       break;
     case ARM_MODE_FIQ:
-      memcpy(RON_FIQ,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_CASH,7<<2);
+      memcpy(CPU.FIQ,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.CASH,7<<2);
       break;
     case ARM_MODE_IRQ:
-      RON_IRQ[0]=RON_USER[13];
-      RON_IRQ[1]=RON_USER[14];
-      RON_USER[13]=RON_CASH[5];
-      RON_USER[14]=RON_CASH[6];
+      CPU.IRQ[0]   = CPU.USER[13];
+      CPU.IRQ[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.CASH[5];
+      CPU.USER[14] = CPU.CASH[6];
       break;
     case ARM_MODE_SVC:
-      RON_SVC[0]=RON_USER[13];
-      RON_SVC[1]=RON_USER[14];
-      RON_USER[13]=RON_CASH[5];
-      RON_USER[14]=RON_CASH[6];
+      CPU.SVC[0]   = CPU.USER[13];
+      CPU.SVC[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.CASH[5];
+      CPU.USER[14] = CPU.CASH[6];
       break;
     case ARM_MODE_ABT:
-      RON_ABT[0]=RON_USER[13];
-      RON_ABT[1]=RON_USER[14];
-      RON_USER[13]=RON_CASH[5];
-      RON_USER[14]=RON_CASH[6];
+      CPU.ABT[0]   = CPU.USER[13];
+      CPU.ABT[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.CASH[5];
+      CPU.USER[14] = CPU.CASH[6];
       break;
     case ARM_MODE_UND:
-      RON_UND[0]=RON_USER[13];
-      RON_UND[1]=RON_USER[14];
-      RON_USER[13]=RON_CASH[5];
-      RON_USER[14]=RON_CASH[6];
+      CPU.UND[0]   = CPU.USER[13];
+      CPU.UND[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.CASH[5];
+      CPU.USER[14] = CPU.CASH[6];
       break;
     }
 }
 
-void ARM_RestFiqRONS(void)
+static
+void
+ARM_RestFiqRONS(void)
 {
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      memcpy(RON_CASH,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_FIQ,7<<2);
+      memcpy(CPU.CASH,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.FIQ,7<<2);
       break;
     case ARM_MODE_FIQ:
       break;
     case ARM_MODE_IRQ:
-      memcpy(RON_CASH,&RON_USER[8],5<<2);
-      RON_IRQ[0]=RON_USER[13];
-      RON_IRQ[1]=RON_USER[14];
-      memcpy(&RON_USER[8],RON_FIQ,7<<2);
+      memcpy(CPU.CASH,&CPU.USER[8],5<<2);
+      CPU.IRQ[0] = CPU.USER[13];
+      CPU.IRQ[1] = CPU.USER[14];
+      memcpy(&CPU.USER[8],CPU.FIQ,7<<2);
       break;
     case ARM_MODE_SVC:
-      memcpy(RON_CASH,&RON_USER[8],5<<2);
-      RON_SVC[0]=RON_USER[13];
-      RON_SVC[1]=RON_USER[14];
-      memcpy(&RON_USER[8],RON_FIQ,7<<2);
+      memcpy(CPU.CASH,&CPU.USER[8],5<<2);
+      CPU.SVC[0] = CPU.USER[13];
+      CPU.SVC[1] = CPU.USER[14];
+      memcpy(&CPU.USER[8],CPU.FIQ,7<<2);
       break;
     case ARM_MODE_ABT:
-      memcpy(RON_CASH,&RON_USER[8],5<<2);
-      RON_ABT[0]=RON_USER[13];
-      RON_ABT[1]=RON_USER[14];
-      memcpy(&RON_USER[8],RON_FIQ,7<<2);
+      memcpy(CPU.CASH,&CPU.USER[8],5<<2);
+      CPU.ABT[0] = CPU.USER[13];
+      CPU.ABT[1] = CPU.USER[14];
+      memcpy(&CPU.USER[8],CPU.FIQ,7<<2);
       break;
     case ARM_MODE_UND:
-      memcpy(RON_CASH,&RON_USER[8],5<<2);
-      RON_UND[0]=RON_USER[13];
-      RON_UND[1]=RON_USER[14];
-      memcpy(&RON_USER[8],RON_FIQ,7<<2);
+      memcpy(CPU.CASH,&CPU.USER[8],5<<2);
+      CPU.UND[0] = CPU.USER[13];
+      CPU.UND[1] = CPU.USER[14];
+      memcpy(&CPU.USER[8],CPU.FIQ,7<<2);
       break;
     }
 }
 
-void ARM_RestIrqRONS(void)
+static
+void
+ARM_RestIrqRONS(void)
 {
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      RON_CASH[5]=RON_USER[13];
-      RON_CASH[6]=RON_USER[14];
-      RON_USER[13]=RON_IRQ[0];
-      RON_USER[14]=RON_IRQ[1];
+      CPU.CASH[5]  = CPU.USER[13];
+      CPU.CASH[6]  = CPU.USER[14];
+      CPU.USER[13] = CPU.IRQ[0];
+      CPU.USER[14] = CPU.IRQ[1];
       break;
     case ARM_MODE_FIQ:
-      memcpy(RON_FIQ,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_CASH,5<<2);
-      RON_USER[13]=RON_IRQ[0];
-      RON_USER[14]=RON_IRQ[1];
+      memcpy(CPU.FIQ,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.CASH,5<<2);
+      CPU.USER[13] = CPU.IRQ[0];
+      CPU.USER[14] = CPU.IRQ[1];
       break;
     case ARM_MODE_IRQ:
       break;
     case ARM_MODE_SVC:
-      RON_SVC[0]=RON_USER[13];
-      RON_SVC[1]=RON_USER[14];
-      RON_USER[13]=RON_IRQ[0];
-      RON_USER[14]=RON_IRQ[1];
+      CPU.SVC[0]   = CPU.USER[13];
+      CPU.SVC[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.IRQ[0];
+      CPU.USER[14] = CPU.IRQ[1];
       break;
     case ARM_MODE_ABT:
-      RON_ABT[0]=RON_USER[13];
-      RON_ABT[1]=RON_USER[14];
-      RON_USER[13]=RON_IRQ[0];
-      RON_USER[14]=RON_IRQ[1];
+      CPU.ABT[0]   = CPU.USER[13];
+      CPU.ABT[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.IRQ[0];
+      CPU.USER[14] = CPU.IRQ[1];
       break;
     case ARM_MODE_UND:
-      RON_UND[0]=RON_USER[13];
-      RON_UND[1]=RON_USER[14];
-      RON_USER[13]=RON_IRQ[0];
-      RON_USER[14]=RON_IRQ[1];
+      CPU.UND[0]   = CPU.USER[13];
+      CPU.UND[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.IRQ[0];
+      CPU.USER[14] = CPU.IRQ[1];
       break;
     }
 }
 
-void ARM_RestSvcRONS(void)
+static
+void
+ARM_RestSvcRONS(void)
 {
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      RON_CASH[5]=RON_USER[13];
-      RON_CASH[6]=RON_USER[14];
-      RON_USER[13]=RON_SVC[0];
-      RON_USER[14]=RON_SVC[1];
+      CPU.CASH[5]  = CPU.USER[13];
+      CPU.CASH[6]  = CPU.USER[14];
+      CPU.USER[13] = CPU.SVC[0];
+      CPU.USER[14] = CPU.SVC[1];
       break;
     case ARM_MODE_FIQ:
-      memcpy(RON_FIQ,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_CASH,5<<2);
-      RON_USER[13]=RON_SVC[0];
-      RON_USER[14]=RON_SVC[1];
+      memcpy(CPU.FIQ,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.CASH,5<<2);
+      CPU.USER[13] = CPU.SVC[0];
+      CPU.USER[14] = CPU.SVC[1];
       break;
     case ARM_MODE_IRQ:
-      RON_IRQ[0]=RON_USER[13];
-      RON_IRQ[1]=RON_USER[14];
-      RON_USER[13]=RON_SVC[0];
-      RON_USER[14]=RON_SVC[1];
+      CPU.IRQ[0]   = CPU.USER[13];
+      CPU.IRQ[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.SVC[0];
+      CPU.USER[14] = CPU.SVC[1];
       break;
     case ARM_MODE_SVC:
       break;
     case ARM_MODE_ABT:
-      RON_ABT[0]=RON_USER[13];
-      RON_ABT[1]=RON_USER[14];
-      RON_USER[13]=RON_SVC[0];
-      RON_USER[14]=RON_SVC[1];
+      CPU.ABT[0]   = CPU.USER[13];
+      CPU.ABT[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.SVC[0];
+      CPU.USER[14] = CPU.SVC[1];
       break;
     case ARM_MODE_UND:
-      RON_UND[0]=RON_USER[13];
-      RON_UND[1]=RON_USER[14];
-      RON_USER[13]=RON_SVC[0];
-      RON_USER[14]=RON_SVC[1];
+      CPU.UND[0]   = CPU.USER[13];
+      CPU.UND[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.SVC[0];
+      CPU.USER[14] = CPU.SVC[1];
       break;
     }
 }
 
-void ARM_RestAbtRONS(void)
+static
+void
+ARM_RestAbtRONS(void)
 {
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      RON_CASH[5]=RON_USER[13];
-      RON_CASH[6]=RON_USER[14];
-      RON_USER[13]=RON_ABT[0];
-      RON_USER[14]=RON_ABT[1];
+      CPU.CASH[5]  = CPU.USER[13];
+      CPU.CASH[6]  = CPU.USER[14];
+      CPU.USER[13] = CPU.ABT[0];
+      CPU.USER[14] = CPU.ABT[1];
       break;
     case ARM_MODE_FIQ:
-      memcpy(RON_FIQ,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_CASH,5<<2);
-      RON_USER[13]=RON_ABT[0];
-      RON_USER[14]=RON_ABT[1];
+      memcpy(CPU.FIQ,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.CASH,5<<2);
+      CPU.USER[13] = CPU.ABT[0];
+      CPU.USER[14] = CPU.ABT[1];
       break;
     case ARM_MODE_IRQ:
-      RON_IRQ[0]=RON_USER[13];
-      RON_IRQ[1]=RON_USER[14];
-      RON_USER[13]=RON_ABT[0];
-      RON_USER[14]=RON_ABT[1];
+      CPU.IRQ[0]   = CPU.USER[13];
+      CPU.IRQ[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.ABT[0];
+      CPU.USER[14] = CPU.ABT[1];
       break;
     case ARM_MODE_SVC:
-      RON_SVC[0]=RON_USER[13];
-      RON_SVC[1]=RON_USER[14];
-      RON_USER[13]=RON_ABT[0];
-      RON_USER[14]=RON_ABT[1];
+      CPU.SVC[0]   = CPU.USER[13];
+      CPU.SVC[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.ABT[0];
+      CPU.USER[14] = CPU.ABT[1];
       break;
     case ARM_MODE_ABT:
       break;
     case ARM_MODE_UND:
-      RON_UND[0]=RON_USER[13];
-      RON_UND[1]=RON_USER[14];
-      RON_USER[13]=RON_ABT[0];
-      RON_USER[14]=RON_ABT[1];
+      CPU.UND[0]   = CPU.USER[13];
+      CPU.UND[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.ABT[0];
+      CPU.USER[14] = CPU.ABT[1];
       break;
     }
 }
 
-void ARM_RestUndRONS(void)
+static
+void
+ARM_RestUndRONS(void)
 {
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      RON_CASH[5]=RON_USER[13];
-      RON_CASH[6]=RON_USER[14];
-      RON_USER[13]=RON_UND[0];
-      RON_USER[14]=RON_UND[1];
+      CPU.CASH[5]  = CPU.USER[13];
+      CPU.CASH[6]  = CPU.USER[14];
+      CPU.USER[13] = CPU.UND[0];
+      CPU.USER[14] = CPU.UND[1];
       break;
     case ARM_MODE_FIQ:
-      memcpy(RON_FIQ,&RON_USER[8],7<<2);
-      memcpy(&RON_USER[8],RON_CASH,5<<2);
-      RON_USER[13]=RON_UND[0];
-      RON_USER[14]=RON_UND[1];
+      memcpy(CPU.FIQ,&CPU.USER[8],7<<2);
+      memcpy(&CPU.USER[8],CPU.CASH,5<<2);
+      CPU.USER[13] = CPU.UND[0];
+      CPU.USER[14] = CPU.UND[1];
       break;
     case ARM_MODE_IRQ:
-      RON_IRQ[0]=RON_USER[13];
-      RON_IRQ[1]=RON_USER[14];
-      RON_USER[13]=RON_UND[0];
-      RON_USER[14]=RON_UND[1];
+      CPU.IRQ[0]   = CPU.USER[13];
+      CPU.IRQ[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.UND[0];
+      CPU.USER[14] = CPU.UND[1];
       break;
     case ARM_MODE_SVC:
-      RON_SVC[0]=RON_USER[13];
-      RON_SVC[1]=RON_USER[14];
-      RON_USER[13]=RON_UND[0];
-      RON_USER[14]=RON_UND[1];
+      CPU.SVC[0]   = CPU.USER[13];
+      CPU.SVC[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.UND[0];
+      CPU.USER[14] = CPU.UND[1];
       break;
     case ARM_MODE_ABT:
-      RON_ABT[0]=RON_USER[13];
-      RON_ABT[1]=RON_USER[14];
-      RON_USER[13]=RON_UND[0];
-      RON_USER[14]=RON_UND[1];
+      CPU.ABT[0]   = CPU.USER[13];
+      CPU.ABT[1]   = CPU.USER[14];
+      CPU.USER[13] = CPU.UND[0];
+      CPU.USER[14] = CPU.UND[1];
       break;
     case ARM_MODE_UND:
       break;
     }
 }
 
-void ARM_Change_ModeSafe(uint32_t mode_)
+static
+void
+ARM_Change_ModeSafe(uint32_t mode_)
 {
-  switch(arm_mode_table[mode_&0x1f])
+  switch(arm_mode_table[mode_ & 0x1F])
     {
     case ARM_MODE_USER:
       ARM_RestUserRONS();
@@ -488,1392 +469,1532 @@ void ARM_Change_ModeSafe(uint32_t mode_)
     }
 }
 
-void freedo_rom_select(int n_)
+void
+freedo_rom_select(int n_)
 {
-  gSecondROM = (n_>0)? true:false;
+  CPU.SecondROM = ((n_ > 0) ? true : false);
 }
 
-void _arm_SetCPSR(uint32_t a_)
+static
+INLINE
+void
+arm_cpsr_set(uint32_t a_)
 {
-#if 0
-  if(arm_mode_table[a_&0x1f]==ARM_MODE_UNK)
-    {
-      //!!Exeption!!
-    }
-#endif
-  a_|=0x10;
+  a_ |= 0x10;
   ARM_Change_ModeSafe(a_);
-  CPSR=a_&0xf00000df;
+  CPU.CPSR = (a_ & 0xf00000df);
 }
 
 
-static INLINE void SETM(uint32_t a_)
+static
+INLINE
+void
+SETM(uint32_t a_)
 {
-#if 0
-  if(arm_mode_table[a_&0x1f]==ARM_MODE_UNK)
-    {
-      //!!Exeption!!
-    }
-#endif
-  a_|=0x10;
+  a_ |= 0x10;
   ARM_Change_ModeSafe(a_);
-  CPSR=(CPSR&0xffffffe0)|(a_ & 0x1F);
+  CPU.CPSR = ((CPU.CPSR & 0xffffffe0) | (a_ & 0x1F));
 }
 
-// This functions d'nt change mode bits, then need no update regcur
-static INLINE void SETN(bool a) { CPSR=(CPSR&0x7fffffff)|((a?1<<31:0)); }
-static INLINE void SETZ(bool a) { CPSR=(CPSR&0xbfffffff)|((a?1<<30:0)); }
-static INLINE void SETC(bool a) { CPSR=(CPSR&0xdfffffff)|((a?1<<29:0)); }
-static INLINE void SETV(bool a) { CPSR=(CPSR&0xefffffff)|((a?1<<28:0)); }
-static INLINE void SETI(bool a) { CPSR=(CPSR&0xffffff7f)|((a?1<<7:0)); }
-static INLINE void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
+static
+INLINE
+void
+SETN(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0x7fffffff) | ((a_ ? 1 << 31 : 0));
+}
 
+static
+INLINE
+void
+SETZ(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0xbfffffff) | ((a_ ? 1 << 30 : 0));
+}
 
-///////////////////////////////////////////////////////////////
-// Macros
-///////////////////////////////////////////////////////////////
-#define ISN  ((CPSR>>31)&1)
-#define ISZ  ((CPSR>>30)&1)
-#define ISC  ((CPSR>>29)&1)
-#define ISV  ((CPSR>>28)&1)
+static
+INLINE
+void
+SETC(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0xdfffffff) | ((a_ ? 1 << 29 : 0));
+}
 
-#define MODE ((CPSR&0x1f))
-#define ISI	 ((CPSR>>7)&1)
-#define ISF  ((CPSR>>6)&1)
+static
+INLINE
+void
+SETV(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0xefffffff) | ((a_ ? 1 << 28 : 0));
+}
 
-#define ROTR(val, shift) ((shift)) ? (((val) >> (shift)) | ((val) << (32 - (shift)))) : (val)
+static
+INLINE
+void
+SETI(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0xffffff7f) | ((a_ ? 1 << 7 : 0));
+}
 
-uint8_t* freedo_arm_init(void)
+static
+INLINE
+void
+SETF(bool a_)
+{
+  CPU.CPSR = (CPU.CPSR & 0xffffffbf) | ((a_ ? 1 << 6 : 0));
+}
+
+#define MODE ((CPU.CPSR & 0x1F))
+#define ISN  ((CPU.CPSR >> 31) & 1)
+#define ISZ  ((CPU.CPSR >> 30) & 1)
+#define ISC  ((CPU.CPSR >> 29) & 1)
+#define ISV  ((CPU.CPSR >> 28) & 1)
+#define ISI  ((CPU.CPSR >>  7) & 1)
+#define ISF  ((CPU.CPSR >>  6) & 1)
+
+static
+INLINE
+uint32_t
+ROTR(const uint32_t val_,
+     const uint32_t shift_)
+{
+  return (shift_ ?
+          ((val_ >> shift_) | (val_ << (32 - shift_))) :
+          val_);
+}
+
+uint8_t*
+freedo_arm_init(void)
 {
   int i;
 
-  MAS_Access_Exept=false;
+  CPU.MAS_Access_Exept = false;
 
   CYCLES=0;
-  for(i=0;i<16;i++)
-    RON_USER[i]=0;
-  for(i=0;i<2;i++)
+  for(i = 0; i < 16; i++)
+    CPU.USER[i] = 0;
+
+  for(i = 0; i < 2; i++)
     {
-      RON_SVC[i]=0;
-      RON_ABT[i]=0;
-      RON_IRQ[i]=0;
-      RON_UND[i]=0;
+      CPU.SVC[i] = 0;
+      CPU.ABT[i] = 0;
+      CPU.IRQ[i] = 0;
+      CPU.UND[i] = 0;
     }
-  for(i=0;i<7;i++)
-    RON_CASH[i]=RON_FIQ[i]=0;
 
-  gSecondROM=0;
-  pRam   = malloc(RAMSIZE+1024*1024*16 * sizeof(uint8_t));
-  pRom   = malloc(ROMSIZE*2 * sizeof(uint8_t));
-  pNVRam = malloc(NVRAMSIZE * sizeof(uint8_t));
+  for(i = 0;i < 7; i++)
+    CPU.CASH[i] = CPU.FIQ[i] = 0;
 
-  memset( pRam, 0, RAMSIZE+1024*1024*16);
-  memset( pRom, 0, ROMSIZE*2);
-  memset( pNVRam,0, NVRAMSIZE);
-  gFIQ=false;
+  CPU.SecondROM = 0;
+  CPU.ram   = malloc(RAMSIZE + 1024*1024*16);
+  CPU.rom   = malloc(ROMSIZE * 2);
+  CPU.nvram = malloc(NVRAMSIZE);
 
-  // Endian swap for loaded ROM image
+  memset(CPU.ram,0,RAMSIZE + 1024*1024*16);
+  memset(CPU.rom,0,ROMSIZE * 2);
+  memset(CPU.nvram,0,NVRAMSIZE);
+  CPU.nFIQ = false;
 
-  REG_PC=0x03000000;
-  _arm_SetCPSR(0x13); //set svc mode
+  CPU.USER[15] = 0x03000000;
+  arm_cpsr_set(0x13);
 
-  return (uint8_t *)pRam;
+  return (uint8_t*)CPU.ram;
 }
 
-void freedo_arm_destroy(void)
+void
+freedo_arm_destroy(void)
 {
-  if (pNVRam)
-    free(pNVRam);
-  pNVRam = NULL;
+  if(CPU.nvram)
+    free(CPU.nvram);
+  CPU.nvram = NULL;
 
-  if (pRom)
-    free(pRom);
-  pRom = NULL;
+  if(CPU.rom)
+    free(CPU.rom);
+  CPU.rom = NULL;
 
-  if (pRam)
-    free(pRam);
-  pRam = NULL;
+  if(CPU.ram)
+    free(CPU.ram);
+  CPU.ram = NULL;
 }
 
-void freedo_arm_reset(void)
+void
+freedo_arm_reset(void)
 {
   int i;
-  gSecondROM=0;
-  CYCLES=0;
-  for(i=0;i<16;i++)
-    RON_USER[i]=0;
-  for(i=0;i<2;i++)
+
+  CYCLES = 0;
+  CPU.SecondROM = 0;
+
+  for(i = 0; i < 16; i++)
+    CPU.USER[i] = 0;
+
+  for(i = 0; i < 2; i++)
     {
-      RON_SVC[i]=0;
-      RON_ABT[i]=0;
-      RON_IRQ[i]=0;
-      RON_UND[i]=0;
+      CPU.SVC[i] = 0;
+      CPU.ABT[i] = 0;
+      CPU.IRQ[i] = 0;
+      CPU.UND[i] = 0;
     }
-  for(i=0;i<7;i++)
-    RON_CASH[i]=RON_FIQ[i]=0;
 
-  MAS_Access_Exept=false;
+  for(i = 0; i < 7; i++)
+    CPU.CASH[i] = CPU.FIQ[i] = 0;
 
-  REG_PC=0x03000000;
-  _arm_SetCPSR(0x13); //set svc mode
-  gFIQ=false;		//no FIQ!!!
-  gSecondROM=0;
+  CPU.MAS_Access_Exept = false;
+
+  CPU.USER[15] = 0x03000000;
+  arm_cpsr_set(0x13);
+  CPU.nFIQ = false;
+  CPU.SecondROM = 0;
 
   freedo_clio_reset();
   freedo_madam_reset();
 }
 
-int addrr=0;
-int vall=0;
-int inuse=0;
+static int32_t addrr = 0;
+static int32_t vall  = 0;
+static int32_t inuse = 0;
 
-void ldm_accur(uint32_t opc, uint32_t base, uint32_t rn_ind)
+static
+void
+ldm_accur(uint32_t opc_,
+          uint32_t base_,
+          uint32_t rn_ind_)
 {
-  uint16_t x=opc&0xffff;
-  uint16_t list=opc&0xffff;
-  uint32_t base_comp,	//по ней шагаем
-    i=0,tmp;
+  uint16_t x;
+  uint16_t list;
+  uint32_t i;
+  uint32_t tmp;
+  uint32_t base_comp;
 
-  x = (x & 0x5555) + ((x >> 1) & 0x5555);
-  x = (x & 0x3333) + ((x >> 2) & 0x3333);
-  x = (x & 0xff) + (x >> 8);
-  x = (x & 0xf) + (x >> 4);
+  i = 0;
+  x    = opc_ & 0xFFFF;
+  list = opc_ & 0xFFFF;
+  x = ((x & 0x5555) + ((x >> 1) & 0x5555));
+  x = ((x & 0x3333) + ((x >> 2) & 0x3333));
+  x = ((x & 0x00ff) + (x >> 8));
+  x = ((x & 0x000f) + (x >> 4));
 
-  switch((opc>>23)&3)
+  switch((opc_>>23)&3)
     {
     case 0:
-      base-=(x<<2);
-      base_comp=base+4;
+      base_     -= (x << 2);
+      base_comp  = (base_ + 4);
       break;
     case 1:
-      base_comp=base;
-      base+=(x<<2);
+      base_comp  = base_;
+      base_     += (x << 2);
       break;
     case 2:
-      base_comp=base=base-(x<<2);
+      base_comp = base_ = (base_ - (x << 2));
       break;
     case 3:
-      base_comp=base+4;
-      base+=(x<<2);
+      base_comp  = (base_ + 4);
+      base_     += (x<<2);
       break;
     }
 
   //base_comp&=~3;
 
-  //if(opc&(1<<21))RON_USER[rn_ind]=base;
+  //if(opc_&(1<<21))CPU.USER[rn_ind_]=base_;
 
-  if((opc&(1<<22)) && !(opc&0x8000))
+  if((opc_ & (1 << 22)) && !(opc_ & 0x8000))
     {
-      if(opc&(1<<21))loadusr(rn_ind,base);
+      if(opc_ & (1 << 21))
+        loadusr(rn_ind_,base_);
+
       while(list)
         {
-          if(list&1)
+          if(list & 1)
             {
-              tmp=mreadw(base_comp);
-              /*if(MAS_Access_Exept)
-                {
-                if(opc&(1<<21))RON_USER[rn_ind]=base;
-                break;
-                } */
+              tmp = mreadw(base_comp);
+              /*
+                if(MAS_Access_Exept)
+                  {
+                    if(opc_&(1<<21))
+                      CPU.USER[rn_ind_]=base_;
+                    break;
+                  }
+              */
               loadusr(i,tmp);
-              base_comp+=4;
+              base_comp += 4;
             }
+
           i++;
-          list>>=1;
+          list >>= 1;
         }
     }
   else
     {
-      if(opc&(1<<21))RON_USER[rn_ind]=base;
+      if(opc_ & (1 << 21))
+        CPU.USER[rn_ind_] = base_;
+
       while(list)
         {
-          if(list&1)
+          if(list & 1)
             {
-              tmp=mreadw(base_comp);
-              if (tmp==0xF1000&&i==0x1&&RON_USER[2]!=0xF0000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
+              tmp = mreadw(base_comp);
+              if((tmp == 0xF1000)         &&
+                 (i == 0x1)               &&
+                 (CPU.USER[2] != 0xF0000) &&
+                 (cnbfix == 0)            &&
+                 (fixmode & FIX_BIT_TIMING_1))
                 {
                   tmp+=0x1000;
                 }
-              //if(i==0x1&&tmp==0xF1000&&RON_USER[0]==RON_USER[i]){tmp+=0x1000;cnbfix=1;}
-              if(inuse==1&&base_comp&0x1FFFFF)
+
+              if((inuse == 1) && (base_comp & 0x1FFFFF))
                 {
-                  if(base_comp==addrr)
-                    inuse=0;
-                  if(tmp!=vall)
+                  if(base_comp == addrr)
+                    inuse = 0;
+
+                  if(tmp != vall)
                     {
-                      if(tmp==0xEFE54&&i==0x4&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
-                        tmp-=0xF;
-                      //if(tmp==0xF1014)tmp=0x25000;
-                    }}
-              RON_USER[i]=tmp;
-              base_comp+=4;
+                      if((tmp == 0xEFE54) &&
+                         (i == 0x4)       &&
+                         (cnbfix == 0)    &&
+                         (fixmode & FIX_BIT_TIMING_1))
+                        tmp -= 0xF;
+                    }
+                }
+
+              CPU.USER[i]  = tmp;
+              base_comp   += 4;
             }
+
           i++;
-          list>>=1;
+          list >>= 1;
         }
-      if((opc&(1<<22)) && arm_mode_table[MODE] /*&& !MAS_Access_Exept*/)
-        _arm_SetCPSR(SPSR[arm_mode_table[MODE]]);
+
+      if((opc_ & (1 << 22)) && arm_mode_table[MODE] /*&& !MAS_Access_Exept*/)
+        arm_cpsr_set(CPU.SPSR[arm_mode_table[MODE]]);
     }
 
-  CYCLES-=(x-1)*SCYCLE+NCYCLE+ICYCLE;
-
+  CYCLES -= ((x-1) * SCYCLE + NCYCLE + ICYCLE);
 }
 
-
-void stm_accur(uint32_t opc, uint32_t base, uint32_t rn_ind)
+static
+void
+stm_accur(uint32_t opc_,
+          uint32_t base_,
+          uint32_t rn_ind_)
 {
-  uint16_t x=opc&0xffff;
-  uint16_t list=opc&0x7fff;
-  uint32_t base_comp,	//по ней шагаем
-    i=0;
+  uint16_t x;
+  uint16_t list;
+  uint32_t i;
+  uint32_t base_comp;
 
-  x = (x & 0x5555) + ((x >> 1) & 0x5555);
-  x = (x & 0x3333) + ((x >> 2) & 0x3333);
-  x = (x & 0xff) + (x >> 8);
-  x = (x & 0xf) + (x >> 4);
+  i = 0;
+  x    = opc_ & 0xFFFF;
+  list = opc_ & 0x7FFF;
+  x = ((x & 0x5555) + ((x >> 1) & 0x5555));
+  x = ((x & 0x3333) + ((x >> 2) & 0x3333));
+  x = ((x & 0x00ff) + (x >> 8));
+  x = ((x & 0x000f) + (x >> 4));
 
-  switch((opc>>23)&3)
+  switch((opc_ >> 23) & 3)
     {
     case 0:
-      base-=(x<<2);
-      base_comp=base+4;
+      base_     -= (x << 2);
+      base_comp  = (base_ + 4);
       break;
     case 1:
-      base_comp=base;
-      base+=(x<<2);
+      base_comp  = base_;
+      base_     += (x << 2);
       break;
     case 2:
-      base_comp=base=base-(x<<2);
+      base_comp = base_ = (base_ - (x << 2));
       break;
     case 3:
-      base_comp=base+4;
-      base+=(x<<2);
+      base_comp  = (base_ + 4);
+      base_     += (x << 2);
       break;
     }
 
-  //base_comp&=~3;
-
-
-  if((opc&(1<<22)))
+  if((opc_ & (1 << 22)))
     {
-      if((opc&(1<<21)) && (opc&((1<<rn_ind)-1)) )loadusr(rn_ind,base);
+      if((opc_ & (1 << 21)) && (opc_ & ((1 << rn_ind_) - 1)))
+        loadusr(rn_ind_,base_);
+
       while(list)
         {
-          if(list&1)
+          if(list & 1)
             {
-              mwritew(base_comp,rreadusr(i));
+              mwritew(base_comp,readusr(i));
               //if(MAS_Access_Exept)break;
-              base_comp+=4;
+              base_comp += 4;
             }
+
           i++;
-          list>>=1;
+          list >>= 1;
         }
-      if(opc&(1<<21))loadusr(rn_ind,base);
+
+      if(opc_ & (1 << 21))
+        loadusr(rn_ind_,base_);
     }
   else
     {
-      if((opc&(1<<21)) && (opc&((1<<rn_ind)-1)) )RON_USER[rn_ind]=base;
+      if((opc_ & (1 << 21)) && (opc_ & ((1 << rn_ind_) - 1)))
+        CPU.USER[rn_ind_] = base_;
+
       while(list)
         {
           if(list&1)
             {
-              int aac=RON_USER[i];
-              mwritew(base_comp,aac);
-              if(base_comp&0x1FFFFF){ addrr=base_comp; vall=aac; inuse=1;}
-              base_comp+=4;
+              mwritew(base_comp,CPU.USER[i]);
+              if(base_comp & 0x1FFFFF)
+                {
+                  addrr = base_comp;
+                  vall  = CPU.USER[i];
+                  inuse = 1;
+                }
+              base_comp += 4;
             }
+
           i++;
-          list>>=1;
+          list >>= 1;
         }
-      if(opc&(1<<21))RON_USER[rn_ind]=base;
+
+      if(opc_ & (1 << 21))
+        CPU.USER[rn_ind_] = base_;
     }
 
-  if((opc&0x8000) /*&& !MAS_Access_Exept*/)mwritew(base_comp,RON_USER[15]+8);
+  if((opc_ & 0x8000) /*&& !MAS_Access_Exept*/)
+    mwritew(base_comp,CPU.USER[15]+8);
 
-  CYCLES-=(x-2)*SCYCLE+NCYCLE+NCYCLE;
-
+  CYCLES -= ((x - 2) * SCYCLE + NCYCLE + NCYCLE);
 }
 
-
-
-void  bdt_core(uint32_t opc)
+static
+void
+bdt_core(uint32_t opc_)
 {
   uint32_t base;
-  uint32_t rn_ind=(opc>>16)&0xf;
+  uint32_t rn_ind = ((opc_ >> 16) & 0xF);
 
-  if(rn_ind==0xf)
-    base=RON_USER[rn_ind]+8;
+  if(rn_ind == 0xF)
+    base = CPU.USER[rn_ind] + 8;
   else
-    base=RON_USER[rn_ind];
+    base = CPU.USER[rn_ind];
 
-  if(opc&(1<<20))	//memory or register?
+  if(opc_ & (1 << 20)) /* memory or register? */
     {
-      if(opc&0x8000)
-        CYCLES-=SCYCLE+NCYCLE;
-
-      ldm_accur(opc,base,rn_ind);
-
+      if(opc_ & 0x8000)
+        CYCLES -= (SCYCLE + NCYCLE);
+      ldm_accur(opc_,base,rn_ind);
     }
-  else //из регистра в память
-    stm_accur(opc,base,rn_ind);
+  else
+    {
+      stm_accur(opc_,base,rn_ind);
+    }
 }
 
-//------------------------------math SWI------------------------------------------------
 typedef struct TagArg
 {
   uint32_t Type;
   uint32_t Arg;
 } TagItem;
 
-void decode_swi(uint32_t i)
+static
+void
+decode_swi(void)
 {
-
-  (void) i;
-  SPSR[arm_mode_table[0x13]]=CPSR;
+  CPU.SPSR[arm_mode_table[0x13]] = CPU.CPSR;
 
   SETI(1);
   SETM(0x13);
 
-  load(14,REG_PC);
+  CPU.USER[14] = CPU.USER[15];
 
-  REG_PC=0x00000008;
-  CYCLES-=SCYCLE+NCYCLE; // +2S+1N
+  CPU.USER[15]  = 0x00000008;
+  CYCLES -= (SCYCLE + NCYCLE);  // +2S+1N
 }
 
 
-uint32_t carry_out=0;
+static uint32_t carry_out = 0;
 
-void ARM_SET_C(uint32_t x)
+static
+INLINE
+void
+ARM_SET_C(const uint32_t x_)
 {
-  //old_C=(CPSR>>29)&1;
-
-  CPSR=((CPSR&0xdfffffff)|(((x)&1)<<29));
+  CPU.CPSR = ((CPU.CPSR & 0xdfffffff) | ((x_ & 1) << 29));
 }
 
-#define ARM_SET_Z(x)    (CPSR=((CPSR&0xbfffffff)|((x)==0?0x40000000:0)))
-#define ARM_SET_N(x)    (CPSR=((CPSR&0x7fffffff)|((x)&0x80000000)))
-#define ARM_GET_C       ((CPSR>>29)&1)
-
-static INLINE void ARM_SET_ZN(uint32_t val)
+static
+INLINE
+void
+ARM_SET_Z(const uint32_t x_)
 {
-  if(val)
-    CPSR=((CPSR&0x3fffffff)|(val&0x80000000));
+  CPU.CPSR = ((CPU.CPSR & 0xbfffffff) | (x_ == 0 ? 0x40000000 : 0));
+}
+
+static
+INLINE
+void
+ARM_SET_N(const uint32_t x_)
+{
+  CPU.CPSR = ((CPU.CPSR & 0x7fffffff) | (x_ & 0x80000000));
+}
+
+static
+INLINE
+uint32_t
+ARM_GET_C(void)
+{
+  return ((CPU.CPSR >> 29) & 1);
+}
+
+static
+INLINE
+void
+ARM_SET_ZN(const uint32_t val_)
+{
+  if(val_)
+    CPU.CPSR = ((CPU.CPSR & 0x3fffffff) | (val_ & 0x80000000));
   else
-    CPSR=((CPSR&0x3fffffff)|0x40000000);
+    CPU.CPSR = ((CPU.CPSR & 0x3fffffff) | 0x40000000);
 }
 
-static INLINE void ARM_SET_CV(uint32_t rd, uint32_t op1, uint32_t op2)
+static
+INLINE
+void
+ARM_SET_CV(const uint32_t rd_,
+           const uint32_t op1_,
+           const uint32_t op2_)
 {
-  //old_C=(CPSR>>29)&1;
-
-  CPSR=(CPSR&0xcfffffff)|
-    ((((op1 & op2) | ((~rd) & (op1 | op2)))&0x80000000)>>2) |
-    (((((op1&(op2&(~rd))) | ((~op1)&(~op2)&rd)))&0x80000000)>>3);
-
+  CPU.CPSR = ((CPU.CPSR & 0xcfffffff) |
+              ((((op1_ & op2_) | ((~rd_) & (op1_ | op2_))) & 0x80000000) >> 2) |
+              (((((op1_ & (op2_ & (~rd_))) | ((~op1_) & (~op2_) & rd_))) & 0x80000000) >> 3));
 }
 
-static INLINE void ARM_SET_CV_sub(uint32_t rd, uint32_t op1, uint32_t op2)
+static
+INLINE
+void
+ARM_SET_CV_sub(uint32_t rd_,
+               uint32_t op1_,
+               uint32_t op2_)
 {
-  //old_C=(CPSR>>29)&1;
-
-  CPSR=(CPSR&0xcfffffff)|
-    //(( ( ~( ((~op1) & op2) | (rd&((~op1)|op2))) )&0x80000000)>>2) |
-    ((((op1 & (~op2)) | ((~rd) & (op1 | (~op2))))&0x80000000)>>2) |
-    (((((op1&((~op2)&(~rd))) | ((~op1)&op2&rd)))&0x80000000)>>3);
+  CPU.CPSR = ((CPU.CPSR & 0xcfffffff) |
+              ((((op1_ & (~op2_)) | ((~rd_) & (op1_ | (~op2_)))) & 0x80000000) >> 2) |
+              (((((op1_ & ((~op2_) & (~rd_))) | ((~op1_) & op2_ & rd_))) & 0x80000000) >> 3));
 }
 
-
-static INLINE bool ARM_ALU_Exec(uint32_t inst, uint8_t opc, uint32_t op1, uint32_t op2, uint32_t *Rd)
+static
+INLINE
+bool
+ARM_ALU_Exec(uint32_t  inst_,
+             uint8_t   opc_,
+             uint32_t  op1_,
+             uint32_t  op2_,
+             uint32_t *rd_)
 {
-  switch(opc)
+  switch(opc_)
     {
     case 0:
-      *Rd=op1&op2;
+      *rd_ = op1_ & op2_;
       break;
     case 2:
-      *Rd=op1^op2;
+      *rd_ = op1_ ^ op2_;
       break;
     case 4:
-      *Rd=op1-op2;
+      *rd_ = op1_ - op2_;
       break;
     case 6:
-      *Rd=op2-op1;
+      *rd_ = op2_ - op1_;
       break;
     case 8:
-      *Rd=op1+op2;
+      *rd_ = op1_ + op2_;
       break;
     case 10:
-      *Rd=op1+op2+ARM_GET_C;
+      *rd_ = op1_ + op2_ + ARM_GET_C();
       break;
     case 12:
-      *Rd=op1-op2-(ARM_GET_C^1);
+      *rd_ = op1_ - op2_ - (ARM_GET_C() ^ 1);
       break;
     case 14:
-      *Rd=op2-op1-(ARM_GET_C^1);
+      *rd_ = op2_ - op1_ - (ARM_GET_C() ^ 1);
       break;
     case 16:
     case 20:
-      if((inst>>22)&1)
-        RON_USER[(inst>>12)&0xf]=SPSR[arm_mode_table[CPSR&0x1f]];
+      if((inst_ >> 22) & 1)
+        CPU.USER[(inst_ >> 12) & 0xF] = CPU.SPSR[arm_mode_table[CPU.CPSR & 0x1F]];
       else
-        RON_USER[(inst>>12)&0xf]=CPSR;
-
+        CPU.USER[(inst_ >> 12) & 0xF] = CPU.CPSR;
       return true;
     case 18:
     case 22:
-      if(!((inst>>16)&0x1) || !(arm_mode_table[MODE]))
+      if(!((inst_ >> 16) & 0x1) || !(arm_mode_table[MODE]))
         {
-          if((inst>>22)&1)
-            SPSR[arm_mode_table[MODE]]=(SPSR[arm_mode_table[MODE]]&0x0fffffff)|(op2&0xf0000000);
+          if((inst_ >> 22) & 1)
+            CPU.SPSR[arm_mode_table[MODE]] = (CPU.SPSR[arm_mode_table[MODE]] & 0x0fffffff) | (op2_ & 0xf0000000);
           else
-            CPSR=(CPSR&0x0fffffff)|(op2&0xf0000000);
+            CPU.CPSR = (CPU.CPSR & 0x0fffffff) | (op2_ & 0xf0000000);
         }
       else
         {
-          if((inst>>22)&1)
-            SPSR[arm_mode_table[MODE]]=op2&0xf00000df;
+          if((inst_ >> 22) & 1)
+            CPU.SPSR[arm_mode_table[MODE]] = op2_ & 0xf00000df;
           else
-            _arm_SetCPSR(op2);
+            arm_cpsr_set(op2_);
         }
       return true;
     case 24:
-      *Rd=op1|op2;
+      *rd_ = op1_ | op2_;
       break;
     case 26:
-      *Rd=op2;
+      *rd_ = op2_;
       break;
     case 28:
-      *Rd=op1&(~op2);
+      *rd_ = op1_ & ~op2_;
       break;
     case 30:
-      *Rd=~op2;
+      *rd_ = ~op2_;
       break;
     case 1:
-      *Rd=op1&op2;
-      ARM_SET_ZN(*Rd);
+      *rd_ = op1_ & op2_;
+      ARM_SET_ZN(*rd_);
       break;
     case 3:
-      *Rd=op1^op2;
-      ARM_SET_ZN(*Rd);
+      *rd_ = op1_ ^ op2_;
+      ARM_SET_ZN(*rd_);
       break;
     case 5:
-      *Rd=op1-op2;
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV_sub(*Rd,op1,op2);
+      *rd_ = op1_ - op2_;
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV_sub(*rd_,op1_,op2_);
       break;
     case 7:
-      *Rd=op2-op1;
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV_sub(*Rd,op2,op1);
+      *rd_ = op2_ - op1_;
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV_sub(*rd_,op2_,op1_);
       break;
     case 9:
-      *Rd=op1+op2;
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV(*Rd,op1,op2);
+      *rd_ = op1_ + op2_;
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV(*rd_,op1_,op2_);
       break;
 
     case 11:
-      *Rd=op1+op2+ARM_GET_C;
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV(*Rd,op1,op2);
+      *rd_ = op1_ + op2_ + ARM_GET_C();
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV(*rd_,op1_,op2_);
       break;
     case 13:
-      *Rd=op1-op2-(ARM_GET_C^1);
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV_sub(*Rd,op1,op2);
+      *rd_ = op1_ - op2_ - (ARM_GET_C()^1);
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV_sub(*rd_,op1_,op2_);
       break;
     case 15:
-      *Rd=op2-op1-(ARM_GET_C^1);
-      ARM_SET_ZN(*Rd);
-      ARM_SET_CV_sub(*Rd,op2,op1);
+      *rd_ = op2_ - op1_ - (ARM_GET_C()^1);
+      ARM_SET_ZN(*rd_);
+      ARM_SET_CV_sub(*rd_,op2_,op1_);
       break;//*/
     case 17:
-      op1&=op2;
-      ARM_SET_ZN(op1);
+      op1_ &= op2_;
+      ARM_SET_ZN(op1_);
       return true;
     case 19:
-      op1^=op2;
-      ARM_SET_ZN(op1);
+      op1_ ^= op2_;
+      ARM_SET_ZN(op1_);
       return true;
     case 21:
-      ARM_SET_CV_sub(op1-op2,op1,op2);
-      ARM_SET_ZN(op1-op2);
+      ARM_SET_CV_sub(op1_ - op2_,op1_,op2_);
+      ARM_SET_ZN(op1_ - op2_);
       return true;
     case 23:
-      ARM_SET_CV(op1+op2,op1,op2);
-      ARM_SET_ZN(op1+op2);
+      ARM_SET_CV(op1_ + op2_,op1_,op2_);
+      ARM_SET_ZN(op1_ + op2_);
       return true;
     case 25:
-      *Rd=op1|op2;
-      ARM_SET_ZN(*Rd);
+      *rd_ = op1_ | op2_;
+      ARM_SET_ZN(*rd_);
       break;
     case 27:
-      *Rd=op2;
-      ARM_SET_ZN(*Rd);
+      *rd_ = op2_;
+      ARM_SET_ZN(*rd_);
       break;
     case 29:
-      *Rd=op1&(~op2);
-      ARM_SET_ZN(*Rd);
+      *rd_ = op1_ & ~op2_;
+      ARM_SET_ZN(*rd_);
       break;
     case 31:
-      *Rd=~op2;
-      ARM_SET_ZN(*Rd);
+      *rd_ = ~op2_;
+      ARM_SET_ZN(*rd_);
       break;
     };
   return false;
 }
 
-
-uint32_t ARM_SHIFT_NSC(uint32_t value, uint8_t shift, uint8_t type)
+static
+uint32_t
+ARM_SHIFT_NSC(uint32_t value_,
+              uint8_t  shift_,
+              uint8_t  type_)
 {
-  switch(type)
+  switch(type_)
     {
     case 0:
-      if(shift)
+      if(shift_)
         {
-          if(shift>32) carry_out=(0);
-          else carry_out=(((value<<(shift-1))&0x80000000)>>31);
+          if(shift_ > 32)
+            carry_out = 0;
+          else
+            carry_out = (((value_ << (shift_ - 1)) & 0x80000000) >> 31);
         }
-      else carry_out=ARM_GET_C;
+      else
+        {
+          carry_out = ARM_GET_C();
+        }
 
-      if(shift==0)return value;
-      if(shift>31)return 0;
-      return value<<shift;
+      if(shift_ == 0)
+        return value_;
+      if(shift_ > 31)
+        return 0;
+      return (value_ << shift_);
     case 1:
-
-      if(shift)
+      if(shift_)
         {
-          if(shift>32) carry_out=(0);
-          else carry_out=((value>>(shift-1))&1);
+          if(shift_ > 32)
+            carry_out = 0;
+          else
+            carry_out = ((value_ >> (shift_ - 1)) & 1);
         }
-      else carry_out=ARM_GET_C;
+      else
+        {
+          carry_out = ARM_GET_C();
+        }
 
-      if(shift==0)return value;
-      if(shift>31)return 0;
-      return value>>shift;
+      if(shift_ == 0)
+        return value_;
+      if(shift_ > 31)
+        return 0;
+      return (value_ >> shift_);
     case 2:
-
-      if(shift)
+      if(shift_)
         {
-          if(shift>32) carry_out=((((signed int)value)>>31)&1);
-          else carry_out=((((signed int)value)>>(shift-1))&1);
+          if(shift_ > 32)
+            carry_out = ((((int32_t)value_) >> 31) & 1);
+          else
+            carry_out = ((((int32_t)value_) >> (shift_ - 1)) & 1);
         }
-      else carry_out=ARM_GET_C;
+      else
+        {
+          carry_out = ARM_GET_C();
+        }
 
-      if(shift==0)return value;
-      if(shift>31)return (((signed int)value)>>31);
-      return (((signed int)value)>>shift);
+      if(shift_ == 0)
+        return value_;
+      if(shift_ > 31)
+        return (((int32_t)value_) >> 31);
+      return (((int32_t)value_) >> shift_);
     case 3:
-
-      if(shift)
+      if(shift_)
         {
-          if(shift&31)carry_out=((value>>(shift-1))&1);
-          else carry_out=((value>>31)&1);
+          if(shift_&31)
+            carry_out = ((value_ >> (shift_ - 1)) & 1);
+          else
+            carry_out = ((value_ >> 31) & 1);
         }
-      else carry_out=ARM_GET_C;
+      else
+        {
+          carry_out = ARM_GET_C();
+        }
 
-      shift&=31;
-      if(shift==0)return value;
-      return ROTR(value, shift);
+      shift_ &= 31;
+      if(shift_ == 0)
+        return value_;
+      return ROTR(value_,shift_);
     case 4:
-      carry_out=value&1;
-      return (value>>1)|(ARM_GET_C<<31);
+      carry_out = value_ & 1;
+      return ((value_ >> 1) | (ARM_GET_C() << 31));
     }
+
   return 0;
 }
 
-uint32_t  ARM_SHIFT_SC(uint32_t value, uint8_t shift, uint8_t type)
+static
+uint32_t
+ARM_SHIFT_SC(uint32_t value_,
+             uint8_t  shift_,
+             uint8_t  type_)
 {
   uint32_t tmp;
-  switch(type)
+
+  switch(type_)
     {
     case 0:
-      if(shift)
+      if(shift_)
         {
-          if(shift>32) ARM_SET_C(0);
-          else ARM_SET_C(((value<<(shift-1))&0x80000000)>>31);
-        }
-      else
-        return value;
-      if(shift>31)
-        return 0;
-      return value<<shift;
-    case 1:
-      if(shift)
-        {
-          if(shift>32)
+          if(shift_ > 32)
             ARM_SET_C(0);
           else
-            ARM_SET_C((value>>(shift-1))&1);
+            ARM_SET_C(((value_ << (shift_ - 1)) & 0x80000000) >> 31);
         }
       else
-        return value;
-      if(shift>31)
+        {
+          return value_;
+        }
+
+      if(shift_ > 31)
         return 0;
-      return value>>shift;
-    case 2:
-      if(shift)
+      return (value_ << shift_);
+    case 1:
+      if(shift_)
         {
-          if(shift>32) ARM_SET_C((((signed int)value)>>31)&1);
-          else ARM_SET_C((((signed int)value)>>(shift-1))&1);
-        }
-      else
-        return value;
-      if(shift>31)
-        return (((signed int)value)>>31);
-      return ((signed int)value)>>shift;
-    case 3:
-      if(shift)
-        {
-          shift=((shift)&31);
-          if(shift)
-            {
-              ARM_SET_C((value>>(shift-1))&1);
-            }
+          if(shift_ > 32)
+            ARM_SET_C(0);
           else
-            {
-              ARM_SET_C((value>>31)&1);
-            }
+            ARM_SET_C((value_ >> (shift_ - 1)) & 1);
         }
       else
-        return value;
-      return ROTR(value, shift);
+        {
+          return value_;
+        }
+
+      if(shift_ > 31)
+        return 0;
+      return (value_ >> shift_);
+    case 2:
+      if(shift_)
+        {
+          if(shift_ > 32)
+            ARM_SET_C((((int32_t)value_) >> 31) & 1);
+          else
+            ARM_SET_C((((int32_t)value_) >> (shift_ - 1)) & 1);
+        }
+      else
+        {
+          return value_;
+        }
+
+      if(shift_ > 31)
+        return (((int32_t)value_) >> 31);
+      return ((int32_t)value_) >> shift_;
+    case 3:
+      if(shift_)
+        {
+          shift_ = (shift_ & 31);
+          if(shift_)
+            ARM_SET_C((value_ >> (shift_ - 1)) & 1);
+          else
+            ARM_SET_C((value_ >> 31) & 1);
+        }
+      else
+        {
+          return value_;
+        }
+
+      return ROTR(value_,shift_);
     case 4:
-      tmp=ARM_GET_C<<31;
-      ARM_SET_C(value&1);
-      return (value>>1)|(tmp);
+      tmp = ARM_GET_C() << 31;
+      ARM_SET_C(value_ & 1);
+      return ((value_ >> 1) | (tmp));
     }
 
   return 0;
 }
 
-
-
-void ARM_SWAP(uint32_t cmd)
+static
+void
+ARM_SWAP(uint32_t cmd_)
 {
-  uint32_t tmp, addr;
+  uint32_t tmp;
+  uint32_t addr;
 
-  REG_PC+=4;
-  addr=RON_USER[(cmd>>16)&0xf];
-  REG_PC+=4;
+  CPU.USER[15] += 4;
+  addr          = CPU.USER[(cmd_ >> 16) & 0xF];
+  CPU.USER[15] += 4;
 
-  if(cmd&(1<<22))
+  if(cmd_ & (1 << 22))
     {
-      tmp=mreadb(addr);
+      tmp = mreadb(addr);
       //	if(MAS_Access_Exept)return true;
-      mwriteb(addr, RON_USER[cmd&0xf]);
-      REG_PC-=8;
+      mwriteb(addr,CPU.USER[cmd_ & 0xF]);
+      CPU.USER[15] -= 8;
       //	if(MAS_Access_Exept)return true;
-      RON_USER[(cmd>>12)&0xf]=tmp;
+      CPU.USER[(cmd_ >> 12) & 0xF] = tmp;
     }
   else
     {
-      tmp=mreadw(addr);
+      tmp = mreadw(addr);
       //if(MAS_Access_Exept)return true;
-      mwritew(addr, RON_USER[cmd&0xf]);
-      REG_PC-=8;
-      //	if(MAS_Access_Exept)return true;
-      if(addr&3)tmp=(tmp>>((addr&3)<<3))|(tmp<<(32-((addr&3)<<3)));
-      RON_USER[(cmd>>12)&0xf]=tmp;
+      mwritew(addr,CPU.USER[cmd_ & 0xF]);
+      CPU.USER[15] -= 8;
+      //if(MAS_Access_Exept)return true;
+      if(addr & 3)
+        tmp = ((tmp >> ((addr & 3) << 3)) | (tmp << (32 - ((addr & 3) << 3))));
+      CPU.USER[(cmd_ >> 12) & 0xF] = tmp;
     }
 }
 
-static INLINE uint32_t calcbits(uint32_t num)
+static
+INLINE
+uint32_t
+calcbits(uint32_t num_)
 {
-  uint32_t retval;
+  uint32_t rv;
 
-  if(!num)
+  if(!num_)
     return 1;
 
-  if(num>>16)
+  if(num_ >> 16)
     {
-      num>>=16;
-      retval=16;
+      num_ >>= 16;
+      rv     = 16;
     }
   else
-    retval=0;
+    {
+      rv = 0;
+    }
 
-  if(num>>8)
+  if(num_ >> 8)
     {
-      num>>=8;
-      retval+=8;
+      num_ >>= 8;
+      rv    += 8;
     }
-  if(num>>4)
-    {
-      num>>=4;
-      retval+=4;
-    }
-  //if(num>>6){num>>=6;retval+=6;} //JMK NOTE: I saw this in 3DOplay... why was it here? It was not in the FreeDO core I got.
-  if(num>>2)
-    {
-      num>>=2;
-      retval+=2;
-    }
-  if(num>>1)
-    {
-      num>>=1;
-      retval+=2;
-    }
-  else if(num)
-    retval++;
 
-  return retval;
+  if(num_ >> 4)
+    {
+      num_ >>= 4;
+      rv    += 4;
+    }
+
+  if(num_ >> 2)
+    {
+      num_ >>= 2;
+      rv    += 2;
+    }
+
+  if(num_ >> 1)
+    {
+      num_ >>= 1;
+      rv    += 2;
+    }
+  else if(num_)
+    {
+      rv++;
+    }
+
+  return rv;
 }
 
-uint32_t curr_pc;
+static const bool is_logic[] =
+  {
+    true,true,false,false,
+    false,false,false,false,
+    true,true,false,false,
+    true,true,true,true
+  };
 
-const bool is_logic[]={
-  true,true,false,false,
-  false,false,false,false,
-  true,true,false,false,
-  true,true,true,true
-};
-
-int32_t freedo_arm_execute(void)
+int32_t
+freedo_arm_execute(void)
 {
-  uint32_t op2,op1;
+  uint32_t op1;
+  uint32_t op2;
   uint8_t shift;
   uint8_t shtype;
-  uint32_t cmd,pc_tmp;
-  bool isexeption=false;
-  if(biosanvil==1)
+  uint32_t cmd;
+  uint32_t pc_tmp;
+  bool isexeption;
+
+  isexeption = false;
+  if(biosanvil == 1)
     {
-      REG_PC+=64;
-      biosanvil=2;
-      isanvil=1;
+      CPU.USER[15] += 64;
+      biosanvil     = 2;
+      isanvil       = 1;
     }
 
-  //for(; CYCLES>0; CYCLES-=SCYCLE)
-  {
-    if(REG_PC==0x94D60&&RON_USER[0]==0x113000&&RON_USER[1]==0x113000&&cnbfix==0&&(fixmode&FIX_BIT_TIMING_1))
-      {
-        REG_PC=0x9E9CC;
-        cnbfix=1;
-      }
-    cmd=mreadw(REG_PC);
+  if((CPU.USER[15] == 0x94D60) &&
+     (CPU.USER[0] == 0x113000) &&
+     (CPU.USER[1] == 0x113000) &&
+     (cnbfix == 0)             &&
+     (fixmode & FIX_BIT_TIMING_1))
+    {
+      CPU.USER[15] = 0x9E9CC;
+      cnbfix = 1;
+    }
 
-    curr_pc=REG_PC;
+  cmd = mreadw(CPU.USER[15]);
+  CPU.USER[15] += 4;
 
+  CYCLES = -SCYCLE;
+  if((cmd == 0xE5101810) && (CPU.CPSR == 0x80000093))
+    isexeption = true;
 
-    REG_PC+=4;
-
-    CYCLES=-SCYCLE;
-    if(cmd==0xE5101810&&CPSR==0x80000093)
-      isexeption=true;
-    //	if(REG_PC==0x9E9F0){isexeption=true; RON_USER[5]=0xE2998; fix=1;}
-    if(((cond_flags_cross[(((uint32_t)cmd)>>28)]>>((CPSR)>>28))&1)&&isexeption==false)
-      {
-        switch((cmd>>24)&0xf)  //разбор типа команды
-          {
-          case 0x0:	//Multiply
-
-            if ((cmd & ARM_MUL_MASK) == ARM_MUL_SIGN)
-              {
-                uint32_t res = ((calcbits(RON_USER[(cmd>>8)&0xf])+5)>>1)-1;
-                if(res>16)
-                  CYCLES-=16;
-                else
-                  CYCLES-=res;
-
-                if(((cmd>>16)&0xf)==(cmd&0xf))
-                  {
-                    if (cmd&(1<<21))
-                      {
-                        REG_PC+=8;
-                        res=RON_USER[(cmd>>12)&0xf];
-                        REG_PC-=8;
-                      }
-                    else
-                      res=0;
-                  }
-                else
-                  {
-                    if (cmd&(1<<21))
-                      {
-                        res=RON_USER[cmd&0xf]*RON_USER[(cmd>>8)&0xf];
-                        REG_PC+=8;
-                        res+=RON_USER[(cmd>>12)&0xf];
-                        REG_PC-=8;
-                      }
-                    else
-                      res=RON_USER[cmd&0xf]*RON_USER[(cmd>>8)&0xf];
-                  }
-                if(cmd&(1<<20))
-                  {
-                    ARM_SET_ZN(res);
-                  }
-
-                RON_USER[(cmd>>16)&0xf]=res;
-                break;
-              }
-          case 0x1:	//Single Data Swap
-            if ((cmd & ARM_SDS_MASK) == ARM_SDS_SIGN)
-              {
-                ARM_SWAP(cmd);
-                //if(MAS_Access_Exept)
-                CYCLES-=2*NCYCLE+ICYCLE;
-                break;
-              }
-          case 0x2:	//ALU
-          case 0x3:
+  if(((cond_flags_cross[cmd >> 28] >> (CPU.CPSR >> 28)) & 1) &&
+     (isexeption == false))
+    {
+      switch((cmd >> 24) & 0xF)
+        {
+        case 0x0:               //Multiply
+          if((cmd & ARM_MUL_MASK) == ARM_MUL_SIGN)
             {
+              uint32_t res = ((calcbits(CPU.USER[(cmd>>8)&0xf])+5)>>1)-1;
+              if(res > 16)
+                CYCLES -= 16;
+              else
+                CYCLES -= res;
 
-              if((cmd&0x2000090)!=0x90)
+              if(((cmd >> 16) & 0xF) == (cmd & 0xF))
                 {
-                  /////////////////////////////////////////////SHIFT
-                  pc_tmp=REG_PC;
-                  REG_PC+=4;
-                  if (cmd&(1<<25))
+                  if(cmd & (1 << 21))
                     {
-                      op2=cmd&0xff;
-                      if(((cmd>>7)&0x1e))
-                        {
-                          op2= ROTR(op2, (cmd>>7)&0x1e);
-                          //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
-                        }
-                      op1=RON_USER[(cmd>>16)&0xf];
+                      CPU.USER[15] += 8;
+                      res=CPU.USER[(cmd >> 12) & 0xF];
+                      CPU.USER[15] -= 8;
                     }
                   else
                     {
-                      shtype=(cmd>>5)&0x3;
-                      if(cmd&(1<<4))
-                        {
-                          shift=((cmd>>8)&0xf);
-                          shift=(RON_USER[shift])&0xff;
-                          REG_PC+=4;
-                          op2=RON_USER[cmd&0xf];
-                          op1=RON_USER[(cmd>>16)&0xf];
-                          CYCLES-=ICYCLE;
-                        }
-                      else
-                        {
-                          shift=(cmd>>7)&0x1f;
-
-                          if(!shift)
-                            {
-                              if(shtype)
-                                {
-                                  if(shtype==3)shtype++;
-                                  else shift=32;
-                                }
-                            }
-                          op2=RON_USER[cmd&0xf];
-                          op1=RON_USER[(cmd>>16)&0xf];
-                        }
-
-
-                      //if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) op2=ARM_SHIFT_SC(op2, shift, shtype);
-                      //else
-                      op2=ARM_SHIFT_NSC(op2, shift, shtype);
-
+                      res = 0;
                     }
-
-                  REG_PC=pc_tmp;
-
-                  if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) ARM_SET_C(carry_out);
-
-
-                  if(ARM_ALU_Exec(cmd, (cmd>>20)&0x1f ,op1,op2,&RON_USER[(cmd>>12)&0xf]))
-                    break;
-
-                  if(((cmd>>12)&0xf)==0xf) //destination = pc, take care of cpsr
-                    {
-                      if(cmd&(1<<20))
-                        {
-                          _arm_SetCPSR(SPSR[arm_mode_table[MODE]]);
-                        }
-
-                      CYCLES-=ICYCLE+NCYCLE;
-
-                    }
-                  break;
                 }
+              else
+                {
+                  if(cmd & (1 << 21))
+                    {
+                      res = CPU.USER[cmd & 0xF] * CPU.USER[(cmd >> 8) & 0xF];
+                      CPU.USER[15] += 8;
+                      res += CPU.USER[(cmd >> 12) & 0xF];
+                      CPU.USER[15] -= 8;
+                    }
+                  else
+                    {
+                      res = CPU.USER[cmd & 0xF] * CPU.USER[(cmd >> 8) & 0xF];
+                    }
+                }
+
+              if(cmd & (1 << 20))
+                ARM_SET_ZN(res);
+
+              CPU.USER[(cmd >> 16) & 0xF] = res;
+              break;
             }
-          case 0x6:	//Undefined
-          case 0x7:
-
-          Undefine:
-            if((cmd&ARM_UND_MASK)==ARM_UND_SIGN)
+        case 0x1:               //Single Data Swap
+          if((cmd & ARM_SDS_MASK) == ARM_SDS_SIGN)
+            {
+              ARM_SWAP(cmd);
+              //if(MAS_Access_Exept)
+              CYCLES -= (2 * NCYCLE + ICYCLE);
+              break;
+            }
+        case 0x2:               //ALU
+        case 0x3:
+          {
+            if((cmd & 0x2000090) != 0x90)
               {
-                //!!Exeption!!
-                //io_interface(EXT_DEBUG_PRINT,(void*)str.print("*PC: 0x%8.8X undefined\n",REG_PC).CStr());
-
-                SPSR[arm_mode_table[0x1b]]=CPSR;
-                SETI(1);
-                SETM(0x1b);
-                load(14,REG_PC);
-                REG_PC=0x00000004;  // (-4) fetch!!!
-                CYCLES-=SCYCLE+NCYCLE; // +2S+1N
-                break;
-              }
-          case 0x4:	//Single Data Transfer
-          case 0x5:
-
-            if((cmd&0x2000090)!=0x2000090)
-              {
-                uint32_t base,tbas;
-                uint32_t oper2;
-                uint32_t val, rora;
-
-                pc_tmp=REG_PC;
-                REG_PC+=4;
-                if(cmd&(1<<25))
+                /* SHIFT */
+                pc_tmp = CPU.USER[15];
+                CPU.USER[15] += 4;
+                if(cmd & (1 << 25))
                   {
-                    shtype=(cmd>>5)&0x3;
-                    if(cmd&(1<<4))
+                    op2 = cmd & 0xFF;
+                    if(((cmd >> 7) & 0x1E))
                       {
-                        shift=((cmd>>8)&0xf);
-                        shift=(RON_USER[shift])&0xff;
-                        REG_PC+=4;
+                        op2 = ROTR(op2,((cmd >> 7) & 0x1E));
+                        //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
+                      }
+                    op1 = CPU.USER[(cmd >> 16) & 0xF];
+                  }
+                else
+                  {
+                    shtype = ((cmd >> 5) & 0x3);
+                    if(cmd & (1 << 4))
+                      {
+                        shift = ((cmd >> 8) & 0xF);
+                        shift = (CPU.USER[shift] & 0xFF);
+                        CPU.USER[15] += 4;
+                        op2 = CPU.USER[cmd & 0xF];
+                        op1 = CPU.USER[(cmd >> 16) & 0xF];
+                        CYCLES -= ICYCLE;
                       }
                     else
                       {
-                        shift=(cmd>>7)&0x1f;
+                        shift = ((cmd >> 7) & 0x1F);
+
                         if(!shift)
                           {
                             if(shtype)
                               {
-                                if(shtype==3)shtype++;
-                                else shift=32;
+                                if(shtype == 3)
+                                  shtype++;
+                                else
+                                  shift=32;
                               }
                           }
+
+                        op2 = CPU.USER[cmd & 0xF];
+                        op1 = CPU.USER[(cmd >> 16) & 0xF];
                       }
-                    oper2=ARM_SHIFT_NSC(RON_USER[cmd&0xf], shift, shtype);
 
+                    //if((cmd&(1<<20)) && is_logic[((cmd>>21)&0xf)] ) op2=ARM_SHIFT_SC(op2, shift, shtype);
+                    //else
+                    op2 = ARM_SHIFT_NSC(op2,shift,shtype);
                   }
-                else
-                  oper2=(cmd&0xfff);
 
+                CPU.USER[15] = pc_tmp;
 
-                tbas=base=RON_USER[((cmd>>16)&0xf)];
+                if((cmd & (1 << 20)) && is_logic[((cmd >> 21) & 0xF)])
+                  ARM_SET_C(carry_out);
 
+                if(ARM_ALU_Exec(cmd,((cmd >> 20) & 0x1F),op1,op2,&CPU.USER[(cmd >> 12) & 0xF]))
+                  break;
 
-                if(!(cmd&(1<<23)))
-                  oper2=0-oper2;
-
-                if(cmd&(1<<24))
-                  tbas=base=base+oper2;
-                else
-                  base=base+oper2;
-
-
-                if(cmd&(1<<20)) //load
+                if(((cmd >> 12) & 0xF) == 0xF) //destination = pc, take care of cpsr
                   {
-                    if(cmd&(1<<22))//bytes
-                      val=mreadb(tbas)&0xff;
-                    else //words/halfwords
-                      {
-                        unsigned rora = tbas & 3;
-                        val           = mreadw(tbas);
+                    if(cmd & (1 << 20))
+                      arm_cpsr_set(CPU.SPSR[arm_mode_table[MODE]]);
 
-                        if((rora))
-                          val = ROTR(val,rora*8);
-                      }
-
-                    if(((cmd>>12)&0xf)==0xf)
-                      CYCLES-=SCYCLE+NCYCLE;   // +1S+1N if R15 load
-
-                    CYCLES-=NCYCLE+ICYCLE;  // +1N+1I
-                    REG_PC=pc_tmp;
-
-                    if ((cmd&(1<<21)) || (!(cmd&(1<<24)))) load((cmd>>16)&0xf,base);
-
-                    if((cmd&(1<<21)) && !(cmd&(1<<24)))
-                      loadusr((cmd>>12)&0xf,val);//privil mode
-                    else
-                      load((cmd>>12)&0xf,val);
-
+                    CYCLES -= (ICYCLE + NCYCLE);
                   }
-                else
-                  { // store
-
-                    if((cmd&(1<<21)) && !(cmd&(1<<24)))
-                      val=rreadusr((cmd>>12)&0xf);// privil mode
-                    else
-                      val=RON_USER[(cmd>>12)&0xf];
-
-                    //if(((cmd>>12)&0xf)==0xf)val+=delta;
-                    REG_PC=pc_tmp;
-                    CYCLES-=-SCYCLE+2*NCYCLE;  // 2N
-
-                    if(cmd&(1<<22))//bytes/words
-                      mwriteb(tbas,val);
-                    else //words/halfwords
-                      mwritew(tbas,val);
-
-                    if ( (cmd&(1<<21)) || !(cmd&(1<<24)) ) load((cmd>>16)&0xf,base);
-
-                  }
-
-                //if(MAS_Access_Exept)
-
-
                 break;
               }
-            else goto Undefine;
-
-          case 0x8:	//Block Data Transfer
-          case 0x9:
-
-            bdt_core(cmd);
-            /*if(MAS_Access_Exept)
-              {
-              //sprintf(str,"*PC: 0x%8.8X DataAbort!!!\n",REG_PC);
-              //CDebug::DPrint(str);
-              //!!Exeption!!
-
-              SPSR[arm_mode_table[0x17]]=CPSR;
+          }
+        case 0x6:               //Undefined
+        case 0x7:
+        Undefine:
+          if((cmd & ARM_UND_MASK) == ARM_UND_SIGN)
+            {
+              CPU.SPSR[arm_mode_table[0x1b]] = CPU.CPSR;
               SETI(1);
-              SETM(0x17);
-              load(14,REG_PC+4);
-              REG_PC=0x00000010;
-              CYCLES-=SCYCLE+NCYCLE;
-              MAS_Access_Exept=false;
+              SETM(0x1b);
+              CPU.USER[14] = CPU.USER[15];
+              CPU.USER[15] = 0x00000004;
+              CYCLES -= (SCYCLE + NCYCLE); // +2S+1N
               break;
-              } */
+            }
+        case 0x4:               //Single Data Transfer
+        case 0x5:
+          if((cmd & 0x2000090) != 0x2000090)
+            {
+              uint32_t base;
+              uint32_t tbas;
+              uint32_t oper2;
+              uint32_t val;
+              uint32_t rora;
 
+              pc_tmp = CPU.USER[15];
+              CPU.USER[15] += 4;
+              if(cmd & (1 << 25))
+                {
+                  shtype = ((cmd >> 5) & 0x3);
+                  if(cmd & (1 << 4))
+                    {
+                      shift = ((cmd >> 8) & 0xF);
+                      shift = (CPU.USER[shift] & 0xFF);
+                      CPU.USER[15] += 4;
+                    }
+                  else
+                    {
+                      shift = ((cmd >> 7) & 0x1F);
+                      if(!shift)
+                        {
+                          if(shtype)
+                            {
+                              if(shtype == 3)
+                                shtype++;
+                              else
+                                shift = 32;
+                            }
+                        }
+                    }
 
-            break;
+                  oper2 = ARM_SHIFT_NSC(CPU.USER[cmd & 0xF],shift,shtype);
+                }
+              else
+                {
+                  oper2 = (cmd & 0x0FFF);
+                }
 
-          case 0xa:	//BRANCH
-          case 0xb:
-            if(cmd&(1<<24))
-              RON_USER[14]=REG_PC;
-            REG_PC+=(((cmd&0xffffff)|((cmd&0x800000)?0xff000000:0))<<2)+4;
+              tbas = base = CPU.USER[((cmd >> 16) & 0xF)];
 
-            CYCLES-=SCYCLE+NCYCLE; //2S+1N
+              if(!(cmd & (1 << 23)))
+                oper2 = (0 - oper2);
 
-            break;
+              if(cmd & (1 << 24))
+                tbas = base = (base + oper2);
+              else
+                base = (base + oper2);
 
-          case 0xf:	//SWI
-            decode_swi(cmd);
-            break;
-            //---------
-          default:	//coprocessor
+              if(cmd & (1 << 20)) //load
+                {
+                  if(cmd & (1 << 22)) //bytes
+                    {
+                      val = mreadb(tbas);
+                    }
+                  else //words/halfwords
+                    {
+                      uint32_t rora;
+
+                      rora = tbas & 3;
+                      val = mreadw(tbas);
+
+                      if(rora)
+                        val = ROTR(val,rora*8);
+                    }
+
+                  if(((cmd >> 12) & 0xF) == 0xF)
+                    CYCLES -= (SCYCLE + NCYCLE);   // +1S+1N ifR15 load
+
+                  CYCLES -= (NCYCLE + ICYCLE);  // +1N+1I
+                  CPU.USER[15] = pc_tmp;
+
+                  if((cmd & (1 << 21)) || (!(cmd & (1 << 24))))
+                    CPU.USER[(cmd >> 16) & 0xF] = base;
+
+                  if((cmd & (1 << 21)) && !(cmd & (1 << 24)))
+                    loadusr((cmd >> 12) & 0xF,val);
+                  else
+                    CPU.USER[(cmd >> 12) & 0xF] = val;
+                }
+              else // store
+                {
+                  if((cmd & (1 << 21)) && !(cmd & (1 << 24)))
+                    val = readusr((cmd >> 12) & 0xF);
+                  else
+                    val = CPU.USER[(cmd >> 12) & 0xF];
+
+                  CPU.USER[15] = pc_tmp;
+                  CYCLES -= (-SCYCLE + 2 * NCYCLE);  // 2N
+
+                  if(cmd & (1 << 22)) //bytes/words
+                    mwriteb(tbas,val);
+                  else //words/halfwords
+                    mwritew(tbas,val);
+
+                  if((cmd & (1 << 21)) || !(cmd & (1 << 24)))
+                    CPU.USER[(cmd >> 16) & 0xF] = base;
+                }
+
+              //if(MAS_Access_Exept)
+              break;
+            }
+          else
+            {
+              goto Undefine;
+            }
+
+        case 0x8:               //Block Data Transfer
+        case 0x9:
+          bdt_core(cmd);
+          /*if(MAS_Access_Exept)
+            {
+            //sprintf(str,"*PC: 0x%8.8X DataAbort!!!\n",CPU.USER[15]);
+            //CDebug::DPrint(str);
             //!!Exeption!!
-            //io_interface(EXT_DEBUG_PRINT,(void*)str.print("*PC: 0x%8.8X undefined\n",REG_PC).CStr());
 
-            SPSR[arm_mode_table[0x1b]]=CPSR;
+            CPU.SPSR[arm_mode_table[0x17]]=CPU.CPSR;
             SETI(1);
-            SETM(0x1b);
-            load(14,REG_PC);
-            REG_PC=0x00000004;
+            SETM(0x17);
+            CPU.USER[14] = (CPU.USER[15] + 4);
+            CPU.USER[15] = 0x00000010;
             CYCLES-=SCYCLE+NCYCLE;
+            MAS_Access_Exept=false;
             break;
+            } */
+          break;
 
-          };
+        case 0xa:               //BRANCH
+        case 0xb:
+          if(cmd & (1 << 24))
+            CPU.USER[14] = CPU.USER[15];
+          CPU.USER[15] += ((((cmd & 0x00FFFFFF) | ((cmd & 0x00800000) ? 0xFF000000 : 0)) << 2) + 4);
 
+          CYCLES -= (SCYCLE + NCYCLE); //2S+1N
+          break;
 
-      }	//condition
+        case 0xf:               //SWI
+          decode_swi();
+          break;
 
-    if(!ISF && freedo_clio_fiq_needed()/*gFIQ*/)
-      {
+        default:                //coprocessor
+          CPU.SPSR[arm_mode_table[0x1b]] = CPU.CPSR;
+          SETI(1);
+          SETM(0x1b);
+          CPU.USER[14] = CPU.USER[15];
+          CPU.USER[15] = 0x00000004;
+          CYCLES -= (SCYCLE + NCYCLE);
+          break;
+        }
+    }
 
-        //Set_madam_FSM(FSM_SUSPENDED);
-        gFIQ=0;
-
-        SPSR[arm_mode_table[0x11]]=CPSR;
-        SETF(1);
-        SETI(1);
-        SETM(0x11);
-        load(14,REG_PC+4);
-        REG_PC=0x0000001c;//1c
-      }
-
-  } // for(CYCLES)
-
+  if(!ISF && freedo_clio_fiq_needed()/*CPU.nFIQ*/)
+    {
+      //Set_madam_FSM(FSM_SUSPENDED);
+      CPU.nFIQ = 0;
+      CPU.SPSR[arm_mode_table[0x11]] = CPU.CPSR;
+      SETF(1);
+      SETI(1);
+      SETM(0x11);
+      CPU.USER[14] = (CPU.USER[15] + 4);
+      CPU.USER[15] = 0x0000001C;
+    }
 
   return -CYCLES;
 }
 
-
-void freedo_mem_write8(uint32_t addr_, uint8_t val_)
+void
+freedo_mem_write8(uint32_t addr_,
+                  uint8_t  val_)
 {
-  pRam[addr_]=val_;
-  if(addr_<0x200000 || !HightResMode)
+  CPU.ram[addr_] = val_;
+  if(addr_ < 0x200000 || !HightResMode)
     return;
-  pRam[addr_+1024*1024]=val_;
-  pRam[addr_+2*1024*1024]=val_;
-  pRam[addr_+3*1024*1024]=val_;
+  CPU.ram[addr_ + 1*1024*1024] = val_;
+  CPU.ram[addr_ + 2*1024*1024] = val_;
+  CPU.ram[addr_ + 3*1024*1024] = val_;
 }
 
-void freedo_mem_write16(uint32_t addr_, uint16_t val_)
+void
+freedo_mem_write16(uint32_t addr_,
+                   uint16_t val_)
 {
-  *((uint16_t*)&pRam[addr_])=val_;
-  if(addr_<0x200000 || !HightResMode) return;
-  *((uint16_t*)&pRam[addr_+1024*1024])=val_;
-  *((uint16_t*)&pRam[addr_+2*1024*1024])=val_;
-  *((uint16_t*)&pRam[addr_+3*1024*1024])=val_;
+  *((uint16_t*)&CPU.ram[addr_]) = val_;
+  if(addr_ < 0x200000 || !HightResMode)
+    return;
+  *((uint16_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
+  *((uint16_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;
+  *((uint16_t*)&CPU.ram[addr_ + 3*1024*1024]) = val_;
 }
 
-void freedo_mem_write32(uint32_t addr_, uint32_t val_)
+void
+freedo_mem_write32(uint32_t addr_,
+                   uint32_t val_)
 {
-  *((uint32_t*)&pRam[addr_])=val_;
-  if(addr_<0x200000 || !HightResMode) return;
-  *((uint32_t*)&pRam[addr_+1024*1024])=val_;
-  *((uint32_t*)&pRam[addr_+2*1024*1024])=val_;
-  *((uint32_t*)&pRam[addr_+3*1024*1024])=val_;
+  *((uint32_t*)&CPU.ram[addr_]) = val_;
+  if(addr_ < 0x200000 || !HightResMode)
+    return;
+  *((uint32_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
+  *((uint32_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;
+  *((uint32_t*)&CPU.ram[addr_ + 3*1024*1024]) = val_;
 }
 
-uint16_t freedo_mem_read16(uint32_t addr_)
+uint16_t
+freedo_mem_read16(uint32_t addr_)
 {
-  return *((uint16_t*)&pRam[addr_]);
+  return *((uint16_t*)&CPU.ram[addr_]);
 }
 
-uint32_t freedo_mem_read32(uint32_t addr_)
+uint32_t
+freedo_mem_read32(uint32_t addr_)
 {
-  return *((uint32_t*)&pRam[addr_]);
+  return *((uint32_t*)&CPU.ram[addr_]);
 }
 
-uint8_t freedo_mem_read8(uint32_t addr_)
+uint8_t
+freedo_mem_read8(uint32_t addr_)
 {
-  return pRam[addr_];
+  return CPU.ram[addr_];
 }
 
-void mwritew(uint32_t addr_, uint32_t val_)
+static
+void
+mwritew(uint32_t addr_,
+        uint32_t val_)
 {
-  //to do -- wipe out all HW part
-  //to do -- add proper loging
   uint32_t index;
 
-  addr_&=~3;
+  addr_ &= ~3;
 
+  if(addr_ < 0x00300000)
+    return freedo_mem_write32(addr_,val_);
 
-  if (addr_<0x00300000) //dram1&dram2&vram
-    {
-      freedo_mem_write32(addr_,val_);
-      return;
-    }
+  index = (addr_ ^ 0x03300000);
+  if(!(index & ~0x7FF))
+    return freedo_madam_poke(index,val_);
 
-  if (!((index=(addr_^0x03300000)) & ~0x7FF)) //madam
-    //  if((addr_ & ~0xFFFFF)==0x03300000) //madam
-    {
-      freedo_madam_poke(index,val_);
-
-      return;
-    }
-
-
-  if (!((index=(addr_^0x03400000)) & ~0xFFFF)) //clio
-    //  if((addr_ & ~0xFFFFF)==0x03400000) //clio
+  index = (addr_ ^ 0x03400000);
+  if(!(index & ~0xFFFF))
     {
       if(freedo_clio_poke(index,val_))
-        REG_PC+=4;  // ???
+        CPU.USER[15] += 4;  /* ??? */
       return;
     }
 
-  if(!((index=(addr_^0x03200000)) & ~0xFFFFF)) //SPORT
+  index = (addr_ ^ 0x03200000);
+  if(!(index & ~0xFFFFF))
+    return freedo_sport_write_access(index,val_);
+
+  index = (addr_ ^ 0x03100000);
+  if(!(index & ~0xFFFFF))
     {
-      freedo_sport_write_access(index,val_);
+      if(index & 0x80000)
+        _diag_Send(val_);
+      else if(index & 0x40000)
+        CPU.nvram[(index >> 2) & 0x7FFF] = (uint8_t)val_;
       return;
     }
-
-
-  if (!((index=(addr_^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
-    {
-      if(index & 0x80000) //if (addr_>=0x03180000)
-        {
-          _diag_Send(val_);
-          return;
-        }
-      else if(index & 0x40000)       //else if ((addr_>=0x03140000) && (addr_<0x03180000))
-        {
-          //  sprintf(str,":NVRAM Write [0x%X] = 0x%8.8X\n",addr_,val_);
-          //  CDebug::DPrint(str);
-          pNVRam[(index>>2) & 32767]=(uint8_t)val_;
-          //CConfig::SetNVRAMData(pNVRam);
-        }
-      return;
-    }
-
-  /*
-    if ((addr_>=0x03000000) && (addr_<0x03100000)) //rom
-    {
-    return;
-    }*/
-  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WriteWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,val_).CStr());
 }
 
-uint32_t mreadw(uint32_t addr_)
+static
+uint32_t
+mreadw(uint32_t addr_)
 {
-  //to do -- wipe out all HW
-  //to do -- add abort (may be in HW)
-  //to do -- proper loging
-  int index;
+  int32_t index;
 
-  addr_&=~3;
+  addr_ &= ~3;
 
-  if (addr_<0x00300000) //dram1&dram2&vram
+  if(addr_ < 0x00300000)
     return freedo_mem_read32(addr_);
 
-  if (!((index=(addr_^0x03300000)) & ~0xFFFFF)) //madam
+  index = (addr_ ^ 0x03300000);
+  if(!(index & ~0xFFFFF))
     return freedo_madam_peek(index);
 
-
-  if (!((index=(addr_^0x03400000)) & ~0xFFFFF)) //clio
+  index = (addr_ ^ 0x03400000);
+  if(!(index & ~0xFFFFF))
     return freedo_clio_peek(index);
 
-  if (!((index=(addr_^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
+  index = (addr_ ^ 0x03200000);
+  if(!(index & ~0xFFFFF))
     {
-      if (!((index=(addr_^0x03200000)) & ~0x1FFF))
+      if(!(index & ~0x1FFF))
         return (freedo_sport_set_source(index),0);
-      //          io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  Unknow read access to SPORT  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
-      //!!Exeption!!
       return 0xBADACCE5;
     }
 
-  if (!((index=(addr_^0x03000000)) & ~0xFFFFF)) //rom
+  index = (addr_ ^ 0x03000000);
+  if(!(index & ~0xFFFFF))
     {
-      if(!gSecondROM) // 2nd rom
-        return *(uint32_t*)(pRom+index);
-      return *(uint32_t*)(pRom+index+1024*1024);
+      if(!CPU.SecondROM)
+        return *(uint32_t*)&CPU.rom[index];
+      return *(uint32_t*)&CPU.rom[index+1024*1024];
     }
 
-
-  if (!((index=(addr_^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
+  index = (addr_ ^ 0x03100000);
+  if(!(index & ~0xFFFFF))
     {
-      if(index & 0x80000) //if (addr_>=0x03180000)
+      if(index & 0x80000)
         return _diag_Get();
-      else if(index & 0x40000)       //else if ((addr_>=0x03140000) && (addr_<0x03180000))
-        return (uint32_t)pNVRam[(index>>2)&32767];
+      else if(index & 0x40000)
+        return CPU.nvram[(index >> 2) & 0x7FFF];
     }
 
-  //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
+  /* MAS_Access_Exept = true; */
 
-  //MAS_Access_Exept=true;
-  return 0xBADACCE5;///data abort
+  return 0xBADACCE5;
 }
 
-
-void mwriteb(uint32_t addr_, uint32_t val_)
+static
+void
+mwriteb(uint32_t addr_,
+        uint8_t  val_)
 {
-  int index; // for avoid bad compiler optimization
+  int32_t index;
 
-  val_&=0xff;
+  if(addr_ < 0x00300000)
+    return freedo_mem_write8(addr_ ^ 3,val_);
 
-
-  if (addr_<0x00300000) //dram1&dram2&vram
+  index = (addr_ ^ 0x03100003);
+  if(!(index & ~0xFFFFF))
     {
-      freedo_mem_write8(addr_^3,val_);
-      return;
-    }
-
-  else if (!((index=(addr_^0x03100003)) & ~0xFFFFF)) //NVRAM
-    {
-      if((index & 0x40000)==0x40000)
+      if((index & 0x40000) == 0x40000)
         {
-          //if((addr_&3)==3)
-          {
-            pNVRam[(index>>2)&32767]=val_;
-          }
+          CPU.nvram[(index >> 2) & 0x7FFF] = val_;
           return;
         }
     }
-#if 0
-  else if (!((index=(addr_^0x03000003)) & ~0xFFFFF)) //rom
-    {
-      return;
-    }
-#endif
-
-  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WritetByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,val_).CStr());
-
 }
 
-
-
-uint32_t mreadb(uint32_t addr_)
+static
+uint32_t
+mreadb(uint32_t addr_)
 {
+  int32_t index;
 
-  int index; // for avoid bad compiler optimization
+  if(addr_ < 0x00300000)
+    return freedo_mem_read8(addr_ ^ 3);
 
-  if (addr_<0x00300000) //dram1&dram2&vram
-    return freedo_mem_read8(addr_^3);
-  else if (!((index=(addr_^0x03000003)) & ~0xFFFFF)) //rom
+  index = (addr_ ^ 0x03000003);
+  if(!(index & ~0xFFFFF))
     {
-      if(gSecondROM) // 2nd rom
-        return pRom[index+1024*1024];
-      return pRom[index];
-    }
-  else if (!((index=(addr_^0x03100003)) & ~0xFFFFF)) //NVRAM
-    {
-      if((index & 0x40000)==0x40000)
-        {
-          //if((addr_&3)!=3)return 0;
-          //else
-          return pNVRam[(index>>2)&32767];
-        }
+      if(CPU.SecondROM)
+        return CPU.rom[index+1024*1024];
+      return CPU.rom[index];
     }
 
-  //MAS_Access_Exept=true;
-  //    io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
+  index = (addr_ ^ 0x03100003);
+  if(!(index & ~0xFFFFF))
+    {
+      if((index & 0x40000) == 0x40000)
+        return CPU.nvram[(index >> 2) & 0x7FFF];
+    }
 
-  return 0xBADACCE5;///data abort
+  /* MAS_Access_Exept = true; */
+
+  return 0xBADACCE5;
 }
 
-
-void  loadusr(uint32_t n, uint32_t val_)
+static
+void
+loadusr(uint32_t n_,
+        uint32_t val_)
 {
-  if(n==15)
+  if(n_ == 15)
     {
-      RON_USER[15]=val_;
+      CPU.USER[15] = val_;
       return;
     }
 
-  switch(arm_mode_table[(CPSR&0x1f)|0x10])
+  switch(arm_mode_table[(CPU.CPSR & 0x1F) | 0x10])
     {
     case ARM_MODE_USER:
-      RON_USER[n]=val_;
+      CPU.USER[n_] = val_;
       break;
     case ARM_MODE_FIQ:
-      if(n>7)
-        RON_CASH[n-8]=val_;
+      if(n_ > 7)
+        CPU.CASH[n_ - 8] = val_;
       else
-        RON_USER[n]=val_;
+        CPU.USER[n_] = val_;
       break;
     case ARM_MODE_IRQ:
     case ARM_MODE_ABT:
     case ARM_MODE_UND:
     case ARM_MODE_SVC:
-      if(n>12)
-        RON_CASH[n-8]=val_;
+      if(n_ > 12)
+        CPU.CASH[n_ - 8] = val_;
       else
-        RON_USER[n]=val_;
+        CPU.USER[n_] = val_;
       break;
     }
 }
 
-
-uint32_t rreadusr(uint32_t n)
+static
+uint32_t
+readusr(uint32_t n_)
 {
-  if(n==15)
-    return RON_USER[15];
+  if(n_ == 15)
+    return CPU.USER[15];
 
-  switch(arm_mode_table[(CPSR&0x1f)])
+  switch(arm_mode_table[CPU.CPSR & 0x1F])
     {
     case ARM_MODE_USER:
-      return RON_USER[n];
+      return CPU.USER[n_];
     case ARM_MODE_FIQ:
-      if(n>7)
-        return RON_CASH[n-8];
-      return RON_USER[n];
+      if(n_ > 7)
+        return CPU.CASH[n_ - 8];
+      return CPU.USER[n_];
     case ARM_MODE_IRQ:
     case ARM_MODE_ABT:
     case ARM_MODE_UND:
     case ARM_MODE_SVC:
-      if(n>12)
-        return RON_CASH[n-8];
-      return RON_USER[n];
+      if(n_ > 12)
+        return CPU.CASH[n_ - 8];
+      return CPU.USER[n_];
     }
+
   return 0;
 }
 
-uint32_t freedo_io_read(uint32_t addr_)
+uint32_t
+freedo_io_read(const uint32_t addr_)
 {
   return mreadw(addr_);
 }
 
-void freedo_io_write(uint32_t addr_, uint32_t val_)
+void
+freedo_io_write(const uint32_t addr_,
+                const uint32_t val_)
 {
   mwritew(addr_,val_);
 }
