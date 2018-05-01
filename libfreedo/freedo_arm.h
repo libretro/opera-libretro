@@ -21,12 +21,8 @@
   Felix Lazarev
 */
 
-// CPU.h: interface for the CCPU class.
-//
-//////////////////////////////////////////////////////////////////////
-
-#ifndef ARM_3DO_HEADER
-#define ARM_3DO_HEADER
+#ifndef LIBFREEDO_ARM_H_INCLUDED
+#define LIBFREEDO_ARM_H_INCLUDED
 
 #include <stdint.h>
 
@@ -34,27 +30,27 @@
 
 EXTERN_C_BEGIN
 
-int _arm_Execute(void);
-void _arm_Reset(void);
-void _arm_Destroy(void);
-uint8_t *_arm_Init(void);
+int32_t  freedo_arm_execute(void);
+void     freedo_arm_reset(void);
+void     freedo_arm_destroy(void);
+uint8_t *freedo_arm_init(void);
 
-//for mas
-void _mem_write8(unsigned int addr, uint8_t val);
-void  _mem_write16(unsigned int addr, uint16_t val);
-void _mem_write32(unsigned int addr, unsigned int val);
-uint8_t  _mem_read8(unsigned int addr);
-uint16_t _mem_read16(unsigned int addr);
-unsigned int  _mem_read32(unsigned int addr);
+void     freedo_mem_write8(uint32_t addr_, uint8_t val_);
+void     freedo_mem_write16(uint32_t addr_, uint16_t val_);
+void     freedo_mem_write32(uint32_t addr_, uint32_t val_);
+uint8_t  freedo_mem_read8(uint32_t addr_);
+uint16_t freedo_mem_read16(uint32_t addr_);
+uint32_t freedo_mem_read32(uint32_t addr_);
 
-void WriteIO(unsigned int addr, unsigned int val);
-unsigned int ReadIO(unsigned int addr);
-void SelectROM(int n);
+void     freedo_io_write(uint32_t addr_, uint32_t val_);
+uint32_t freedo_io_read(uint32_t addr_);
 
-unsigned int _arm_SaveSize(void);
-void _arm_Save(void *buff);
-void _arm_Load(void *buff);
+void     freedo_rom_select(int n_);
+
+uint32_t freedo_arm_state_size(void);
+void     freedo_arm_state_save(void *buf_);
+void     freedo_arm_state_load(const void *buf_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBFREEDO_ARM_H_INCLUDED */

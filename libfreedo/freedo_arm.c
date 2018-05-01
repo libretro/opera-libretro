@@ -41,8 +41,6 @@ extern int fixmode;
 extern int cnbfix;
 extern int HightResMode;
 
-extern _ext_Interface  io_interface;
-
 #define ARM_MUL_MASK    0x0fc000f0
 #define ARM_MUL_SIGN    0x00000090
 #define ARM_SDS_MASK    0x0fb00ff0
@@ -182,27 +180,28 @@ void* Getp_RAMS(void)
   return pRam;
 }
 
-uint32_t _arm_SaveSize(void)
+uint32_t freedo_arm_state_size(void)
 {
   return sizeof(struct ARM_CoreState) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE;
 }
-void _arm_Save(void *buff)
+
+void freedo_arm_state_save(void *buf_)
 {
-  memcpy(buff,&arm,sizeof(struct ARM_CoreState));
-  memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState),pRam,RAMSIZE);
-  memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
-  memcpy(((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
+  memcpy(buf_,&arm,sizeof(struct ARM_CoreState));
+  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState),pRam,RAMSIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE,pRom,ROMSIZE*2);
+  memcpy(((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,pNVRam,NVRAMSIZE);
 }
 
-void _arm_Load(void *buff)
+void freedo_arm_state_load(const void *buf_)
 {
   uint8_t *tRam=pRam;
   uint8_t *tRom=pRom;
   uint8_t *tNVRam=pNVRam;
-  memcpy(&arm,buff,sizeof(struct ARM_CoreState));
-  memcpy(tRam,((uint8_t*)buff)+sizeof(struct ARM_CoreState),RAMSIZE);
-  memcpy(tRom,((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE,ROMSIZE*2);
-  memcpy(tNVRam,((uint8_t*)buff)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
+  memcpy(&arm,buf_,sizeof(struct ARM_CoreState));
+  memcpy(tRam,((uint8_t*)buf_)+sizeof(struct ARM_CoreState),RAMSIZE);
+  memcpy(tRom,((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE,ROMSIZE*2);
+  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(struct ARM_CoreState)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
 
   memcpy(tRam+3*1024*1024,tRam+2*1024*1024, 1024*1024);
   memcpy(tRam+4*1024*1024,tRam+2*1024*1024, 1024*1024);
@@ -464,9 +463,9 @@ void ARM_RestUndRONS(void)
     }
 }
 
-void ARM_Change_ModeSafe(uint32_t mode)
+void ARM_Change_ModeSafe(uint32_t mode_)
 {
-  switch(arm_mode_table[mode&0x1f])
+  switch(arm_mode_table[mode_&0x1f])
     {
     case ARM_MODE_USER:
       ARM_RestUserRONS();
@@ -489,36 +488,36 @@ void ARM_Change_ModeSafe(uint32_t mode)
     }
 }
 
-void SelectROM(int n)
+void freedo_rom_select(int n_)
 {
-  gSecondROM = (n>0)? true:false;
+  gSecondROM = (n_>0)? true:false;
 }
 
-void _arm_SetCPSR(uint32_t a)
+void _arm_SetCPSR(uint32_t a_)
 {
 #if 0
-  if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
+  if(arm_mode_table[a_&0x1f]==ARM_MODE_UNK)
     {
       //!!Exeption!!
     }
 #endif
-  a|=0x10;
-  ARM_Change_ModeSafe(a);
-  CPSR=a&0xf00000df;
+  a_|=0x10;
+  ARM_Change_ModeSafe(a_);
+  CPSR=a_&0xf00000df;
 }
 
 
-static INLINE void SETM(uint32_t a)
+static INLINE void SETM(uint32_t a_)
 {
 #if 0
-  if(arm_mode_table[a&0x1f]==ARM_MODE_UNK)
+  if(arm_mode_table[a_&0x1f]==ARM_MODE_UNK)
     {
       //!!Exeption!!
     }
 #endif
-  a|=0x10;
-  ARM_Change_ModeSafe(a);
-  CPSR=(CPSR&0xffffffe0)|(a & 0x1F);
+  a_|=0x10;
+  ARM_Change_ModeSafe(a_);
+  CPSR=(CPSR&0xffffffe0)|(a_ & 0x1F);
 }
 
 // This functions d'nt change mode bits, then need no update regcur
@@ -544,7 +543,7 @@ static INLINE void SETF(bool a) { CPSR=(CPSR&0xffffffbf)|((a?1<<6:0)); }
 
 #define ROTR(val, shift) ((shift)) ? (((val) >> (shift)) | ((val) << (32 - (shift)))) : (val)
 
-uint8_t * _arm_Init(void)
+uint8_t* freedo_arm_init(void)
 {
   int i;
 
@@ -581,7 +580,7 @@ uint8_t * _arm_Init(void)
   return (uint8_t *)pRam;
 }
 
-void _arm_Destroy(void)
+void freedo_arm_destroy(void)
 {
   if (pNVRam)
     free(pNVRam);
@@ -596,7 +595,7 @@ void _arm_Destroy(void)
   pRam = NULL;
 }
 
-void _arm_Reset(void)
+void freedo_arm_reset(void)
 {
   int i;
   gSecondROM=0;
@@ -1230,7 +1229,7 @@ const bool is_logic[]={
   true,true,true,true
 };
 
-int _arm_Execute(void)
+int32_t freedo_arm_execute(void)
 {
   uint32_t op2,op1;
   uint8_t shift;
@@ -1397,7 +1396,7 @@ int _arm_Execute(void)
             if((cmd&ARM_UND_MASK)==ARM_UND_SIGN)
               {
                 //!!Exeption!!
-                //         io_interface(EXT_DEBUG_PRINT,(void*)str.print("*PC: 0x%8.8X undefined\n",REG_PC).CStr());
+                //io_interface(EXT_DEBUG_PRINT,(void*)str.print("*PC: 0x%8.8X undefined\n",REG_PC).CStr());
 
                 SPSR[arm_mode_table[0x1b]]=CPSR;
                 SETI(1);
@@ -1588,143 +1587,142 @@ int _arm_Execute(void)
 }
 
 
-void _mem_write8(uint32_t addr, uint8_t val)
+void freedo_mem_write8(uint32_t addr_, uint8_t val_)
 {
-  pRam[addr]=val;
-  if(addr<0x200000 || !HightResMode)
+  pRam[addr_]=val_;
+  if(addr_<0x200000 || !HightResMode)
     return;
-  pRam[addr+1024*1024]=val;
-  pRam[addr+2*1024*1024]=val;
-  pRam[addr+3*1024*1024]=val;
-}
-void  _mem_write16(uint32_t addr, uint16_t val)
-{
-  *((uint16_t*)&pRam[addr])=val;
-  if(addr<0x200000 || !HightResMode) return;
-  *((uint16_t*)&pRam[addr+1024*1024])=val;
-  *((uint16_t*)&pRam[addr+2*1024*1024])=val;
-  *((uint16_t*)&pRam[addr+3*1024*1024])=val;
-}
-void _mem_write32(uint32_t addr, uint32_t val)
-{
-  *((uint32_t*)&pRam[addr])=val;
-  if(addr<0x200000 || !HightResMode) return;
-  *((uint32_t*)&pRam[addr+1024*1024])=val;
-  *((uint32_t*)&pRam[addr+2*1024*1024])=val;
-  *((uint32_t*)&pRam[addr+3*1024*1024])=val;
+  pRam[addr_+1024*1024]=val_;
+  pRam[addr_+2*1024*1024]=val_;
+  pRam[addr_+3*1024*1024]=val_;
 }
 
-uint16_t _mem_read16(uint32_t addr)
+void freedo_mem_write16(uint32_t addr_, uint16_t val_)
 {
-  return *((uint16_t*)&pRam[addr]);
+  *((uint16_t*)&pRam[addr_])=val_;
+  if(addr_<0x200000 || !HightResMode) return;
+  *((uint16_t*)&pRam[addr_+1024*1024])=val_;
+  *((uint16_t*)&pRam[addr_+2*1024*1024])=val_;
+  *((uint16_t*)&pRam[addr_+3*1024*1024])=val_;
 }
 
-uint32_t _mem_read32(uint32_t addr)
+void freedo_mem_write32(uint32_t addr_, uint32_t val_)
 {
-  return *((uint32_t*)&pRam[addr]);
+  *((uint32_t*)&pRam[addr_])=val_;
+  if(addr_<0x200000 || !HightResMode) return;
+  *((uint32_t*)&pRam[addr_+1024*1024])=val_;
+  *((uint32_t*)&pRam[addr_+2*1024*1024])=val_;
+  *((uint32_t*)&pRam[addr_+3*1024*1024])=val_;
 }
 
-uint8_t _mem_read8(uint32_t addr)
+uint16_t freedo_mem_read16(uint32_t addr_)
 {
-  return pRam[addr];
+  return *((uint16_t*)&pRam[addr_]);
 }
 
+uint32_t freedo_mem_read32(uint32_t addr_)
+{
+  return *((uint32_t*)&pRam[addr_]);
+}
 
-void mwritew(uint32_t addr, uint32_t val)
+uint8_t freedo_mem_read8(uint32_t addr_)
+{
+  return pRam[addr_];
+}
+
+void mwritew(uint32_t addr_, uint32_t val_)
 {
   //to do -- wipe out all HW part
   //to do -- add proper loging
   uint32_t index;
 
-  addr&=~3;
+  addr_&=~3;
 
 
-  if (addr<0x00300000) //dram1&dram2&vram
+  if (addr_<0x00300000) //dram1&dram2&vram
     {
-      _mem_write32(addr,val);
+      freedo_mem_write32(addr_,val_);
       return;
     }
 
-  if (!((index=(addr^0x03300000)) & ~0x7FF)) //madam
-    //  if((addr & ~0xFFFFF)==0x03300000) //madam
+  if (!((index=(addr_^0x03300000)) & ~0x7FF)) //madam
+    //  if((addr_ & ~0xFFFFF)==0x03300000) //madam
     {
-      freedo_madam_poke(index,val);
+      freedo_madam_poke(index,val_);
 
       return;
     }
 
 
-  if (!((index=(addr^0x03400000)) & ~0xFFFF)) //clio
-    //  if((addr & ~0xFFFFF)==0x03400000) //clio
+  if (!((index=(addr_^0x03400000)) & ~0xFFFF)) //clio
+    //  if((addr_ & ~0xFFFFF)==0x03400000) //clio
     {
-      if(freedo_clio_poke(index,val))
+      if(freedo_clio_poke(index,val_))
         REG_PC+=4;  // ???
       return;
     }
 
-  if(!((index=(addr^0x03200000)) & ~0xFFFFF)) //SPORT
+  if(!((index=(addr_^0x03200000)) & ~0xFFFFF)) //SPORT
     {
-      freedo_sport_write_access(index,val);
+      freedo_sport_write_access(index,val_);
       return;
     }
 
 
-  if (!((index=(addr^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
+  if (!((index=(addr_^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
     {
-      if(index & 0x80000) //if (addr>=0x03180000)
+      if(index & 0x80000) //if (addr_>=0x03180000)
         {
-          _diag_Send(val);
+          _diag_Send(val_);
           return;
         }
-      else if(index & 0x40000)       //else if ((addr>=0x03140000) && (addr<0x03180000))
+      else if(index & 0x40000)       //else if ((addr_>=0x03140000) && (addr_<0x03180000))
         {
-          //  sprintf(str,":NVRAM Write [0x%X] = 0x%8.8X\n",addr,val);
+          //  sprintf(str,":NVRAM Write [0x%X] = 0x%8.8X\n",addr_,val_);
           //  CDebug::DPrint(str);
-          pNVRam[(index>>2) & 32767]=(uint8_t)val;
+          pNVRam[(index>>2) & 32767]=(uint8_t)val_;
           //CConfig::SetNVRAMData(pNVRam);
         }
       return;
     }
 
   /*
-    if ((addr>=0x03000000) && (addr<0x03100000)) //rom
+    if ((addr_>=0x03000000) && (addr_<0x03100000)) //rom
     {
     return;
     }*/
-  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WriteWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr,val).CStr());
-
-
+  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WriteWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,val_).CStr());
 }
 
-uint32_t mreadw(uint32_t addr)
+uint32_t mreadw(uint32_t addr_)
 {
   //to do -- wipe out all HW
   //to do -- add abort (may be in HW)
   //to do -- proper loging
   int index;
 
-  addr&=~3;
+  addr_&=~3;
 
-  if (addr<0x00300000) //dram1&dram2&vram
-    return _mem_read32(addr);
+  if (addr_<0x00300000) //dram1&dram2&vram
+    return freedo_mem_read32(addr_);
 
-  if (!((index=(addr^0x03300000)) & ~0xFFFFF)) //madam
+  if (!((index=(addr_^0x03300000)) & ~0xFFFFF)) //madam
     return freedo_madam_peek(index);
 
 
-  if (!((index=(addr^0x03400000)) & ~0xFFFFF)) //clio
+  if (!((index=(addr_^0x03400000)) & ~0xFFFFF)) //clio
     return freedo_clio_peek(index);
 
-  if (!((index=(addr^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
+  if (!((index=(addr_^0x03200000)) & ~0xFFFFF)) // read acces to SPORT
     {
-      if (!((index=(addr^0x03200000)) & ~0x1FFF))
+      if (!((index=(addr_^0x03200000)) & ~0x1FFF))
         return (freedo_sport_set_source(index),0);
-      //          io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  Unknow read access to SPORT  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());
+      //          io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  Unknow read access to SPORT  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
       //!!Exeption!!
       return 0xBADACCE5;
     }
 
-  if (!((index=(addr^0x03000000)) & ~0xFFFFF)) //rom
+  if (!((index=(addr_^0x03000000)) & ~0xFFFFF)) //rom
     {
       if(!gSecondROM) // 2nd rom
         return *(uint32_t*)(pRom+index);
@@ -1732,115 +1730,115 @@ uint32_t mreadw(uint32_t addr)
     }
 
 
-  if (!((index=(addr^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
+  if (!((index=(addr_^0x03100000)) & ~0xFFFFF)) // NVRAM & DiagPort
     {
-      if(index & 0x80000) //if (addr>=0x03180000)
+      if(index & 0x80000) //if (addr_>=0x03180000)
         return _diag_Get();
-      else if(index & 0x40000)       //else if ((addr>=0x03140000) && (addr<0x03180000))
+      else if(index & 0x40000)       //else if ((addr_>=0x03140000) && (addr_<0x03180000))
         return (uint32_t)pNVRam[(index>>2)&32767];
     }
 
-  //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());
+  //   io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadWord???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
 
   //MAS_Access_Exept=true;
   return 0xBADACCE5;///data abort
 }
 
 
-void mwriteb(uint32_t addr, uint32_t val)
+void mwriteb(uint32_t addr_, uint32_t val_)
 {
   int index; // for avoid bad compiler optimization
 
-  val&=0xff;
+  val_&=0xff;
 
 
-  if (addr<0x00300000) //dram1&dram2&vram
+  if (addr_<0x00300000) //dram1&dram2&vram
     {
-      _mem_write8(addr^3,val);
+      freedo_mem_write8(addr_^3,val_);
       return;
     }
 
-  else if (!((index=(addr^0x03100003)) & ~0xFFFFF)) //NVRAM
+  else if (!((index=(addr_^0x03100003)) & ~0xFFFFF)) //NVRAM
     {
       if((index & 0x40000)==0x40000)
         {
-          //if((addr&3)==3)
+          //if((addr_&3)==3)
           {
-            pNVRam[(index>>2)&32767]=val;
+            pNVRam[(index>>2)&32767]=val_;
           }
           return;
         }
     }
 #if 0
-  else if (!((index=(addr^0x03000003)) & ~0xFFFFF)) //rom
+  else if (!((index=(addr_^0x03000003)) & ~0xFFFFF)) //rom
     {
       return;
     }
 #endif
 
-  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WritetByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr,val).CStr());
+  //io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  WritetByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,val_).CStr());
 
 }
 
 
 
-uint32_t mreadb(uint32_t addr)
+uint32_t mreadb(uint32_t addr_)
 {
 
   int index; // for avoid bad compiler optimization
 
-  if (addr<0x00300000) //dram1&dram2&vram
-    return _mem_read8(addr^3);
-  else if (!((index=(addr^0x03000003)) & ~0xFFFFF)) //rom
+  if (addr_<0x00300000) //dram1&dram2&vram
+    return freedo_mem_read8(addr_^3);
+  else if (!((index=(addr_^0x03000003)) & ~0xFFFFF)) //rom
     {
       if(gSecondROM) // 2nd rom
         return pRom[index+1024*1024];
       return pRom[index];
     }
-  else if (!((index=(addr^0x03100003)) & ~0xFFFFF)) //NVRAM
+  else if (!((index=(addr_^0x03100003)) & ~0xFFFFF)) //NVRAM
     {
       if((index & 0x40000)==0x40000)
         {
-          //if((addr&3)!=3)return 0;
+          //if((addr_&3)!=3)return 0;
           //else
           return pNVRam[(index>>2)&32767];
         }
     }
 
   //MAS_Access_Exept=true;
-  //    io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr,0xBADACCE5).CStr());
+  //    io_interface(EXT_DEBUG_PRINT,(void*)str.print("0x%8.8X:  ReadByte???  0x%8.8X=0x%8.8X\n",REG_PC,addr_,0xBADACCE5).CStr());
 
   return 0xBADACCE5;///data abort
 }
 
 
-void  loadusr(uint32_t n, uint32_t val)
+void  loadusr(uint32_t n, uint32_t val_)
 {
   if(n==15)
     {
-      RON_USER[15]=val;
+      RON_USER[15]=val_;
       return;
     }
 
   switch(arm_mode_table[(CPSR&0x1f)|0x10])
     {
     case ARM_MODE_USER:
-      RON_USER[n]=val;
+      RON_USER[n]=val_;
       break;
     case ARM_MODE_FIQ:
       if(n>7)
-        RON_CASH[n-8]=val;
+        RON_CASH[n-8]=val_;
       else
-        RON_USER[n]=val;
+        RON_USER[n]=val_;
       break;
     case ARM_MODE_IRQ:
     case ARM_MODE_ABT:
     case ARM_MODE_UND:
     case ARM_MODE_SVC:
       if(n>12)
-        RON_CASH[n-8]=val;
+        RON_CASH[n-8]=val_;
       else
-        RON_USER[n]=val;
+        RON_USER[n]=val_;
       break;
     }
 }
@@ -1870,12 +1868,12 @@ uint32_t rreadusr(uint32_t n)
   return 0;
 }
 
-uint32_t ReadIO(uint32_t addr)
+uint32_t freedo_io_read(uint32_t addr_)
 {
-  return mreadw(addr);
+  return mreadw(addr_);
 }
 
-void WriteIO(uint32_t addr, uint32_t val)
+void freedo_io_write(uint32_t addr_, uint32_t val_)
 {
-  mwritew(addr,val);
+  mwritew(addr_,val_);
 }

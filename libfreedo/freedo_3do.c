@@ -70,7 +70,7 @@ int _3do_Init(void)
    uint8_t *Memory;
    uint8_t *rom;
    if(isanvil==30)biosanvil=1;
-   Memory=_arm_Init();
+   Memory=freedo_arm_init();
 
    io_interface(EXT_READ_ROMS,Getp_ROMS());
    rom=(uint8_t*)Getp_ROMS();
@@ -174,7 +174,7 @@ void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
          continue;
       }
 
-      cnt+=_arm_Execute();
+      cnt+=freedo_arm_execute();
 
       if(cnt >> 4)
       {
@@ -187,13 +187,13 @@ void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
 
 void _3do_Destroy()
 {
-   _arm_Destroy();
+   freedo_arm_destroy();
    freedo_xbus_destroy();
 }
 
 uint32_t _3do_SaveSize(void)
 {
-   uint32_t tmp=_arm_SaveSize();
+   uint32_t tmp=freedo_arm_state_size();
 
    tmp+=freedo_vdlp_state_size();
    tmp+=freedo_dsp_state_size();
@@ -213,7 +213,7 @@ void _3do_Save(void *buff)
 
    indexes[0]=0x97970101;
    indexes[1]=16*4;
-   indexes[2]=indexes[1]+_arm_SaveSize();
+   indexes[2]=indexes[1]+freedo_arm_state_size();
    indexes[3]=indexes[2]+freedo_vdlp_state_size();
    indexes[4]=indexes[3]+freedo_dsp_state_size();
    indexes[5]=indexes[4]+freedo_clio_state_size();
@@ -222,7 +222,7 @@ void _3do_Save(void *buff)
    indexes[8]=indexes[7]+freedo_madam_state_size();
    indexes[9]=indexes[8]+freedo_xbus_state_size();
 
-   _arm_Save(&data[indexes[1]]);
+   freedo_arm_state_save(&data[indexes[1]]);
    freedo_vdlp_state_save(&data[indexes[2]]);
    freedo_dsp_state_save(&data[indexes[3]]);
    freedo_clio_state_save(&data[indexes[4]]);
@@ -240,7 +240,7 @@ bool _3do_Load(void *buff)
    if((uint32_t)indexes[0]!=0x97970101)
       return false;
 
-   _arm_Load(&data[indexes[1]]);
+   freedo_arm_state_load(&data[indexes[1]]);
    freedo_vdlp_state_load(&data[indexes[2]]);
    freedo_dsp_state_load(&data[indexes[3]]);
    freedo_clio_state_load(&data[indexes[4]]);

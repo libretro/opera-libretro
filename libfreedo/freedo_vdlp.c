@@ -145,7 +145,7 @@ INLINE
 uint32_t
 vram_read32(const uint32_t addr_)
 {
-  return _mem_read32(VRAM_OFFSET + (addr_ & 0x000FFFFF));
+  return freedo_mem_read32(VRAM_OFFSET + (addr_ & 0x000FFFFF));
 }
 
 static
@@ -154,7 +154,7 @@ void
 vram_write32(const uint32_t addr_,
              const uint32_t datum_)
 {
-  _mem_write32((VRAM_OFFSET + (addr_ & 0x000FFFFF)),datum_);
+  freedo_mem_write32((VRAM_OFFSET + (addr_ & 0x000FFFFF)),datum_);
 }
 
 static

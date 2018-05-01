@@ -62,7 +62,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
 
    if((8 - bit->bitpoint) > bit->bitset)
    {
-      retval    = _mem_read8(bit->buf + (bit->point ^ 3));
+      retval    = freedo_mem_read8(bit->buf + (bit->point ^ 3));
       retval  >>= 8 - bit->bitpoint - bit->bitset;
       retval   &= mas[bit->bitset];
       bit->bitpoint += bit->bitset;
@@ -71,7 +71,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
 
    if (bit->bitpoint)
    {
-      retval = _mem_read8(bit->buf + (bit->point ^ 3)) & mas[8 - bit->bitpoint];
+      retval = freedo_mem_read8(bit->buf + (bit->point ^ 3)) & mas[8 - bit->bitpoint];
       bit->point++;
       bitcnt -= 8 - bit->bitpoint;
    }
@@ -79,7 +79,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
    while(bitcnt>=8)
    {
       retval <<= 8;
-      retval  |= _mem_read8(bit->buf + (bit->point ^ 3));
+      retval  |= freedo_mem_read8(bit->buf + (bit->point ^ 3));
       bit->point++;
       bitcnt-=8;
    }
@@ -87,7 +87,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
    if(bitcnt)
    {
       retval<<=bitcnt;
-      retval|=_mem_read8(bit->buf + (bit->point^3)) >> (8 - bitcnt);
+      retval|=freedo_mem_read8(bit->buf + (bit->point^3)) >> (8 - bitcnt);
    }
 
    bit->bitpoint = bitcnt;
