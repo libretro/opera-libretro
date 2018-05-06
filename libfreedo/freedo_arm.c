@@ -1819,7 +1819,7 @@ mwritew(uint32_t addr_,
   if(!(index & ~0xFFFFF))
     {
       if(index & 0x80000)
-        _diag_Send(val_);
+        freedo_diag_port_send(val_);
       else if(index & 0x40000)
         CPU.nvram[(index >> 2) & 0x7FFF] = (uint8_t)val_;
       return;
@@ -1865,7 +1865,7 @@ mreadw(uint32_t addr_)
   if(!(index & ~0xFFFFF))
     {
       if(index & 0x80000)
-        return _diag_Get();
+        return freedo_diag_port_get();
       else if(index & 0x40000)
         return CPU.nvram[(index >> 2) & 0x7FFF];
     }

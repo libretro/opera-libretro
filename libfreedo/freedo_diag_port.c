@@ -4,21 +4,28 @@
 
   The FreeDO licensed under modified GNU LGPL, with following notes:
 
-  *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-  *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-  of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-  *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-  or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-  The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
+
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
+
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
   Project authors:
-
-  Alexander Troosh
-  Maxim Grishin
-  Allen Wright
-  John Sammons
-  Felix Lazarev
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
 #include "freedo_diag_port.h"
@@ -30,7 +37,7 @@ static uint16_t RCVDebugFIFO1;
 static uint16_t GetPTR;
 static uint16_t SendPTR;
 
-void _diag_Send(unsigned int val)
+void freedo_diag_port_send(const uint32_t val_)
 {
   if(GetPTR!=16)
     {
@@ -40,8 +47,8 @@ void _diag_Send(unsigned int val)
       SNDDebugFIFO1=0;
     }
 
-  SNDDebugFIFO0|=(val&1)<<(SendPTR-1);
-  SNDDebugFIFO1|=((val&1)>>1)<<(SendPTR-1);
+  SNDDebugFIFO0|=(val_&1)<<(SendPTR-1);
+  SNDDebugFIFO1|=((val_&1)>>1)<<(SendPTR-1);
 
   SendPTR--;
 
@@ -49,7 +56,7 @@ void _diag_Send(unsigned int val)
     SendPTR=16;
 }
 
-unsigned int _diag_Get()
+uint32_t freedo_diag_port_get(void)
 {
   unsigned int val = 0;
 
@@ -77,19 +84,21 @@ unsigned int _diag_Get()
   return val;
 }
 
-void _diag_Init(int testcode)
+void freedo_diag_port_init(const int32_t test_code_)
 {
+  int32_t test_code = test_code_;
+  
   SNDDebugFIFO0=0;
   SNDDebugFIFO1=0;
   GetPTR=16;
   SendPTR=16;
 
-  if(testcode>=0)
+  if(test_code>=0)
     {
-      testcode ^= 0xFF;
-      testcode |= 0xA000;
-    } else testcode=0;
+      test_code ^= 0xFF;
+      test_code |= 0xA000;
+    } else test_code=0;
 
-  RCVDebugFIFO0=testcode;
-  RCVDebugFIFO1=testcode;
+  RCVDebugFIFO0=test_code;
+  RCVDebugFIFO1=test_code;
 }
