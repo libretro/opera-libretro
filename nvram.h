@@ -39,18 +39,18 @@ struct NVRAM_Header
 
 #pragma pack(pop)
 
-void nvram_init(void *nvram);
+void nvram_init(void *nvram_);
 
-int nvram_save(const void   *nvram,
-               const size_t  size,
-               const char   *basepath,
-               const char   *filename);
-int nvram_load(void         *nvram,
-               const size_t  size,
-               const char   *basepath,
-               const char   *filename);
+int nvram_save(const void   *nvram_,
+               const size_t  size_,
+               const char   *basepath_,
+               const char   *filename_);
+int nvram_load(void         *nvram_,
+               const size_t  size_,
+               const char   *basepath_,
+               const char   *filename_);
 
-void retro_nvram_save(void);
-void retro_nvram_load(void);
+void retro_nvram_save(const uint8_t *nvram_);
+void retro_nvram_load(uint8_t *nvram_);
 
 #endif /* LIBFREEDO_NVRAM_H_INCLUDED */

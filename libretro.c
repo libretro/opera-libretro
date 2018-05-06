@@ -23,6 +23,7 @@
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
 
+#include "libfreedo/freedo_arm.h"
 #include "libfreedo/freedo_cdrom.h"
 #include "libfreedo/freedo_core.h"
 #include "libfreedo/freedo_frame.h"
@@ -42,7 +43,6 @@ extern int HightResMode;
 extern unsigned int _3do_SaveSize(void);
 extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
-extern void* Getp_NVRAM();
 
 static cdimage_t cdimage;
 
@@ -554,9 +554,9 @@ bool retro_load_game(const struct retro_game_info *info)
    _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 
    /* XXX: Is this really a frontend responsibility? */
-   nvram_init(Getp_NVRAM());
+   nvram_init(freedo_arm_nvram_get());
    if(check_env_nvram_shared())
-     retro_nvram_load();
+     retro_nvram_load(freedo_arm_nvram_get());
 
    return true;
 }
@@ -572,7 +572,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 void retro_unload_game(void)
 {
    if(check_env_nvram_shared())
-     retro_nvram_save();
+     retro_nvram_save(freedo_arm_nvram_get());
 
    _freedo_Interface(FDP_DESTROY, (void*)0);
 
@@ -605,7 +605,7 @@ retro_get_memory_data(unsigned id)
   if(check_env_nvram_shared())
     return NULL;
 
-  return Getp_NVRAM();
+  return freedo_arm_nvram_get();
 }
 
 size_t
@@ -645,7 +645,7 @@ void
 retro_reset(void)
 {
   if(check_env_nvram_shared())
-    retro_nvram_save();
+    retro_nvram_save(freedo_arm_nvram_get());
 
   _freedo_Interface(FDP_DESTROY, NULL);
 
@@ -659,9 +659,9 @@ retro_reset(void)
 
   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
 
-  nvram_init(Getp_NVRAM());
+  nvram_init(freedo_arm_nvram_get());
   if(check_env_nvram_shared())
-    retro_nvram_load();
+    retro_nvram_load(freedo_arm_nvram_get());
 }
 
 void

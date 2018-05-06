@@ -178,15 +178,15 @@ clio_handle_dma(uint32_t val_)
               b0 = freedo_xbus_fifo_get_data();
 
 #ifdef MSB_FIRST
-              _mem_write8(trg+0,b3);
-              _mem_write8(trg+1,b2);
-              _mem_write8(trg+2,b1);
-              _mem_write8(trg+3,b0);
+              freedo_mem_write8(trg+0,b3);
+              freedo_mem_write8(trg+1,b2);
+              freedo_mem_write8(trg+2,b1);
+              freedo_mem_write8(trg+3,b0);
 #else
-              _mem_write8(trg+0,b0);
-              _mem_write8(trg+1,b1);
-              _mem_write8(trg+2,b2);
-              _mem_write8(trg+3,b3);
+              freedo_mem_write8(trg+0,b0);
+              freedo_mem_write8(trg+1,b1);
+              freedo_mem_write8(trg+2,b2);
+              freedo_mem_write8(trg+3,b3);
 #endif
 
               trg += 4;
@@ -205,15 +205,15 @@ clio_handle_dma(uint32_t val_)
               b0 = freedo_xbus_fifo_get_data();
 
 #ifdef MSB_FIRST
-              _mem_write8(trg+0,b3);
-              _mem_write8(trg+1,b2);
-              _mem_write8(trg+2,b1);
-              _mem_write8(trg+3,b0);
+              freedo_mem_write8(trg+0,b3);
+              freedo_mem_write8(trg+1,b2);
+              freedo_mem_write8(trg+2,b1);
+              freedo_mem_write8(trg+3,b0);
 #else
-              _mem_write8(trg+0,b0);
-              _mem_write8(trg+1,b1);
-              _mem_write8(trg+2,b2);
-              _mem_write8(trg+3,b3);
+              freedo_mem_write8(trg+0,b0);
+              freedo_mem_write8(trg+1,b1);
+              freedo_mem_write8(trg+2,b2);
+              freedo_mem_write8(trg+3,b3);
 #endif
 
               trg += 4;
@@ -323,7 +323,7 @@ freedo_clio_poke(uint32_t addr_,
   else if(addr_ == 0x84)
     {
       CLIO.regs[0x84] = (val_ & 0x0F);
-      SelectROM((val_ & 4) ? 1 : 0);
+      freedo_rom_select((val_ & 4) ? 1 : 0);
       return 0;
     }
   else if(addr_ == 0x0300)
@@ -662,9 +662,9 @@ uint16_t
 freedo_clio_fifo_ei_read(uint16_t channel_)
 {
 #ifdef MSB_FIRST
-  return _mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)));
+  return freedo_mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)));
 #else
-  return _mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)^2));
+  return freedo_mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)^2));
 #endif
 }
 
@@ -674,9 +674,9 @@ freedo_clio_fifo_eo_write(uint16_t channel_,
                           uint16_t val_)
 {
 #ifdef MSB_FIRST
-  _mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)),val_);
+  freedo_mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)),val_);
 #else
-  _mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)^2),val_);
+  freedo_mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)^2),val_);
 #endif
 }
 

@@ -818,9 +818,9 @@ LoadPLUT(uint32_t pnt_,
   for(i = 0; i < n_; i++)
     {
 #ifdef MSB_FIRST
-      MADAM.PLUT[i] = _mem_read16((((pnt_ >> 1) + i)) << 1);
+      MADAM.PLUT[i] = freedo_mem_read16((((pnt_ >> 1) + i)) << 1);
 #else
-      MADAM.PLUT[i] = _mem_read16((((pnt_ >> 1) + i)^1) << 1);
+      MADAM.PLUT[i] = freedo_mem_read16((((pnt_ >> 1) + i)^1) << 1);
 #endif
     }
 }
@@ -1154,9 +1154,9 @@ DMAPBus(void)
   while((int32_t)MADAM.mregs[0x574] > 0)
     {
       if(i < (sizeof(MADAM.PBUSQueue) / sizeof(uint32_t)))
-        WriteIO(MADAM.mregs[0x570],((uint32_t*)MADAM.PBUSQueue)[i]);
+        freedo_io_write(MADAM.mregs[0x570],((uint32_t*)MADAM.PBUSQueue)[i]);
       else
-        WriteIO(MADAM.mregs[0x570],0xFFFFFFFF);
+        freedo_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
       MADAM.mregs[0x574] -= 4;
       MADAM.mregs[0x570] += 4;
       MADAM.mregs[0x578] += 4;
@@ -1257,7 +1257,7 @@ mread(uint32_t addr_)
 {
   uint32_t val;
 
-  val = _mem_read32(addr_);
+  val = freedo_mem_read32(addr_);
   CELCYCLES += 1;
 
   return val;
@@ -1268,7 +1268,7 @@ void
 mwrite(uint32_t addr_,
        uint32_t val_)
 {
-  _mem_write32(addr_,val_);
+  freedo_mem_write32(addr_,val_);
   CELCYCLES += 2;
 }
 
@@ -1279,9 +1279,9 @@ mwriteh(uint32_t addr_,
 {
   CELCYCLES += 2;
 #ifdef MSB_FIRST
-  _mem_write16((addr_),val_);
+  freedo_mem_write16((addr_),val_);
 #else
-  _mem_write16((addr_^2),val_);
+  freedo_mem_write16((addr_^2),val_);
 #endif
 }
 
@@ -1291,9 +1291,9 @@ mreadh(uint32_t addr_)
 {
   CELCYCLES += 1;
 #ifdef MSB_FIRST
-  return _mem_read16(addr_);
+  return freedo_mem_read16(addr_);
 #else
-  return _mem_read16(addr_ ^ 2);
+  return freedo_mem_read16(addr_ ^ 2);
 #endif
 }
 

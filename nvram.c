@@ -6,8 +6,6 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
-extern void *Getp_NVRAM();
-
 static char NVRAM_FILENAME[] = "3DO.nvram";
 
 /*
@@ -15,11 +13,11 @@ static char NVRAM_FILENAME[] = "3DO.nvram";
   module as part of the core emulator.
  */
 void
-nvram_init(void *nvram)
+nvram_init(void *nvram_)
 {
-  struct NVRAM_Header *nvram_hdr = (struct NVRAM_Header*)nvram;
+  struct NVRAM_Header *nvram_hdr = (struct NVRAM_Header*)nvram_;
 
-  memset(nvram,0,sizeof(struct NVRAM_Header));
+  memset(nvram_,0,sizeof(struct NVRAM_Header));
 
   nvram_hdr->record_type         = 0x01;
   nvram_hdr->sync_bytes[0]       = 'Z';
@@ -54,20 +52,20 @@ nvram_init(void *nvram)
 }
 
 int
-nvram_save(const void   *nvram,
-           const size_t  size,
-           const char   *basepath,
-           const char   *filename)
+nvram_save(const void   *nvram_,
+           const size_t  size_,
+           const char   *basepath_,
+           const char   *filename_)
 {
   int rv;
   char fullpath[PATH_MAX_LENGTH];
   char fullpath_tmp[PATH_MAX_LENGTH];
 
-  fill_pathname_join(fullpath,basepath,filename,sizeof(fullpath));
+  fill_pathname_join(fullpath,basepath_,filename_,sizeof(fullpath));
   strncpy(fullpath_tmp,fullpath,sizeof(fullpath_tmp));
   strncat(fullpath_tmp,".tmp",sizeof(fullpath_tmp));
 
-  rv = filestream_write_file(fullpath_tmp,nvram,size);
+  rv = filestream_write_file(fullpath_tmp,nvram_,size_);
   if(rv == 0)
     return -1;
 
@@ -75,30 +73,30 @@ nvram_save(const void   *nvram,
 }
 
 int
-nvram_load(void         *nvram,
-           const size_t  size,
-           const char   *basepath,
-           const char   *filename)
+nvram_load(void         *nvram_,
+           const size_t  size_,
+           const char   *basepath_,
+           const char   *filename_)
 {
   RFILE *f;
   int64_t rv;
   char fullpath[PATH_MAX_LENGTH];
 
-  fill_pathname_join(fullpath,basepath,filename,sizeof(fullpath));
+  fill_pathname_join(fullpath,basepath_,filename_,sizeof(fullpath));
 
   f = filestream_open(fullpath,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
   if(f == NULL)
     return -1;
 
-  rv = filestream_read(f,nvram,size);
+  rv = filestream_read(f,nvram_,size_);
 
   filestream_close(f);
 
-  return ((rv == size) ? 0 : -1);
+  return ((rv == size_) ? 0 : -1);
 }
 
 void
-retro_nvram_save(void)
+retro_nvram_save(const uint8_t *nvram_)
 {
   int rv;
   const char *basepath;
@@ -106,13 +104,13 @@ retro_nvram_save(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY,&basepath);
 
-  rv = nvram_save(Getp_NVRAM(),NVRAM_SIZE,basepath,NVRAM_FILENAME);
+  rv = nvram_save(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
     retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: error saving NVRAM: %s\n",NVRAM_FILENAME);
 }
 
 void
-retro_nvram_load(void)
+retro_nvram_load(uint8_t *nvram_)
 {
   int rv;
   const char *basepath;
@@ -120,7 +118,7 @@ retro_nvram_load(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY,&basepath);
 
-  rv = nvram_load(Getp_NVRAM(),NVRAM_SIZE,basepath,NVRAM_FILENAME);
+  rv = nvram_load(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
     retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: error loading NVRAM: %s\n",NVRAM_FILENAME);
 }
