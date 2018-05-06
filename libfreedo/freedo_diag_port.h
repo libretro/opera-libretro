@@ -1,32 +1,39 @@
 /*
   www.freedo.org
-The first and only working 3DO multiplayer emulator.
+  The first and only working 3DO multiplayer emulator.
 
-The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
-*   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
-*   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
-    of the sources, or any other material published by FreeDO have to be accompanied with full credits.
-*   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
-    or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
-The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
 
-Project authors:
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
 
-Alexander Troosh
-Maxim Grishin
-Allen Wright
-John Sammons
-Felix Lazarev
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
+
+  Project authors:
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
 */
 
 // DiagPort.h: interface for the DiagPort class.
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _DIAG_PORT_HEADER_DEFINITION_
-#define _DIAG_PORT_HEADER_DEFINITION_
+#ifndef LIBFREEDO_DIAG_PORT_H_INCLUDED
+#define LIBFREEDO_DIAG_PORT_H_INCLUDED
 
 #include <stdint.h>
 
@@ -34,11 +41,10 @@ Felix Lazarev
 
 EXTERN_C_BEGIN
 
-void _diag_Init(int testcode);
-
-unsigned int  _diag_Get(void);
-void _diag_Send(unsigned int val);
+void     freedo_diag_port_init(const int32_t test_code_);
+uint32_t freedo_diag_port_get(void);
+void     freedo_diag_port_send(const uint32_t val_);
 
 EXTERN_C_END
 
-#endif
+#endif /* LIBFREEDO_DIAG_PORT_H_INCLUDED */
