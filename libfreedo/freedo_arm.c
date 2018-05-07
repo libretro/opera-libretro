@@ -43,10 +43,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int fixmode;
-extern int cnbfix;
-extern int HightResMode;
-
 #define ARM_MUL_MASK    0x0fc000f0
 #define ARM_MUL_SIGN    0x00000090
 #define ARM_SDS_MASK    0x0fb00ff0
@@ -106,6 +102,9 @@ const static uint16_t cond_flags_cross[]=
     0x0000  //never
   };
 
+#define DRAMSIZE  (2 * 1024 * 1024)
+#define VRAMSIZE  (1 * 1024 * 1024)
+
 #define RAMSIZE   (3 * 1024 * 1024)
 #define ROMSIZE   (1 * 1024 * 1024)
 #define NVRAMSIZE (1024 * 32)
@@ -160,6 +159,12 @@ uint8_t*
 freedo_arm_ram_get(void)
 {
   return CPU.ram;
+}
+
+uint8_t*
+freedo_arm_vram_get(void)
+{
+  return (CPU.ram + DRAMSIZE);
 }
 
 uint32_t
@@ -736,8 +741,8 @@ ldm_accur(uint32_t opc_,
               if((tmp == 0xF1000)         &&
                  (i == 0x1)               &&
                  (CPU.USER[2] != 0xF0000) &&
-                 (cnbfix == 0)            &&
-                 (fixmode & FIX_BIT_TIMING_1))
+                 (CNBFIX == 0)            &&
+                 (FIXMODE & FIX_BIT_TIMING_1))
                 {
                   tmp+=0x1000;
                 }
@@ -751,8 +756,8 @@ ldm_accur(uint32_t opc_,
                     {
                       if((tmp == 0xEFE54) &&
                          (i == 0x4)       &&
-                         (cnbfix == 0)    &&
-                         (fixmode & FIX_BIT_TIMING_1))
+                         (CNBFIX == 0)    &&
+                         (FIXMODE & FIX_BIT_TIMING_1))
                         tmp -= 0xF;
                     }
                 }
@@ -1398,21 +1403,14 @@ freedo_arm_execute(void)
   bool isexeption;
 
   isexeption = false;
-  if(biosanvil == 1)
-    {
-      CPU.USER[15] += 64;
-      biosanvil     = 2;
-      isanvil       = 1;
-    }
-
   if((CPU.USER[15] == 0x94D60) &&
      (CPU.USER[0] == 0x113000) &&
      (CPU.USER[1] == 0x113000) &&
-     (cnbfix == 0)             &&
-     (fixmode & FIX_BIT_TIMING_1))
+     (CNBFIX == 0)             &&
+     (FIXMODE & FIX_BIT_TIMING_1))
     {
       CPU.USER[15] = 0x9E9CC;
-      cnbfix = 1;
+      CNBFIX = 1;
     }
 
   cmd = mreadw(CPU.USER[15]);
@@ -1738,7 +1736,7 @@ freedo_mem_write8(uint32_t addr_,
                   uint8_t  val_)
 {
   CPU.ram[addr_] = val_;
-  if(addr_ < 0x200000 || !HightResMode)
+  if(addr_ < 0x200000 || !HIRESMODE)
     return;
   CPU.ram[addr_ + 1*1024*1024] = val_;
   CPU.ram[addr_ + 2*1024*1024] = val_;
@@ -1750,7 +1748,7 @@ freedo_mem_write16(uint32_t addr_,
                    uint16_t val_)
 {
   *((uint16_t*)&CPU.ram[addr_]) = val_;
-  if(addr_ < 0x200000 || !HightResMode)
+  if(addr_ < 0x200000 || !HIRESMODE)
     return;
   *((uint16_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
   *((uint16_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;
@@ -1762,7 +1760,7 @@ freedo_mem_write32(uint32_t addr_,
                    uint32_t val_)
 {
   *((uint32_t*)&CPU.ram[addr_]) = val_;
-  if(addr_ < 0x200000 || !HightResMode)
+  if(addr_ < 0x200000 || !HIRESMODE)
     return;
   *((uint32_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
   *((uint32_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;

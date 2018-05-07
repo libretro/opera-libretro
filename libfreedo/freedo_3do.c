@@ -1,29 +1,32 @@
 /*
-   www.freedo.org
-   The first and only working 3DO multiplayer emulator.
+  www.freedo.org
+  The first and only working 3DO multiplayer emulator.
 
-   The FreeDO licensed under modified GNU LGPL, with following notes:
+  The FreeDO licensed under modified GNU LGPL, with following notes:
 
- *   The owners and original authors of the FreeDO have full right to develop closed source derivative work.
- *   Any non-commercial uses of the FreeDO sources or any knowledge obtained by studying or reverse engineering
- of the sources, or any other material published by FreeDO have to be accompanied with full credits.
- *   Any commercial uses of FreeDO sources or any knowledge obtained by studying or reverse engineering of the sources,
- or any other material published by FreeDO is strictly forbidden without owners approval.
+  *   The owners and original authors of the FreeDO have full right to
+  *   develop closed source derivative work.
 
- The above notes are taking precedence over GNU LGPL in conflicting situations.
+  *   Any non-commercial uses of the FreeDO sources or any knowledge
+  *   obtained by studying or reverse engineering of the sources, or
+  *   any other material published by FreeDO have to be accompanied
+  *   with full credits.
 
- Project authors:
+  *   Any commercial uses of FreeDO sources or any knowledge obtained
+  *   by studying or reverse engineering of the sources, or any other
+  *   material published by FreeDO is strictly forbidden without
+  *   owners approval.
 
- Alexander Troosh
- Maxim Grishin
- Allen Wright
- John Sammons
- Felix Lazarev
- */
+  The above notes are taking precedence over GNU LGPL in conflicting
+  situations.
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <boolean.h>
+  Project authors:
+  *  Alexander Troosh
+  *  Maxim Grishin
+  *  Allen Wright
+  *  John Sammons
+  *  Felix Lazarev
+*/
 
 #include "freedo_arm.h"
 #include "freedo_clio.h"
@@ -38,290 +41,247 @@
 #include "freedo_xbus.h"
 #include "freedo_xbus_cdrom_plugin.h"
 #include "inline.h"
+#include "endianness.h"
 
-_ext_Interface  io_interface;
+#include <stdint.h>
+#include <stdlib.h>
+#include <boolean.h>
 
-extern int FMVFIX;
-extern int lsize;
+static freedo_ext_interface_t io_interface;
+
 extern int flagtime;
 
-int __tex__scaler = 0;
-int HightResMode=0;
-int fixmode=0;
-int biosanvil=0;
-int isanvil=0;
-int sf=0;
-int sdf=0;
-int unknownflag11=0;
-int jw=0;
-int cnbfix=0;
+int HIRESMODE = 0;
+int FIXMODE   = 0;
+int CNBFIX    = 0;
 
-static INLINE uint32_t _bswap(uint32_t x)
+static
+void
+copy_rom(void       *dst_,
+         const void *src_)
 {
-   return (x>>24) | ((x>>8)&0x0000FF00L) | ((x&0x0000FF00L)<<8) | (x<<24);
+  int i;
+  uint32_t *src;
+  uint32_t *dst;
+
+  src = (uint32_t*)src_;
+  dst = (uint32_t*)dst_;
+  for(i = 0; i < (1024 * 1024 / 4); i++)
+    dst[i] = SWAP32_IF_LITTLE_ENDIAN(src[i]);
 }
 
-int _3do_Init(void)
+int
+freedo_3do_init(freedo_ext_interface_t  callback_,
+                const void             *rom_)
 {
-   int i;
-   uint8_t *Memory;
-   uint8_t *rom;
-   if(isanvil==30)biosanvil=1;
-   Memory=freedo_arm_init();
+  int i;
+  uint8_t *rom;
+  uint8_t *dram;
+  uint8_t *vram;
 
-   io_interface(EXT_READ_ROMS,freedo_arm_rom_get());
-   rom=freedo_arm_rom_get();
-   for(i= (1024*1024*2)-4; i >= 0; i -= 4)
-      *(int *)(rom+i) =_bswap(*(int *)(rom+i));
+  io_interface = callback_;
 
-   freedo_vdlp_init(Memory+0x200000);   // Visible only VRAM to it
-   freedo_sport_init(Memory+0x200000);  // Visible only VRAM to it
-   freedo_madam_init(Memory);
+  CNBFIX = 0;
 
-   freedo_xbus_init(xbus_cdrom_plugin);
+  freedo_arm_init();
 
-   freedo_clio_init(0x40); // 0x40 for start from  3D0-CD, 0x01/0x02 from PhotoCD ?? (NO use 0x40/0x02 for BIOS test)
-   freedo_dsp_init();
-   freedo_diag_port_init(-1);  // Select test, use -1 -- if d'nt need tests
-   /*
-      00	DIAGNOSTICS TEST	(run of test: 1F, 24, 25, 32, 50, 51, 60, 61, 62, 68, 71, 75, 80, 81, 90)
-      01	AUTO-DIAG TEST		(run of test: 1F, 24, 25, 32, 50, 51, 60, 61, 62, 68,         80, 81, 90)
-      12	DRAM1 DATA TEST
-      1A	DRAM2 DATA TEST
-      1E	EARLY RAM TEST
-      1F	RAM DATA TEST
-      22	VRAM1 DATA TEST
-      24	VRAM1 FLASH TEST
-      25	VRAM1 SPORT TEST
-      32	SRAM DATA TEST
-      50	MADAM TEST
-      51	CLIO TEST
-      60	CD-ROM POLL TEST
-      61	CD-ROM PATH TEST
-      62	CD-ROM READ TEST	???
-      63	CD-ROM AutoAdjustValue TEST
-      67	CD-ROM#2 AutoAdjustValue TEST
-      68  DEV#15 POLL TEST
-      71	JOYPAD1 PRESS TEST
-      75	JOYPAD1 AUDIO TEST
-      80	SIN WAVE TEST
-      81	MUTING TEST
-      90	COLORBAR
-      F0	CHECK TESTTOOL  ???
-      F1	REVISION TEST
-      FF	TEST END (halt)
-      */
-   freedo_xbus_device_load(0,NULL);
+  dram = freedo_arm_ram_get();
+  vram = freedo_arm_vram_get();
+  rom  = freedo_arm_rom_get();
 
-   freedo_quarz_init();
+  copy_rom(rom,rom_);
 
-   return 0;
+  freedo_vdlp_init(vram);
+  freedo_sport_init(vram);
+  freedo_madam_init(dram);
+  freedo_xbus_init(xbus_cdrom_plugin);
+
+  /*
+    0x40 for start from 3D0-CD
+    0x01/0x02 from PhotoCD ??
+    (NO use 0x40/0x02 for BIOS test)
+  */
+  freedo_clio_init(0x40);
+  freedo_dsp_init();
+  /* select test, use -1 -- if don't need tests */
+  freedo_diag_port_init(-1);
+  /*
+    00	DIAGNOSTICS TEST (1F,24,25,32,50,51,60,61,62,68,71,75,80,81,90)
+    01	AUTO-DIAG TEST   (1F,24,25,32,50,51,60,61,62,68,80,81,90)
+    12	DRAM1 DATA TEST
+    1A	DRAM2 DATA TEST
+    1E	EARLY RAM TEST
+    1F	RAM DATA TEST
+    22	VRAM1 DATA TEST
+    24	VRAM1 FLASH TEST
+    25	VRAM1 SPORT TEST
+    32	SRAM DATA TEST
+    50	MADAM TEST
+    51	CLIO TEST
+    60	CD-ROM POLL TEST
+    61	CD-ROM PATH TEST
+    62	CD-ROM READ TEST	???
+    63	CD-ROM AutoAdjustValue TEST
+    67	CD-ROM#2 AutoAdjustValue TEST
+    68  DEV#15 POLL TEST
+    71	JOYPAD1 PRESS TEST
+    75	JOYPAD1 AUDIO TEST
+    80	SIN WAVE TEST
+    81	MUTING TEST
+    90	COLORBAR
+    F0	CHECK TESTTOOL  ???
+    F1	REVISION TEST
+    FF	TEST END (halt)
+  */
+  freedo_xbus_device_load(0,NULL);
+
+  freedo_quarz_init();
+
+  return 0;
 }
 
-vdlp_frame_t *curr_frame;
-bool skipframe;
-
-void _3do_InternalFrame(int cycles)
+static
+void
+freedo_3do_internal_frame(vdlp_frame_t *frame_,
+                          int           cycles_)
 {
-   int line;
-   freedo_quarz_push_cycles(cycles);
-   if(freedo_quarz_queue_dsp())
-      io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)freedo_dsp_loop());
-   if(freedo_quarz_queue_timer())
-      freedo_clio_timer_execute();
-   if(freedo_quarz_queue_vdl())
-   {
-      line=freedo_quarz_vd_current_line();
-      freedo_clio_vcnt_update(line, freedo_quarz_vd_half_frame());
-      if(!skipframe)
-         freedo_vdlp_process_line(line,curr_frame);
-      if(line==16 && skipframe)
-         io_interface(EXT_FRAMETRIGGER_MT,NULL);
+  int line;
+  int half_frame;
 
-      if(line==freedo_clio_line_v0())
-         freedo_clio_fiq_generate(1<<0,0);
+  freedo_quarz_push_cycles(cycles_);
+  if(freedo_quarz_queue_dsp())
+    io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)freedo_dsp_loop());
 
-      if(line==freedo_clio_line_v1())
-      {
-         freedo_clio_fiq_generate(1<<1,0);
-         //curr_frame->srcw=320;
-         //curr_frame->srch=240;
-         if(!skipframe)
-            curr_frame = (vdlp_frame_t*)io_interface(EXT_SWAPFRAME,curr_frame);
-         //if(!scipframe)io_interface(EXT_SWAPFRAME,curr_frame);
-      }
-   }
+  if(freedo_quarz_queue_timer())
+    freedo_clio_timer_execute();
+
+  if(freedo_quarz_queue_vdl())
+    {
+      line       = freedo_quarz_vd_current_line();
+      half_frame = freedo_quarz_vd_half_frame();
+
+      freedo_clio_vcnt_update(line,half_frame);
+      freedo_vdlp_process_line(line,frame_);
+
+      if(line == freedo_clio_line_v0())
+        freedo_clio_fiq_generate(1<<0,0);
+
+      if(line == freedo_clio_line_v1())
+        {
+          freedo_clio_fiq_generate(1<<1,0);
+          io_interface(EXT_SWAPFRAME,frame_);
+        }
+    }
 }
 
-void _3do_Frame(vdlp_frame_t *frame, bool __skipframe)
+void
+freedo_3do_process_frame(vdlp_frame_t *frame_)
 {
-   int i   = 0;
-   int cnt = 0;
+  uint32_t i;
+  uint32_t cnt;
+  uint64_t freq;
 
-   curr_frame = frame;
-   skipframe = __skipframe;
-   if(flagtime)flagtime--;
+  if(flagtime)
+    flagtime--;
 
-   do
-   {
-      if(freedo_madam_fsm_get()==FSM_INPROCESS)
-      {
-         freedo_madam_cel_handle();
-         freedo_madam_fsm_set(FSM_IDLE);
-         continue;
-      }
+  i    = 0;
+  cnt  = 0;
+  freq = freedo_quarz_cpu_get_freq();
+  do
+    {
+      if(freedo_madam_fsm_get() == FSM_INPROCESS)
+        {
+          freedo_madam_cel_handle();
+          freedo_madam_fsm_set(FSM_IDLE);
+        }
 
-      cnt+=freedo_arm_execute();
+      cnt += freedo_arm_execute();
 
-      if(cnt >> 4)
-      {
-         _3do_InternalFrame(cnt);
-         i += cnt;
-         cnt = 0;
-      }
-   }while(i < (freedo_quarz_cpu_get_freq()/60));
+      if(cnt >= 32)
+        {
+          freedo_3do_internal_frame(frame_,cnt);
+          i += cnt;
+          cnt = 0;
+        }
+    } while(i < (freq / 60));
 }
 
-void _3do_Destroy()
+void
+freedo_3do_destroy()
 {
-   freedo_arm_destroy();
-   freedo_xbus_destroy();
+  freedo_arm_destroy();
+  freedo_xbus_destroy();
 }
 
-uint32_t _3do_SaveSize(void)
+uint32_t
+freedo_3do_state_size(void)
 {
-   uint32_t tmp=freedo_arm_state_size();
+  uint32_t tmp;
 
-   tmp+=freedo_vdlp_state_size();
-   tmp+=freedo_dsp_state_size();
-   tmp+=freedo_clio_state_size();
-   tmp+=freedo_quarz_state_size();
-   tmp+=freedo_sport_state_size();
-   tmp+=freedo_madam_state_size();
-   tmp+=freedo_xbus_state_size();
-   tmp+=16*4;
-   return tmp;
+  tmp  = 0;
+  tmp += 16 * 4;
+  tmp += freedo_arm_state_size();
+  tmp += freedo_vdlp_state_size();
+  tmp += freedo_dsp_state_size();
+  tmp += freedo_clio_state_size();
+  tmp += freedo_quarz_state_size();
+  tmp += freedo_sport_state_size();
+  tmp += freedo_madam_state_size();
+  tmp += freedo_xbus_state_size();
+
+  return tmp;
 }
 
-void _3do_Save(void *buff)
+void
+freedo_3do_state_save(void *buf_)
 {
-   uint8_t *data=(uint8_t*)buff;
-   int *indexes=(int*)buff;
+  uint8_t *data;
+  uint32_t *indexes;
 
-   indexes[0]=0x97970101;
-   indexes[1]=16*4;
-   indexes[2]=indexes[1]+freedo_arm_state_size();
-   indexes[3]=indexes[2]+freedo_vdlp_state_size();
-   indexes[4]=indexes[3]+freedo_dsp_state_size();
-   indexes[5]=indexes[4]+freedo_clio_state_size();
-   indexes[6]=indexes[5]+freedo_quarz_state_size();
-   indexes[7]=indexes[6]+freedo_sport_state_size();
-   indexes[8]=indexes[7]+freedo_madam_state_size();
-   indexes[9]=indexes[8]+freedo_xbus_state_size();
+  data    = buf_;
+  indexes = buf_;
 
-   freedo_arm_state_save(&data[indexes[1]]);
-   freedo_vdlp_state_save(&data[indexes[2]]);
-   freedo_dsp_state_save(&data[indexes[3]]);
-   freedo_clio_state_save(&data[indexes[4]]);
-   freedo_quarz_state_save(&data[indexes[5]]);
-   freedo_sport_state_save(&data[indexes[6]]);
-   freedo_madam_state_save(&data[indexes[7]]);
-   freedo_xbus_state_save(&data[indexes[8]]);
+  indexes[0] = 0x97970101;
+  indexes[1] = 16 * 4;
+  indexes[2] = indexes[1] + freedo_arm_state_size();
+  indexes[3] = indexes[2] + freedo_vdlp_state_size();
+  indexes[4] = indexes[3] + freedo_dsp_state_size();
+  indexes[5] = indexes[4] + freedo_clio_state_size();
+  indexes[6] = indexes[5] + freedo_quarz_state_size();
+  indexes[7] = indexes[6] + freedo_sport_state_size();
+  indexes[8] = indexes[7] + freedo_madam_state_size();
+  indexes[9] = indexes[8] + freedo_xbus_state_size();
 
+  freedo_arm_state_save(&data[indexes[1]]);
+  freedo_vdlp_state_save(&data[indexes[2]]);
+  freedo_dsp_state_save(&data[indexes[3]]);
+  freedo_clio_state_save(&data[indexes[4]]);
+  freedo_quarz_state_save(&data[indexes[5]]);
+  freedo_sport_state_save(&data[indexes[6]]);
+  freedo_madam_state_save(&data[indexes[7]]);
+  freedo_xbus_state_save(&data[indexes[8]]);
 }
 
-bool _3do_Load(void *buff)
+bool
+freedo_3do_state_load(const void *buf_)
 {
-   uint8_t *data=(uint8_t*)buff;
-   int *indexes=(int*)buff;
-   if((uint32_t)indexes[0]!=0x97970101)
-      return false;
+  const uint8_t *data;
+  const uint32_t *indexes;
 
-   freedo_arm_state_load(&data[indexes[1]]);
-   freedo_vdlp_state_load(&data[indexes[2]]);
-   freedo_dsp_state_load(&data[indexes[3]]);
-   freedo_clio_state_load(&data[indexes[4]]);
-   freedo_quarz_state_load(&data[indexes[5]]);
-   freedo_sport_state_load(&data[indexes[6]]);
-   freedo_madam_state_load(&data[indexes[7]]);
-   freedo_xbus_state_load(&data[indexes[8]]);
+  data    = buf_;
+  indexes = buf_;
 
-   return true;
-}
+  if(indexes[0] != 0x97970101)
+    return false;
 
-void *_freedo_Interface(int procedure, void *datum)
-{
-   int line;
+  freedo_arm_state_load(&data[indexes[1]]);
+  freedo_vdlp_state_load(&data[indexes[2]]);
+  freedo_dsp_state_load(&data[indexes[3]]);
+  freedo_clio_state_load(&data[indexes[4]]);
+  freedo_quarz_state_load(&data[indexes[5]]);
+  freedo_sport_state_load(&data[indexes[6]]);
+  freedo_madam_state_load(&data[indexes[7]]);
+  freedo_xbus_state_load(&data[indexes[8]]);
 
-   switch(procedure)
-   {
-      case FDP_INIT:
-         cnbfix=0;
-         sf=5000000;
-         io_interface=(_ext_Interface)datum;
-         _3do_Init();
-         break;
-      case FDP_DESTROY:
-         _3do_Destroy();
-         break;
-      case FDP_DO_EXECFRAME:
-         _3do_Frame((vdlp_frame_t*)datum, false);
-         break;
-      case FDP_DO_EXECFRAME_MT:
-         _3do_Frame((vdlp_frame_t*)datum, true);
-         break;
-      case FDP_DO_FRAME_MT:
-         line=0;
-         while(line<256)freedo_vdlp_process_line(line++,(vdlp_frame_t*)datum);
-         break;
-      case FDP_GET_SAVE_SIZE:
-         _3do_SaveSize();
-         break;
-      case FDP_DO_SAVE:
-         _3do_Save(datum);
-         break;
-      case FDP_DO_LOAD:
-         cnbfix=1;
-         sf=0;
-         _3do_Load(datum);
-         break;
-      case FDP_GETP_RAMS:
-         freedo_arm_ram_get();
-         break;
-      case FDP_GETP_ROMS:
-         freedo_arm_rom_get();
-         break;
-      case FDP_GETP_PROFILE:
-         break;
-      case FDP_SET_TEXQUALITY:
-         __tex__scaler=(intptr_t)datum;
-         break;
-         //	case FDP_SET_FIX_MODE:
-         //		fixmode=(intptr_t)datum;
-         //		break;
-         //	case FDP_GET_FRAME_BITMAP:
-         //		GetFrameBitmapParams* param = (GetFrameBitmapParams*)datum;
-         //		Get_Frame_Bitmap(
-         //			param->sourceFrame
-         //			, param->destinationBitmap
-         //			, param->destinationBitmapWidthPixels
-         //			, param->bitmapCrop
-         //			, param->copyWidthPixels
-         //			, param->copyHeightPixels
-         //			, param->addBlackBorder
-         //			, param->copyPointlessAlphaByte
-         //			, param->allowCrop
-         //			, (ScalingAlgorithm)param->scalingAlgorithm
-         //			, &param->resultingWidth
-         //			, &param->resultingHeight);
-         //		break;
-      case FDP_GET_BIOS_TYPE:
-         return (void*)&isanvil;
-         break;
-      case FDP_SET_ANVIL:
-         isanvil=(int)datum;
-         break;
-   }
-
-   return NULL;
+  return true;
 }

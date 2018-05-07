@@ -61,6 +61,7 @@ void     freedo_arm_state_load(const void *buf_);
 uint8_t* freedo_arm_nvram_get(void);
 uint8_t* freedo_arm_rom_get(void);
 uint8_t* freedo_arm_ram_get(void);
+uint8_t* freedo_arm_vram_get(void);
 
 EXTERN_C_END
 
