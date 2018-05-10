@@ -19,16 +19,16 @@ static FILE *cue_get_file_for_image(const char *path)
    char *exts[]   = {".cue", ".CUE"};
    char *last_dot = NULL;
    const char *ext;
-       FILE *cue_file = NULL;
 
    ext = path_get_extension(path);
    if(ext == NULL)
        return NULL;
 
    if(!strncasecmp(ext, "cd", 2)) {
-       cue_file = fopen(path, "r");
-       if (cue_file)
-           return cue_file;
+     FILE *cue_file = NULL;
+     cue_file = fopen(path, "r");
+     if (cue_file)
+       return cue_file;
    }
 
    strncpy(cue_path_base, path, STRING_MAX);

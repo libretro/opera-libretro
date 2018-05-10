@@ -19,6 +19,7 @@
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
+#include "disk_control.h"
 #include "nvram.h"
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
@@ -43,10 +44,6 @@ extern int HightResMode;
 extern unsigned int _3do_SaveSize(void);
 extern void _3do_Save(void *buff);
 extern bool _3do_Load(void *buff);
-
-static cdimage_t cdimage;
-
-static int currentSector;
 
 static uint32_t *videoBuffer;
 static int videoWidth, videoHeight;
@@ -130,27 +127,6 @@ static void initVideo(void)
       frame = (vdlp_frame_t*)malloc(sizeof(vdlp_frame_t));
 
    memset(frame, 0, sizeof(vdlp_frame_t));
-}
-
-static
-uint32_t
-cdimage_get_size(void)
-{
-  return retro_cdimage_get_number_of_logical_blocks(&cdimage);
-}
-
-static
-void
-cdimage_set_sector(const uint32_t sector_)
-{
-  currentSector = sector_;
-}
-
-static
-void
-cdimage_read_sector(void *buf_)
-{
-  retro_cdimage_read(&cdimage,currentSector,buf_,2048);
 }
 
 /* libfreedo callback */
@@ -487,212 +463,12 @@ retro_setup_input_descriptions(void)
   retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,desc);
 }
 
-/* multidisk support */
-static bool disk_ejected;
-static unsigned int disk_current_index;
-static unsigned int disk_count;
-static struct disks_state {
-	char *fname;
-	int internal_index; // for multidisk eboots
-} disks[8];
-
-static bool disk_set_eject_state(bool ejected)
-{
-	disk_ejected = ejected;
-	return true;
-}
-
-static bool disk_get_eject_state(void)
-{
-	/* can't be controlled by emulated software */
-	return disk_ejected;
-}
-
-static unsigned int disk_get_image_index(void)
-{
-	return disk_current_index;
-}
-
-static bool disk_set_image_index(unsigned int index)
-{
-	if (index >= sizeof(disks) / sizeof(disks[0])) {
-		return false;
-    }
-
-	if (disks[index].fname == NULL) {
-		retro_log_printf_cb(RETRO_LOG_ERROR, "missing disk #%u\n", index);
-
-		// RetroArch specifies "no disk" with index == count,
-		// so don't fail here..
-		disk_current_index = index;
-		return true;
-	}
-
-	retro_log_printf_cb(RETRO_LOG_INFO, "switching to disk %u: \"%s\" #%d\n", index,
-		disks[index].fname, disks[index].internal_index);
-
-    int ret = retro_cdimage_close(&cdimage);
-    if (ret > 0) {
-        retro_log_printf_cb(RETRO_LOG_ERROR, "error %d closing cdimage: %d\n", ret, index);
-        return false;
-    }
-
-    ret = retro_cdimage_open(disks[index].fname, &cdimage);
-    if (ret > 0) {
-        retro_log_printf_cb(RETRO_LOG_ERROR, "error %d opening cdimage: %d\n", ret, index);
-        return false;
-    }
-
-	disk_current_index = index;
-	return true;
-}
-
-static unsigned int disk_get_num_images(void)
-{
-	return disk_count;
-}
-
-static bool disk_replace_image_index(unsigned index,
-	const struct retro_game_info *info)
-{
-	char *old_fname;
-	bool ret = true;
-
-	if (index >= sizeof(disks) / sizeof(disks[0]))
-		return false;
-
-	old_fname = disks[index].fname;
-	disks[index].fname = NULL;
-	disks[index].internal_index = 0;
-
-	if (info != NULL) {
-		disks[index].fname = strdup(info->path);
-		if (index == disk_current_index)
-			ret = disk_set_image_index(index);
-	}
-
-	if (old_fname != NULL)
-		free(old_fname);
-
-	return ret;
-}
-
-static bool disk_add_image_index(void)
-{
-	if (disk_count >= 8)
-		return false;
-
-	disk_count++;
-	return true;
-}
-
-static struct retro_disk_control_callback disk_control = {
-	.set_eject_state = disk_set_eject_state,
-	.get_eject_state = disk_get_eject_state,
-	.get_image_index = disk_get_image_index,
-	.set_image_index = disk_set_image_index,
-	.get_num_images = disk_get_num_images,
-	.replace_image_index = disk_replace_image_index,
-	.add_image_index = disk_add_image_index,
-};
-
-// just in case, maybe a win-rt port in the future?
-#ifdef _WIN32
-#define SLASH '\\'
-#else
-#define SLASH '/'
-#endif
-
-#ifndef PATH_MAX
-#define PATH_MAX  4096
-#endif
-
-static char base_dir[PATH_MAX];
-
-static bool read_m3u(const char *file)
-{
-	char line[PATH_MAX];
-	char name[PATH_MAX];
-	FILE *f = fopen(file, "r");
-	if (!f)
-		return false;
-
-	while (fgets(line, sizeof(line), f) && disk_count < sizeof(disks) / sizeof(disks[0])) {
-		if (line[0] == '#')
-			continue;
-		char *carrige_return = strchr(line, '\r');
-		if (carrige_return)
-			*carrige_return = '\0';
-		char *newline = strchr(line, '\n');
-		if (newline)
-			*newline = '\0';
-
-		if (line[0] != '\0')
-		{
-			snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line);
-			disks[disk_count++].fname = strdup(name);
-		}
-	}
-
-	fclose(f);
-	return (disk_count != 0);
-}
-
-static void extract_directory(char *buf, const char *path, size_t size)
-{
-   char *base;
-   strncpy(buf, path, size - 1);
-   buf[size - 1] = '\0';
-
-   base = strrchr(buf, '/');
-   if (!base)
-      base = strrchr(buf, '\\');
-
-   if (base)
-      *base = '\0';
-   else
-   {
-      buf[0] = '.';
-      buf[1] = '\0';
-   }
-}
-
-#if defined(__QNX__) || defined(_WIN32)
-/* Blackberry QNX doesn't have strcasestr */
-
-/*
- * Find the first occurrence of find in s, ignore case.
- */
-char *
-strcasestr(const char *s, const char*find)
-{
-	char c, sc;
-	size_t len;
-
-	if ((c = *find++) != 0) {
-		c = tolower((unsigned char)c);
-		len = strlen(find);
-		do {
-			do {
-				if ((sc = *s++) == 0)
-					return (NULL);
-			} while ((char)tolower((unsigned char)sc) != c);
-		} while (strncasecmp(s, find, len) != 0);
-		s--;
-	}
-	return ((char *)s);
-}
-#endif
-
-
 bool retro_load_game(const struct retro_game_info *info)
 {
    size_t i;
-   bool is_m3u = (strcasestr(info->path, ".m3u") != NULL);
    int rv;
    enum retro_pixel_format  fmt                = RETRO_PIXEL_FORMAT_XRGB8888;
    const char              *system_directory_c = NULL;
-   const char              *full_path          = NULL;
 
     if (info == NULL || info->path == NULL) {
         retro_log_printf_cb(RETRO_LOG_ERROR, "info->path required\n");
@@ -708,36 +484,12 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   currentSector = 0;
    sampleCurrent = 0;
    memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
-   full_path = info->path;
-
    *biosPath = '\0';
 
-   for (i = 0; i < sizeof(disks) / sizeof(disks[0]); i++) {
-      if (disks[i].fname != NULL) {
-         free(disks[i].fname);
-         disks[i].fname = NULL;
-      }
-      disks[i].internal_index = 0;
-   }
-
-   disk_current_index = 0;
-   extract_directory(base_dir, info->path, sizeof(base_dir));
-
-   if (is_m3u) {
-      if (!read_m3u(info->path)) {
-         retro_log_printf_cb(RETRO_LOG_ERROR, "failed to read m3u file\n");
-         return false;
-      }
-   } else {
-      disk_count = 1;
-      disks[0].fname = strdup(info->path);
-   }
-
-   rv = retro_cdimage_open(disks[0].fname, &cdimage);
+   rv = disk_control_open_file(info->path);
    if(rv == -1)
      return false;
 
@@ -799,7 +551,7 @@ void retro_unload_game(void)
 
    _freedo_Interface(FDP_DESTROY, (void*)0);
 
-   retro_cdimage_close(&cdimage);
+   disk_control_cleanup();
 
    if (videoBuffer)
       free(videoBuffer);
@@ -854,11 +606,11 @@ retro_init(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_control);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_control_cb);
 
-  freedo_cdrom_set_callbacks(cdimage_get_size,
-                             cdimage_set_sector,
-                             cdimage_read_sector);
+  freedo_cdrom_set_callbacks(disk_image_get_size,
+                             disk_image_set_sector,
+                             disk_image_read_sector);
 }
 
 void retro_deinit(void)
@@ -873,8 +625,7 @@ retro_reset(void)
 
   _freedo_Interface(FDP_DESTROY, NULL);
 
-  currentSector = 0;
-
+  disk_control_get()->current_sector = 0;
   sampleCurrent = 0;
   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
 
