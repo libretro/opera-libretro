@@ -15,10 +15,12 @@ static
 void
 cdimage_set_size_and_offset(cdimage_t *cd_,
                             const int  size_,
-                            const int  offset_)
+                            const int  offset_,
+                            const char *path_)
 {
   cd_->sector_size   = size_;
   cd_->sector_offset = offset_;
+  cd_->filename = strdup(path_);
 }
 
 int
@@ -41,9 +43,9 @@ retro_cdimage_open_chd(const char *path_,
 
   /* MODE1 */
   if(!memcmp(buf,pattern,sizeof(pattern)))
-    cdimage_set_size_and_offset(cdimage_,2448,0);
+    cdimage_set_size_and_offset(cdimage_,2448,0,path_);
   else /* MODE1_RAW */
-    cdimage_set_size_and_offset(cdimage_,2352,16);
+    cdimage_set_size_and_offset(cdimage_,2352,16,path_);
 
   return 0;
 }
@@ -62,11 +64,11 @@ retro_cdimage_open_iso(const char *path_,
 
   size = intfstream_get_size(cdimage_->fp);
   if((size % 2048) == 0)
-    cdimage_set_size_and_offset(cdimage_,2048,0);
+    cdimage_set_size_and_offset(cdimage_,2048,0,path_);
   else if((size % 2352) == 0)
-    cdimage_set_size_and_offset(cdimage_,2352,16);
+    cdimage_set_size_and_offset(cdimage_,2352,16,path_);
   else
-    cdimage_set_size_and_offset(cdimage_,2048,0);
+    cdimage_set_size_and_offset(cdimage_,2048,0,path_);
 
   return 0;
 }
@@ -108,17 +110,17 @@ retro_cdimage_open_cue(const char *path_,
   switch(cue_file->cd_format)
     {
     case MODE1_2048:
-      cdimage_set_size_and_offset(cdimage_,2048,0);
+      cdimage_set_size_and_offset(cdimage_,2048,0,path_);
       break;
     case MODE1_2352:
-      cdimage_set_size_and_offset(cdimage_,2352,16);
+      cdimage_set_size_and_offset(cdimage_,2352,16,path_);
       break;
     case MODE2_2352:
-      cdimage_set_size_and_offset(cdimage_,2352,24);
+      cdimage_set_size_and_offset(cdimage_,2352,24,path_);
       break;
     default:
     case CUE_MODE_UNKNOWN:
-      cdimage_set_size_and_offset(cdimage_,2048,0);
+      cdimage_set_size_and_offset(cdimage_,2048,0,path_);
       break;
     }
 
@@ -137,10 +139,9 @@ retro_cdimage_open(const char *path_,
   if(ext == NULL)
     return -1;
 
-
   if(!strcasecmp(ext,"chd"))
     return retro_cdimage_open_chd(path_,cdimage_);
-  if(!strcasecmp(ext,"cue") || !strncasecmp(ext, "cd", 2))
+  if(!strcasecmp(ext,"cue"))
     return retro_cdimage_open_cue(path_,cdimage_);
   if(!strcasecmp(ext,"iso"))
     return retro_cdimage_open_iso(path_,cdimage_);
