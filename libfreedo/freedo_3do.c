@@ -41,7 +41,6 @@
 #include "freedo_xbus.h"
 #include "freedo_xbus_cdrom_plugin.h"
 #include "inline.h"
-#include "endianness.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -55,27 +54,10 @@ int HIRESMODE = 0;
 int FIXMODE   = 0;
 int CNBFIX    = 0;
 
-static
-void
-copy_rom(void       *dst_,
-         const void *src_)
-{
-  int i;
-  uint32_t *src;
-  uint32_t *dst;
-
-  src = (uint32_t*)src_;
-  dst = (uint32_t*)dst_;
-  for(i = 0; i < (1024 * 1024 / 4); i++)
-    dst[i] = SWAP32_IF_LITTLE_ENDIAN(src[i]);
-}
-
 int
-freedo_3do_init(freedo_ext_interface_t  callback_,
-                const void             *rom_)
+freedo_3do_init(freedo_ext_interface_t callback_)
 {
   int i;
-  uint8_t *rom;
   uint8_t *dram;
   uint8_t *vram;
 
@@ -87,9 +69,6 @@ freedo_3do_init(freedo_ext_interface_t  callback_,
 
   dram = freedo_arm_ram_get();
   vram = freedo_arm_vram_get();
-  rom  = freedo_arm_rom_get();
-
-  copy_rom(rom,rom_);
 
   freedo_vdlp_init(vram);
   freedo_sport_init(vram);
@@ -138,6 +117,13 @@ freedo_3do_init(freedo_ext_interface_t  callback_,
   freedo_quarz_init();
 
   return 0;
+}
+
+void
+freedo_3do_destroy()
+{
+  freedo_arm_destroy();
+  freedo_xbus_destroy();
 }
 
 static
@@ -204,13 +190,6 @@ freedo_3do_process_frame(vdlp_frame_t *frame_)
           cnt = 0;
         }
     } while(i < (freq / 60));
-}
-
-void
-freedo_3do_destroy()
-{
-  freedo_arm_destroy();
-  freedo_xbus_destroy();
 }
 
 uint32_t

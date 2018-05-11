@@ -323,7 +323,7 @@ freedo_clio_poke(uint32_t addr_,
   else if(addr_ == 0x84)
     {
       CLIO.regs[0x84] = (val_ & 0x0F);
-      freedo_rom_select((val_ & 4) ? 1 : 0);
+      freedo_arm_rom_select(val_ & 4);
       return 0;
     }
   else if(addr_ == 0x0300)
