@@ -23,6 +23,7 @@
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
 
+#include "libfreedo/freedo_3do.h"
 #include "libfreedo/freedo_arm.h"
 #include "libfreedo/freedo_cdrom.h"
 #include "libfreedo/freedo_core.h"
@@ -38,11 +39,6 @@
 
 static char biosPath[1024];
 static vdlp_frame_t *frame;
-
-extern int HightResMode;
-extern unsigned int _3do_SaveSize(void);
-extern void _3do_Save(void *buff);
-extern bool _3do_Load(void *buff);
 
 static cdimage_t cdimage;
 
@@ -102,23 +98,27 @@ retro_set_input_state(retro_input_state_t cb)
   retro_set_input_state_cb(cb);
 }
 
-static void fsReadBios(const char *bios_path, void *prom)
+static
+int64_t
+fsReadBios(const char *bios_path_,
+           void       *rom_,
+           int64_t     size_)
 {
-   int64_t file_size = 0;
-   int64_t readcount = 0;
-   RFILE *bios1      = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  int64_t rv;
+  RFILE *bios;
 
-   if (!bios1)
-      return;
+  bios = filestream_open(bios_path_,
+                         RETRO_VFS_FILE_ACCESS_READ,
+                         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-   filestream_seek(bios1, 0, RETRO_VFS_SEEK_POSITION_END);
-   file_size = filestream_tell(bios1);
-   filestream_rewind(bios1);
-   readcount = filestream_read(bios1, prom, file_size);
-   (void)readcount;
+  if(!bios)
+    return -1;
 
-   filestream_close(bios1);
+  rv = filestream_read(bios,rom_,size_);
+
+  filestream_close(bios);
+
+  return rv;
 }
 
 static void initVideo(void)
@@ -158,9 +158,6 @@ static void *fdcCallback(int procedure, void *data)
 {
    switch(procedure)
    {
-      case EXT_READ_ROMS:
-         fsReadBios(biosPath, data);
-         break;
       case EXT_SWAPFRAME:
          freedo_frame_get_bitmap_xrgb_8888(frame,videoBuffer,videoWidth,videoHeight);
          return frame;
@@ -171,13 +168,10 @@ static void *fdcCallback(int procedure, void *data)
          if(sampleCurrent >= TEMP_BUFFER_SIZE)
          {
             sampleCurrent = 0;
-            audio_batch_cb((int16_t *)sampleBuffer, TEMP_BUFFER_SIZE);
+            audio_batch_cb((int16_t*)sampleBuffer,TEMP_BUFFER_SIZE);
          }
          break;
       case EXT_KPRINT:
-         break;
-      case EXT_FRAMETRIGGER_MT:
-         _freedo_Interface(FDP_DO_FRAME_MT, frame);
          break;
       case EXT_ARM_SYNC:
 #if 0
@@ -290,23 +284,27 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 
 size_t retro_serialize_size(void)
 {
-   return _3do_SaveSize();
+   return freedo_3do_state_size();
 }
 
 bool retro_serialize(void *data, size_t size)
 {
-  if(size < _3do_SaveSize())
+  if(size < freedo_3do_state_size())
     return false;
 
-  _3do_Save(data);
+  freedo_3do_state_save(data);
 
   return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-   _3do_Load((void*)data);
-   return true;
+  if(size != freedo_3do_state_size())
+    return false;
+
+  freedo_3do_state_load((void*)data);
+
+  return true;
 }
 
 void retro_cheat_reset(void)
@@ -341,15 +339,15 @@ check_env_4do_high_resolution(void)
 {
   if(environ_enabled("4do_high_resolution"))
     {
-      HightResMode = 1;
-      videoWidth   = 640;
-      videoHeight  = 480;
+      HIRESMODE   = 1;
+      videoWidth  = 640;
+      videoHeight = 480;
     }
   else
     {
-      HightResMode = 0;
-      videoWidth   = 320;
-      videoHeight  = 240;
+      HIRESMODE   = 0;
+      videoWidth  = 320;
+      videoHeight = 240;
     }
 }
 
@@ -448,11 +446,11 @@ check_variables(void)
    check_env_4do_cpu_overclock();
    check_env_4do_x_button_also_p();
    check_env_4do_controller_count();
-   check_env_set_reset_bits("4do_hack_timing_1",&fixmode,FIX_BIT_TIMING_1);
-   check_env_set_reset_bits("4do_hack_timing_3",&fixmode,FIX_BIT_TIMING_3);
-   check_env_set_reset_bits("4do_hack_timing_5",&fixmode,FIX_BIT_TIMING_5);
-   check_env_set_reset_bits("4do_hack_timing_6",&fixmode,FIX_BIT_TIMING_6);
-   check_env_set_reset_bits("4do_hack_graphics_step_y",&fixmode,FIX_BIT_GRAPHICS_STEP_Y);
+   check_env_set_reset_bits("4do_hack_timing_1",&FIXMODE,FIX_BIT_TIMING_1);
+   check_env_set_reset_bits("4do_hack_timing_3",&FIXMODE,FIX_BIT_TIMING_3);
+   check_env_set_reset_bits("4do_hack_timing_5",&FIXMODE,FIX_BIT_TIMING_5);
+   check_env_set_reset_bits("4do_hack_timing_6",&FIXMODE,FIX_BIT_TIMING_6);
+   check_env_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
 #define CONTROLLER_DESC(PORT) \
@@ -490,6 +488,7 @@ retro_setup_input_descriptions(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    int rv;
+   uint8_t rom[1024 * 1024];
    enum retro_pixel_format  fmt                = RETRO_PIXEL_FORMAT_XRGB8888;
    const char              *system_directory_c = NULL;
    const char              *full_path          = NULL;
@@ -548,10 +547,10 @@ bool retro_load_game(const struct retro_game_info *info)
       strcpy(biosPath, bios_path);
    }
 
-   /* Initialize libfreedo */
    check_variables();
    initVideo();
-   _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+   fsReadBios(biosPath,rom,sizeof(rom));
+   freedo_3do_init(fdcCallback,rom);
 
    /* XXX: Is this really a frontend responsibility? */
    nvram_init(freedo_arm_nvram_get());
@@ -574,7 +573,7 @@ void retro_unload_game(void)
    if(check_env_nvram_shared())
      retro_nvram_save(freedo_arm_nvram_get());
 
-   _freedo_Interface(FDP_DESTROY, (void*)0);
+   freedo_3do_destroy();
 
    retro_cdimage_close(&cdimage);
 
@@ -644,10 +643,12 @@ void retro_deinit(void)
 void
 retro_reset(void)
 {
+  uint8_t rom[1024 * 1024];
+
   if(check_env_nvram_shared())
     retro_nvram_save(freedo_arm_nvram_get());
 
-  _freedo_Interface(FDP_DESTROY, NULL);
+  freedo_3do_destroy();
 
   currentSector = 0;
 
@@ -656,8 +657,8 @@ retro_reset(void)
 
   check_variables();
   initVideo();
-
-  _freedo_Interface(FDP_INIT, (void*)*fdcCallback);
+  fsReadBios(biosPath,rom,sizeof(rom));
+  freedo_3do_init(fdcCallback,rom);
 
   nvram_init(freedo_arm_nvram_get());
   if(check_env_nvram_shared())
@@ -673,7 +674,7 @@ retro_run(void)
 
   update_input();
 
-  _freedo_Interface(FDP_DO_EXECFRAME, frame); /* FDP_DO_EXECFRAME_MT ? */
+  freedo_3do_process_frame(frame);
 
   video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
 }

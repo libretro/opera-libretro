@@ -28,6 +28,7 @@
   *  Felix Lazarev
 */
 
+#include "freedo_core.h"
 #include "inline.h"
 
 #include <stdint.h>
@@ -46,8 +47,6 @@ struct sport_s
 };
 
 typedef struct sport_s sport_t;
-
-extern int HightResMode;
 
 static sport_t  SPORT = {0};
 static void    *VRAM;
@@ -127,7 +126,7 @@ sport_flash_write(const uint32_t rawidx_,
   else
     sport_set_color_with_mask(idx,mask_);
 
-  if(!HightResMode)
+  if(!HIRESMODE)
     return;
 
   sport_memcpy_highres(idx,idx);
@@ -140,7 +139,7 @@ sport_copy_page_color(void)
 {
   sport_memcpy(SPORT.destination,SPORT.source);
 
-  if(!HightResMode)
+  if(!HIRESMODE)
     return;
 
   sport_memcpy_highres(SPORT.destination,SPORT.source);
@@ -163,7 +162,7 @@ sport_copy_page_color_with_mask(const uint32_t mask_)
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
     dvram[i] = (((dvram[i] ^ svram[i]) & mask_) ^ svram[i]);
 
-  if(!HightResMode)
+  if(!HIRESMODE)
     return;
 
   sport_memcpy_highres(SPORT.destination,SPORT.destination);

@@ -31,6 +31,7 @@
 #include "freedo_arm.h"
 #include "freedo_bitop.h"
 #include "freedo_clio.h"
+#include "freedo_core.h"
 #include "freedo_madam.h"
 #include "freedo_vdlp.h"
 #include "hack_flags.h"
@@ -41,9 +42,6 @@
 #include <string.h>
 
 struct BitReaderBig bitoper;
-
-extern int HightResMode;
-extern int fixmode;
 
 /* === CCB control word flags === */
 #define CCB_SKIP        0x80000000
@@ -2033,7 +2031,7 @@ DrawPackedCel_New(void)
 
   SPRWI++;
 
-  if(fixmode & FIX_BIT_GRAPHICS_STEP_Y)
+  if(FIXMODE & FIX_BIT_GRAPHICS_STEP_Y)
     {
       YPOS1616 = ycur;
       YPOS     = (YPOS1616 / 65536.0);
@@ -2222,7 +2220,7 @@ DrawLiteralCel_New(void)
       break;
     }
 
-  if(fixmode & FIX_BIT_GRAPHICS_STEP_Y)
+  if(FIXMODE & FIX_BIT_GRAPHICS_STEP_Y)
     {
       YPOS1616 = ycur;
       YPOS     = (YPOS1616 / 65536.0);
@@ -2297,7 +2295,7 @@ DrawLRCel_New(void)
                   uint32_t pixel;
                   uint32_t framePixel;
 
-                  if(fixmode & FIX_BIT_TIMING_6)
+                  if(FIXMODE & FIX_BIT_TIMING_6)
                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,MADAM.RMOD)));
                   else
                     framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,MADAM.RMOD)));
@@ -2390,7 +2388,7 @@ DrawLRCel_New(void)
       break;
     }
 
-  if(fixmode & FIX_BIT_GRAPHICS_STEP_Y)
+  if(FIXMODE & FIX_BIT_GRAPHICS_STEP_Y)
     {
       YPOS1616 = ycur;
       YPOS     = YPOS1616 / 65536.0;
@@ -2844,8 +2842,8 @@ readPIX(uint32_t src_,
         int32_t  i_,
         int32_t  j_)
 {
-  src_ += XY2OFF(((j_>>HightResMode)<<2),(i_>>HightResMode),MADAM.WMOD);
-  if(HightResMode)
+  src_ += XY2OFF(((j_>>HIRESMODE)<<2),(i_>>HIRESMODE),MADAM.WMOD);
+  if(HIRESMODE)
     return *((uint16_t*)&Mem[(src_^2) + (((i_ & 1) << 1) + (j_&1)) * 1024 * 1024]);
   return *((uint16_t*)&Mem[src_^2]);
 }
@@ -2858,8 +2856,8 @@ writePIX(uint32_t src_,
          int32_t  j_,
          uint16_t pix_)
 {
-  src_+=XY2OFF(((j_>>HightResMode)<<2),(i_>>HightResMode),MADAM.WMOD);
-  if(HightResMode)
+  src_+=XY2OFF(((j_>>HIRESMODE)<<2),(i_>>HIRESMODE),MADAM.WMOD);
+  if(HIRESMODE)
     *((uint16_t*)&Mem[(src_^2)+(((i_&1)<<1)+((j_)&1))*1024*1024]) = pix_;
   else
     *((uint16_t*)&Mem[src_^2]) = pix_;
@@ -2880,7 +2878,7 @@ TexelDraw_Scale(uint16_t CURPIX_,
   uint32_t pixel;
   uint32_t framePixel;
 
-  if(fixmode & FIX_BIT_TIMING_3)
+  if(FIXMODE & FIX_BIT_TIMING_3)
     {
       deltay_ *= 5;
       ycur_   *= 5;
@@ -2951,20 +2949,20 @@ TexelDraw_Arbitrary(uint16_t CURPIX_,
   int32_t updowns[4];
 
   curr = -1;
-  xA_ >>= (16 - HightResMode);
-  xB_ >>= (16 - HightResMode);
-  xC_ >>= (16 - HightResMode);
-  xD_ >>= (16 - HightResMode);
-  yA_ >>= (16 - HightResMode);
-  yB_ >>= (16 - HightResMode);
-  yC_ >>= (16 - HightResMode);
-  yD_ >>= (16 - HightResMode);
+  xA_ >>= (16 - HIRESMODE);
+  xB_ >>= (16 - HIRESMODE);
+  xC_ >>= (16 - HIRESMODE);
+  xD_ >>= (16 - HIRESMODE);
+  yA_ >>= (16 - HIRESMODE);
+  yB_ >>= (16 - HIRESMODE);
+  yC_ >>= (16 - HIRESMODE);
+  yD_ >>= (16 - HIRESMODE);
 
   if((xA_ == xB_) && (xB_ == xC_) && (xC_ == xD_))
     return 0;
 
-  maxxt = ((CLIPXVAL + 1) << HightResMode);
-  maxyt = ((CLIPYVAL + 1) << HightResMode);
+  maxxt = ((CLIPXVAL + 1) << HIRESMODE);
+  maxyt = ((CLIPYVAL + 1) << HIRESMODE);
 
   if((HDX1616 < 0) && (HDDX1616 < 0))
     {

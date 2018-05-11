@@ -66,37 +66,19 @@ struct GetFrameBitmapParams
 #define EXT_GET_DISC_SIZE       15
 #define EXT_ON_SECTOR           16
 #define EXT_ARM_SYNC            17
-typedef void* (*_ext_Interface)(int, void*);
 
-#define FDP_FREEDOCORE_VERSION  0
-#define FDP_INIT                1    //set ext_interface
-#define FDP_DESTROY             2
-#define FDP_DO_EXECFRAME        3       //execute 1/60 of second
-#define FDP_DO_FRAME_MT         4      //multitasking
-#define FDP_DO_EXECFRAME_MT     5      //multitasking
-#define FDP_DO_LOAD             6       //load state from buffer, returns !NULL if everything went smooth
-#define FDP_GET_SAVE_SIZE       7       //return size of savestatemachine
-#define FDP_DO_SAVE             8       //save state to buffer
-#define FDP_GETP_RAMS           10       //returns ptr to RAM 3M
-#define FDP_GETP_ROMS           11       //returns ptr to ROM 2M
-#define FDP_GETP_PROFILE        12       //returns profile pointer, sizeof = 3M/4
-#define FDP_BUGTEMPORALFIX      13
-#define FDP_SET_TEXQUALITY      15
-#define FDP_GETP_WRCOUNT        16
-#define FDP_SET_FIX_MODE        17
-#define FDP_GET_FRAME_BITMAP    18
-#define FDP_GET_BIOS_TYPE       19
-#define FDP_SET_ANVIL           20
+typedef void* (*freedo_ext_interface_t)(int, void*);
+
+#define FDP_FREEDOCORE_VERSION   0
+#define FDP_DO_FRAME_MT          4      //multitasking
 
 #define BIOS_ANVIL (0x40)
 
 EXTERN_C_BEGIN
 
-void *_freedo_Interface(int procedure, void *datum);
-
-extern int fixmode;
-extern int biosanvil;
-extern int isanvil;
+extern int HIRESMODE;
+extern int CNBFIX;
+extern int FIXMODE;
 
 EXTERN_C_END
 

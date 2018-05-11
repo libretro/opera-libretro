@@ -151,7 +151,7 @@ freedo_quarz_queue_dsp(void)
 {
   if(QUARZ.qrz_AccDSP >= 0x01000000)
     {
-      /* if(HightResMode!=0) */
+      /* if(HIRESMODE!=0) */
       /*   QUARZ.qrz_AccDSP -= (0x01000000 / 1.3); */
       /* else */
         QUARZ.qrz_AccDSP -= 0x01000000;

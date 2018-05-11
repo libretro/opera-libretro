@@ -29,6 +29,7 @@
 */
 
 #include "freedo_arm.h"
+#include "freedo_core.h"
 #include "freedo_vdlp.h"
 #include "hack_flags.h"
 #include "inline.h"
@@ -37,9 +38,6 @@
 
 #include <stdint.h>
 #include <string.h>
-
-extern int HightResMode;
-extern int fixmode;
 
 #define VRAM_OFFSET (1024 * 1024 * 2)
 
@@ -190,12 +188,12 @@ vdlp_execute_next_vdl(const uint32_t vdl_)
   CLUTDMA.raw = vdl_;
 
   if(CLUTDMA.dmaw.currover)
-    CURRENTBMP = ((fixmode & FIX_BIT_TIMING_5) ?
+    CURRENTBMP = ((FIXMODE & FIX_BIT_TIMING_5) ?
                   vram_read32(CURRENTVDL+8) :
                   vram_read32(CURRENTVDL+4));
 
   if(CLUTDMA.dmaw.prevover)
-    PREVIOUSBMP = ((fixmode & FIX_BIT_TIMING_5) ?
+    PREVIOUSBMP = ((FIXMODE & FIX_BIT_TIMING_5) ?
                    vram_read32(CURRENTVDL+4) :
                    vram_read32(CURRENTVDL+8));
 
@@ -360,7 +358,7 @@ void
 vdlp_process_line(int           line_,
                   vdlp_frame_t *frame_)
 {
-  if(HightResMode)
+  if(HIRESMODE)
     vdlp_process_line_640(line_,frame_);
   else
     vdlp_process_line_320(line_,frame_);
