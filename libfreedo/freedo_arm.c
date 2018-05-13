@@ -109,12 +109,15 @@ const static uint16_t cond_flags_cross[]=
 #define VRAM_SIZE  ( 1 * 1024 * 1024)
 #define RAM_SIZE   ( 3 * 1024 * 1024)
 #define ROM1_SIZE  ( 1 * 1024 * 1024)
+#define ROM2_SIZE  ( 1 * 1024 * 1024)
 #define NVRAM_SIZE (32 * 1024)
 
 struct arm_core_s
 {
   uint8_t *ram;
-  uint8_t *rom;
+  uint8_t *rom;                 /* points to current rom bank */
+  uint8_t *rom1;
+  uint8_t *rom2;
   uint8_t *nvram;
 
   //ARM60 registers
@@ -128,9 +131,8 @@ struct arm_core_s
   uint32_t SPSR[6];
   uint32_t CPSR;
 
-  bool nFIQ;                    //external interrupt
-  bool SecondROM;               //ROM selector
-  bool MAS_Access_Exept;	//memory exceptions
+  bool nFIQ;                    /* external interrupt */
+  bool MAS_Access_Exept;	/* memory exceptions */
 };
 
 typedef struct arm_core_s arm_core_t;
@@ -160,7 +162,7 @@ freedo_arm_nvram_size(void)
 uint8_t*
 freedo_arm_rom1_get(void)
 {
-  return CPU.rom;
+  return CPU.rom1;
 }
 
 uint64_t
@@ -216,7 +218,7 @@ freedo_arm_state_save(void *buf_)
 {
   memcpy(buf_,&CPU,sizeof(arm_core_t));
   memcpy(((uint8_t*)buf_)+sizeof(arm_core_t),CPU.ram,RAM_SIZE);
-  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,CPU.rom,ROM1_SIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,CPU.rom1,ROM1_SIZE);
   memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE+ROM1_SIZE,CPU.nvram,NVRAM_SIZE);
 }
 
@@ -225,7 +227,7 @@ freedo_arm_state_load(const void *buf_)
 {
   uint8_t i;
   uint8_t *tRam   = CPU.ram;
-  uint8_t *tRom   = CPU.rom;
+  uint8_t *tRom   = CPU.rom1;
   uint8_t *tNVRam = CPU.nvram;
 
   memcpy(&CPU,buf_,sizeof(arm_core_t));
@@ -238,7 +240,7 @@ freedo_arm_state_load(const void *buf_)
            tRam + (2 * 1024 * 1024),
            1024 * 1024);
 
-  CPU.rom   = tRom;
+  CPU.rom1  = tRom;
   CPU.ram   = tRam;
   CPU.nvram = tNVRam;
 }
@@ -515,7 +517,7 @@ ARM_Change_ModeSafe(uint32_t mode_)
 void
 freedo_arm_rom_select(int n_)
 {
-  CPU.SecondROM = ((n_ > 0) ? true : false);
+  CPU.rom = ((n_ == 0) ? CPU.rom1 : CPU.rom2);
 }
 
 static
@@ -611,9 +613,7 @@ freedo_arm_init(void)
 {
   int i;
 
-  CPU.MAS_Access_Exept = false;
-
-  CYCLES=0;
+  CYCLES = 0;
   for(i = 0; i < 16; i++)
     CPU.USER[i] = 0;
 
@@ -629,11 +629,13 @@ freedo_arm_init(void)
     CPU.CASH[i] = CPU.FIQ[i] = 0;
 
   CPU.ram   = calloc(RAM_SIZE + 1024*1024*16,1);
-  CPU.rom   = calloc(ROM1_SIZE,1);
+  CPU.rom1  = calloc(ROM1_SIZE,1);
+  CPU.rom2  = calloc(ROM2_SIZE,1);
+  CPU.rom   = CPU.rom1;
   CPU.nvram = calloc(NVRAM_SIZE,1);
 
   CPU.nFIQ = false;
-  CPU.SecondROM = 0;
+  CPU.MAS_Access_Exept = false;
 
   CPU.USER[15] = ARM_INITIAL_PC;
   arm_cpsr_set(0x13);
@@ -646,9 +648,13 @@ freedo_arm_destroy(void)
     free(CPU.nvram);
   CPU.nvram = NULL;
 
-  if(CPU.rom)
-    free(CPU.rom);
-  CPU.rom = NULL;
+  if(CPU.rom1)
+    free(CPU.rom1);
+  CPU.rom1 = NULL;
+
+  if(CPU.rom2)
+    free(CPU.rom2);
+  CPU.rom2 = NULL;
 
   if(CPU.ram)
     free(CPU.ram);
@@ -661,7 +667,7 @@ freedo_arm_reset(void)
   int i;
 
   CYCLES = 0;
-  CPU.SecondROM = 0;
+  CPU.rom = CPU.rom1;
 
   for(i = 0; i < 16; i++)
     CPU.USER[i] = 0;
@@ -680,7 +686,6 @@ freedo_arm_reset(void)
   CPU.MAS_Access_Exept = false;
 
   CPU.nFIQ = false;
-  CPU.SecondROM = 0;
 
   CPU.USER[15] = ARM_INITIAL_PC;
   arm_cpsr_set(0x13);
@@ -1887,11 +1892,7 @@ mreadw(uint32_t addr_)
 
   index = (addr_ ^ 0x03000000);
   if(!(index & ~0xFFFFF))
-    {
-      if(!CPU.SecondROM)
-        return *(uint32_t*)&CPU.rom[index];
-      return *(uint32_t*)&CPU.rom[index+1024*1024];
-    }
+    return *(uint32_t*)&CPU.rom[index];
 
   index = (addr_ ^ 0x03100000);
   if(!(index & ~0xFFFFF))
@@ -1939,11 +1940,7 @@ mreadb(uint32_t addr_)
 
   index = (addr_ ^ 0x03000003);
   if(!(index & ~0xFFFFF))
-    {
-      if(CPU.SecondROM)
-        return CPU.rom[index+1024*1024];
-      return CPU.rom[index];
-    }
+    return CPU.rom[index];
 
   index = (addr_ ^ 0x03100003);
   if(!(index & ~0xFFFFF))
