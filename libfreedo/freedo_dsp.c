@@ -42,7 +42,7 @@
 #endif
 
 #define TOPBIT       0x80000000
-#define SYSTEM_TICKS 567        /* ((25000000 / 44100) + 1) */
+#define SYSTEM_TICKS 568        /* ceil(((25000000 / 44100) + 1)) */
 
 #pragma pack(push,1)
 
