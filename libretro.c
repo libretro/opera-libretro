@@ -54,7 +54,14 @@ retro_set_environment(retro_environment_t cb_)
   struct retro_vfs_interface_info vfs_iface_info;
   static const struct retro_variable vars[] =
     {
-      { "4do_cpu_overclock",        "CPU overclock; 1x|2x|4x" },
+      { "4do_cpu_overclock",        "CPU overclock; "
+        "1.0x (12.50Mhz)|"
+        "1.1x (13.75Mhz)|"
+        "1.2x (15.00Mhz)|"
+        "1.5x (18.75Mhz)|"
+        "1.6x (20.00Mhz)|"
+        "1.8x (22.50Mhz)|"
+        "2.0x (25.00Mhz)" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
       { "4do_x_button_also_p",      "Button X also acts as P; disabled|enabled" },
@@ -399,12 +406,11 @@ check_option_4do_cpu_overclock(void)
   rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
   if(rv && var.value)
     {
-      if (!strcmp(var.value, "1x"))
-        freedo_quarz_cpu_set_freq_mul(1.0);
-      else if (!strcmp(var.value, "2x"))
-        freedo_quarz_cpu_set_freq_mul(2.0);
-      else if (!strcmp(var.value, "4x"))
-        freedo_quarz_cpu_set_freq_mul(4.0);
+      float mul;
+
+      mul = atof(var.value);
+
+      freedo_quarz_cpu_set_freq_mul(mul);
     }
 }
 
