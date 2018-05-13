@@ -9,15 +9,11 @@
 
 #include <boolean.h>
 
-#ifdef _MSC_VER
-#define snprintf _snprintf
-#pragma pack(1)
-#endif
-
 #include <libretro.h>
 #include <retro_inline.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 #include "nvram.h"
 #include "retro_callbacks.h"
@@ -33,32 +29,31 @@
 #include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
 
-#define TEMP_BUFFER_SIZE 512
+#define CDIMAGE_SECTOR_SIZE 2048
+#define SAMPLE_BUFFER_SIZE 512
 #define ROM1_SIZE 1 * 1024 * 1024
 #define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
+#define ROM_FILENAME_PANASONIC_FZ10 "panafz10.bin"
 
-static char biosPath[1024];
-static vdlp_frame_t *frame;
+static vdlp_frame_t *FRAME = NULL;
 
-static cdimage_t cdimage;
-
-static int currentSector;
-
-static uint32_t *videoBuffer;
-static int videoWidth, videoHeight;
-static int32_t sampleBuffer[TEMP_BUFFER_SIZE];
-static unsigned int sampleCurrent;
-
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
+static cdimage_t  CDIMAGE;
+static uint32_t   CDIMAGE_SECTOR;
+static uint32_t  *VIDEO_BUFFER = NULL;
+static uint32_t   VIDEO_WIDTH;
+static uint32_t   VIDEO_HEIGHT;
+static uint32_t   SAMPLE_IDX;
+static int32_t    SAMPLE_BUFFER[SAMPLE_BUFFER_SIZE];
 
 static bool x_button_also_p;
 static int  controller_count;
 
-void retro_set_environment(retro_environment_t cb)
+void
+retro_set_environment(retro_environment_t cb_)
 {
-   struct retro_vfs_interface_info vfs_iface_info;
-   static const struct retro_variable vars[] = {
+  struct retro_vfs_interface_info vfs_iface_info;
+  static const struct retro_variable vars[] =
+    {
       { "4do_cpu_overclock",        "CPU overclock; 1x|2x|4x" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
@@ -70,130 +65,157 @@ void retro_set_environment(retro_environment_t cb)
       { "4do_hack_timing_6",        "Timing Hack 6 (Alone in the Dark); disabled|enabled" },
       { "4do_hack_graphics_step_y", "Graphics Step Y Hack (Samurai Shodown); disabled|enabled" },
       { NULL, NULL },
-   };
+    };
 
-   retro_set_environment_cb(cb);
+  retro_set_environment_cb(cb_);
 
-   retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
 
-   vfs_iface_info.required_interface_version = 1;
-   vfs_iface_info.iface                      = NULL;
-   if (retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
-     filestream_vfs_init(&vfs_iface_info);
-}
-
-void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
-void retro_set_audio_sample(retro_audio_sample_t cb) { }
-void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
-
-void
-retro_set_input_poll(retro_input_poll_t cb)
-{
-  retro_set_input_poll_cb(cb);
+  vfs_iface_info.required_interface_version = 1;
+  vfs_iface_info.iface                      = NULL;
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_iface_info))
+    filestream_vfs_init(&vfs_iface_info);
 }
 
 void
-retro_set_input_state(retro_input_state_t cb)
+retro_set_video_refresh(retro_video_refresh_t cb_)
 {
-  retro_set_input_state_cb(cb);
+  retro_set_video_refresh_cb(cb_);
+}
+
+void
+retro_set_audio_sample(retro_audio_sample_t cb_)
+{
+
+}
+
+void
+retro_set_audio_sample_batch(retro_audio_sample_batch_t cb_)
+{
+  retro_set_audio_sample_batch_cb(cb_);
+}
+
+void
+retro_set_input_poll(retro_input_poll_t cb_)
+{
+  retro_set_input_poll_cb(cb_);
+}
+
+void
+retro_set_input_state(retro_input_state_t cb_)
+{
+  retro_set_input_state_cb(cb_);
 }
 
 static
-int64_t
-fsReadBios(const char *bios_path_,
-           void       *rom_,
-           int64_t     size_)
+void
+video_init(void)
 {
-  int64_t rv;
-  RFILE *bios;
+  if(VIDEO_BUFFER == NULL)
+    VIDEO_BUFFER = (uint32_t*)malloc(640 * 480 * sizeof(uint32_t));
 
-  bios = filestream_open(bios_path_,
-                         RETRO_VFS_FILE_ACCESS_READ,
-                         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  if(FRAME == NULL)
+    FRAME = (vdlp_frame_t*)malloc(sizeof(vdlp_frame_t));
 
-  if(!bios)
-    return -1;
-
-  rv = filestream_read(bios,rom_,size_);
-
-  filestream_close(bios);
-
-  return rv;
-}
-
-static void initVideo(void)
-{
-   if (!videoBuffer)
-      videoBuffer = (uint32_t*)malloc(640 * 480 * 4);
-
-   if (!frame)
-      frame = (vdlp_frame_t*)malloc(sizeof(vdlp_frame_t));
-
-   memset(frame, 0, sizeof(vdlp_frame_t));
+  memset(FRAME,0,sizeof(vdlp_frame_t));
+  memset(VIDEO_BUFFER,0,(640 * 480 * sizeof(uint32_t)));
 }
 
 static
+void
+video_destroy(void)
+{
+  if(VIDEO_BUFFER != NULL)
+    free(VIDEO_BUFFER);
+  VIDEO_BUFFER = NULL;
+
+  if(FRAME != NULL)
+    free(FRAME);
+  FRAME = NULL;
+}
+
+static
+INLINE
+void
+audio_reset_sample_buffer(void)
+{
+  SAMPLE_IDX = 0;
+  memset(SAMPLE_BUFFER,0,(sizeof(int32_t) * SAMPLE_BUFFER_SIZE));
+}
+
+static
+INLINE
+void
+audio_push_sample(const int32_t sample_)
+{
+  SAMPLE_BUFFER[SAMPLE_IDX++] = sample_;
+  if(SAMPLE_IDX >= SAMPLE_BUFFER_SIZE)
+    {
+      SAMPLE_IDX = 0;
+      retro_audio_sample_batch_cb((int16_t*)SAMPLE_BUFFER,SAMPLE_BUFFER_SIZE);
+    }
+}
+
+static
+INLINE
 uint32_t
 cdimage_get_size(void)
 {
-  return retro_cdimage_get_number_of_logical_blocks(&cdimage);
+  return retro_cdimage_get_number_of_logical_blocks(&CDIMAGE);
 }
 
 static
+INLINE
 void
 cdimage_set_sector(const uint32_t sector_)
 {
-  currentSector = sector_;
+  CDIMAGE_SECTOR = sector_;
 }
 
 static
+INLINE
 void
 cdimage_read_sector(void *buf_)
 {
-  retro_cdimage_read(&cdimage,currentSector,buf_,2048);
+  retro_cdimage_read(&CDIMAGE,CDIMAGE_SECTOR,buf_,CDIMAGE_SECTOR_SIZE);
 }
 
-/* libfreedo callback */
-static void *fdcCallback(int procedure, void *data)
+static
+void*
+libfreedo_callback(int   cmd_,
+                   void *data_)
 {
-   switch(procedure)
-   {
-      case EXT_SWAPFRAME:
-         freedo_frame_get_bitmap_xrgb_8888(frame,videoBuffer,videoWidth,videoHeight);
-         return frame;
-      case EXT_PUSH_SAMPLE:
-         /* TODO: fix all this, not right */
-         sampleBuffer[sampleCurrent] = (uintptr_t)data;
-         sampleCurrent++;
-         if(sampleCurrent >= TEMP_BUFFER_SIZE)
-         {
-            sampleCurrent = 0;
-            audio_batch_cb((int16_t*)sampleBuffer,TEMP_BUFFER_SIZE);
-         }
-         break;
-      case EXT_KPRINT:
-         break;
-      case EXT_ARM_SYNC:
-#if 0
-         printf("fdcCallback EXT_ARM_SYNC\n");
-#endif
-         break;
+  switch(cmd_)
+    {
+    case EXT_SWAPFRAME:
+      freedo_frame_get_bitmap_xrgb_8888(FRAME,VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT);
+      return FRAME;
+    case EXT_PUSH_SAMPLE:
+      /* TODO: fix all this, not right */
+      audio_push_sample((intptr_t)data_);
+      break;
+    default:
+      break;
+    }
 
-      default:
-         break;
-   }
-
-   return NULL;
+  return NULL;
 }
 
 /* See Madam.c for details on bitfields being set below */
-static INLINE uint8_t retro_poll_joypad(const int port_,
-      const int id_)
+static
+INLINE
+uint8_t
+retro_poll_joypad(const int port_,
+                  const int id_)
 {
   return retro_input_state_cb(port_,RETRO_DEVICE_JOYPAD,0,id_);
 }
 
-static INLINE void retro_poll_input(const int port_, uint8_t   buttons_[2])
+static
+INLINE
+void
+retro_poll_input(const int port_,
+                 uint8_t   buttons_[2])
 {
   buttons_[0] =
     ((retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L)      << MADAM_PBUS_BYTE0_SHIFT_L)     |
@@ -248,83 +270,96 @@ update_input(void)
     }
 }
 
-/************************************
- * libretro implementation
- ************************************/
-
-void retro_get_system_info(struct retro_system_info *info)
-{
-   memset(info, 0, sizeof(*info));
-   info->library_name = "4DO";
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
-   info->library_version = "1.3.2.4" GIT_VERSION;
-   info->need_fullpath = true;
-   info->valid_extensions = "iso|bin|chd|cue";
+void
+retro_get_system_info(struct retro_system_info *info_)
+{
+  memset(info_,0,sizeof(*info_));
+
+  info_->library_name     = "4DO";
+  info_->library_version  = "1.3.2.4-" GIT_VERSION;
+  info_->need_fullpath    = true;
+  info_->valid_extensions = "iso|bin|chd|cue";
 }
 
-void retro_get_system_av_info(struct retro_system_av_info *info)
+void
+retro_get_system_av_info(struct retro_system_av_info *info_)
 {
-   memset(info, 0, sizeof(*info));
-   info->timing.fps            = 60;
-   info->timing.sample_rate    = 44100;
-   info->geometry.base_width   = videoWidth;
-   info->geometry.base_height  = videoHeight;
-   info->geometry.max_width    = videoWidth;
-   info->geometry.max_height   = videoHeight;
-   info->geometry.aspect_ratio = 4.0 / 3.0;
+  memset(info_,0,sizeof(*info_));
+
+  info_->timing.fps            = 60;
+  info_->timing.sample_rate    = 44100;
+  info_->geometry.base_width   = VIDEO_WIDTH;
+  info_->geometry.base_height  = VIDEO_HEIGHT;
+  info_->geometry.max_width    = VIDEO_WIDTH;
+  info_->geometry.max_height   = VIDEO_HEIGHT;
+  info_->geometry.aspect_ratio = 4.0 / 3.0;
 }
 
-void retro_set_controller_port_device(unsigned port, unsigned device)
+void
+retro_set_controller_port_device(unsigned port_,
+                                 unsigned device_)
 {
-   (void)port;
-   (void)device;
+  (void)port_;
+  (void)device_;
 }
 
-size_t retro_serialize_size(void)
+size_t
+retro_serialize_size(void)
 {
-   return freedo_3do_state_size();
+  return freedo_3do_state_size();
 }
 
-bool retro_serialize(void *data, size_t size)
+bool
+retro_serialize(void   *data_,
+                size_t  size_)
 {
-  if(size < freedo_3do_state_size())
+  if(size_ != freedo_3do_state_size())
     return false;
 
-  freedo_3do_state_save(data);
+  freedo_3do_state_save(data_);
 
   return true;
 }
 
-bool retro_unserialize(const void *data, size_t size)
+bool
+retro_unserialize(const void *data_,
+                  size_t      size_)
 {
-  if(size != freedo_3do_state_size())
+  if(size_ != freedo_3do_state_size())
     return false;
 
-  freedo_3do_state_load((void*)data);
+  freedo_3do_state_load(data_);
 
   return true;
 }
 
-void retro_cheat_reset(void)
-{}
-
-void retro_cheat_set(unsigned index, bool enabled, const char *code)
+void
+retro_cheat_reset(void)
 {
-   (void)index;
-   (void)enabled;
-   (void)code;
+
+}
+
+void
+retro_cheat_set(unsigned    index_,
+                bool        enabled_,
+                const char *code_)
+{
+  (void)index_;
+  (void)enabled_;
+  (void)code_;
 }
 
 static
 bool
-environ_enabled(const char *key)
+option_enabled(const char *key_)
 {
   int rv;
   struct retro_variable var;
 
-  var.key   = key;
+  var.key   = key_;
   var.value = NULL;
   rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
   if(rv && var.value)
@@ -335,25 +370,25 @@ environ_enabled(const char *key)
 
 static
 void
-check_env_4do_high_resolution(void)
+check_option_4do_high_resolution(void)
 {
-  if(environ_enabled("4do_high_resolution"))
+  if(option_enabled("4do_high_resolution"))
     {
-      HIRESMODE   = 1;
-      videoWidth  = 640;
-      videoHeight = 480;
+      HIRESMODE    = 1;
+      VIDEO_WIDTH  = 640;
+      VIDEO_HEIGHT = 480;
     }
   else
     {
-      HIRESMODE   = 0;
-      videoWidth  = 320;
-      videoHeight = 240;
+      HIRESMODE    = 0;
+      VIDEO_WIDTH  = 320;
+      VIDEO_HEIGHT = 240;
     }
 }
 
 static
 void
-check_env_4do_cpu_overclock(void)
+check_option_4do_cpu_overclock(void)
 {
   int rv;
   struct retro_variable var;
@@ -375,14 +410,14 @@ check_env_4do_cpu_overclock(void)
 
 static
 void
-check_env_4do_x_button_also_p(void)
+check_option_4do_x_button_also_p(void)
 {
-  x_button_also_p = environ_enabled("4do_x_button_also_p");
+  x_button_also_p = option_enabled("4do_x_button_also_p");
 }
 
 static
 void
-check_env_4do_controller_count(void)
+check_option_4do_controller_count(void)
 {
   int rv;
   struct retro_variable var;
@@ -402,18 +437,18 @@ check_env_4do_controller_count(void)
 
 static
 void
-check_env_set_reset_bits(const char *key,
-                         int        *input,
-                         int         bitmask)
+check_option_set_reset_bits(const char *key_,
+                         int        *input_,
+                         int         bitmask_)
 {
-  *input = (environ_enabled(key) ?
-            (*input | bitmask) :
-            (*input & ~bitmask));
+  *input_ = (option_enabled(key_) ?
+             (*input_ | bitmask_) :
+             (*input_ & ~bitmask_));
 }
 
 static
 bool
-check_env_nvram_per_game(void)
+check_option_nvram_per_game(void)
 {
   int rv;
   struct retro_variable var;
@@ -433,36 +468,36 @@ check_env_nvram_per_game(void)
 
 static
 bool
-check_env_nvram_shared(void)
+check_option_nvram_shared(void)
 {
-  return !check_env_nvram_per_game();
+  return !check_option_nvram_per_game();
 }
 
 static
 void
-check_variables(void)
+check_options(void)
 {
-   check_env_4do_high_resolution();
-   check_env_4do_cpu_overclock();
-   check_env_4do_x_button_also_p();
-   check_env_4do_controller_count();
-   check_env_set_reset_bits("4do_hack_timing_1",&FIXMODE,FIX_BIT_TIMING_1);
-   check_env_set_reset_bits("4do_hack_timing_3",&FIXMODE,FIX_BIT_TIMING_3);
-   check_env_set_reset_bits("4do_hack_timing_5",&FIXMODE,FIX_BIT_TIMING_5);
-   check_env_set_reset_bits("4do_hack_timing_6",&FIXMODE,FIX_BIT_TIMING_6);
-   check_env_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
+  check_option_4do_high_resolution();
+  check_option_4do_cpu_overclock();
+  check_option_4do_x_button_also_p();
+  check_option_4do_controller_count();
+  check_option_set_reset_bits("4do_hack_timing_1",&FIXMODE,FIX_BIT_TIMING_1);
+  check_option_set_reset_bits("4do_hack_timing_3",&FIXMODE,FIX_BIT_TIMING_3);
+  check_option_set_reset_bits("4do_hack_timing_5",&FIXMODE,FIX_BIT_TIMING_5);
+  check_option_set_reset_bits("4do_hack_timing_6",&FIXMODE,FIX_BIT_TIMING_6);
+  check_option_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
-#define CONTROLLER_DESC(PORT) \
+#define CONTROLLER_DESC(PORT)                                           \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "D-Pad Left" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     "D-Pad Up" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "D-Pad Down" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  "D-Pad Right" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "A" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "C" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "L" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "R" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "A" },  \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" },  \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "C" },  \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "L" },  \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "R" },  \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "X (Stop)" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  "P (Play/Pause)" }
 
@@ -470,198 +505,281 @@ static
 void
 retro_setup_input_descriptions(void)
 {
-   struct retro_input_descriptor desc[] =
-     {
-       CONTROLLER_DESC(0),
-       CONTROLLER_DESC(1),
-       CONTROLLER_DESC(2),
-       CONTROLLER_DESC(3),
-       CONTROLLER_DESC(4),
-       CONTROLLER_DESC(5),
-       CONTROLLER_DESC(6),
-       CONTROLLER_DESC(7)
-     };
+  struct retro_input_descriptor desc[] =
+    {
+      CONTROLLER_DESC(0),
+      CONTROLLER_DESC(1),
+      CONTROLLER_DESC(2),
+      CONTROLLER_DESC(3),
+      CONTROLLER_DESC(4),
+      CONTROLLER_DESC(5),
+      CONTROLLER_DESC(6),
+      CONTROLLER_DESC(7)
+    };
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,desc);
 }
 
-bool retro_load_game(const struct retro_game_info *info)
-{
-   int rv;
-   uint8_t rom[1024 * 1024];
-   enum retro_pixel_format  fmt                = RETRO_PIXEL_FORMAT_XRGB8888;
-   const char              *system_directory_c = NULL;
-   const char              *full_path          = NULL;
 
-   if (!info)
+static
+bool
+file_exists(const char *path_)
+{
+  RFILE *fp;
+
+  fp = filestream_open(path_,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+  if(fp == NULL)
+    return false;
+
+  filestream_close(fp);
+
+  return true;
+}
+
+static
+bool
+file_exists_in_system_directory(const char *filename_)
+{
+  int rv;
+  char fullpath[PATH_MAX_LENGTH];
+  const char *system_path;
+
+  system_path = NULL;
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
+  if(!rv || (system_path == NULL))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: no system directory defined - can't find %s\n",
+                          filename_);
       return false;
+    }
 
-   retro_setup_input_descriptions();
+  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
 
-   if (!retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-   {
-      if (retro_log_printf_cb)
-         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: XRGB8888 is not supported.\n");
+  return file_exists(fullpath);
+}
+
+static
+int64_t
+read_file_from_system_directory(const char *filename_,
+                                uint8_t    *data_,
+                                int64_t     size_)
+{
+  int64_t rv;
+  RFILE *file;
+  char fullpath[PATH_MAX_LENGTH];
+  const char *system_path;
+
+  system_path = NULL;
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
+  if(!rv || (system_path == NULL))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: no system directory defined - can't find %s\n",
+                          filename_);
       return false;
-   }
+    }
 
-   currentSector = 0;
-   sampleCurrent = 0;
-   memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
+  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
 
-   full_path = info->path;
+  file = filestream_open(fullpath,
+                         RETRO_VFS_FILE_ACCESS_READ,
+                         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  if(file == NULL)
+    return -1;
 
-   *biosPath = '\0';
+  rv = filestream_read(file,data_,size_);
 
-   rv = retro_cdimage_open(full_path,&cdimage);
-   if(rv == -1)
-     return false;
+  filestream_close(file);
 
-   retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
-   if (!system_directory_c)
-   {
-      if (retro_log_printf_cb)
-         retro_log_printf_cb(RETRO_LOG_WARN, "[4DO]: no system directory defined, unable to look for panafz10.bin\n");
-   }
-   else
-   {
-      char bios_path[1024];
-      RFILE *fp;
-#ifdef _WIN32
-      char slash = '\\';
-#else
-      char slash = '/';
-#endif
-      sprintf(bios_path, "%s%c%s", system_directory_c, slash, "panafz10.bin");
-
-      fp = filestream_open(bios_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-      if (!fp)
-      {
-         if (retro_log_printf_cb)
-            retro_log_printf_cb(RETRO_LOG_WARN, "[4DO]: panafz10.bin not found, cannot load BIOS\n");
-         return false;
-      }
-
-      filestream_close(fp);
-      strcpy(biosPath, bios_path);
-   }
-
-   check_variables();
-   initVideo();
-   fsReadBios(biosPath,rom,sizeof(rom));
-   freedo_3do_init(fdcCallback,rom);
-
-   /* XXX: Is this really a frontend responsibility? */
-   nvram_init(freedo_arm_nvram_get());
-   if(check_env_nvram_shared())
-     retro_nvram_load(freedo_arm_nvram_get());
-
-   return true;
+  return rv;
 }
 
-bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
+static
+int
+load_rom(void)
 {
-   (void)game_type;
-   (void)info;
-   (void)num_info;
-   return false;
+  uint8_t *rom;
+  int64_t  size;
+  int64_t  rv;
+
+  rom  = freedo_arm_rom1_get();
+  size = freedo_arm_rom1_size();
+
+  rv = read_file_from_system_directory(ROM_FILENAME_PANASONIC_FZ10,rom,size);
+  if(rv < 0)
+    return -1;
+
+  freedo_arm_rom1_byteswap_if_necessary();
+
+  return 0;
 }
 
-void retro_unload_game(void)
+bool
+retro_load_game(const struct retro_game_info *info_)
 {
-   if(check_env_nvram_shared())
-     retro_nvram_save(freedo_arm_nvram_get());
+  int rv;
+  enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
-   freedo_3do_destroy();
+  if(!info_)
+    return false;
 
-   retro_cdimage_close(&cdimage);
+  retro_setup_input_descriptions();
 
-   if (videoBuffer)
-      free(videoBuffer);
-   videoBuffer = NULL;
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,&fmt);
+  if(!rv)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: XRGB8888 is not supported.\n");
+      return false;
+    }
 
-   if (frame)
-      free(frame);
-   frame       = NULL;
+  cdimage_set_sector(0);
+  audio_reset_sample_buffer();
+
+  rv = retro_cdimage_open(info_->path,&CDIMAGE);
+  if(rv == -1)
+    return false;
+
+  rv = file_exists_in_system_directory(ROM_FILENAME_PANASONIC_FZ10);
+  if(!rv)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: Unable to find BIOS ROM - %s\n",
+                          ROM_FILENAME_PANASONIC_FZ10);
+      return false;
+    }
+
+  check_options();
+  video_init();
+  freedo_3do_init(libfreedo_callback);
+  load_rom();
+
+  /* XXX: Is this really a frontend responsibility? */
+  nvram_init(freedo_arm_nvram_get());
+  if(check_option_nvram_shared())
+    retro_nvram_load(freedo_arm_nvram_get());
+
+  return true;
 }
 
-unsigned retro_get_region(void)
+bool
+retro_load_game_special(unsigned                      game_type_,
+                        const struct retro_game_info *info_,
+                        size_t                        num_info_)
 {
-   return RETRO_REGION_NTSC;
+  (void)game_type_;
+  (void)info_;
+  (void)num_info_;
+
+  return false;
 }
 
-unsigned retro_api_version(void)
+void
+retro_unload_game(void)
 {
-   return RETRO_API_VERSION;
+  if(check_option_nvram_shared())
+    retro_nvram_save(freedo_arm_nvram_get());
+
+  freedo_3do_destroy();
+
+  retro_cdimage_close(&CDIMAGE);
+
+  video_destroy();
+}
+
+unsigned
+retro_get_region(void)
+{
+  return RETRO_REGION_NTSC;
+}
+
+unsigned
+retro_api_version(void)
+{
+  return RETRO_API_VERSION;
 }
 
 void*
-retro_get_memory_data(unsigned id)
+retro_get_memory_data(unsigned id_)
 {
-  if(id != RETRO_MEMORY_SAVE_RAM)
-    return NULL;
-  if(check_env_nvram_shared())
-    return NULL;
+  switch(id_)
+    {
+    case RETRO_MEMORY_SAVE_RAM:
+      if(check_option_nvram_shared())
+        return NULL;
+      return freedo_arm_nvram_get();
+    case RETRO_MEMORY_SYSTEM_RAM:
+      return freedo_arm_ram_get();
+    case RETRO_MEMORY_VIDEO_RAM:
+      return freedo_arm_vram_get();
+    }
 
-  return freedo_arm_nvram_get();
+  return NULL;
 }
 
 size_t
-retro_get_memory_size(unsigned id)
+retro_get_memory_size(unsigned id_)
 {
-  if(id != RETRO_MEMORY_SAVE_RAM)
-      return 0;
-  if(check_env_nvram_shared())
-    return 0;
+  switch(id_)
+    {
+    case RETRO_MEMORY_SAVE_RAM:
+      if(check_option_nvram_shared())
+        return 0;
+      return freedo_arm_nvram_size();
+    case RETRO_MEMORY_SYSTEM_RAM:
+      return freedo_arm_ram_size();
+    case RETRO_MEMORY_VIDEO_RAM:
+      return freedo_arm_vram_size();
+    }
 
-   return NVRAM_SIZE;
+  return 0;
 }
 
 void
 retro_init(void)
 {
+  unsigned level;
+  uint64_t serialization_quirks;
   struct retro_log_callback log;
-  unsigned level = 5;
-  uint64_t serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
 
-  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
+  level = 5;
+  serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
+
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&log))
     retro_set_log_printf_cb(log.log);
 
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &serialization_quirks);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL,&level);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS,&serialization_quirks);
 
   freedo_cdrom_set_callbacks(cdimage_get_size,
                              cdimage_set_sector,
                              cdimage_read_sector);
 }
 
-void retro_deinit(void)
+void
+retro_deinit(void)
 {
+
 }
 
 void
 retro_reset(void)
 {
-  uint8_t rom[1024 * 1024];
-
-  if(check_env_nvram_shared())
+  if(check_option_nvram_shared())
     retro_nvram_save(freedo_arm_nvram_get());
 
   freedo_3do_destroy();
 
-  currentSector = 0;
-
-  sampleCurrent = 0;
-  memset(sampleBuffer, 0, sizeof(int32_t) * TEMP_BUFFER_SIZE);
-
-  check_variables();
-  initVideo();
-  fsReadBios(biosPath,rom,sizeof(rom));
-  freedo_3do_init(fdcCallback,rom);
+  check_options();
+  video_init();
+  cdimage_set_sector(0);
+  audio_reset_sample_buffer();
+  freedo_3do_init(libfreedo_callback);
+  load_rom();
 
   nvram_init(freedo_arm_nvram_get());
-  if(check_env_nvram_shared())
+  if(check_option_nvram_shared())
     retro_nvram_load(freedo_arm_nvram_get());
 }
 
@@ -670,11 +788,11 @@ retro_run(void)
 {
   bool updated = false;
   if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&updated) && updated)
-    check_variables();
+    check_options();
 
   update_input();
 
-  freedo_3do_process_frame(frame);
+  freedo_3do_process_frame(FRAME);
 
-  video_cb(videoBuffer, videoWidth, videoHeight, videoWidth << 2);
+  retro_video_refresh_cb(VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT,VIDEO_WIDTH << 2);
 }

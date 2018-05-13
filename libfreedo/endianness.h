@@ -1,6 +1,8 @@
 #ifndef LIBFREEDO_ENDIANNESS_H_INCLUDED
 #define LIBFREEDO_ENDIANNESS_H_INCLUDED
 
+#include "inline.h"
+
 #if defined(__linux__)
 #include <endian.h>
 #endif
@@ -57,7 +59,7 @@
 #elif defined(_MSC_VER) && _MSC_VER > 1200
 #define SWAP32(X) (_byteswap_ulong(X))
 #else
-#define SWAP32(X) \
+#define SWAP32(X)                               \
   ((((uint32_t)(X) & 0xFF000000) >> 24) |       \
    (((uint32_t)(X) & 0x00FF0000) >>  8) |       \
    (((uint32_t)(X) & 0x0000FF00) <<  8) |       \
@@ -65,11 +67,31 @@
 #endif
 
 #if IS_BIG_ENDIAN
-#define SWAP32_IF_LITTLE_ENDIAN(X) (X)
-#else
-#define SWAP32_IF_LITTLE_ENDIAN(X) (SWAP32(X))
-#endif
 
+#define is_little_endian() (0)
+#define swap32_if_little_endian(X) (X)
+#define swap32_array_if_little_endian(X,Y) (void)
+
+#else
+
+#define is_little_endian() (1)
+#define swap32_if_little_endian(X) (SWAP32(X))
+
+static
+INLINE
+void
+swap32_array_if_little_endian(uint32_t *array_,
+                              uint64_t  size_)
+{
+  uint64_t i;
+
+  for(i = 0; i < size_; i++)
+    array_[i] = SWAP32(array_[i]);
+}
+
+#endif /* IS_BIG_ENDIAN */
+
+#undef SWAP32
 #undef IS_BIG_ENDIAN
 
 #endif /* LIBFREEDO_ENDIANNESS_H_INCLUDED */

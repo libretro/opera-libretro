@@ -36,12 +36,15 @@
 #include "freedo_sport.h"
 #include "hack_flags.h"
 #include "inline.h"
+#include "endianness.h"
 
 #include <boolean.h>
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define ARM_INITIAL_PC  0x03000000
 
 #define ARM_MUL_MASK    0x0fc000f0
 #define ARM_MUL_SIGN    0x00000090
@@ -102,12 +105,11 @@ const static uint16_t cond_flags_cross[]=
     0x0000  //never
   };
 
-#define DRAMSIZE  (2 * 1024 * 1024)
-#define VRAMSIZE  (1 * 1024 * 1024)
-
-#define RAMSIZE   (3 * 1024 * 1024)
-#define ROMSIZE   (1 * 1024 * 1024)
-#define NVRAMSIZE (1024 * 32)
+#define DRAM_SIZE  ( 2 * 1024 * 1024)
+#define VRAM_SIZE  ( 1 * 1024 * 1024)
+#define RAM_SIZE   ( 3 * 1024 * 1024)
+#define ROM1_SIZE  ( 1 * 1024 * 1024)
+#define NVRAM_SIZE (32 * 1024)
 
 struct arm_core_s
 {
@@ -149,10 +151,34 @@ freedo_arm_nvram_get(void)
   return CPU.nvram;
 }
 
+uint64_t
+freedo_arm_nvram_size(void)
+{
+  return NVRAM_SIZE;
+}
+
 uint8_t*
-freedo_arm_rom_get(void)
+freedo_arm_rom1_get(void)
 {
   return CPU.rom;
+}
+
+uint64_t
+freedo_arm_rom1_size(void)
+{
+  return ROM1_SIZE;
+}
+
+void
+freedo_arm_rom1_byteswap_if_necessary(void)
+{
+  uint8_t *rom;
+  int64_t  size;
+
+  rom  = freedo_arm_rom1_get();
+  size = freedo_arm_rom1_size();
+
+  swap32_array_if_little_endian((uint32_t*)rom,(size / sizeof(uint32_t)));
 }
 
 uint8_t*
@@ -161,25 +187,37 @@ freedo_arm_ram_get(void)
   return CPU.ram;
 }
 
+uint64_t
+freedo_arm_ram_size(void)
+{
+  return DRAM_SIZE;
+}
+
 uint8_t*
 freedo_arm_vram_get(void)
 {
-  return (CPU.ram + DRAMSIZE);
+  return (CPU.ram + DRAM_SIZE);
+}
+
+uint64_t
+freedo_arm_vram_size(void)
+{
+  return VRAM_SIZE;
 }
 
 uint32_t
 freedo_arm_state_size(void)
 {
-  return (sizeof(arm_core_t) + RAMSIZE + (ROMSIZE * 2) + NVRAMSIZE);
+  return (sizeof(arm_core_t) + RAM_SIZE + ROM1_SIZE + NVRAM_SIZE);
 }
 
 void
 freedo_arm_state_save(void *buf_)
 {
   memcpy(buf_,&CPU,sizeof(arm_core_t));
-  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t),CPU.ram,RAMSIZE);
-  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE,CPU.rom,ROMSIZE*2);
-  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE+ROMSIZE*2,CPU.nvram,NVRAMSIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t),CPU.ram,RAM_SIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,CPU.rom,ROM1_SIZE);
+  memcpy(((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE+ROM1_SIZE,CPU.nvram,NVRAM_SIZE);
 }
 
 void
@@ -191,9 +229,9 @@ freedo_arm_state_load(const void *buf_)
   uint8_t *tNVRam = CPU.nvram;
 
   memcpy(&CPU,buf_,sizeof(arm_core_t));
-  memcpy(tRam,((uint8_t*)buf_)+sizeof(arm_core_t),RAMSIZE);
-  memcpy(tRom,((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE,ROMSIZE*2);
-  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(arm_core_t)+RAMSIZE+ROMSIZE*2,NVRAMSIZE);
+  memcpy(tRam,((uint8_t*)buf_)+sizeof(arm_core_t),RAM_SIZE);
+  memcpy(tRom,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,ROM1_SIZE);
+  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE+ROM1_SIZE,NVRAM_SIZE);
 
   for(i = 3; i < 18; i++)
     memcpy(tRam + (i * 1024 * 1024),
@@ -475,7 +513,7 @@ ARM_Change_ModeSafe(uint32_t mode_)
 }
 
 void
-freedo_rom_select(int n_)
+freedo_arm_rom_select(int n_)
 {
   CPU.SecondROM = ((n_ > 0) ? true : false);
 }
@@ -568,7 +606,7 @@ ROTR(const uint32_t val_,
           val_);
 }
 
-uint8_t*
+void
 freedo_arm_init(void)
 {
   int i;
@@ -590,20 +628,15 @@ freedo_arm_init(void)
   for(i = 0;i < 7; i++)
     CPU.CASH[i] = CPU.FIQ[i] = 0;
 
-  CPU.SecondROM = 0;
-  CPU.ram   = malloc(RAMSIZE + 1024*1024*16);
-  CPU.rom   = malloc(ROMSIZE * 2);
-  CPU.nvram = malloc(NVRAMSIZE);
+  CPU.ram   = calloc(RAM_SIZE + 1024*1024*16,1);
+  CPU.rom   = calloc(ROM1_SIZE,1);
+  CPU.nvram = calloc(NVRAM_SIZE,1);
 
-  memset(CPU.ram,0,RAMSIZE + 1024*1024*16);
-  memset(CPU.rom,0,ROMSIZE * 2);
-  memset(CPU.nvram,0,NVRAMSIZE);
   CPU.nFIQ = false;
+  CPU.SecondROM = 0;
 
-  CPU.USER[15] = 0x03000000;
+  CPU.USER[15] = ARM_INITIAL_PC;
   arm_cpsr_set(0x13);
-
-  return (uint8_t*)CPU.ram;
 }
 
 void
@@ -646,10 +679,11 @@ freedo_arm_reset(void)
 
   CPU.MAS_Access_Exept = false;
 
-  CPU.USER[15] = 0x03000000;
-  arm_cpsr_set(0x13);
   CPU.nFIQ = false;
   CPU.SecondROM = 0;
+
+  CPU.USER[15] = ARM_INITIAL_PC;
+  arm_cpsr_set(0x13);
 
   freedo_clio_reset();
   freedo_madam_reset();
@@ -910,7 +944,7 @@ decode_swi(void)
 
   CPU.USER[14] = CPU.USER[15];
 
-  CPU.USER[15]  = 0x00000008;
+  CPU.USER[15] = 0x00000008;
   CYCLES -= (SCYCLE + NCYCLE);  // +2S+1N
 }
 
