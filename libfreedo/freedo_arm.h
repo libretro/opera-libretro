@@ -65,6 +65,10 @@ uint8_t* freedo_arm_rom1_get(void);
 uint64_t freedo_arm_rom1_size(void);
 void     freedo_arm_rom1_byteswap_if_necessary(void);
 
+uint8_t* freedo_arm_rom2_get(void);
+uint64_t freedo_arm_rom2_size(void);
+void     freedo_arm_rom2_byteswap_if_necessary(void);
+
 uint8_t* freedo_arm_ram_get(void);
 uint64_t freedo_arm_ram_size(void);
 
