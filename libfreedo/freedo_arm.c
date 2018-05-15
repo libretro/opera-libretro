@@ -226,23 +226,25 @@ void
 freedo_arm_state_load(const void *buf_)
 {
   uint8_t i;
-  uint8_t *tRam   = CPU.ram;
-  uint8_t *tRom   = CPU.rom1;
-  uint8_t *tNVRam = CPU.nvram;
+  uint8_t *ram   = CPU.ram;
+  uint8_t *rom1  = CPU.rom1;
+  uint8_t *rom2  = CPU.rom2;
+  uint8_t *nvram = CPU.nvram;
 
   memcpy(&CPU,buf_,sizeof(arm_core_t));
-  memcpy(tRam,((uint8_t*)buf_)+sizeof(arm_core_t),RAM_SIZE);
-  memcpy(tRom,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,ROM1_SIZE);
-  memcpy(tNVRam,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE+ROM1_SIZE,NVRAM_SIZE);
+  memcpy(ram,((uint8_t*)buf_)+sizeof(arm_core_t),RAM_SIZE);
+  memcpy(rom1,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE,ROM1_SIZE);
+  memcpy(nvram,((uint8_t*)buf_)+sizeof(arm_core_t)+RAM_SIZE+ROM1_SIZE,NVRAM_SIZE);
 
   for(i = 3; i < 18; i++)
-    memcpy(tRam + (i * 1024 * 1024),
-           tRam + (2 * 1024 * 1024),
+    memcpy(ram + (i * 1024 * 1024),
+           ram + (2 * 1024 * 1024),
            1024 * 1024);
 
-  CPU.rom1  = tRom;
-  CPU.ram   = tRam;
-  CPU.nvram = tNVRam;
+  CPU.ram   = ram;
+  CPU.rom1  = rom1;
+  CPU.rom2  = rom2;
+  CPU.nvram = nvram;
 }
 
 static
