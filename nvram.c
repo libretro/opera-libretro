@@ -84,7 +84,9 @@ nvram_load(void         *nvram_,
 
   fill_pathname_join(fullpath,basepath_,filename_,sizeof(fullpath));
 
-  f = filestream_open(fullpath,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  f = filestream_open(fullpath,
+                      RETRO_VFS_FILE_ACCESS_READ,
+                      RETRO_VFS_FILE_ACCESS_HINT_NONE);
   if(f == NULL)
     return -1;
 
@@ -95,6 +97,11 @@ nvram_load(void         *nvram_,
   return ((rv == size_) ? 0 : -1);
 }
 
+/*
+  Ideally there would be a core specific directory available
+  regardless content is loaded but for now we'll save to the system
+  directory.
+ */
 void
 retro_nvram_save(const uint8_t *nvram_)
 {
@@ -102,11 +109,20 @@ retro_nvram_save(const uint8_t *nvram_)
   const char *basepath;
   struct retro_variable var;
 
-  retro_environment_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY,&basepath);
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&basepath);
+  if((rv == 0) || (basepath == NULL))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: unable to save %s - system directory unavailable",
+                          NVRAM_FILENAME);
+      return;
+    }
 
   rv = nvram_save(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
-    retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: error saving NVRAM: %s\n",NVRAM_FILENAME);
+    retro_log_printf_cb(RETRO_LOG_ERROR,
+                        "[4DO]: unknown error saving %s\n",
+                        NVRAM_FILENAME);
 }
 
 void
@@ -116,9 +132,18 @@ retro_nvram_load(uint8_t *nvram_)
   const char *basepath;
   struct retro_variable var;
 
-  retro_environment_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY,&basepath);
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&basepath);
+  if((rv == 0) || (basepath == NULL))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: unable to load %s - system directory unavailable",
+                          NVRAM_FILENAME);
+      return;
+    }
 
   rv = nvram_load(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
-    retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: error loading NVRAM: %s\n",NVRAM_FILENAME);
+    retro_log_printf_cb(RETRO_LOG_ERROR,
+                        "[4DO]: unknown error loading %s\n",
+                        NVRAM_FILENAME);
 }

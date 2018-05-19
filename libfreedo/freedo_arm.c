@@ -184,6 +184,30 @@ freedo_arm_rom1_byteswap_if_necessary(void)
 }
 
 uint8_t*
+freedo_arm_rom2_get(void)
+{
+  return CPU.rom2;
+}
+
+uint64_t
+freedo_arm_rom2_size(void)
+{
+  return ROM2_SIZE;
+}
+
+void
+freedo_arm_rom2_byteswap_if_necessary(void)
+{
+  uint8_t *rom;
+  int64_t  size;
+
+  rom  = freedo_arm_rom2_get();
+  size = freedo_arm_rom2_size();
+
+  swap32_array_if_little_endian((uint32_t*)rom,(size / sizeof(uint32_t)));
+}
+
+uint8_t*
 freedo_arm_ram_get(void)
 {
   return CPU.ram;

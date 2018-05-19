@@ -1,26 +1,6 @@
-#ifndef _MSC_VER
-#include <sched.h>
-#endif
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-
-#include <boolean.h>
-
-#include <libretro.h>
-#include <retro_inline.h>
-#include <streams/file_stream.h>
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
-
-#include "nvram.h"
-#include "retro_callbacks.h"
-#include "retro_cdimage.h"
-
 #include "libfreedo/freedo_3do.h"
 #include "libfreedo/freedo_arm.h"
+#include "libfreedo/freedo_bios.h"
 #include "libfreedo/freedo_cdrom.h"
 #include "libfreedo/freedo_core.h"
 #include "libfreedo/freedo_frame.h"
@@ -29,11 +9,24 @@
 #include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
 
+#include "nvram.h"
+#include "retro_callbacks.h"
+#include "retro_cdimage.h"
+
+#include <boolean.h>
+#include <file/file_path.h>
+#include <libretro.h>
+#include <retro_miscellaneous.h>
+#include <streams/file_stream.h>
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define CDIMAGE_SECTOR_SIZE 2048
 #define SAMPLE_BUFFER_SIZE 512
-#define ROM1_SIZE 1 * 1024 * 1024
-#define ROM2_SIZE 933636 /* was 1 * 1024 * 1024, */
-#define ROM_FILENAME_PANASONIC_FZ10 "panafz10.bin"
 
 static vdlp_frame_t *FRAME = NULL;
 
@@ -47,21 +40,85 @@ static int32_t    SAMPLE_BUFFER[SAMPLE_BUFFER_SIZE];
 
 static bool x_button_also_p;
 static int  controller_count;
+static const freedo_bios_t *BIOS;
 
-void
-retro_set_environment(retro_environment_t cb_)
+static
+bool
+file_exists(const char *path_)
 {
-  struct retro_vfs_interface_info vfs_iface_info;
-  static const struct retro_variable vars[] =
+  RFILE *fp;
+
+  fp = filestream_open(path_,
+                       RETRO_VFS_FILE_ACCESS_READ,
+                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+  if(fp == NULL)
+    return false;
+
+  filestream_close(fp);
+
+  return true;
+}
+
+static
+bool
+file_exists_in_system_directory(const char *filename_)
+{
+  int rv;
+  char fullpath[PATH_MAX_LENGTH];
+  const char *system_path;
+
+  system_path = NULL;
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
+  if((rv == 0) || (system_path == NULL))
+    return false;
+
+  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
+
+  return file_exists(fullpath);
+}
+
+static
+void
+create_bios_option_list(char *buf_)
+{
+  int rv;
+  const freedo_bios_t *bios;
+
+  strcpy(buf_,"BIOS; ");
+  for(bios = freedo_bios_begin(); bios != freedo_bios_end(); bios++)
     {
+      rv = file_exists_in_system_directory(bios->filename);
+      if(rv)
+        {
+          strcat(buf_,bios->name);
+          strcat(buf_,"|");
+        }
+    }
+
+  rv = (strlen(buf_) - 1);
+  if(buf_[rv] == '|')
+    buf_[rv] = '\0';
+  else
+    strcat(buf_,"None Found");
+}
+
+static
+void
+retro_environment_set_variables(void)
+{
+  char buf[1024];
+  static struct retro_variable vars[] =
+    {
+      { "4do_bios", NULL },
       { "4do_cpu_overclock",        "CPU overclock; "
-        "1.0x (12.50Mhz)|"
-        "1.1x (13.75Mhz)|"
-        "1.2x (15.00Mhz)|"
-        "1.5x (18.75Mhz)|"
-        "1.6x (20.00Mhz)|"
-        "1.8x (22.50Mhz)|"
-        "2.0x (25.00Mhz)" },
+                                    "1.0x (12.50Mhz)|"
+                                    "1.1x (13.75Mhz)|"
+                                    "1.2x (15.00Mhz)|"
+                                    "1.5x (18.75Mhz)|"
+                                    "1.6x (20.00Mhz)|"
+                                    "1.8x (22.50Mhz)|"
+                                    "2.0x (25.00Mhz)" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
       { "4do_x_button_also_p",      "Button X also acts as P; disabled|enabled" },
@@ -74,14 +131,28 @@ retro_set_environment(retro_environment_t cb_)
       { NULL, NULL },
     };
 
+  vars[0].value = buf;
+  create_bios_option_list(buf);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
+}
+
+static
+void
+retro_environment_set_support_no_game(void)
+{
+  bool support_no_game;
+
+  support_no_game = true;
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,&support_no_game);
+}
+
+void
+retro_set_environment(retro_environment_t cb_)
+{
   retro_set_environment_cb(cb_);
 
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
-
-  vfs_iface_info.required_interface_version = 1;
-  vfs_iface_info.iface                      = NULL;
-  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_iface_info))
-    filestream_vfs_init(&vfs_iface_info);
+  retro_environment_set_variables();
+  retro_environment_set_support_no_game();
 }
 
 void
@@ -142,7 +213,6 @@ video_destroy(void)
 }
 
 static
-INLINE
 void
 audio_reset_sample_buffer(void)
 {
@@ -151,7 +221,6 @@ audio_reset_sample_buffer(void)
 }
 
 static
-INLINE
 void
 audio_push_sample(const int32_t sample_)
 {
@@ -164,7 +233,6 @@ audio_push_sample(const int32_t sample_)
 }
 
 static
-INLINE
 uint32_t
 cdimage_get_size(void)
 {
@@ -172,7 +240,6 @@ cdimage_get_size(void)
 }
 
 static
-INLINE
 void
 cdimage_set_sector(const uint32_t sector_)
 {
@@ -180,7 +247,6 @@ cdimage_set_sector(const uint32_t sector_)
 }
 
 static
-INLINE
 void
 cdimage_read_sector(void *buf_)
 {
@@ -208,9 +274,8 @@ libfreedo_callback(int   cmd_,
   return NULL;
 }
 
-/* See Madam.c for details on bitfields being set below */
+/* See freedo_madam.c for details on bitfields being set below */
 static
-INLINE
 uint8_t
 retro_poll_joypad(const int port_,
                   const int id_)
@@ -219,7 +284,6 @@ retro_poll_joypad(const int port_,
 }
 
 static
-INLINE
 void
 retro_poll_input(const int port_,
                  uint8_t   buttons_[2])
@@ -286,7 +350,7 @@ retro_get_system_info(struct retro_system_info *info_)
   memset(info_,0,sizeof(*info_));
 
   info_->library_name     = "4DO";
-  info_->library_version  = "1.3.2.4-" GIT_VERSION;
+  info_->library_version  = "1.3.2.4" GIT_VERSION;
   info_->need_fullpath    = true;
   info_->valid_extensions = "iso|bin|chd|cue";
 }
@@ -300,8 +364,8 @@ retro_get_system_av_info(struct retro_system_av_info *info_)
   info_->timing.sample_rate    = 44100;
   info_->geometry.base_width   = VIDEO_WIDTH;
   info_->geometry.base_height  = VIDEO_HEIGHT;
-  info_->geometry.max_width    = VIDEO_WIDTH;
-  info_->geometry.max_height   = VIDEO_HEIGHT;
+  info_->geometry.max_width    = 640;
+  info_->geometry.max_height   = 480;
   info_->geometry.aspect_ratio = 4.0 / 3.0;
 }
 
@@ -373,6 +437,36 @@ option_enabled(const char *key_)
     return (strcmp(var.value,"enabled") == 0);
 
   return false;
+}
+
+static
+void
+check_option_4do_bios(void)
+{
+  int rv;
+  const freedo_bios_t *bios;
+  struct retro_variable var;
+
+  var.key   = "4do_bios";
+  var.value = NULL;
+
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if((rv == 0) || (var.value == NULL))
+    {
+      BIOS = freedo_bios_begin();
+      return;
+    }
+
+  for(bios = freedo_bios_begin(); bios != freedo_bios_end(); bios++)
+    {
+      if(strcmp(bios->name,var.value))
+        continue;
+
+      BIOS = bios;
+      return;
+    }
+
+  BIOS = freedo_bios_begin();
 }
 
 static
@@ -483,6 +577,7 @@ static
 void
 check_options(void)
 {
+  check_option_4do_bios();
   check_option_4do_high_resolution();
   check_option_4do_cpu_overclock();
   check_option_4do_x_button_also_p();
@@ -494,16 +589,16 @@ check_options(void)
   check_option_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
-#define CONTROLLER_DESC(PORT)                                           \
+#define CONTROLLER_DESC(PORT)                   \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "D-Pad Left" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     "D-Pad Up" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "D-Pad Down" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  "D-Pad Right" }, \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "A" },  \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" },  \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "C" },  \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "L" },  \
-  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "R" },  \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "A" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "C" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "L" }, \
+  {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "R" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "X (Stop)" }, \
   {PORT, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  "P (Play/Pause)" }
 
@@ -520,50 +615,11 @@ retro_setup_input_descriptions(void)
       CONTROLLER_DESC(4),
       CONTROLLER_DESC(5),
       CONTROLLER_DESC(6),
-      CONTROLLER_DESC(7)
+      CONTROLLER_DESC(7),
+      {0}
     };
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,desc);
-}
-
-
-static
-bool
-file_exists(const char *path_)
-{
-  RFILE *fp;
-
-  fp = filestream_open(path_,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-  if(fp == NULL)
-    return false;
-
-  filestream_close(fp);
-
-  return true;
-}
-
-static
-bool
-file_exists_in_system_directory(const char *filename_)
-{
-  int rv;
-  char fullpath[PATH_MAX_LENGTH];
-  const char *system_path;
-
-  system_path = NULL;
-  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
-  if(!rv || (system_path == NULL))
-    {
-      retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: no system directory defined - can't find %s\n",
-                          filename_);
-      return false;
-    }
-
-  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
-
-  return file_exists(fullpath);
 }
 
 static
@@ -579,13 +635,8 @@ read_file_from_system_directory(const char *filename_,
 
   system_path = NULL;
   rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
-  if(!rv || (system_path == NULL))
-    {
-      retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: no system directory defined - can't find %s\n",
-                          filename_);
-      return false;
-    }
+  if((rv == 0) || (system_path == NULL))
+    return -1;
 
   fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
 
@@ -604,7 +655,7 @@ read_file_from_system_directory(const char *filename_,
 
 static
 int
-load_rom(void)
+load_rom1(void)
 {
   uint8_t *rom;
   int64_t  size;
@@ -613,11 +664,43 @@ load_rom(void)
   rom  = freedo_arm_rom1_get();
   size = freedo_arm_rom1_size();
 
-  rv = read_file_from_system_directory(ROM_FILENAME_PANASONIC_FZ10,rom,size);
+  rv = read_file_from_system_directory(BIOS->filename,rom,size);
   if(rv < 0)
-    return -1;
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: unable to find or load BIOS ROM - %s\n",
+                          BIOS->filename);
+      return -1;
+    }
 
   freedo_arm_rom1_byteswap_if_necessary();
+
+  return 0;
+}
+
+static
+int
+load_rom2(void)
+{
+  uint8_t *rom;
+  int64_t  size;
+  int64_t  rv;
+  const freedo_bios_t *kanji_rom;
+
+  rom  = freedo_arm_rom2_get();
+  size = freedo_arm_rom2_size();
+
+  kanji_rom = freedo_bios_rom2();
+  rv = read_file_from_system_directory(kanji_rom->filename,rom,size);
+  if(rv < 0)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: unable to find or load BIOS ROM - %s\n",
+                          BIOS->filename);
+      return -1;
+    }
+
+  freedo_arm_rom2_byteswap_if_necessary();
 
   return 0;
 }
@@ -626,40 +709,39 @@ bool
 retro_load_game(const struct retro_game_info *info_)
 {
   int rv;
-  enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
-
-  if(!info_)
-    return false;
+  enum retro_pixel_format fmt;
 
   retro_setup_input_descriptions();
 
+  fmt = RETRO_PIXEL_FORMAT_XRGB8888;
   rv = retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,&fmt);
-  if(!rv)
+  if(rv == 0)
     {
-      retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: XRGB8888 is not supported.\n");
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[4DO]: XRGB8888 is not supported.\n");
       return false;
     }
 
   cdimage_set_sector(0);
   audio_reset_sample_buffer();
 
-  rv = retro_cdimage_open(info_->path,&CDIMAGE);
-  if(rv == -1)
-    return false;
-
-  rv = file_exists_in_system_directory(ROM_FILENAME_PANASONIC_FZ10);
-  if(!rv)
+  if(info_)
     {
-      retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: Unable to find BIOS ROM - %s\n",
-                          ROM_FILENAME_PANASONIC_FZ10);
-      return false;
+      rv = retro_cdimage_open(info_->path,&CDIMAGE);
+      if(rv == -1)
+        {
+          retro_log_printf_cb(RETRO_LOG_ERROR,
+                              "[4DO]: failure opening image - %s\n",
+                              info_->path);
+          return false;
+        }
     }
 
   check_options();
   video_init();
   freedo_3do_init(libfreedo_callback);
-  load_rom();
+  load_rom1();
+  load_rom2();
 
   /* XXX: Is this really a frontend responsibility? */
   nvram_init(freedo_arm_nvram_get());
@@ -782,7 +864,8 @@ retro_reset(void)
   cdimage_set_sector(0);
   audio_reset_sample_buffer();
   freedo_3do_init(libfreedo_callback);
-  load_rom();
+  load_rom1();
+  load_rom2();
 
   nvram_init(freedo_arm_nvram_get());
   if(check_option_nvram_shared())
