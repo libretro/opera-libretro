@@ -683,9 +683,6 @@ freedo_clio_fifo_eo_write(uint16_t channel_,
 uint16_t
 freedo_clio_fifo_ei(uint16_t channel_)
 {
-  unsigned base = (0x400 + (channel_ * 16));
-  unsigned mask = (1 << channel_);
-
   if(CLIO.fifo_i[channel_].start.addr != 0) /* channel enabled */
     {
       uint32_t val_;

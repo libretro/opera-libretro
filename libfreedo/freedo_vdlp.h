@@ -39,7 +39,7 @@
 
 struct vdlp_line_s
 {
-  uint16_t line[320*4];
+  uint16_t line[640];
   uint8_t  xCLUTB[32];
   uint8_t  xCLUTG[32];
   uint8_t  xCLUTR[32];
@@ -52,7 +52,7 @@ typedef struct vdlp_line_s vdlp_line_t;
 
 struct vdlp_frame_s
 {
-  vdlp_line_t  lines[240*4];
+  vdlp_line_t  lines[480];
   unsigned int src_w;
   unsigned int src_h;
 };
