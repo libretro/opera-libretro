@@ -416,14 +416,8 @@ freedo_madam_state_load(const void *buf_)
   memcpy(&MADAM,buf_,sizeof(madam_t));
 }
 
-uint32_t PXOR1;
-uint32_t PXOR2;
-
-#define PDV(x) ((((x)-1)&3)+1)
-
-#define TESTCLIP(cx,cy) (((int32_t)cx>=0)&&((int32_t)cx<=((CLIPXVAL)<<16))&&((int32_t)cy>=0)&&((int32_t)cy<=((CLIPYVAL)<<16)))
-
-#define XY2OFF(a,b,c) ((((int32_t)(b)>>1)*(c)) + (((int32_t)(b)&1)<<1)+(a))
+static uint32_t PXOR1;
+static uint32_t PXOR2;
 
 #define PBMASK 0x80000000
 #define KUP    0x08000000
@@ -564,6 +558,39 @@ static uint32_t pSource;
 #define	ENGBFETCH	MADAM.mregs[0x5b8]
 #define ENGBLEN		MADAM.mregs[0x5bc]
 #define PAL_EXP		(&MADAM.mregs[0x5d0])
+
+static
+INLINE
+const
+int32_t
+PDV(const int32_t x_)
+{
+  return (((x_ - 1) & 3) + 1);
+}
+
+static
+INLINE
+const
+int32_t
+XY2OFF(const int32_t x_,
+       const int32_t y_,
+       const int32_t m_)
+{
+  return (((y_ >> 1) * m_) + ((y_ & 1) << 1) + (x_ << 2));
+}
+
+static
+INLINE
+const
+uint32_t
+TESTCLIP(const int32_t x_,
+         const int32_t y_)
+{
+  return ((x_ >= 0) &&
+          (x_ <= CLIPXVAL) &&
+          (y_ >= 0) &&
+          (y_ <= CLIPYVAL));
+}
 
 uint32_t
 freedo_madam_peek(uint32_t addr_)
@@ -1030,7 +1057,7 @@ freedo_madam_cel_handle(void)
 
         pdec.tmask = !(CCBFLAGS & CCB_BGND);
 
-        pproj.pmode        = (CCBFLAGS&CCB_POVER_MASK);
+        pproj.pmode        = (CCBFLAGS & CCB_POVER_MASK);
         pproj.pmodeORmask  = ((pproj.pmode == PMODE_ONE ) ? 0x8000 : 0x0000);
         pproj.pmodeANDmask = ((pproj.pmode != PMODE_ZERO) ? 0xFFFF : 0x7FFF);
       }
@@ -1250,6 +1277,7 @@ freedo_madam_init(uint8_t *mem_)
 }
 
 static
+INLINE
 uint32_t
 mread(uint32_t addr_)
 {
@@ -1262,30 +1290,33 @@ mread(uint32_t addr_)
 }
 
 static
+INLINE
 void
-mwrite(uint32_t addr_,
-       uint32_t val_)
+mwrite(const uint32_t addr_,
+       const uint32_t val_)
 {
   freedo_mem_write32(addr_,val_);
   CELCYCLES += 2;
 }
 
 static
+INLINE
 void
-mwriteh(uint32_t addr_,
-        uint16_t val_)
+mwriteh(const uint32_t addr_,
+        const uint16_t val_)
 {
   CELCYCLES += 2;
 #ifdef MSB_FIRST
-  freedo_mem_write16((addr_),val_);
+  freedo_mem_write16(addr_,val_);
 #else
-  freedo_mem_write16((addr_^2),val_);
+  freedo_mem_write16((addr_ ^ 2),val_);
 #endif
 }
 
 static
+INLINE
 uint16_t
-mreadh(uint32_t addr_)
+mreadh(const uint32_t addr_)
 {
   CELCYCLES += 1;
 #ifdef MSB_FIRST
@@ -1297,8 +1328,8 @@ mreadh(uint32_t addr_)
 
 static
 uint32_t
-PDEC(uint32_t  pixel_,
-     uint16_t *amv_)
+PDEC(const uint32_t  pixel_,
+     uint16_t       *amv_)
 {
   pdeco_t pix1;
   uint16_t resamv;
@@ -1340,8 +1371,8 @@ PDEC(uint32_t  pixel_,
     case 7:
       if(PRE0 & PRE0_LINEAR)    /* uncoded 16 bit CEL */
         {
-          pres = pix1.raw;
-          resamv=0x49;
+          pres   = pix1.raw;
+          resamv = 0x49;
         }
       else                      /* coded 16 bit CEL */
         {
@@ -1797,10 +1828,10 @@ DrawPackedCel_New(void)
                           uint32_t pixel;
                           uint32_t framePixel;
 
-                          framePixel = mreadh((PIXSOURCE + XY2OFF((xcur >> 16) << 2,ycur >> 16,MADAM.RMOD)));
+                          framePixel = mreadh((PIXSOURCE + XY2OFF(xcur >> 16,ycur >> 16,MADAM.RMOD)));
                           pixel      = PPROC(CURPIX,framePixel,LAMV);
                           pixel      = PPROJ_OUTPUT(CURPIX,pixel,framePixel);
-                          mwriteh((FBTARGET + XY2OFF((xcur >> 16) << 2,ycur >> 16,MADAM.WMOD)),pixel);
+                          mwriteh((FBTARGET + XY2OFF(xcur >> 16,ycur >> 16,MADAM.WMOD)),pixel);
                         }
 
                       xcur += HDX1616;
@@ -2043,7 +2074,6 @@ DrawPackedCel_New(void)
     }
 }
 
-
 static
 void
 DrawLiteralCel_New(void)
@@ -2113,10 +2143,10 @@ DrawLiteralCel_New(void)
                     uint32_t framePixel;
                     uint32_t pixel;
 
-                    framePixel = mreadh((PIXSOURCE + XY2OFF((xcur >> 16) << 2,ycur >> 16,MADAM.RMOD)));
+                    framePixel = mreadh((PIXSOURCE + XY2OFF(xcur >> 16,ycur >> 16,MADAM.RMOD)));
                     pixel      = PPROC(CURPIX,framePixel,LAMV);
                     pixel      = PPROJ_OUTPUT(CURPIX,pixel,framePixel);
-                    mwriteh((FBTARGET + XY2OFF((xcur >> 16) << 2,ycur >> 16,MADAM.WMOD)),pixel);
+                    mwriteh((FBTARGET + XY2OFF(xcur >> 16,ycur >> 16,MADAM.WMOD)),pixel);
                   }
 
                 xcur += HDX1616;
@@ -2249,7 +2279,7 @@ DrawLRCel_New(void)
   uint16_t CURPIX;
   uint16_t LAMV;
 
-  bpp       = BPP[PRE0&PRE0_BPP_MASK];
+  bpp       = BPP[PRE0 & PRE0_BPP_MASK];
   offsetl   = ((bpp < 8) ? 1 : 2);
   pixcount  = 0;
   offset    = ((offsetl == 1) ?
@@ -2288,7 +2318,7 @@ DrawLRCel_New(void)
 
           for(j = TEXTURE_WI_START; j < SPRWI; j++)
             {
-              CURPIX = PDEC(mreadh((PDATA + XY2OFF(j << 2,i,offset << 2))),&LAMV);
+              CURPIX = PDEC(mreadh((PDATA + XY2OFF(j,i,offset << 2))),&LAMV);
 
               if(!pproj.Transparent)
                 {
@@ -2296,13 +2326,13 @@ DrawLRCel_New(void)
                   uint32_t framePixel;
 
                   if(FIXMODE & FIX_BIT_TIMING_6)
-                    framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,(ycur>>16)<<1,MADAM.RMOD)));
+                    framePixel = mreadh((PIXSOURCE+XY2OFF(xcur >> 16,(ycur>>16)<<1,MADAM.RMOD)));
                   else
-                    framePixel = mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,MADAM.RMOD)));
+                    framePixel = mreadh((PIXSOURCE+XY2OFF(xcur >> 16,ycur>>16,MADAM.RMOD)));
 
                   pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(CURPIX,pixel,framePixel);
-                  mwriteh((FBTARGET+XY2OFF((xcur>>16)<<2,ycur>>16,MADAM.WMOD)),pixel);
+                  mwriteh((FBTARGET+XY2OFF(xcur >> 16,ycur >> 16,MADAM.WMOD)),pixel);
                 }
 
               xcur += HDX1616;
@@ -2327,14 +2357,14 @@ DrawLRCel_New(void)
 
             for(j = 0; j < SPRWI; j++)
               {
-                CURPIX = PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+                CURPIX = PDEC(mreadh((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
 
                 if(!pproj.Transparent)
                   {
                     if(TexelDraw_Scale(CURPIX,
                                        LAMV,
-                                       xcur>>16,
-                                       ycur>>16,
+                                       xcur >> 16,
+                                       ycur >> 16,
                                        ((xcur+HDX1616+VDX1616)>>16),
                                        ((ycur+HDY1616+drawHeight)>>16)))
                       break;
@@ -2362,7 +2392,7 @@ DrawLRCel_New(void)
 
           for(j = 0; j < SPRWI; j++)
             {
-              CURPIX = PDEC(mreadh((PDATA+XY2OFF(j<<2,i,offset<<2))),&LAMV);
+              CURPIX = PDEC(mreadh((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
 
               if(!pproj.Transparent)
                 {
@@ -2462,7 +2492,7 @@ QuardCCWTest(int32_t wdt_)
 }
 
 static
-INLINE
+FORCEINLINE
 int32_t
 ABS(const int32_t val_)
 {
@@ -2786,8 +2816,6 @@ Init_Scale_Map(void)
   else
     TEXEL_INCY = 1;
 
-  TEXEL_INCX <<= 2;
-
   TEXTURE_WI_START = 0;
   TEXTURE_HI_START = 0;
 }
@@ -2822,16 +2850,16 @@ TexelDraw_Line(uint16_t CURPIX_,
     {
       uint32_t next;
 
-      next = mreadh((PIXSOURCE + XY2OFF(xcur_ << 2,ycur_,MADAM.RMOD)));
+      next = mreadh((PIXSOURCE + XY2OFF(xcur_,ycur_,MADAM.RMOD)));
       if(next != curr)
         {
           curr  = next;
           pixel = PPROC(CURPIX_,next,LAMV_);
         }
 
-      //pixel=PPROC(CURPIX,mreadh((PIXSOURCE+XY2OFF((xcur>>16)<<2,ycur>>16,MADMA.RMOD))),LAMV);
+      //pixel=PPROC(CURPIX,mreadh((PIXSOURCE+XY2OFF(xcur>>16,ycur>>16,MADMA.RMOD))),LAMV);
       pixel = PPROJ_OUTPUT(CURPIX_,pixel,next);
-      mwriteh((FBTARGET + XY2OFF(xcur_ << 2,ycur_,MADAM.WMOD)),pixel);
+      mwriteh((FBTARGET + XY2OFF(xcur_,ycur_,MADAM.WMOD)),pixel);
     }
 }
 
@@ -2842,10 +2870,10 @@ readPIX(uint32_t src_,
         int32_t  i_,
         int32_t  j_)
 {
-  src_ += XY2OFF(((j_>>HIRESMODE)<<2),(i_>>HIRESMODE),MADAM.WMOD);
+  src_ += XY2OFF(j_ >> HIRESMODE,i_ >> HIRESMODE,MADAM.WMOD);
   if(HIRESMODE)
-    return *((uint16_t*)&Mem[(src_^2) + (((i_ & 1) << 1) + (j_&1)) * 1024 * 1024]);
-  return *((uint16_t*)&Mem[src_^2]);
+    return *((uint16_t*)&Mem[(src_ ^ 2) + (((i_ & 1) << 1) + (j_ & 1)) * 1024 * 1024]);
+  return *((uint16_t*)&Mem[src_ ^ 2]);
 }
 
 static
@@ -2856,13 +2884,12 @@ writePIX(uint32_t src_,
          int32_t  j_,
          uint16_t pix_)
 {
-  src_+=XY2OFF(((j_>>HIRESMODE)<<2),(i_>>HIRESMODE),MADAM.WMOD);
+  src_ += XY2OFF(j_ >> HIRESMODE,i_ >> HIRESMODE,MADAM.WMOD);
   if(HIRESMODE)
-    *((uint16_t*)&Mem[(src_^2)+(((i_&1)<<1)+((j_)&1))*1024*1024]) = pix_;
+    *((uint16_t*)&Mem[(src_ ^ 2) + (((i_ & 1) << 1) + (j_ & 1)) * 1024 * 1024]) = pix_;
   else
-    *((uint16_t*)&Mem[src_^2]) = pix_;
+    *((uint16_t*)&Mem[src_ ^ 2]) = pix_;
 }
-
 
 static
 int
@@ -2873,8 +2900,8 @@ TexelDraw_Scale(uint16_t CURPIX_,
                 int32_t  deltax_,
                 int32_t  deltay_)
 {
-  int32_t i;
-  int32_t j;
+  int32_t x;
+  int32_t y;
   uint32_t pixel;
   uint32_t framePixel;
 
@@ -2896,13 +2923,13 @@ TexelDraw_Scale(uint16_t CURPIX_,
   if(xcur_ == deltax_)
     return 0;
 
-  for(i = ycur_; i != deltay_; i += TEXEL_INCY)
+  for(y = ycur_; y != deltay_; y += TEXEL_INCY)
     {
-      for(j = (xcur_ << 2); j != (deltax_ << 2); j += TEXEL_INCX)
+      for(x = xcur_; x != deltax_; x += TEXEL_INCX)
         {
-          if(TESTCLIP((j << 14),(i << 16)))
+          if(TESTCLIP(x,y))
             {
-              framePixel = mreadh(PIXSOURCE + XY2OFF(j,i,MADAM.RMOD));
+              framePixel = mreadh(PIXSOURCE + XY2OFF(x,y,MADAM.RMOD));
               pixel      = PPROC(CURPIX_,framePixel,LAMV_);
               pixel      = PPROJ_OUTPUT(CURPIX_,pixel,framePixel);
               /*
@@ -2913,7 +2940,7 @@ TexelDraw_Scale(uint16_t CURPIX_,
                     pixel = PPROC(CURPIX,next,LAMV);
                   }
               */
-              mwriteh((FBTARGET + XY2OFF(j,i,MADAM.WMOD)),pixel);
+              mwriteh((FBTARGET + XY2OFF(x,y,MADAM.WMOD)),pixel);
             }
         }
     }

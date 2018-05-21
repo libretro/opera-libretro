@@ -63,7 +63,7 @@ nvram_save(const void   *nvram_,
 
   fill_pathname_join(fullpath,basepath_,filename_,sizeof(fullpath));
   strncpy(fullpath_tmp,fullpath,sizeof(fullpath_tmp));
-  strncat(fullpath_tmp,".tmp",sizeof(fullpath_tmp));
+  strncat(fullpath_tmp,".tmp",sizeof(fullpath_tmp) - strlen(fullpath_tmp) - 1);
 
   rv = filestream_write_file(fullpath_tmp,nvram_,size_);
   if(rv == 0)
