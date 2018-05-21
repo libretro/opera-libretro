@@ -319,9 +319,11 @@ include $(CORE_DIR)/Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o)
 
+OPT := -O2
 ifeq ($(DEBUG), 1)
    ifneq (,$(findstring msvc,$(platform)))
-      CFLAGS += -Od -Zi -DDEBUG -D_DEBUG
+      OPT = -Od
+      CFLAGS += -Zi -DDEBUG -D_DEBUG
 
       ifeq ($(STATIC_LINKING),1)
          CFLAGS += -MTd
@@ -329,10 +331,12 @@ ifeq ($(DEBUG), 1)
          CFLAGS += -MDd
       endif
    else
-      CFLAGS += -O0 -g -DDEBUG
+      OPT = -O0
+      CFLAGS += -ggdb -DDEBUG -fno-omit-frame-pointer
    endif
 else
-   CFLAGS += -O2 -DNDEBUG
+   OPT = -O2
+   CFLAGS += -DNDEBUG
 
    ifneq (,$(findstring msvc,$(platform)))
       ifeq ($(STATIC_LINKING),1)
@@ -341,6 +345,22 @@ else
          CFLAGS += -MD
       endif
    endif
+endif
+
+CFLAGS += $(OPT)
+
+ifneq ($(SANITIZER),)
+   CFLAGS   += -fsanitize=$(SANITIZER)
+   LDFLAGS  += -fsanitize=$(SANITIZER)
+endif
+
+ifneq ($(C89_BUILD),)
+   CFLAGS += -std=c89 -ansi -pedantic
+endif
+
+ifneq ($(LTO),)
+   CFLAGS += -flto -fipa-pta
+   LDFLAGS += -flto -fipa-pta
 endif
 
 LDFLAGS += $(fpic) $(SHARED)
