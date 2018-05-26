@@ -70,7 +70,7 @@
 
 #define is_little_endian() (0)
 #define swap32_if_little_endian(X) (X)
-#define swap32_array_if_little_endian(X,Y) (void)
+#define swap32_array_if_little_endian(X,Y) 
 
 #else
 

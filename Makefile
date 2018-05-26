@@ -144,7 +144,7 @@ else ifeq ($(platform), ps3)
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
    STATIC_LINKING = 1
-	FLAGS += -DMSB_FIRST
+	FLAGS += -DMSB_FIRST -D__CELLOS_LV2__
 	OLD_GCC = 1
 else ifeq ($(platform), sncps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
