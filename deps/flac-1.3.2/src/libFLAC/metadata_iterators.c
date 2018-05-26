@@ -56,6 +56,26 @@
 /* Alias the first (in share/alloc.h) to the second (in src/libFLAC/memory.c). */
 #define safe_malloc_mul_2op_ safe_malloc_mul_2op_p
 
+#ifdef __CELLOS_LV2__
+#include <sys/syscall.h>
+
+#define uid_t int32_t
+#define gid_t int32_t
+#define ftello ftell
+#define fseeko fseek
+
+int sys_fs_chown(char *path, uid_t owner, gid_t group)
+{
+	system_call_3(835, (uint64_t) path, (uint64_t) owner, (uint64_t) group);
+	return_to_user_prog(int);
+}
+
+int chown(char *path, uid_t owner, gid_t group) 
+{
+	return sys_fs_chown(path, NO_UID, NO_GID);
+}
+#endif
+
 /****************************************************************************
  *
  * Local function declarations
