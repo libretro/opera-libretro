@@ -111,6 +111,7 @@ retro_environment_set_variables(void)
   static struct retro_variable vars[] =
     {
       { "4do_bios", NULL },
+      { "4do_rom2",                 "Kanji ROM; disabled|enabled" },
       { "4do_cpu_overclock",        "CPU overclock; "
                                     "1.0x (12.50Mhz)|"
                                     "1.1x (13.75Mhz)|"
@@ -470,6 +471,13 @@ check_option_4do_bios(void)
 }
 
 static
+bool
+rom2_enabled(void)
+{
+  return option_enabled("4do_rom2");
+}
+
+static
 void
 check_option_4do_high_resolution(void)
 {
@@ -741,7 +749,8 @@ retro_load_game(const struct retro_game_info *info_)
   video_init();
   freedo_3do_init(libfreedo_callback);
   load_rom1();
-  load_rom2();
+  if(rom2_enabled())
+    load_rom2();
 
   /* XXX: Is this really a frontend responsibility? */
   nvram_init(freedo_arm_nvram_get());
@@ -865,7 +874,8 @@ retro_reset(void)
   audio_reset_sample_buffer();
   freedo_3do_init(libfreedo_callback);
   load_rom1();
-  load_rom2();
+  if(rom2_enabled())
+    load_rom2();
 
   nvram_init(freedo_arm_nvram_get());
   if(check_option_nvram_shared())
