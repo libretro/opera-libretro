@@ -33,6 +33,7 @@
 #include "freedo_clio.h"
 #include "freedo_core.h"
 #include "freedo_madam.h"
+#include "freedo_pbus.h"
 #include "freedo_vdlp.h"
 #include "hack_flags.h"
 #include "inline.h"
@@ -368,7 +369,6 @@ typedef union PXC_u PXC_t;
 
 #define MADAM_REGISTER_COUNT   2048
 #define MADAM_PLUT_COUNT       32
-#define MADAM_PBUS_QUEUE_COUNT 20
 
 #pragma pack(pop)
 
@@ -376,7 +376,6 @@ struct madam_s
 {
   uint32_t mregs[MADAM_REGISTER_COUNT+64];
   uint16_t PLUT[MADAM_PLUT_COUNT];
-  uint8_t  PBUSQueue[MADAM_PBUS_QUEUE_COUNT];
   int32_t  RMOD;
   int32_t  WMOD;
   uint32_t FSM;
@@ -472,7 +471,6 @@ static struct
   bool     Transparent;
 } pproj;
 
-static uint32_t  pbus = 0;
 static uint8_t  *Mem;
 static uint32_t  retuval;
 static uint32_t  BITADDR;
@@ -1122,52 +1120,13 @@ HandleDMA8(void)
     }
 }
 
-/*
- * Controller data info
- *
- * 20 bytes data total
- * Each controller uses 2 bytes
- *
- * Controller 1 uses offsets 0x02 & 0x03
- * Controller 2 uses offsets 0x06 & 0x07
- * Controller 3 uses offsets 0x04 & 0x05
- * Controller 4 uses offsets 0x0A & 0x0B
- * Controller 5 uses offsets 0x08 & 0x09
- * Controller 6 uses offsets 0x0E & 0x0F
- * Controller 7 uses offsets 0x12 & 0x13
- * Controller 8 uses offsets 0x10 & 0x11
- *
- * Offset 0x00, 0x01, 0x0C, 0x0D should be set to 0x00, 0x48, 0x00,
- * 0x80 respectively. It is currently not clear what those offsets or
- * values mean.
- *
- * It's not (publicly) known how the lightgun or mouse work.
- *
- * byte 0 layout:
- *  - bit 0: unknown / unused
- *  - bit 1: unknown / unused
- *  - bit 2: L
- *  - bit 3: R
- *  - bit 4: X (Select)
- *  - bit 5: P (Start)
- *  - bit 6: C
- *  - bit 7: B
- * byte 1 layout:
- *  - bit 0: A
- *  - bit 1: Left
- *  - bit 2: Right
- *  - bit 3: Up
- *  - bit 4: Down
- *  - bit 5: unknown / unused
- *  - bit 6: unknown / unused
- *  - bit 7: controller connectivity?
- */
-
 static
 void
 DMAPBus(void)
 {
-  uint32_t i = 0;
+  uint32_t  i;
+  uint32_t *pbus_buf;
+  int32_t   pbus_size;
 
   if((int32_t)MADAM.mregs[0x574] < 0)
     return;
@@ -1176,40 +1135,28 @@ DMAPBus(void)
   MADAM.mregs[0x570] += 4;
   MADAM.mregs[0x578] += 4;
 
-  while((int32_t)MADAM.mregs[0x574] > 0)
+  i = 0;
+  pbus_buf = freedo_pbus_buf();
+  pbus_size = freedo_pbus_size();
+  while(((int32_t)MADAM.mregs[0x574] > 0) && (pbus_size > 0))
     {
-      if(i < (sizeof(MADAM.PBUSQueue) / sizeof(uint32_t)))
-        freedo_io_write(MADAM.mregs[0x570],((uint32_t*)MADAM.PBUSQueue)[i]);
-      else
-        freedo_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
+      freedo_io_write(MADAM.mregs[0x570],pbus_buf[i]);
       MADAM.mregs[0x574] -= 4;
+      pbus_size          -= 4;
       MADAM.mregs[0x570] += 4;
       MADAM.mregs[0x578] += 4;
       i++;
     }
 
+  while((int32_t)MADAM.mregs[0x574] > 0)
+    {
+      freedo_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
+      MADAM.mregs[0x574] -= 4;
+      MADAM.mregs[0x570] += 4;
+      MADAM.mregs[0x578] += 4;
+    }
+
   MADAM.mregs[0x574] = 0xFFFFFFFC;
-}
-
-uint8_t*
-freedo_madam_pbus_data_reset(void)
-{
-  uint32_t *pbus_queue = (uint32_t*)MADAM.PBUSQueue;
-
-  /* 5 x 4 bytes = 20 bytes */
-  pbus_queue[0] = 0;
-  pbus_queue[1] = 0;
-  pbus_queue[2] = 0;
-  pbus_queue[3] = 0;
-  pbus_queue[4] = 0;
-
-  return MADAM.PBUSQueue;
-}
-
-uint8_t*
-freedo_madam_pbus_data_get(void)
-{
-  return MADAM.PBUSQueue;
 }
 
 void

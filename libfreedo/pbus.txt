@@ -1,0 +1,139 @@
+The PBUS (player bus) is not at all well documented. There exists
+the patent WO09410636A1 "PLAYER BUS APPARATUS AND METHOD" which was
+filed on 1992-02-11. The primary details of the protocol can be
+found in pages 21 - 23.
+
+> Since the above described arrangement permits 448 bits to be
+> transferred per field and the minimum bit transfer per device is
+> 8bits, a maximum of approximately 56 devices can be on the bus at
+> one time.
+>
+> Each of the player devices has an ID code embedded in its response
+> data. An ID code is mapped by software in the system to the number
+> of input and output bits for the device identified. Since the ID
+> code is embedded, it is received by the system 100 both at
+> initialization and when data is being read in under normal
+> operation. In this manner, it is possible to reconfigure the
+> system (add or delete devices) without re-initializing and without
+> adversely affecting those device already on the line.
+>
+> During an initialization sequence, a string of zeros is shifted
+> out from the system 100. A requirement for all of the player
+> devices is that they see a string of zeros either as an
+> initialization or don't cares.
+>
+> The first 4 bits of data stream received by the system 100 from
+> each device is that device's basic identification code (ID
+> code). The embedding of an ID code in the data stream functions as
+> follows for a joystick 15. The basic joystick 15 will have 8 bits
+> of data that are (inverted): down, up, right, left, switch-2,
+> switch-1, fire-2 and fire-1. Using the inability of the joystick
+> to indicate both up and down at the same time, the ID codes for a
+> basic joystick are 01QQ, 10QQ and 11QQ, where QQ is 01, 10 or
+> 11. All other devices start with 00QQ. All joysticks are incapable
+> of generating 00 for their first 2 bits. With regard to the escape
+> function, the 1100 sequence indicates escape for the joystick. In
+> all other devices, the escape function is indicated by the bit
+> immediately following the 4 bit identification code. A string of
+> zeros indicate the end of input data into the system 100 device.
+
+However, information from the original FreeDO release does not seem
+to match with the specifics of the patent.
+
+MOUSE:
+
+The mouse appears to use 32bits.
+
+* 8bit: identifier (0x49)
+* 1bit: left button
+* 1bit: middle button
+* 1bit: right button
+* 1bit: shift button
+* 10bit: X delta (signed)
+* 10bit: Y delta (signed)
+
+JOYPAD:
+
+The joypad's data layout is clear but less so in regards to it's
+layout in the stream. The identifier seems necessary but other
+values work (3DO's SDK indicates the ID is 0x80 but FreeDO was using
+0x48). Perhaps the ID is really a mask and really the 'connectivity'
+bit. It's not clear from the 3DO SDK event.h file what the raw data
+layout is.
+
+8bit: identifier (0x80)
+2bit: unknown / unused
+1bit: left trigger
+1bit: right trigger
+1bit: X
+1bit: P
+1bit: C
+1bit: B
+1bit: A
+1bit: left
+1bit: right
+1bit: up
+1bit: down
+2bit: unknown / unused
+1bit: connectivity?
+
+LIGHTGUN:
+
+8bit: identifier (0x4D)
+1bit: trigger
+1bit: service button (arcade shooters)
+1bit: coin button (arcade shooters)
+1bit: start (arcade shooters)
+1bit: holster (arcade shooters)
+1bit: unused?
+1bit: unused?
+17bit: screen offset
+
+
+Games supporting 3DO mouse:
+
+* Crime Patrool
+* Drug Wars
+* Fun'n Games
+* Kingdom - The Far Reaches
+* The Last Bounty Hunter
+* Lemmings
+* Mad Dog McCree II
+* MYST
+* Policenauts - Pilot Disk
+* Policenauts
+* Putt-Putt Joins the Parade & Bear Stormin'
+* Space Pirates
+* Shanghai: Triple Threat
+* World Cup Golf
+
+Games supporting GAMECON (3DO lightgun):
+
+* Corpse Killer
+* Crime Patrol
+* Demolition Man
+* Drug Wars
+* Fast Draw Showdown (arcade)
+* Gunslinger's Collection (compilation bundling both Mad Dog games with Crime Patrol)
+* The Last Bounty Hunter
+* Mad Dog McCree
+* Mad Dog II: The Lost Gold
+* Shootout at Old Tucson (arcade)
+* Space Pirates
+* Who Shot Johnny Rock
+
+Games supporting 3DO flight stick:
+
+* Blade Force
+* Flying Nightmares
+* Killing Time
+* The Need for Speed
+* Phoenix 3
+* PO'ed
+* Return Fire
+* Shock Wave: Operation Jumpgate
+* Shock Wave 2: Beyond the Gate
+* Star Wars: Rebel Assault
+* Super Wing Commander
+* VR Stalker
+* Wing Commander III: Heart of the Tiger

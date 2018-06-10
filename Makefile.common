@@ -23,7 +23,6 @@ SOURCES_C += \
 	$(4DO_DIR)/freedo_3do.c \
 	$(4DO_DIR)/freedo_arm.c \
 	$(4DO_DIR)/freedo_bitop.c \
-        $(4DO_DIR)/freedo_bios.c \
 	$(4DO_DIR)/freedo_cdrom.c \
 	$(4DO_DIR)/freedo_clio.c \
 	$(4DO_DIR)/freedo_diag_port.c \
@@ -34,6 +33,8 @@ SOURCES_C += \
 	$(4DO_DIR)/freedo_sport.c \
 	$(4DO_DIR)/freedo_vdlp.c \
 	$(4DO_DIR)/freedo_xbus.c \
+        $(4DO_DIR)/freedo_bios.c \
+        $(4DO_DIR)/freedo_pbus.c \
         $(4DO_DIR)/freedo_xbus_cdrom_plugin.c
 
 ifneq ($(STATIC_LINKING), 1)
