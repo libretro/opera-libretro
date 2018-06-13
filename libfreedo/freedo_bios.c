@@ -81,8 +81,8 @@ static const freedo_bios_t BIOSES[] =
        0x4a,0xd3,0xfc,0x3a,0xdf,0xa8,0xd6,0x35,0xe9,0x43}
     },
     {
-      "3do_arcade.bin",
-      "3DO Arcade",
+      "3do_arcade_saot.bin",
+      "3DO Arcade - SAOT",
       (512 * 1024),
       'U',
       "?",
