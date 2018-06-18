@@ -37,28 +37,6 @@
 #define FSM_INPROCESS 2
 #define FSM_SUSPENDED 3
 
-#define MADAM_PBUS_CONTROLLER1_OFFSET 0x02
-#define MADAM_PBUS_CONTROLLER2_OFFSET 0x06
-#define MADAM_PBUS_CONTROLLER3_OFFSET 0x04
-#define MADAM_PBUS_CONTROLLER4_OFFSET 0x0A
-#define MADAM_PBUS_CONTROLLER5_OFFSET 0x08
-#define MADAM_PBUS_CONTROLLER6_OFFSET 0x0E
-#define MADAM_PBUS_CONTROLLER7_OFFSET 0x12
-#define MADAM_PBUS_CONTROLLER8_OFFSET 0x10
-
-#define MADAM_PBUS_BYTE0_SHIFT_L        0x02
-#define MADAM_PBUS_BYTE0_SHIFT_R        0x03
-#define MADAM_PBUS_BYTE0_SHIFT_X        0x04
-#define MADAM_PBUS_BYTE0_SHIFT_P        0x05
-#define MADAM_PBUS_BYTE0_SHIFT_C        0x06
-#define MADAM_PBUS_BYTE0_SHIFT_B        0x07
-#define MADAM_PBUS_BYTE1_SHIFT_A        0x00
-#define MADAM_PBUS_BYTE1_SHIFT_LEFT     0x01
-#define MADAM_PBUS_BYTE1_SHIFT_RIGHT    0x02
-#define MADAM_PBUS_BYTE1_SHIFT_UP       0x03
-#define MADAM_PBUS_BYTE1_SHIFT_DOWN     0x04
-#define MADAM_PBUS_BYTE1_CONNECTED_MASK 0x80
-
 EXTERN_C_BEGIN
 
 void      freedo_madam_init(uint8_t *mem_);
@@ -71,9 +49,6 @@ uint32_t  freedo_madam_cel_get_cycles(void);
 uint32_t  freedo_madam_cel_handle(void);
 
 uint32_t *freedo_madam_registers(void);
-
-uint8_t  *freedo_madam_pbus_data_get(void);
-uint8_t  *freedo_madam_pbus_data_reset(void);
 
 void      freedo_madam_poke(uint32_t addr_, uint32_t val_);
 uint32_t  freedo_madam_peek(uint32_t addr_);
