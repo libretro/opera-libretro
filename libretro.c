@@ -804,6 +804,7 @@ retro_setup_input_descriptions(void)
         case RETRO_DEVICE_LIGHTGUN:
           rv += setup_lightgun_descriptions(&desc[rv],i);
           break;
+        }
     }
 
   memset(&desc[rv],0,sizeof(struct retro_input_descriptor));
