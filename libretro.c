@@ -13,6 +13,7 @@
 #include "nvram.h"
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
+#include "lr_input.h"
 
 #include <boolean.h>
 #include <file/file_path.h>
@@ -28,7 +29,6 @@
 
 #define CDIMAGE_SECTOR_SIZE 2048
 #define SAMPLE_BUFFER_SIZE 512
-#define MAX_DEVICES 8
 
 static vdlp_frame_t *FRAME = NULL;
 
@@ -39,11 +39,9 @@ static uint32_t   VIDEO_WIDTH;
 static uint32_t   VIDEO_HEIGHT;
 static uint32_t   SAMPLE_IDX;
 static int32_t    SAMPLE_BUFFER[SAMPLE_BUFFER_SIZE];
+static uint32_t   ACTIVE_DEVICES;
 
-static bool x_button_also_p;
 static const freedo_bios_t *BIOS;
-static uint32_t ACTIVE_DEVICES = 1;
-static unsigned PBUS_DEVICES[MAX_DEVICES] = {RETRO_DEVICE_NONE};
 
 static
 bool
@@ -125,7 +123,6 @@ retro_environment_set_variables(void)
                                     "2.0x (25.00Mhz)" },
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
-      { "4do_x_button_also_p",      "Button X also acts as P; disabled|enabled" },
       { "4do_active_devices",       "Active Devices; 1|2|3|4|5|6|7|8|0" },
       { "4do_hack_timing_1",        "Timing Hack 1 (Crash 'n Burn); disabled|enabled" },
       { "4do_hack_timing_3",        "Timing Hack 3 (Dinopark Tycoon); disabled|enabled" },
@@ -156,21 +153,22 @@ retro_environment_set_controller_info(void)
 {
   static const struct retro_controller_description port[] =
     {
-      { "3DO Joypad",   RETRO_DEVICE_JOYPAD },
-      { "3DO Mouse",    RETRO_DEVICE_MOUSE  },
-      { "3DO Lightgun", RETRO_DEVICE_LIGHTGUN },
+      { "3DO Joypad",    RETRO_DEVICE_JOYPAD },
+      { "3DO Mouse",     RETRO_DEVICE_MOUSE  },
+      { "3DO Lightgun",  RETRO_DEVICE_LIGHTGUN },
+      { "SAOT Lightgun", RETRO_DEVICE_SAOT_LIGHTGUN },
     };
 
-  static const struct retro_controller_info ports[MAX_DEVICES+1] =
+  static const struct retro_controller_info ports[LR_INPUT_MAX_DEVICES+1] =
     {
-      {port, 3},
-      {port, 3},
-      {port, 3},
-      {port, 3},
-      {port, 3},
-      {port, 3},
-      {port, 3},
-      {port, 3},
+      {port, 4},
+      {port, 4},
+      {port, 4},
+      {port, 4},
+      {port, 4},
+      {port, 4},
+      {port, 4},
+      {port, 4},
       {NULL, 0}
     };
 
@@ -304,125 +302,6 @@ libfreedo_callback(int   cmd_,
     }
 
   return NULL;
-}
-
-/* See freedo_madam.c for details on bitfields being set below */
-static
-uint8_t
-retro_poll_joypad(const int port_,
-                  const int id_)
-{
-  return retro_input_state_cb(port_,RETRO_DEVICE_JOYPAD,0,id_);
-}
-
-static
-uint32_t
-retro_poll_mouse(const int port_,
-                 const int id_)
-{
-  return retro_input_state_cb(port_,RETRO_DEVICE_MOUSE,0,id_);
-}
-
-static
-uint32_t
-retro_poll_lightgun(const int port_,
-                    const int id_)
-{
-  return retro_input_state_cb(port_,RETRO_DEVICE_LIGHTGUN,0,id_);
-}
-
-static
-void
-retro_poll_input_mouse(const int port_)
-{
-  freedo_pbus_mouse_t m;
-
-  m.x      = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_X);
-  m.y      = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_Y);
-  m.left   = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_LEFT);
-  m.middle = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_MIDDLE);
-  m.right  = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_RIGHT);
-  m.shift  = retro_poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_BUTTON_4);
-
-  freedo_pbus_add_mouse(&m);
-}
-
-static
-void
-retro_poll_input_joypad(const int port_)
-{
-  freedo_pbus_joypad_t jp;
-
-  jp.u  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_UP);
-  jp.d  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_DOWN);
-  jp.l  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_LEFT);
-  jp.r  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_RIGHT);
-  jp.lt = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L);
-  jp.rt = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
-  jp.x  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT);
-  jp.p  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_START);
-  jp.a  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_Y);
-  jp.b  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_B);
-  jp.c  = retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_A);
-  if(x_button_also_p)
-    jp.p |= retro_poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_X);
-
-  freedo_pbus_add_joypad(&jp);
-}
-
-static
-void
-retro_poll_input_lightgun(const int port_)
-{
-  freedo_pbus_lightgun_t lg;
-
-  lg.x       = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
-  lg.y       = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
-
-  lg.trigger = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
-  lg.service = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
-  lg.coins   = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SELECT);
-  lg.start   = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_START);
-  lg.holster = retro_poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_RELOAD);
-
-  freedo_pbus_add_lightgun(&lg);
-}
-
-static
-void
-retro_poll_input(const int port_)
-{
-  switch(PBUS_DEVICES[port_])
-    {
-    case RETRO_DEVICE_NONE:
-      break;
-    default:
-    case RETRO_DEVICE_JOYPAD:
-      retro_poll_input_joypad(port_);
-      return;
-    case RETRO_DEVICE_MOUSE:
-      retro_poll_input_mouse(port_);
-      break;
-    case RETRO_DEVICE_LIGHTGUN:
-      retro_poll_input_lightgun(port_);
-      break;
-    }
-}
-
-static
-void
-update_input(void)
-{
-  int i;
-
-  freedo_pbus_reset();
-  retro_input_poll_cb();
-  for(i = 0; i < ACTIVE_DEVICES; i++)
-    {
-      if(PBUS_DEVICES[i] == RETRO_DEVICE_NONE)
-        continue;
-      retro_poll_input(i);
-    }
 }
 
 #ifndef GIT_VERSION
@@ -593,13 +472,6 @@ check_option_4do_cpu_overclock(void)
 
 static
 void
-check_option_4do_x_button_also_p(void)
-{
-  x_button_also_p = option_enabled("4do_x_button_also_p");
-}
-
-static
-void
 check_option_set_reset_bits(const char *key_,
                          int        *input_,
                          int         bitmask_)
@@ -652,7 +524,7 @@ check_option_4do_active_devices(void)
   if(rv && var.value)
     ACTIVE_DEVICES = atoi(var.value);
 
-  if(ACTIVE_DEVICES > MAX_DEVICES)
+  if(ACTIVE_DEVICES > LR_INPUT_MAX_DEVICES)
     ACTIVE_DEVICES = 1;
 }
 
@@ -663,7 +535,6 @@ check_options(void)
   check_option_4do_bios();
   check_option_4do_high_resolution();
   check_option_4do_cpu_overclock();
-  check_option_4do_x_button_also_p();
   check_option_4do_active_devices();
   check_option_set_reset_bits("4do_hack_timing_1",&FIXMODE,FIX_BIT_TIMING_1);
   check_option_set_reset_bits("4do_hack_timing_3",&FIXMODE,FIX_BIT_TIMING_3);
@@ -672,153 +543,11 @@ check_options(void)
   check_option_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
 }
 
-static
-uint32_t
-setup_joypad_description(struct retro_input_descriptor *desc_,
-                         const unsigned                 port_,
-                         const unsigned                 id_,
-                         const char                    *str_)
-{
-  desc_->port        = port_;
-  desc_->device      = RETRO_DEVICE_JOYPAD;
-  desc_->index       = 0;
-  desc_->id          = id_;
-  desc_->description = str_;
-
-  return 1;
-}
-
-static
-uint32_t
-setup_joypad_descriptions(struct retro_input_descriptor *desc_,
-                          const unsigned                 port_)
-{
-  uint32_t rv;
-
-  rv = 0;
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_LEFT,"D-Pad Left");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_UP,"D-Pad Up");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_DOWN,"D-Pad Down");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_RIGHT,"D-Pad Right");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_Y,"A");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_B,"B");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_A,"C");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_L,"L");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_R,"R");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_SELECT,"X (Stop)");
-  rv += setup_joypad_description(desc_++,port_,RETRO_DEVICE_ID_JOYPAD_START,"P (Play/Pause)");
-
-  return rv;
-}
-
-static
-uint32_t
-setup_mouse_description(struct retro_input_descriptor *desc_,
-                        const unsigned                 port_,
-                        const unsigned                 id_,
-                        const char                    *str_)
-{
-  desc_->port        = port_;
-  desc_->device      = RETRO_DEVICE_MOUSE;
-  desc_->index       = 0;
-  desc_->id          = id_;
-  desc_->description = str_;
-
-  return 1;
-}
-
-static
-uint32_t
-setup_mouse_descriptions(struct retro_input_descriptor *desc_,
-                         const unsigned                 port_)
-{
-  uint32_t rv;
-
-  rv = 0;
-  rv += setup_mouse_description(desc_++,port_,RETRO_DEVICE_ID_MOUSE_X,"Horizontal Axis");
-  rv += setup_mouse_description(desc_++,port_,RETRO_DEVICE_ID_MOUSE_Y,"Vertical Axis");
-  rv += setup_mouse_description(desc_++,port_,RETRO_DEVICE_ID_MOUSE_LEFT,"Left Button");
-  rv += setup_mouse_description(desc_++,port_,RETRO_DEVICE_ID_MOUSE_MIDDLE,"Middle Button");
-  rv += setup_mouse_description(desc_++,port_,RETRO_DEVICE_ID_MOUSE_RIGHT,"Right Button");
-
-  return rv;
-}
-
-static
-uint32_t
-setup_lightgun_description(struct retro_input_descriptor *desc_,
-                           const unsigned                 port_,
-                           const unsigned                 id_,
-                           const char                    *str_)
-{
-  desc_->port        = port_;
-  desc_->device      = RETRO_DEVICE_LIGHTGUN;
-  desc_->index       = 0;
-  desc_->id          = id_;
-  desc_->description = str_;
-
-  return 1;
-}
-
-static
-uint32_t
-setup_lightgun_descriptions(struct retro_input_descriptor *desc_,
-                            const unsigned                 port_)
-{
-  uint32_t rv;
-
-  rv = 0;
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X,"X Coord");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,"Y Coord");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_TRIGGER,"Trigger");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_AUX_A,"Service");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_SELECT,"Coins");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_START,"Start");
-  rv += setup_lightgun_description(desc_++,port_,RETRO_DEVICE_ID_LIGHTGUN_RELOAD,"Holster");
-
-  return rv;
-}
-
-static
-void
-retro_setup_input_descriptions(void)
-{
-  uint32_t i;
-  uint32_t rv;
-  struct retro_input_descriptor desc[256];
-
-  rv = 0;
-  for(i = 0; i < MAX_DEVICES; i++)
-    {
-      switch(PBUS_DEVICES[i])
-        {
-        case RETRO_DEVICE_NONE:
-          break;
-        default:
-        case RETRO_DEVICE_JOYPAD:
-          rv += setup_joypad_descriptions(&desc[rv],i);
-          break;
-        case RETRO_DEVICE_MOUSE:
-          rv += setup_mouse_descriptions(&desc[rv],i);
-          break;
-        case RETRO_DEVICE_LIGHTGUN:
-          rv += setup_lightgun_descriptions(&desc[rv],i);
-          break;
-        }
-    }
-
-  memset(&desc[rv],0,sizeof(struct retro_input_descriptor));
-
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,desc);
-}
-
 void
 retro_set_controller_port_device(unsigned port_,
                                  unsigned device_)
 {
-  PBUS_DEVICES[port_] = device_;
-
-  retro_setup_input_descriptions();
+  lr_input_set_controller_port_device(port_,device_);
 }
 
 static
@@ -909,8 +638,6 @@ retro_load_game(const struct retro_game_info *info_)
 {
   int rv;
   enum retro_pixel_format fmt;
-
-  retro_setup_input_descriptions();
 
   fmt = RETRO_PIXEL_FORMAT_XRGB8888;
   rv = retro_environment_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,&fmt);
@@ -1080,9 +807,11 @@ retro_run(void)
   if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&updated) && updated)
     check_options();
 
-  update_input();
+  lr_input_update(ACTIVE_DEVICES);
 
   freedo_3do_process_frame(FRAME);
+
+  lr_input_crosshairs_draw(VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT);
 
   retro_video_refresh_cb(VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT,VIDEO_WIDTH << 2);
 }

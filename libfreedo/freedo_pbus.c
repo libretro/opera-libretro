@@ -31,6 +31,7 @@
 #define PBUS_LG_SHIFT_COINS   5
 #define PBUS_LG_SHIFT_START   4
 #define PBUS_LG_SHIFT_HOLSTER 3
+#define PBUS_LG_SHIFT_OPTION  3
 
 struct pbus_s
 {
@@ -79,29 +80,66 @@ pbus_add_mouse(const freedo_pbus_mouse_t *mouse_,
   buf_[0] = (mouse_->x & 0xFF);
 }
 
+/*
+  The algo below is derived from FreeDO's lightgun.cpp. It's not clear
+  where all the constants come from or refer to.
+*/
 static
 void
 pbus_add_lightgun(const freedo_pbus_lightgun_t *lightgun_,
                   uint8_t                      *buf_)
 {
-  float x;
-  float y;
-  uint32_t r;
+  int32_t x;
+  int32_t y;
+  int32_t r;
+  uint8_t trigger;
+
+  trigger = lightgun_->trigger;
+  if(lightgun_->reload)
+    {
+      x = 320;
+      y = 0;
+      trigger = 1;
+    }
+  else
+    {
+      x = (lightgun_->x + (32*1024));
+      y = (lightgun_->y + (32*1024));
+      x = (x / (65535.0 / 640.0));
+      y = (y / (65535.0 / 240.0));
+    }
+
+  r = (((y * 794.386) + x) / 5.0);
+
+  buf_[3] = PBUS_LIGHTGUN_ID;
+  buf_[2] = ((trigger            << PBUS_LG_SHIFT_TRIGGER) |
+             (lightgun_->option  << PBUS_LG_SHIFT_OPTION)  |
+             ((r & 0x10000) >> 16));
+  buf_[1] = ((r & 0xFF00) >> 8);
+  buf_[0] = (r & 0xFF);
+}
+
+static
+void
+pbus_add_saot_lightgun(const freedo_pbus_saot_lightgun_t *lightgun_,
+                       uint8_t                           *buf_)
+{
+  int32_t x;
+  int32_t y;
+  int32_t r;
 
   x = (lightgun_->x + (32*1024));
   y = (lightgun_->y + (32*1024));
-  x /= 204.796875;
-  y /= 273.0625;
+  x = (x / (65535.0 / 640.0));
+  y = (y / (65535.0 / 240.0));
 
-  /* TODO: figure out how to go from libretro lightgun X,Y to 17bit
-     3DO value */
-  r = 0;
+  r = (((y * 794.386) + x) / 5.0);
 
   buf_[3] = PBUS_LIGHTGUN_ID;
   buf_[2] = ((lightgun_->trigger << PBUS_LG_SHIFT_TRIGGER) |
              (lightgun_->service << PBUS_LG_SHIFT_SERVICE) |
-             (lightgun_->coins   << PBUS_LG_SHIFT_COINS) |
-             (lightgun_->start   << PBUS_LG_SHIFT_START) |
+             (lightgun_->coins   << PBUS_LG_SHIFT_COINS)   |
+             (lightgun_->start   << PBUS_LG_SHIFT_START)   |
              (lightgun_->holster << PBUS_LG_SHIFT_HOLSTER) |
              ((r & 0x10000) >> 16));
   buf_[1] = ((r & 0xFF00) >> 8);
@@ -135,6 +173,16 @@ freedo_pbus_add_lightgun(const freedo_pbus_lightgun_t *lightgun_)
     return;
 
   pbus_add_lightgun(lightgun_,&PBUS.buf[PBUS.idx]);
+  PBUS.idx += 4;
+}
+
+void
+freedo_pbus_add_saot_lightgun(const freedo_pbus_saot_lightgun_t *lightgun_)
+{
+  if((PBUS.idx + 4) >= PBUS_BUF_SIZE)
+    return;
+
+  pbus_add_saot_lightgun(lightgun_,&PBUS.buf[PBUS.idx]);
   PBUS.idx += 4;
 }
 
