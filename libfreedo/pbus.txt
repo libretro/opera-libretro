@@ -61,6 +61,7 @@ values work (3DO's SDK indicates the ID is 0x80 but FreeDO was using
 bit. It's not clear from the 3DO SDK event.h file what the raw data
 layout is.
 
+8bit: 0x00
 8bit: identifier (0x80)
 2bit: unknown / unused
 1bit: left trigger
@@ -79,16 +80,26 @@ layout is.
 
 LIGHTGUN:
 
+x = 0 - 639
+y = 0 - 240
+offset = (((y * 794.386) + x) / 5.0)
+
 8bit: identifier (0x4D)
 1bit: trigger
 1bit: service button (arcade shooters)
 1bit: coin button (arcade shooters)
 1bit: start (arcade shooters)
-1bit: holster (arcade shooters)
+1bit: holster (arcade shooters) / option (retail)
 1bit: unused?
 1bit: unused?
 17bit: screen offset
 
+It's not clear where '794.386' or '5.0' are derived from. Also, unlike
+the mouse, when placed twice in a buffer it doesn't get picked up as
+1p and 2p. One instance shows up as player 2.
+
+To reload in Mad Dog II requires "shooting off screen" which appears
+to be represented as y = 0 and x = ~20 - ~640.
 
 Games supporting 3DO mouse:
 
