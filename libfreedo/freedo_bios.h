@@ -21,6 +21,7 @@ typedef struct freedo_bios_s freedo_bios_t;
 const freedo_bios_t *freedo_bios_begin(void);
 const freedo_bios_t *freedo_bios_end(void);
 
-const freedo_bios_t *freedo_bios_rom2(void);
+const freedo_bios_t *freedo_bios_font_begin(void);
+const freedo_bios_t *freedo_bios_font_end(void);
 
 #endif /* LIBFREEDO_BIOS_H_INCLUDED */
