@@ -41,7 +41,8 @@ static uint32_t   SAMPLE_IDX;
 static int32_t    SAMPLE_BUFFER[SAMPLE_BUFFER_SIZE];
 static uint32_t   ACTIVE_DEVICES;
 
-static const freedo_bios_t *BIOS;
+static const freedo_bios_t *BIOS = NULL;
+static const freedo_bios_t *FONT = NULL;
 
 static
 bool
@@ -86,7 +87,7 @@ create_bios_option_list(char *buf_)
   int rv;
   const freedo_bios_t *bios;
 
-  strcpy(buf_,"BIOS; ");
+  strcpy(buf_,"BIOS (rom1); ");
   for(bios = freedo_bios_begin(); bios != freedo_bios_end(); bios++)
     {
       rv = file_exists_in_system_directory(bios->filename);
@@ -106,13 +107,36 @@ create_bios_option_list(char *buf_)
 
 static
 void
+create_font_option_list(char *buf_)
+{
+  int rv;
+  const freedo_bios_t *font;
+
+  strcpy(buf_,"Font (rom2); disabled|");
+  for(font = freedo_bios_font_begin(); font != freedo_bios_font_end(); font++)
+    {
+      rv = file_exists_in_system_directory(font->filename);
+      if(rv)
+        {
+          strcat(buf_,font->name);
+          strcat(buf_,"|");
+        }
+    }
+
+  rv = (strlen(buf_) - 1);
+  buf_[rv] = '\0';
+}
+
+static
+void
 retro_environment_set_variables(void)
 {
-  char buf[1024];
+  char bios[1024];
+  char font[1024];
   static struct retro_variable vars[] =
     {
       { "4do_bios", NULL },
-      { "4do_rom2",                 "Kanji ROM; disabled|enabled" },
+      { "4do_font", NULL },
       { "4do_cpu_overclock",        "CPU overclock; "
                                     "1.0x (12.50Mhz)|"
                                     "1.1x (13.75Mhz)|"
@@ -132,8 +156,12 @@ retro_environment_set_variables(void)
       { NULL, NULL },
     };
 
-  vars[0].value = buf;
-  create_bios_option_list(buf);
+  const freedo_bios_t *b;
+
+  vars[0].value = bios;
+  vars[1].value = font;
+  create_bios_option_list(bios);
+  create_font_option_list(font);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
 }
 
@@ -421,14 +449,37 @@ check_option_4do_bios(void)
       return;
     }
 
-  BIOS = freedo_bios_begin();
+  BIOS = freedo_bios_end();
 }
 
 static
-bool
-rom2_enabled(void)
+void
+check_option_4do_font(void)
 {
-  return option_enabled("4do_rom2");
+  int rv;
+  const freedo_bios_t *font;
+  struct retro_variable var;
+
+  var.key   = "4do_font";
+  var.value = NULL;
+
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if((rv == 0) || (var.value == NULL))
+    {
+      FONT = freedo_bios_font_end();
+      return;
+    }
+
+  for(font = freedo_bios_font_begin(); font != freedo_bios_font_end(); font++)
+    {
+      if(strcmp(font->name,var.value))
+        continue;
+
+      FONT = font;
+      return;
+    }
+
+  FONT = freedo_bios_font_end();
 }
 
 static
@@ -533,6 +584,7 @@ void
 check_options(void)
 {
   check_option_4do_bios();
+  check_option_4do_font();
   check_option_4do_high_resolution();
   check_option_4do_cpu_overclock();
   check_option_4do_active_devices();
@@ -589,6 +641,12 @@ load_rom1(void)
   int64_t  size;
   int64_t  rv;
 
+  if((BIOS == NULL) || (BIOS == freedo_bios_end()))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,"[4DO]: no BIOS ROM found\n");
+      return -1;
+    }
+
   rom  = freedo_arm_rom1_get();
   size = freedo_arm_rom1_size();
 
@@ -613,17 +671,18 @@ load_rom2(void)
   uint8_t *rom;
   int64_t  size;
   int64_t  rv;
-  const freedo_bios_t *kanji_rom;
+
+  if((FONT == NULL) || (FONT == freedo_bios_font_end()))
+    return 0;
 
   rom  = freedo_arm_rom2_get();
   size = freedo_arm_rom2_size();
 
-  kanji_rom = freedo_bios_rom2();
-  rv = read_file_from_system_directory(kanji_rom->filename,rom,size);
+  rv = read_file_from_system_directory(FONT->filename,rom,size);
   if(rv < 0)
     {
       retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: unable to find or load BIOS ROM - %s\n",
+                          "[4DO]: unable to find or load FONT ROM - %s\n",
                           BIOS->filename);
       return -1;
     }
@@ -667,8 +726,7 @@ retro_load_game(const struct retro_game_info *info_)
   video_init();
   freedo_3do_init(libfreedo_callback);
   load_rom1();
-  if(rom2_enabled())
-    load_rom2();
+  load_rom2();
 
   /* XXX: Is this really a frontend responsibility? */
   nvram_init(freedo_arm_nvram_get());
@@ -792,8 +850,7 @@ retro_reset(void)
   audio_reset_sample_buffer();
   freedo_3do_init(libfreedo_callback);
   load_rom1();
-  if(rom2_enabled())
-    load_rom2();
+  load_rom2();
 
   nvram_init(freedo_arm_nvram_get());
   if(check_option_nvram_shared())
