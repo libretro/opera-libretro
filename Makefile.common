@@ -18,7 +18,9 @@ SOURCES_C := \
 	$(CORE_DIR)/nvram.c \
 	$(CORE_DIR)/retro_callbacks.c \
         $(CORE_DIR)/retro_cdimage.c \
-        $(CORE_DIR)/lr_input.c
+        $(CORE_DIR)/lr_input.c \
+        $(CORE_DIR)/lr_input_crosshair.c \
+        $(CORE_DIR)/lr_input_descs.c
 
 SOURCES_C += \
 	$(4DO_DIR)/freedo_3do.c \

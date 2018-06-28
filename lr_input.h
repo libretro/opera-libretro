@@ -5,26 +5,13 @@
 
 #define LR_INPUT_MAX_DEVICES 8
 
-#define RETRO_DEVICE_SAOT_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN,0)
+#define RETRO_DEVICE_FLIGHTSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD,0)
+#define RETRO_DEVICE_ARCADE_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN,0)
+#define RETRO_DEVICE_ORBATAK_TRACKBALL RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD,1)
 
-struct lr_crosshair_s
-{
-  int32_t  x;
-  int32_t  y;
-  uint32_t c;
-};
-
-typedef struct lr_crosshair_s lr_crosshair_t;
-
-void lr_input_crosshair_set(const uint32_t i_,
-                            const int32_t  x_,
-                            const int32_t  y_);
-void lr_input_crosshairs_draw(uint32_t       *buf_,
-                              const uint32_t  width_,
-                              const uint32_t  height_);
-
-void lr_input_set_controller_port_device(const uint32_t port_,
-                                         const uint32_t device_);
+void     lr_input_device_set(const uint32_t port_,
+                             const uint32_t device_);
+uint32_t lr_input_device_get(const uint32_t port_);
 
 void lr_input_update(const uint32_t active_devices_);
 
