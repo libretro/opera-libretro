@@ -42,8 +42,7 @@ to match with the specifics of the patent.
 
 MOUSE:
 
-The mouse appears to use 32bits.
-
+MSB -> LSB
 * 8bit: identifier (0x49)
 * 1bit: left button
 * 1bit: middle button
@@ -61,8 +60,7 @@ values work (3DO's SDK indicates the ID is 0x80 but FreeDO was using
 bit. It's not clear from the 3DO SDK event.h file what the raw data
 layout is.
 
-8bit: 0x00
-8bit: identifier (0x80)
+LSB -> MSB
 2bit: unknown / unused
 1bit: left trigger
 1bit: right trigger
@@ -84,6 +82,7 @@ x = 0 - 639
 y = 0 - 240
 offset = (((y * 794.386) + x) / 5.0)
 
+MSB -> LSB
 8bit: identifier (0x4D)
 1bit: trigger
 1bit: service button (arcade shooters)
@@ -98,53 +97,105 @@ It's not clear where '794.386' or '5.0' are derived from. Also, unlike
 the mouse, when placed twice in a buffer it doesn't get picked up as
 1p and 2p. One instance shows up as player 2.
 
-To reload in Mad Dog II requires "shooting off screen" which appears
-to be represented as y = 0 and x = ~20 - ~640.
+To reload in Mad Dog II (retail) requires "shooting off screen" which
+appears to be represented as y = 0 and x = ~20 - ~640.
+
+According to the 3DO SDK's lightgun.c:
+
+DESCRIPTION OF LIGHTGUN HARDWARE
+--------------------------------
+The lightgun is not capable of returning an (X, Y) position value when
+reporting events.  It does report a counter value that returns the
+time it took between the beginning of a field (vertical blank) and
+when the scan-beam passes into the field of view of the light sensor
+in the lightgun.  The X and Y value can be calculated from the timer
+value returned from the lightgun based on how long it takes to draw
+from the start of one scan line to the start of the scan line
+immediately below it (YSCANTIME) and how long it takes to draw from
+the first pixel to the last pixel on the same scan line (XSCANTIME).
+A third required value, is a time offset value that takes into
+consideration the time between the beginning of a field and when
+scan-beam begings drawing to the first pixel on the first scan line
+(TIMEOFFSET).
+
+#define	NTSC_DEFAULT_XSCANTIME	  1030
+#define NTSC_DEFAULT_YSCANTIME	 12707
+#define NTSC_DEFAULT_TIMEOFFSET	-12835
+#define PAL_DEFAULT_XSCANTIME	  1051
+#define PAL_DEFAULT_YSCANTIME	 12796
+#define PAL_DEFAULT_TIMEOFFSET  -58995
+#define PAL_WIDTH		   388
+#define NTSC_WIDTH		   320
+
+x = ((((10 * counter) % NTSC_DEFAULT_YSCANTIME) * NTSC_WIDTH) /
+     (NTSC_DEFAULT_XSCANTIME * 10));
+y = ((10 * counter) / NTSC_DEFAULT_YSCANTIME);
+
+ORBATAK TRACKBALL:
+
+Orbatak uses two different devices. The trackballs are just mice as
+described above. The buttons (coins, start, service) are managed via
+the "SILLY_CONTROL_PAD" as defined in the 3DO SDK (event.h).
+
+MSB -> LSB
+8bit: identifier (0xC0)
+8bit: 0x00
+3bit: unused
+1bit: coin (p1)
+1bit: coin (p2)
+1bit: start (p2)
+1bit: start (p1)
+1bit: service
+8bit: 0x00
 
 Games supporting 3DO mouse:
 
-* Crime Patrool
-* Drug Wars
-* Fun'n Games
-* Kingdom - The Far Reaches
-* The Last Bounty Hunter
-* Lemmings
-* Mad Dog McCree II
-* MYST
-* Policenauts - Pilot Disk
-* Policenauts
-* Putt-Putt Joins the Parade & Bear Stormin'
-* Space Pirates
-* Shanghai: Triple Threat
-* World Cup Golf
+* Crime Patrol (1993)
+* Cyberdillo (1996)
+* Drug Wars (1994)
+* Fun 'n Games (1994)
+* Kingdom: The Far Reaches (1995)
+* Lemmings (1993)
+* Mad Dog II: The Lost Gold (1994)
+* Myst (1995)
+* Policenauts (1995)
+* Shanghai: Triple-Threat (1994)
+* Space Pirates (1994)
+* The Last Bounty Hunter (1995)
+* World Cup Golf: Hyatt Dorado Beach (1994)
+* Zhadnost: The People's Party (1995)
 
 Games supporting GAMECON (3DO lightgun):
 
-* Corpse Killer
-* Crime Patrol
-* Demolition Man
-* Drug Wars
-* Fast Draw Showdown (arcade)
-* Gunslinger's Collection (compilation bundling both Mad Dog games with Crime Patrol)
-* The Last Bounty Hunter
-* Mad Dog McCree
-* Mad Dog II: The Lost Gold
-* Shootout at Old Tucson (arcade)
-* Space Pirates
-* Who Shot Johnny Rock
+* Corpse Killer (1994) (1 Player)
+* Crime Patrol (1993) (1 Player or 2 Players simultaneously)
+* Demolition Man (1995) (1 Player)
+* Drug Wars (1994) (1 Player or 2 Players simultaneously)
+* Mad Dog McCree (1994) (1 Player or 2 Players simultaneously)
+* Mad Dog II: The Lost Gold (1994) (1 Player or 2 Players simultaneously)
+* Policenauts (1995) (1 Player)
+* Space Pirates (1994) (1 Player or 2 Players simultaneously)
+* The Last Bounty Hunter (1995) (1 Player or 2 Players simultaneously)
+* Who Shot Johnny Rock (1995) (1 Player or 2 Players simultaneously)
 
 Games supporting 3DO flight stick:
 
-* Blade Force
-* Flying Nightmares
-* Killing Time
-* The Need for Speed
-* Phoenix 3
-* PO'ed
-* Return Fire
-* Shock Wave: Operation Jumpgate
-* Shock Wave 2: Beyond the Gate
-* Star Wars: Rebel Assault
-* Super Wing Commander
-* VR Stalker
-* Wing Commander III: Heart of the Tiger
+* Blade Force (1995)
+* Cyberia (1996)
+* Doom (1996)
+* Flying Nightmares (1994)
+* Killing Time (1995)
+* Mega Race (1994)
+* Phoenix 3 (1995)
+* PO'ed (1995)
+* Return Fire (1995)
+* Road & Track Presents: The Need for Speed (1994)
+* Scramble Cobra (1995)
+* Shockwave: Operation Jumpgate (1995)
+* Shockwave 2: Beyond The Gate (1995)
+* Space Ace (1995)
+* Star Fighter (1996)
+* Star Wars: Rebel Assault (1995)
+* Super Wing Commander (1994)
+* VR Stalker (1994)
+* Wing Commander III: Heart Of The Tiger (1995)

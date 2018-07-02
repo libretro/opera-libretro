@@ -10,10 +10,12 @@
 #include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
 
+#include "lr_input.h"
+#include "lr_input_crosshair.h"
+#include "lr_input_descs.h"
 #include "nvram.h"
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
-#include "lr_input.h"
 
 #include <boolean.h>
 #include <file/file_path.h>
@@ -181,22 +183,24 @@ retro_environment_set_controller_info(void)
 {
   static const struct retro_controller_description port[] =
     {
-      { "3DO Joypad",    RETRO_DEVICE_JOYPAD },
-      { "3DO Mouse",     RETRO_DEVICE_MOUSE  },
-      { "3DO Lightgun",  RETRO_DEVICE_LIGHTGUN },
-      { "SAOT Lightgun", RETRO_DEVICE_SAOT_LIGHTGUN },
+      { "3DO Joypad",        RETRO_DEVICE_JOYPAD },
+      { "3DO Flightstick",   RETRO_DEVICE_FLIGHTSTICK },
+      { "3DO Mouse",         RETRO_DEVICE_MOUSE  },
+      { "3DO Lightgun",      RETRO_DEVICE_LIGHTGUN },
+      { "Arcade Lightgun",   RETRO_DEVICE_ARCADE_LIGHTGUN },
+      { "Orbatak Trackball", RETRO_DEVICE_ORBATAK_TRACKBALL },
     };
 
   static const struct retro_controller_info ports[LR_INPUT_MAX_DEVICES+1] =
     {
-      {port, 4},
-      {port, 4},
-      {port, 4},
-      {port, 4},
-      {port, 4},
-      {port, 4},
-      {port, 4},
-      {port, 4},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
       {NULL, 0}
     };
 
@@ -599,7 +603,7 @@ void
 retro_set_controller_port_device(unsigned port_,
                                  unsigned device_)
 {
-  lr_input_set_controller_port_device(port_,device_);
+  lr_input_device_set_with_descs(port_,device_);
 }
 
 static
