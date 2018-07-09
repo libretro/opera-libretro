@@ -53,6 +53,8 @@ uint32_t *freedo_madam_registers(void);
 void      freedo_madam_poke(uint32_t addr_, uint32_t val_);
 uint32_t  freedo_madam_peek(uint32_t addr_);
 
+void      freedo_madam_kprint_set(const int v_);
+
 uint32_t  freedo_madam_state_size(void);
 void      freedo_madam_state_save(void *buf_);
 void      freedo_madam_state_load(const void *buf_);

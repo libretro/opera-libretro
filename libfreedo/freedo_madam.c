@@ -41,6 +41,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 struct BitReaderBig bitoper;
 
@@ -384,6 +385,13 @@ struct madam_s
 typedef struct madam_s madam_t;
 
 static madam_t MADAM;
+static int     KPRINT = 0;
+
+void
+freedo_madam_kprint_set(const int v_)
+{
+  KPRINT = v_;
+}
 
 uint32_t
 freedo_madam_fsm_get(void)
@@ -648,19 +656,15 @@ void
 freedo_madam_poke(uint32_t addr_,
                   uint32_t val_)
 {
-  /*
-    if(addr==0x13c)
-    {
-    sprintf(str,"Switch screen SWI 0x%8X addr 0x%8X\n",last_SWI,val);
-    CDebug::DPrint(str);
-    }
-  */
-
   if((addr_ >= 0x400) && (addr_ <= 0x53F))
     return freedo_clio_fifo_write(addr_,val_);
 
   switch(addr_)
     {
+    case 0x00:
+      if(KPRINT)
+        fputc(val_,stderr);
+      return;
     case 0x04:
       val_               = 0x29;
       MADAM.mregs[addr_] = val_;
@@ -680,8 +684,6 @@ freedo_madam_poke(uint32_t addr_,
     case 0x598:
     case 0x59C:
       MADAM.mregs[addr_] = val_;
-      return;
-    case 0x00:
       return;
     case SPRSTRT:
       if(MADAM.FSM == FSM_IDLE)
