@@ -40,10 +40,10 @@
 
 #include <math.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
-struct BitReaderBig bitoper;
+static struct BitReaderBig bitoper;
 
 /* === CCB control word flags === */
 #define CCB_SKIP        0x80000000
@@ -623,34 +623,142 @@ freedo_madam_peek(uint32_t addr_)
 }
 
 /* Matrix engine macros */
-#define M00  ((float)(int32_t)MADAM.mregs[0x600])
-#define M01  ((float)(int32_t)MADAM.mregs[0x604])
-#define M02  ((float)(int32_t)MADAM.mregs[0x608])
-#define M03  ((float)(int32_t)MADAM.mregs[0x60C])
-#define M10  ((float)(int32_t)MADAM.mregs[0x610])
-#define M11  ((float)(int32_t)MADAM.mregs[0x614])
-#define M12  ((float)(int32_t)MADAM.mregs[0x618])
-#define M13  ((float)(int32_t)MADAM.mregs[0x61C])
-#define M20  ((float)(int32_t)MADAM.mregs[0x620])
-#define M21  ((float)(int32_t)MADAM.mregs[0x624])
-#define M22  ((float)(int32_t)MADAM.mregs[0x628])
-#define M23  ((float)(int32_t)MADAM.mregs[0x62C])
-#define M30  ((float)(int32_t)MADAM.mregs[0x630])
-#define M31  ((float)(int32_t)MADAM.mregs[0x634])
-#define M32  ((float)(int32_t)MADAM.mregs[0x638])
-#define M33  ((float)(int32_t)MADAM.mregs[0x63C])
+#define M00  ((int64_t)MADAM.mregs[0x600])
+#define M01  ((int64_t)MADAM.mregs[0x604])
+#define M02  ((int64_t)MADAM.mregs[0x608])
+#define M03  ((int64_t)MADAM.mregs[0x60C])
+#define M10  ((int64_t)MADAM.mregs[0x610])
+#define M11  ((int64_t)MADAM.mregs[0x614])
+#define M12  ((int64_t)MADAM.mregs[0x618])
+#define M13  ((int64_t)MADAM.mregs[0x61C])
+#define M20  ((int64_t)MADAM.mregs[0x620])
+#define M21  ((int64_t)MADAM.mregs[0x624])
+#define M22  ((int64_t)MADAM.mregs[0x628])
+#define M23  ((int64_t)MADAM.mregs[0x62C])
+#define M30  ((int64_t)MADAM.mregs[0x630])
+#define M31  ((int64_t)MADAM.mregs[0x634])
+#define M32  ((int64_t)MADAM.mregs[0x638])
+#define M33  ((int64_t)MADAM.mregs[0x63C])
 
-#define  V0  ((float)(int32_t)MADAM.mregs[0x640])
-#define  V1  ((float)(int32_t)MADAM.mregs[0x644])
-#define  V2  ((float)(int32_t)MADAM.mregs[0x648])
-#define  V3  ((float)(int32_t)MADAM.mregs[0x64C])
+#define  V0  ((int64_t)MADAM.mregs[0x640])
+#define  V1  ((int64_t)MADAM.mregs[0x644])
+#define  V2  ((int64_t)MADAM.mregs[0x648])
+#define  V3  ((int64_t)MADAM.mregs[0x64C])
 
 #define Rez0 MADAM.mregs[0x660]
 #define Rez1 MADAM.mregs[0x664]
 #define Rez2 MADAM.mregs[0x668]
 #define Rez3 MADAM.mregs[0x66C]
+static int64_t Rez0T;
+static int64_t Rez1T;
+static int64_t Rez2T;
+static int64_t Rez3T;
 
 #define Nfrac16 (((int64_t)MADAM.mregs[0x680]<<32)|(uint32_t)MADAM.mregs[0x684])
+
+static
+INLINE
+void
+madam_matrix_nop(void)
+{
+  Rez0 = Rez0T;
+  Rez1 = Rez1T;
+  Rez2 = Rez2T;
+  Rez3 = Rez3T;
+}
+
+/*
+  multiply a 3x3 matrix of 16.16 values by a vector of 16.16 values
+*/
+static
+INLINE
+void
+madam_matrix_mul3x3(void)
+{
+  Rez0 = Rez0T;
+  Rez1 = Rez1T;
+  Rez2 = Rez2T;
+  Rez3 = Rez3T;
+
+  Rez0T = (((M00 * V0) +
+            (M01 * V1) +
+            (M02 * V2)) >> 16);
+  Rez1T = (((M10 * V0) +
+            (M11 * V1) +
+            (M12 * V2)) >> 16);
+  Rez2T = (((M20 * V0) +
+            (M21 * V1) +
+            (M22 * V2)) >> 16);
+}
+
+/*
+  multiply a 3x3 matrix of 16.16 values by multiple
+  vectors, then multiply x and y by n/z
+
+  return the result vectors {x*n/z, y*n/z, z}
+*/
+static
+INLINE
+void
+madam_matrix_mul3x3_nz(void)
+{
+  int64_t M;
+
+  Rez0 = Rez0T;
+  Rez1 = Rez1T;
+  Rez2 = Rez2T;
+  Rez3 = Rez3T;
+
+  M = Nfrac16;
+
+  Rez2T = (((M20 * V0) +
+            (M21 * V1) +
+            (M22 * V2)) >> 16);
+
+  if(Rez2T != 0)
+    M /= Rez2T;
+
+  Rez0T = (((M00 * V0) +
+            (M01 * V1) +
+            (M02 * V2)) >> 16);
+  Rez1T = (((M10 * V0) +
+            (M11 * V1) +
+            (M12 * V2)) >> 16);
+
+  Rez0T = ((Rez0T * M) >> 16);
+  Rez1T = ((Rez1T * M) >> 16);
+}
+
+/*
+  multiply a 4x4 matrix of 16.16 values by a vector of 16.16 values
+*/
+static
+INLINE
+void
+madam_matrix_mul4x4(void)
+{
+  Rez0 = Rez0T;
+  Rez1 = Rez1T;
+  Rez2 = Rez2T;
+  Rez3 = Rez3T;
+
+  Rez0T = (((M00 * V0) +
+            (M01 * V1) +
+            (M02 * V2) +
+            (M03 * V3)) >> 16);
+  Rez1T = (((M10 * V0) +
+            (M11 * V1) +
+            (M12 * V2) +
+            (M13 * V3)) >> 16);
+  Rez2T = (((M20 * V0) +
+            (M21 * V1) +
+            (M22 * V2) +
+            (M23 * V3)) >> 16);
+  Rez3T = (((M30 * V0) +
+            (M31 * V1) +
+            (M32 * V2) +
+            (M33 * V3)) >> 16);
+}
 
 void
 freedo_madam_poke(uint32_t addr_,
@@ -705,85 +813,20 @@ freedo_madam_poke(uint32_t addr_,
       /* Matix engine */
     case 0x7FC:
       {
-        static double Rez0T,Rez1T,Rez2T,Rez3T;
-
-        MADAM.mregs[0x7fc] = 0;       /* matrix engine already ready */
-
-        switch(val_)
+        typedef void (*vfp_t)(void);
+        const vfp_t funcs[4] =
           {
-            /* NOP */
-          case 0:
-            Rez0 = Rez0T;
-            Rez1 = Rez1T;
-            Rez2 = Rez2T;
-            Rez3 = Rez3T;
-            return;
+            madam_matrix_nop,
+            madam_matrix_mul4x4,
+            madam_matrix_mul3x3,
+            madam_matrix_mul3x3_nz
+          };
 
-            /*
-              multiply a 4x4 matrix of 16.16 values by a vector of
-              16.16 values
-            */
-          case 1:
-            Rez0 = Rez0T;
-            Rez1 = Rez1T;
-            Rez2 = Rez2T;
-            Rez3 = Rez3T;
+        MADAM.mregs[0x7fc] = 0;
 
-            Rez0T = (int)((M00 * V0 + M01 * V1 + M02 * V2 + M03 * V3) / 65536.0);
-            Rez1T = (int)((M10 * V0 + M11 * V1 + M12 * V2 + M13 * V3) / 65536.0);
-            Rez2T = (int)((M20 * V0 + M21 * V1 + M22 * V2 + M23 * V3) / 65536.0);
-            Rez3T = (int)((M30 * V0 + M31 * V1 + M32 * V2 + M33 * V3) / 65536.0);
-            return;
-
-            /*
-              multiply a 3x3 matrix of 16.16 values by a vector of
-              16.16 values
-            */
-          case 2:
-            Rez0 = Rez0T;
-            Rez1 = Rez1T;
-            Rez2 = Rez2T;
-            Rez3 = Rez3T;
-
-            Rez0T = (int)((M00 * V0 + M01 * V1 + M02 * V2) / 65536.0);
-            Rez1T = (int)((M10 * V0 + M11 * V1 + M12 * V2) / 65536.0);
-            Rez2T = (int)((M20 * V0 + M21 * V1 + M22 * V2) / 65536.0);
-            return;
-
-            /*
-              multiply a 3x3 matrix of 16.16 values by multiple
-              vectors, then multiply x and y by n/z
-
-              return the result vectors {x*n/z, y*n/z, z}
-            */
-          case 3:
-            {
-              double M;
-
-              Rez0 = Rez0T;
-              Rez1 = Rez1T;
-              Rez2 = Rez2T;
-              Rez3 = Rez3T;
-
-              M = Nfrac16;
-
-              Rez2T = (int32_t)((M20 * V0 + M21 * V1 + M22 * V2) / 65536.0); // z
-              if(Rez2T != 0)
-                M /= (double)Rez2T;          // n/z
-
-              Rez0T = (int32_t)((M00 * V0 + M01 * V1 + M02 * V2) / 65536.0);
-              Rez1T = (int32_t)((M10 * V0 + M11 * V1 + M12 * V2) / 65536.0);
-
-              Rez0T = (double)((Rez0T * M) / 65536.0 / 65536.0); // x * n/z
-              Rez1T = (double)((Rez1T * M) / 65536.0 / 65536.0); // y * n/z
-            }
-            break;
-
-          default:
-            break;
-          }
+        funcs[val_ & 0x3]();
+        return;
       }
-      break;
 
       /* modulo variables */
     case 0x130:
@@ -803,16 +846,16 @@ static uint32_t OFFSET;
 static uint32_t temp1;
 static uint32_t Flag;
 
-static double HDDX;
-static double HDDY;
-static double HDX;
-static double HDY;
-static double VDX;
-static double VDY;
-static double XPOS;
-static double YPOS;
-static double HDX_2;
-static double HDY_2;
+static float HDDX;
+static float HDDY;
+static float HDX;
+static float HDY;
+static float VDX;
+static float VDY;
+static float XPOS;
+static float YPOS;
+static float HDX_2;
+static float HDY_2;
 
 static int32_t  HDDX1616;
 static int32_t  HDDY1616;
@@ -1185,10 +1228,11 @@ freedo_madam_init(uint8_t *mem_)
   MADAM.mregs[574] = 0xFFFFFFFC;
 
 #if 1
-  MADAM.mregs[0] = 0x01020000;        /* for Green matrix engine autodetect */
-  /* MADAM.mregs[0] = 0x02022000; */  /* for Green matrix engine autodetect */
+  MADAM.mregs[0] = 0x01020000;  /* for Green MADAM */
+  // MADAM.mregs[0] = 0x01000000;  /* for Red MADAM? */
+  // MADAM.mregs[0] = 0x02022000;  /* for Green matrix engine autodetect */
 #else
-  MADAM.mregs[0] = 0x01020001;        /* for ARM soft emu of matrix engine */
+  MADAM.mregs[0] = 0x01020001;  /* for ARM soft emu of matrix engine */
 #endif
 
   for(i = 0; i < 32; i++)
@@ -2407,10 +2451,10 @@ freedo_madam_reset(void)
 static
 INLINE
 uint32_t
-TexelCCWTest(const double hdx_,
-             const double hdy_,
-             const double vdx_,
-             const double vdy_)
+TexelCCWTest(const float hdx_,
+             const float hdy_,
+             const float vdx_,
+             const float vdy_)
 {
   if(((hdx_ + vdx_) * (hdy_ - vdy_) + (vdx_ * vdy_) - (hdx_ * hdy_)) < 0.0)
     return CCB_ACCW;
