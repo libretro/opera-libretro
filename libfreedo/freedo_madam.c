@@ -384,13 +384,38 @@ struct madam_s
 
 typedef struct madam_s madam_t;
 
+#define ME_MODE_HARDWARE 0
+#define ME_MODE_SOFTWARE 1
+#define MADAM_ID_RED_HARDWARE   0x01000000
+#define MADAM_ID_GREEN_HARDWARE 0x01020000
+#define MADAM_ID_GREEN_SOFTWARE 0x01020001
+
 static madam_t MADAM;
-static int     KPRINT = 0;
+static int KPRINT  = 0;
+static int ME_MODE = ME_MODE_HARDWARE;
 
 void
-freedo_madam_kprint_set(const int v_)
+freedo_madam_kprint_enable(void)
 {
-  KPRINT = v_;
+  KPRINT = 1;
+}
+
+void
+freedo_madam_kprint_disable(void)
+{
+  KPRINT = 0;
+}
+
+void
+freedo_madam_me_mode_hardware(void)
+{
+  ME_MODE = ME_MODE_HARDWARE;
+}
+
+void
+freedo_madam_me_mode_software(void)
+{
+  ME_MODE = ME_MODE_SOFTWARE;
 }
 
 uint32_t
@@ -1206,6 +1231,8 @@ freedo_madam_init(uint8_t *mem_)
   int32_t j;
   int32_t n;
 
+  freedo_madam_reset();
+
   ADD       = 0;
   USECEL    = 1;
   CELCYCLES = 0;
@@ -1215,20 +1242,13 @@ freedo_madam_init(uint8_t *mem_)
 
   MADAM.FSM = FSM_IDLE;
 
-  for(i = 0; i < MADAM_REGISTER_COUNT; i++)
-    MADAM.mregs[i] = 0;
+  MADAM.mregs[0] = ((ME_MODE == ME_MODE_HARDWARE) ?
+                    MADAM_ID_GREEN_HARDWARE :
+                    MADAM_ID_GREEN_SOFTWARE);
 
   /* DRAM dux init */
   MADAM.mregs[4]   = 0x29;
   MADAM.mregs[574] = 0xFFFFFFFC;
-
-#if 1
-  MADAM.mregs[0] = 0x01020000;  /* for Green MADAM */
-  // MADAM.mregs[0] = 0x01000000;  /* for Red MADAM? */
-  // MADAM.mregs[0] = 0x02022000;  /* for Green matrix engine autodetect */
-#else
-  MADAM.mregs[0] = 0x01020001;  /* for ARM soft emu of matrix engine */
-#endif
 
   for(i = 0; i < 32; i++)
     for(j = 0; j < 8; j++)

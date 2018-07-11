@@ -155,6 +155,7 @@ retro_environment_set_variables(void)
       { "4do_hack_timing_5",        "Timing Hack 5 (Microcosm); disabled|enabled" },
       { "4do_hack_timing_6",        "Timing Hack 6 (Alone in the Dark); disabled|enabled" },
       { "4do_hack_graphics_step_y", "Graphics Step Y Hack (Samurai Shodown); disabled|enabled" },
+      { "4do_madam_matrix_engine",  "MADAM Matrix Engine; hardware|software" },
       { "4do_kprint",               "3DO debugging output (stderr); disabled|enabled" },
       { NULL, NULL },
     };
@@ -586,13 +587,36 @@ check_option_4do_active_devices(void)
 
 static
 void
+check_option_4do_madam_matrix_engine(void)
+{
+  int rv;
+  struct retro_variable var;
+
+  var.key   = "4do_madam_matrix_engine";
+  var.value = NULL;
+
+  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_VARIABLE,&var);
+  if(rv && var.value)
+    {
+      if(!strcmp(var.value,"software"))
+        freedo_madam_me_mode_software();
+      else
+        freedo_madam_me_mode_hardware();
+    }
+}
+
+static
+void
 check_option_4do_kprint(void)
 {
   int rv;
 
   rv = option_enabled("4do_kprint");
 
-  freedo_madam_kprint_set(rv);
+  if(rv)
+    freedo_madam_kprint_enable();
+  else
+    freedo_madam_kprint_disable();
 }
 
 static
@@ -610,6 +634,7 @@ check_options(void)
   check_option_set_reset_bits("4do_hack_timing_6",&FIXMODE,FIX_BIT_TIMING_6);
   check_option_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
   check_option_4do_kprint();
+  check_option_4do_madam_matrix_engine();
 }
 
 void
