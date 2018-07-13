@@ -22,7 +22,6 @@
 #define PBUS_JOYPAD_SHIFT_R        0x02
 #define PBUS_JOYPAD_SHIFT_U        0x03
 #define PBUS_JOYPAD_SHIFT_D        0x04
-#define PBUS_JOYPAD_CONNECTED_MASK 0x80
 
 #define PBUS_MOUSE_SHIFT_LEFT   7
 #define PBUS_MOUSE_SHIFT_MIDDLE 6
@@ -52,25 +51,37 @@ typedef struct pbus_s pbus_t;
 
 static pbus_t PBUS = {0,{0}};
 
+/*
+  It's possible that with multiple joypads should be packed into
+  32bits and intertwined in the format of:
+
+  CDAB GHEF
+
+  A = P1 MSB
+  B = P1 LSB
+  C = P2 MSB
+  D = P2 LSB
+  etc.
+*/
 static
 void
 pbus_add_joypad(const freedo_pbus_joypad_t *joypad_,
                 uint8_t                    *buf_)
 {
-  buf_[0] = 0x00;
-  buf_[1] = PBUS_JOYPAD_ID;
-  buf_[2] = ((joypad_->lt << PBUS_JOYPAD_SHIFT_LT) |
-             (joypad_->rt << PBUS_JOYPAD_SHIFT_RT) |
-             (joypad_->x  << PBUS_JOYPAD_SHIFT_X)  |
-             (joypad_->p  << PBUS_JOYPAD_SHIFT_P)  |
-             (joypad_->c  << PBUS_JOYPAD_SHIFT_C)  |
-             (joypad_->b  << PBUS_JOYPAD_SHIFT_B));
-  buf_[3] = ((joypad_->a  << PBUS_JOYPAD_SHIFT_A)  |
-             (joypad_->l  << PBUS_JOYPAD_SHIFT_L)  |
-             (joypad_->r  << PBUS_JOYPAD_SHIFT_R)  |
-             (joypad_->u  << PBUS_JOYPAD_SHIFT_U)  |
+  buf_[3] = ((PBUS_JOYPAD_ID)                      |
              (joypad_->d  << PBUS_JOYPAD_SHIFT_D)  |
-             (PBUS_JOYPAD_CONNECTED_MASK));
+             (joypad_->u  << PBUS_JOYPAD_SHIFT_U)  |
+             (joypad_->r  << PBUS_JOYPAD_SHIFT_R)  |
+             (joypad_->l  << PBUS_JOYPAD_SHIFT_L)  |
+             (joypad_->a  << PBUS_JOYPAD_SHIFT_A));
+  buf_[2] = ((joypad_->b  << PBUS_JOYPAD_SHIFT_B)  |
+             (joypad_->c  << PBUS_JOYPAD_SHIFT_C)  |
+             (joypad_->p  << PBUS_JOYPAD_SHIFT_P)  |
+             (joypad_->x  << PBUS_JOYPAD_SHIFT_X)  |
+             (joypad_->rt << PBUS_JOYPAD_SHIFT_RT) |
+             (joypad_->lt << PBUS_JOYPAD_SHIFT_LT));
+  buf_[1] = 0xFF;
+  buf_[0] = 0xFF;
 }
 
 static
