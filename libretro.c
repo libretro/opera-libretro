@@ -714,11 +714,14 @@ load_rom2(void)
   int64_t  size;
   int64_t  rv;
 
-  if((FONT == NULL) || (FONT == freedo_bios_font_end()))
-    return 0;
-
   rom  = freedo_arm_rom2_get();
   size = freedo_arm_rom2_size();
+
+  if((FONT == NULL) || (FONT == freedo_bios_font_end()))
+    {
+      memset(rom,0,size);
+      return 0;
+    }
 
   rv = read_file_from_system_directory(FONT->filename,rom,size);
   if(rv < 0)
