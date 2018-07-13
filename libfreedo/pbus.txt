@@ -1,3 +1,5 @@
+# PBUS
+
 The PBUS (player bus) is not at all well documented. There exists
 the patent WO09410636A1 "PLAYER BUS APPARATUS AND METHOD" which was
 filed on 1992-02-11. The primary details of the protocol can be
@@ -37,12 +39,41 @@ found in pages 21 - 23.
 > immediately following the 4 bit identification code. A string of
 > zeros indicate the end of input data into the system 100 device.
 
-However, information from the original FreeDO release does not seem
-to match with the specifics of the patent.
+However, information from the original FreeDO release and later
+discovered does not match with the specifics of the patent.
 
-MOUSE:
+## Device Data Formats
+
+### JOYPAD
+
+The joypad's data layout is clear but less so in regards to it's
+layout in the stream. 3DO's SDK indicates the ID is 0x80. Unlike other
+device IDs it appears the joypad's ID is embedded. In the FreeDO
+source it was questionably referred to as a connection bit.
 
 MSB -> LSB
+
+1bit: set, the high order bit from the ID (0x80)
+2bit: unused, unset, part of the joypad mask
+1bit: down
+1bit: up
+1bit: right
+1bit: left
+1bit: A
+1bit: B
+1bit: C
+1bit: P
+1bit: X
+1bit: right trigger
+1bit: left trigger
+2bit: unused
+8bit: set (0xFF)
+8bit: set (0xFF)
+
+### MOUSE
+
+MSB -> LSB
+
 * 8bit: identifier (0x49)
 * 1bit: left button
 * 1bit: middle button
@@ -51,32 +82,7 @@ MSB -> LSB
 * 10bit: X delta (signed)
 * 10bit: Y delta (signed)
 
-JOYPAD:
-
-The joypad's data layout is clear but less so in regards to it's
-layout in the stream. The identifier seems necessary but other
-values work (3DO's SDK indicates the ID is 0x80 but FreeDO was using
-0x48). Perhaps the ID is really a mask and really the 'connectivity'
-bit. It's not clear from the 3DO SDK event.h file what the raw data
-layout is.
-
-LSB -> MSB
-2bit: unknown / unused
-1bit: left trigger
-1bit: right trigger
-1bit: X
-1bit: P
-1bit: C
-1bit: B
-1bit: A
-1bit: left
-1bit: right
-1bit: up
-1bit: down
-2bit: unknown / unused
-1bit: connectivity?
-
-LIGHTGUN:
+### LIGHTGUN
 
 x = 0 - 639
 y = 0 - 240
@@ -102,6 +108,7 @@ appears to be represented as y = 0 and x = ~20 - ~640.
 
 According to the 3DO SDK's lightgun.c:
 
+```
 DESCRIPTION OF LIGHTGUN HARDWARE
 --------------------------------
 The lightgun is not capable of returning an (X, Y) position value when
@@ -130,12 +137,14 @@ scan-beam begings drawing to the first pixel on the first scan line
 x = ((((10 * counter) % NTSC_DEFAULT_YSCANTIME) * NTSC_WIDTH) /
      (NTSC_DEFAULT_XSCANTIME * 10));
 y = ((10 * counter) / NTSC_DEFAULT_YSCANTIME);
+```
 
-ORBATAK TRACKBALL:
+### ORBATAK TRACKBALL
 
 Orbatak uses two different devices. The trackballs are just mice as
 described above. The buttons (coins, start, service) are managed via
-the "SILLY_CONTROL_PAD" as defined in the 3DO SDK (event.h).
+the "SILLY_CONTROL_PAD" as defined in the 3DO SDK (event.h) or in the
+least uses the same identifier.
 
 MSB -> LSB
 8bit: identifier (0xC0)
@@ -148,7 +157,9 @@ MSB -> LSB
 1bit: service
 8bit: 0x00
 
-Games supporting 3DO mouse:
+## Device Usage In Games
+
+### Games supporting 3DO mouse
 
 * Crime Patrol (1993)
 * Cyberdillo (1996)
@@ -165,7 +176,7 @@ Games supporting 3DO mouse:
 * World Cup Golf: Hyatt Dorado Beach (1994)
 * Zhadnost: The People's Party (1995)
 
-Games supporting GAMECON (3DO lightgun):
+### Games supporting GAMECON (3DO lightgun)
 
 * Corpse Killer (1994) (1 Player)
 * Crime Patrol (1993) (1 Player or 2 Players simultaneously)
@@ -178,7 +189,7 @@ Games supporting GAMECON (3DO lightgun):
 * The Last Bounty Hunter (1995) (1 Player or 2 Players simultaneously)
 * Who Shot Johnny Rock (1995) (1 Player or 2 Players simultaneously)
 
-Games supporting 3DO flight stick:
+### Games supporting 3DO flight stick
 
 * Blade Force (1995)
 * Cyberia (1996)
