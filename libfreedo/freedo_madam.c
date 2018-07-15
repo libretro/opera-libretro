@@ -37,6 +37,7 @@
 #include "freedo_vdlp.h"
 #include "hack_flags.h"
 #include "inline.h"
+#include "endianness.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -1189,28 +1190,29 @@ static
 void
 DMAPBus(void)
 {
-  uint32_t  i;
   uint32_t *pbus_buf;
   int32_t   pbus_size;
 
   if((int32_t)MADAM.mregs[0x574] < 0)
     return;
 
+  freedo_pbus_pad();
+
   MADAM.mregs[0x574] -= 4;
   MADAM.mregs[0x570] += 4;
   MADAM.mregs[0x578] += 4;
 
-  i = 0;
-  pbus_buf = freedo_pbus_buf();
+  pbus_buf  = freedo_pbus_buf();
   pbus_size = freedo_pbus_size();
   while(((int32_t)MADAM.mregs[0x574] > 0) && (pbus_size > 0))
     {
-      freedo_io_write(MADAM.mregs[0x570],pbus_buf[i]);
-      MADAM.mregs[0x574] -= 4;
+      freedo_io_write(MADAM.mregs[0x570],
+                      swap32_if_little_endian(*pbus_buf));
+      pbus_buf++;
       pbus_size          -= 4;
+      MADAM.mregs[0x574] -= 4;
       MADAM.mregs[0x570] += 4;
       MADAM.mregs[0x578] += 4;
-      i++;
     }
 
   while((int32_t)MADAM.mregs[0x574] > 0)

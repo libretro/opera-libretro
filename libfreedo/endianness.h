@@ -70,7 +70,7 @@
 
 #define is_little_endian() (0)
 #define swap32_if_little_endian(X) (X)
-#define swap32_array_if_little_endian(X,Y) 
+#define swap32_array_if_little_endian(X,Y)
 
 #else
 
@@ -90,8 +90,5 @@ swap32_array_if_little_endian(uint32_t *array_,
 }
 
 #endif /* IS_BIG_ENDIAN */
-
-#undef SWAP32
-#undef IS_BIG_ENDIAN
 
 #endif /* LIBFREEDO_ENDIANNESS_H_INCLUDED */

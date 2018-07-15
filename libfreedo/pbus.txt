@@ -66,9 +66,36 @@ MSB -> LSB
 1bit: X
 1bit: right trigger
 1bit: left trigger
-2bit: unused
-8bit: set (0xFF)
-8bit: set (0xFF)
+2bit: unused / 0
+
+
+### FLIGHTSTICK
+
+MSB -> LSB
+
+* 8bit: identifier 0 (0x01)
+* 8bit: identifier 1 (0x7B)
+* 8bit: length? (0x08)
+* 8bit: horizontal position
+* 2bit: 0
+* 8bit: vertical position
+* 2bit: 0
+* 8bit: depth position
+* 4bit: 0x02 (unsure what this means)
+* 1bit: trigger / fire
+* 1bit: A
+* 1bit: B
+* 1bit: C
+* 1bit: up
+* 1bit: down
+* 1bit: right
+* 1bit: left
+* 1bit: P
+* 1bit: X
+* 1bit: left trigger
+* 1bit: right trigger
+* 4bit: 0
+
 
 ### MOUSE
 
@@ -81,6 +108,7 @@ MSB -> LSB
 * 1bit: shift button
 * 10bit: X delta (signed)
 * 10bit: Y delta (signed)
+
 
 ### LIGHTGUN
 
@@ -139,6 +167,7 @@ x = ((((10 * counter) % NTSC_DEFAULT_YSCANTIME) * NTSC_WIDTH) /
 y = ((10 * counter) / NTSC_DEFAULT_YSCANTIME);
 ```
 
+
 ### ORBATAK TRACKBALL
 
 Orbatak uses two different devices. The trackballs are just mice as
@@ -156,6 +185,7 @@ MSB -> LSB
 1bit: start (p1)
 1bit: service
 8bit: 0x00
+
 
 ## Device Usage In Games
 
@@ -200,9 +230,7 @@ MSB -> LSB
 * Phoenix 3 (1995)
 * PO'ed (1995)
 * Return Fire (1995)
-* Road & Track Presents: The Need for Speed (1994)
 * Scramble Cobra (1995)
-* Shockwave: Operation Jumpgate (1995)
 * Shockwave 2: Beyond The Gate (1995)
 * Space Ace (1995)
 * Star Fighter (1996)
