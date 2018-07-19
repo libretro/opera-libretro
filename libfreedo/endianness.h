@@ -3,6 +3,8 @@
 
 #include "inline.h"
 
+#include <stdint.h>
+
 #if defined(__linux__)
 #include <endian.h>
 #endif

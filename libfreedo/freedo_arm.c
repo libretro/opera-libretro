@@ -1801,7 +1801,7 @@ freedo_mem_write8(uint32_t addr_,
                   uint8_t  val_)
 {
   CPU.ram[addr_] = val_;
-  if(addr_ < 0x200000 || !HIRESMODE)
+  if(!HIRESMODE || (addr_ < 0x200000))
     return;
   CPU.ram[addr_ + 1*1024*1024] = val_;
   CPU.ram[addr_ + 2*1024*1024] = val_;
@@ -1813,7 +1813,7 @@ freedo_mem_write16(uint32_t addr_,
                    uint16_t val_)
 {
   *((uint16_t*)&CPU.ram[addr_]) = val_;
-  if(addr_ < 0x200000 || !HIRESMODE)
+  if(!HIRESMODE || (addr_ < 0x200000))
     return;
   *((uint16_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
   *((uint16_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;
@@ -1825,7 +1825,7 @@ freedo_mem_write32(uint32_t addr_,
                    uint32_t val_)
 {
   *((uint32_t*)&CPU.ram[addr_]) = val_;
-  if(addr_ < 0x200000 || !HIRESMODE)
+  if(!HIRESMODE || (addr_ < 0x200000))
     return;
   *((uint32_t*)&CPU.ram[addr_ + 1*1024*1024]) = val_;
   *((uint32_t*)&CPU.ram[addr_ + 2*1024*1024]) = val_;

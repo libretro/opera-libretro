@@ -45,8 +45,7 @@ void      freedo_madam_reset(void);
 uint32_t  freedo_madam_fsm_get(void);
 void      freedo_madam_fsm_set(uint32_t val_);
 
-uint32_t  freedo_madam_cel_get_cycles(void);
-uint32_t  freedo_madam_cel_handle(void);
+void      freedo_madam_cel_handle(void);
 
 uint32_t *freedo_madam_registers(void);
 
