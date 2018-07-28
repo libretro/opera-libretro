@@ -114,7 +114,7 @@ lr_input_poll_flightstick(const int port_)
   fs.l    = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_LEFT);
   fs.r    = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_RIGHT);
   fs.p    = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_START);
-  fs.s    = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT);
+  fs.x    = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT);
   fs.lt   = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L);
   fs.rt   = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
 
