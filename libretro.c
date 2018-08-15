@@ -10,6 +10,7 @@
 #include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
 
+#include "lr_dsp.h"
 #include "lr_input.h"
 #include "lr_input_crosshair.h"
 #include "lr_input_descs.h"
@@ -30,7 +31,6 @@
 #include <string.h>
 
 #define CDIMAGE_SECTOR_SIZE 2048
-#define SAMPLE_BUFFER_SIZE 512
 
 static vdlp_frame_t *FRAME = NULL;
 
@@ -39,8 +39,6 @@ static uint32_t   CDIMAGE_SECTOR;
 static uint32_t  *VIDEO_BUFFER = NULL;
 static uint32_t   VIDEO_WIDTH;
 static uint32_t   VIDEO_HEIGHT;
-static uint32_t   SAMPLE_IDX;
-static int32_t    SAMPLE_BUFFER[SAMPLE_BUFFER_SIZE];
 static uint32_t   ACTIVE_DEVICES;
 
 static const freedo_bios_t *BIOS = NULL;
@@ -147,6 +145,11 @@ retro_environment_set_variables(void)
                                     "1.6x (20.00Mhz)|"
                                     "1.8x (22.50Mhz)|"
                                     "2.0x (25.00Mhz)" },
+#if THREADED_DSP
+      { "4do_dsp_threaded",         "Threaded DSP; disabled|enabled" },
+#else
+      { "4do_dsp_threaded",         "Threaded DSP; unsupported" },
+#endif
       { "4do_high_resolution",      "High Resolution; disabled|enabled" },
       { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
       { "4do_active_devices",       "Active Devices; 1|2|3|4|5|6|7|8|0" },
@@ -159,8 +162,6 @@ retro_environment_set_variables(void)
       { "4do_kprint",               "3DO debugging output (stderr); disabled|enabled" },
       { NULL, NULL },
     };
-
-  const freedo_bios_t *b;
 
   vars[0].value = bios;
   vars[1].value = font;
@@ -228,7 +229,7 @@ retro_set_video_refresh(retro_video_refresh_t cb_)
 void
 retro_set_audio_sample(retro_audio_sample_t cb_)
 {
-
+  retro_set_audio_sample_cb(cb_);
 }
 
 void
@@ -277,26 +278,6 @@ video_destroy(void)
 }
 
 static
-void
-audio_reset_sample_buffer(void)
-{
-  SAMPLE_IDX = 0;
-  memset(SAMPLE_BUFFER,0,(sizeof(int32_t) * SAMPLE_BUFFER_SIZE));
-}
-
-static
-void
-audio_push_sample(const int32_t sample_)
-{
-  SAMPLE_BUFFER[SAMPLE_IDX++] = sample_;
-  if(SAMPLE_IDX >= SAMPLE_BUFFER_SIZE)
-    {
-      SAMPLE_IDX = 0;
-      retro_audio_sample_batch_cb((int16_t*)SAMPLE_BUFFER,SAMPLE_BUFFER_SIZE);
-    }
-}
-
-static
 uint32_t
 cdimage_get_size(void)
 {
@@ -327,9 +308,8 @@ libfreedo_callback(int   cmd_,
     case EXT_SWAPFRAME:
       freedo_frame_get_bitmap_xrgb_8888(FRAME,VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT);
       return FRAME;
-    case EXT_PUSH_SAMPLE:
-      /* TODO: fix all this, not right */
-      audio_push_sample((intptr_t)data_);
+    case EXT_DSP_TRIGGER:
+      lr_dsp_process();
       break;
     default:
       break;
@@ -621,12 +601,24 @@ check_option_4do_kprint(void)
 
 static
 void
+check_option_4do_dsp_threaded(void)
+{
+  bool rv;
+
+  rv = option_enabled("4do_dsp_threaded");
+
+  lr_dsp_init(rv);
+}
+
+static
+void
 check_options(void)
 {
   check_option_4do_bios();
   check_option_4do_font();
   check_option_4do_high_resolution();
   check_option_4do_cpu_overclock();
+  check_option_4do_dsp_threaded();
   check_option_4do_active_devices();
   check_option_set_reset_bits("4do_hack_timing_1",&FIXMODE,FIX_BIT_TIMING_1);
   check_option_set_reset_bits("4do_hack_timing_3",&FIXMODE,FIX_BIT_TIMING_3);
@@ -752,9 +744,6 @@ retro_load_game(const struct retro_game_info *info_)
       return false;
     }
 
-  cdimage_set_sector(0);
-  audio_reset_sample_buffer();
-
   if(info_)
     {
       rv = retro_cdimage_open(info_->path,&CDIMAGE);
@@ -769,7 +758,9 @@ retro_load_game(const struct retro_game_info *info_)
 
   check_options();
   video_init();
+  cdimage_set_sector(0);
   freedo_3do_init(libfreedo_callback);
+
   load_rom1();
   load_rom2();
 
@@ -799,6 +790,7 @@ retro_unload_game(void)
   if(check_option_nvram_shared())
     retro_nvram_save(freedo_arm_nvram_get());
 
+  lr_dsp_destroy();
   freedo_3do_destroy();
 
   retro_cdimage_close(&CDIMAGE);
@@ -887,16 +879,18 @@ retro_reset(void)
   if(check_option_nvram_shared())
     retro_nvram_save(freedo_arm_nvram_get());
 
+  lr_dsp_destroy();
   freedo_3do_destroy();
 
   check_options();
   video_init();
   cdimage_set_sector(0);
-  audio_reset_sample_buffer();
   freedo_3do_init(libfreedo_callback);
+
   load_rom1();
   load_rom2();
 
+  /* XXX: Is this really a frontend responsibility? */
   nvram_init(freedo_arm_nvram_get());
   if(check_option_nvram_shared())
     retro_nvram_load(freedo_arm_nvram_get());
@@ -914,6 +908,8 @@ retro_run(void)
   freedo_3do_process_frame(FRAME);
 
   lr_input_crosshairs_draw(VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT);
+
+  lr_dsp_upload();
 
   retro_video_refresh_cb(VIDEO_BUFFER,VIDEO_WIDTH,VIDEO_HEIGHT,VIDEO_WIDTH << 2);
 }

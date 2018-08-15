@@ -1,0 +1,141 @@
+#include "libfreedo/freedo_dsp.h"
+
+#include "retro_callbacks.h"
+
+#include <boolean.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdint.h>
+
+/* FORWARD DECLARATIONS */
+static void dsp_process(void);
+static void dsp_upload_unlocked(void);
+
+/* MACROS */
+#define DSP_BUF_SIZE ((44100 / 60) * 4)
+
+/* GLOBAL VARIABLES */
+static bool g_dsp_threaded = false;
+
+static uint32_t g_dsp_buf_idx = 0;
+static int32_t  g_dsp_buf[DSP_BUF_SIZE];
+
+static sem_t g_dsp_sem;
+static pthread_t g_dsp_thread;
+static pthread_mutex_t g_dsp_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void (*g_dsp_upload)(void)  = dsp_upload_unlocked;
+static void (*g_dsp_process)(void) = dsp_process;
+
+
+/* PRIVATE FUNCTIONS */
+
+static
+void *
+dsp_thread_loop(void *handle_)
+{
+  int32_t sample;
+
+  for(;;)
+    {
+      sem_wait(&g_dsp_sem);
+
+      sample = freedo_dsp_loop();
+
+      pthread_mutex_lock(&g_dsp_buf_mutex);
+      g_dsp_buf[g_dsp_buf_idx++] = sample;
+      if(g_dsp_buf_idx > DSP_BUF_SIZE)
+        g_dsp_buf_idx = 0;
+      pthread_mutex_unlock(&g_dsp_buf_mutex);
+    }
+
+  return NULL;
+}
+
+static
+void
+dsp_upload_unlocked(void)
+{
+  retro_audio_sample_batch_cb((int16_t*)g_dsp_buf,g_dsp_buf_idx);
+  g_dsp_buf_idx = 0;
+}
+
+static
+void
+dsp_upload_locked(void)
+{
+  pthread_mutex_lock(&g_dsp_buf_mutex);
+
+  dsp_upload_unlocked();
+
+  pthread_mutex_unlock(&g_dsp_buf_mutex);
+}
+
+static
+void
+dsp_process(void)
+{
+  g_dsp_buf[g_dsp_buf_idx++] = freedo_dsp_loop();
+  if(g_dsp_buf_idx > DSP_BUF_SIZE)
+    g_dsp_buf_idx = 0;
+}
+
+static
+void
+dsp_process_threaded(void)
+{
+  sem_post(&g_dsp_sem);
+}
+
+
+/* PUBLIC FUNCTIONS */
+
+void
+lr_dsp_process(void)
+{
+  (*g_dsp_process)();
+}
+
+void
+lr_dsp_upload(void)
+{
+  (*g_dsp_upload)();
+}
+
+void
+lr_dsp_destroy(void)
+{
+  void *rv;
+
+  if(g_dsp_threaded)
+    {
+      pthread_cancel(g_dsp_thread);
+      pthread_join(g_dsp_thread,&rv);
+      sem_destroy(&g_dsp_sem);
+    }
+}
+
+void
+lr_dsp_init(const bool threaded_)
+{
+  if(g_dsp_threaded == threaded_)
+    return;
+
+  lr_dsp_destroy();
+
+  g_dsp_buf_idx = 0;
+
+  g_dsp_threaded = threaded_;
+  if(g_dsp_threaded)
+    {
+      sem_init(&g_dsp_sem,0,0);
+      pthread_create(&g_dsp_thread,NULL,dsp_thread_loop,NULL);
+      g_dsp_upload  = dsp_upload_locked;
+      g_dsp_process = dsp_process_threaded;
+    }
+  else
+    {
+      g_dsp_upload  = dsp_upload_unlocked;
+      g_dsp_process = dsp_process;
+    }
+}

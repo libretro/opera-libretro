@@ -1,40 +1,41 @@
 DEBUG = 0
 HAVE_CHD = 1
+THREADED_DSP=0
 
 ifeq ($(platform),)
 platform = unix
-ifeq ($(shell uname -a),)
-   platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   platform = osx
-	arch = intel
-ifeq ($(shell uname -p),powerpc)
-	arch = ppc
-endif
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   platform = win
-endif
+  ifeq ($(shell uname -a),)
+    platform = win
+  else ifneq ($(findstring Darwin,$(shell uname -a)),)
+    platform = osx
+    arch = intel
+    ifeq ($(shell uname -p),powerpc)
+      arch = ppc
+    endif
+  else ifneq ($(findstring MINGW,$(shell uname -a)),)
+    platform = win
+  endif
 endif
 
 # system platform
 system_platform = unix
 ifeq ($(shell uname -a),)
-EXE_EXT = .exe
-   system_platform = win
+  EXE_EXT = .exe
+  system_platform = win
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   system_platform = osx
-	arch = intel
-ifeq ($(shell uname -p),powerpc)
-	arch = ppc
-endif
+  system_platform = osx
+  arch = intel
+  ifeq ($(shell uname -p),powerpc)
+    arch = ppc
+  endif
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   system_platform = win
+  system_platform = win
 endif
 
 TARGET_NAME := 4do
 GIT_VERSION ?= " $(shell git rev-parse --short HEAD || echo unknown)"
 ifneq ($(GIT_VERSION)," unknown")
-	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+  CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
 SPACE :=
@@ -52,8 +53,8 @@ ifneq (,$(findstring unix,$(platform)))
 
     TARGET := $(TARGET_NAME)_libretro.so
     fpic := -fPIC
-    SHARED := -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
-
+    SHARED := -lpthread -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
+    THREADED_DSP = 1
 
     # Raspberry Pi
     ifneq (,$(findstring rpi,$(platform)))
@@ -70,7 +71,7 @@ ifneq (,$(findstring unix,$(platform)))
             CFLAGS = -mcpu=cortex-a53
         endif
 
-	# ODROIDs
+    # ODROIDs
     else ifneq (,$(findstring odroid,$(platform)))
         CFLAGS += -fomit-frame-pointer -ffast-math -DARM -marm -mfloat-abi=hard
 
@@ -138,43 +139,43 @@ else ifeq ($(platform), qnx)
    TARGET := $(TARGET_NAME)_libretro_$(platform).so
    fpic := -fPIC
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
-	CC = qcc -Vgcc_ntoarmv7le
+   CC = qcc -Vgcc_ntoarmv7le
 else ifeq ($(platform), ps3)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
    STATIC_LINKING = 1
-	FLAGS += -DMSB_FIRST -D__CELLOS_LV2__
-	OLD_GCC = 1
+   FLAGS += -DMSB_FIRST -D__CELLOS_LV2__
+   OLD_GCC = 1
 else ifeq ($(platform), sncps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
    AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
    STATIC_LINKING = 1
-	FLAGS += -DMSB_FIRST
-	NO_GCC = 1
+   FLAGS += -DMSB_FIRST
+   NO_GCC = 1
 
 # PSP1
 else ifeq ($(platform), psp1)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
-	CC = psp-gcc$(EXE_EXT)
-	AR = psp-ar$(EXE_EXT)
+   CC = psp-gcc$(EXE_EXT)
+   AR = psp-ar$(EXE_EXT)
    STATIC_LINKING = 1
-	FLAGS += -G0
+   FLAGS += -G0
 
 # Vita
 else ifeq ($(platform), vita)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
-	CC = arm-vita-eabi-gcc$(EXE_EXT)
-	AR = arm-vita-eabi-ar$(EXE_EXT)
+   CC = arm-vita-eabi-gcc$(EXE_EXT)
+   AR = arm-vita-eabi-ar$(EXE_EXT)
    STATIC_LINKING = 1
-	FLAGS += -DVITA
+   FLAGS += -DVITA
 
 # CTR (3DS)
 else ifeq ($(platform), ctr)
-	TARGET := $(TARGET_NAME)_libretro_$(platform).a
-	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
-	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+   CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
+   AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
    STATIC_LINKING = 1
    FLAGS += -D_3DS
 
@@ -186,7 +187,7 @@ else ifeq ($(platform), switch)
 
 # Emscripten
 else ifeq ($(platform), emscripten)
-	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
+   TARGET := $(TARGET_NAME)_libretro_$(platform).bc
    STATIC_LINKING = 1
 
 # Windows MSVC 2003 Xbox 1
@@ -199,8 +200,8 @@ export INCLUDE := $(XDK)/xbox/include
 export LIB := $(XDK)/xbox/lib
 PATH := $(call unixcygpath,$(XDK)/xbox/bin/vc71):$(PATH)
 PSS_STYLE :=2
-CFLAGS   += -D_XBOX -D_XBOX1
-STATIC_LINKING=1
+CFLAGS += -D_XBOX -D_XBOX1
+STATIC_LINKING = 1
 HAS_GCC := 0
 # Windows MSVC 2010 Xbox 360
 else ifeq ($(platform), xbox360_msvc2010)

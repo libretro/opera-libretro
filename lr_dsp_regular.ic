@@ -1,0 +1,42 @@
+#include "libfreedo/freedo_dsp.h"
+
+#include "retro_callbacks.h"
+
+#include <boolean.h>
+#include <stdint.h>
+
+/* MACROS */
+#define DSP_BUF_SIZE ((44100 / 60) * 4)
+
+/* GLOBAL VARIABLES */
+static uint32_t g_dsp_buf_idx = 0;
+static int32_t  g_dsp_buf[DSP_BUF_SIZE];
+
+/* PUBLIC FUNCTIONS */
+
+void
+lr_dsp_process(void)
+{
+  g_dsp_buf[g_dsp_buf_idx++] = freedo_dsp_loop();
+  if(g_dsp_buf_idx > DSP_BUF_SIZE)
+    g_dsp_buf_idx = 0;
+}
+
+void
+lr_dsp_upload(void)
+{
+  retro_audio_sample_batch_cb((int16_t*)g_dsp_buf,g_dsp_buf_idx);
+  g_dsp_buf_idx = 0;
+}
+
+void
+lr_dsp_destroy(void)
+{
+
+}
+
+void
+lr_dsp_init(const bool threaded_)
+{
+
+}
