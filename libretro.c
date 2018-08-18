@@ -13,6 +13,7 @@
 #include "lr_input.h"
 #include "lr_input_crosshair.h"
 #include "lr_input_descs.h"
+#include "disk_control.h"
 #include "nvram.h"
 #include "retro_callbacks.h"
 #include "retro_cdimage.h"
@@ -349,7 +350,7 @@ retro_get_system_info(struct retro_system_info *info_)
   info_->library_name     = "4DO";
   info_->library_version  = "1.3.2.4" GIT_VERSION;
   info_->need_fullpath    = true;
-  info_->valid_extensions = "iso|bin|chd|cue";
+  info_->valid_extensions = "iso|bin|chd|cue|m3u";
 }
 
 void
@@ -751,21 +752,15 @@ retro_load_game(const struct retro_game_info *info_)
                           "[4DO]: XRGB8888 is not supported.\n");
       return false;
     }
-
-  cdimage_set_sector(0);
   audio_reset_sample_buffer();
 
-  if(info_)
-    {
-      rv = retro_cdimage_open(info_->path,&CDIMAGE);
-      if(rv == -1)
-        {
-          retro_log_printf_cb(RETRO_LOG_ERROR,
-                              "[4DO]: failure opening image - %s\n",
-                              info_->path);
-          return false;
-        }
-    }
+  if (info_ == NULL || info_->path == NULL)
+  {
+    retro_log_printf_cb(RETRO_LOG_ERROR, "info_->path required\n");
+    return false;
+  }
+  if ((rv = disk_control_open_file(info_->path)) == -1)
+    return false;
 
   check_options();
   video_init();
@@ -800,6 +795,7 @@ retro_unload_game(void)
     retro_nvram_save(freedo_arm_nvram_get());
 
   freedo_3do_destroy();
+  disk_control_cleanup();
 
   retro_cdimage_close(&CDIMAGE);
 
@@ -869,10 +865,11 @@ retro_init(void)
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL,&level);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS,&serialization_quirks);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE,&disk_control_cb);
 
-  freedo_cdrom_set_callbacks(cdimage_get_size,
-                             cdimage_set_sector,
-                             cdimage_read_sector);
+  freedo_cdrom_set_callbacks(disk_image_get_size,
+                             disk_image_set_sector,
+                             disk_image_read_sector);
 }
 
 void
@@ -896,6 +893,7 @@ retro_reset(void)
   freedo_3do_init(libfreedo_callback);
   load_rom1();
   load_rom2();
+  disk_control_get()->current_sector = 0;
 
   nvram_init(freedo_arm_nvram_get());
   if(check_option_nvram_shared())

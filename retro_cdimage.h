@@ -10,6 +10,7 @@ struct cdimage_s
   intfstream_t *fp;
   int           sector_size;
   int           sector_offset;
+  char         *filename;
 };
 
 typedef struct cdimage_s cdimage_t;
