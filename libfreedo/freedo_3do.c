@@ -136,7 +136,7 @@ freedo_3do_internal_frame(vdlp_frame_t *frame_,
 
   freedo_quarz_push_cycles(cycles_);
   if(freedo_quarz_queue_dsp())
-    io_interface(EXT_PUSH_SAMPLE,(void*)(uintptr_t)freedo_dsp_loop());
+    io_interface(EXT_DSP_TRIGGER,NULL);
 
   if(freedo_quarz_queue_timer())
     freedo_clio_timer_execute();

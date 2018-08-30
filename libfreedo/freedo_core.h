@@ -24,55 +24,16 @@ Felix Lazarev
 #ifndef __3DO_SYSTEM_HEADER_DEFINITION
 #define __3DO_SYSTEM_HEADER_DEFINITION
 
+#include "extern_c.h"
+
 #include <stdint.h>
 #include <boolean.h>
 
-#include "extern_c.h"
-
-#pragma pack(push,1)
-
-struct BitmapCrop
-{
-	int left;
-	int top;
-	int bottom;
-	int right;
-};
-
-struct GetFrameBitmapParams
-{
-	struct VDLFrame* sourceFrame;
-	void* destinationBitmap;
-	int destinationBitmapWidthPixels;
-	struct BitmapCrop* bitmapCrop;
-	int copyWidthPixels;
-	int copyHeightPixels;
-	bool addBlackBorder;
-	bool copyPointlessAlphaByte;
-	bool allowCrop;
-	int resultingWidth;
-	int resultingHeight;
-};
-
-#pragma pack(pop)
-
-#define EXT_READ_ROMS           1
-#define EXT_SWAPFRAME           5       //frame swap (in mutlithreaded) or frame draw(single treaded)
-#define EXT_PUSH_SAMPLE         6       //sends sample to the buffer
-#define EXT_KPRINT              9
-#define EXT_DEBUG_PRINT         10
-#define EXT_FRAMETRIGGER_MT     12      //multitasking
-#define EXT_READ2048            14      //for XBUS Plugin
-#define EXT_GET_DISC_SIZE       15
-#define EXT_ON_SECTOR           16
-#define EXT_ARM_SYNC            17
+#define EXT_SWAPFRAME     1  /* frame should be read */
+#define EXT_DSP_TRIGGER   2  /* DSP should be triggered
+                                (freedo_dsp_loop) */
 
 typedef void* (*freedo_ext_interface_t)(int, void*);
-
-#define FDP_FREEDOCORE_VERSION   0
-#define FDP_DO_FRAME_MT          4      //multitasking
-
-#define BIOS_ANVIL (0x40)
 
 EXTERN_C_BEGIN
 
