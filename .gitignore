@@ -6,3 +6,4 @@
 /.project
 /obj/
 /libs/
+*.a
