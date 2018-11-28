@@ -96,6 +96,8 @@ retro_cdimage_open_cue(const char *path_,
     rv = retro_cdimage_open_iso(cue_file->cd_image,cdimage_);
   else if(!strcasecmp(ext,"bin"))
     rv = retro_cdimage_open_bin(cue_file->cd_image,cdimage_);
+  else if(!strcasecmp(ext,"img"))
+    rv = retro_cdimage_open_bin(cue_file->cd_image,cdimage_);
   else
     rv = -1;
 
