@@ -231,6 +231,8 @@ else ifeq ($(platform), libnx)
     CXXFLAGS := $(ASFLAGS) $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
     CFLAGS += -std=gnu11
     STATIC_LINKING = 1
+    HAVE_CHD = 1
+    HAVE_LIBNX = 1
 
 # Emscripten
 else ifeq ($(platform), emscripten)
