@@ -41,6 +41,12 @@ SOURCES_C += \
         $(4DO_DIR)/freedo_pbus.c \
         $(4DO_DIR)/freedo_xbus_cdrom_plugin.c
 
+ifeq ($(HAVE_LIBNX), 1)
+	SOURCES_C += \
+		$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
+		$(LIBRETRO_COMM_DIR)/streams/chd_stream.c
+endif
+
 ifneq ($(STATIC_LINKING), 1)
 SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
