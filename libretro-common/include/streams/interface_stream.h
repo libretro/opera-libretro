@@ -32,28 +32,6 @@
 
 RETRO_BEGIN_DECLS
 
-#ifdef HAVE_LIBNX
-#define intfstream_internal intfstream_internal_core
-#define intfstream_internal_t intfstream_internal_t_core
-#define intfstream_init intfstream_init_core
-#define intfstream_resize intfstream_resize_core
-#define intfstream_open intfstream_open_core
-#define intfstream_read intfstream_read_core
-#define intfstream_write intfstream_write_core
-#define intfstream_gets intfstream_gets_core
-#define intfstream_getc intfstream_getc_core
-#define intfstream_seek intfstream_seek_core
-#define intfstream_rewind intfstream_rewind_core
-#define intfstream_tell intfstream_tell_core
-#define intfstream_putc intfstream_putc_core
-#define intfstream_close intfstream_close_core
-#define intfstream_get_size intfstream_get_size_core
-#define intfstream_flush intfstream_flush_core
-#define intfstream_open_file intfstream_open_file_core
-#define intfstream_open_memory intfstream_open_memory_core
-#define intfstream_open_chd_track intfstream_open_chd_track_core
-#endif
-
 enum intfstream_type
 {
    INTFSTREAM_FILE = 0,
