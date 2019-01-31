@@ -230,6 +230,26 @@ else ifeq ($(platform), libnx)
     CFLAGS	+=	$(INCLUDE)  -D__SWITCH__ -DHAVE_LIBNX
     CXXFLAGS := $(ASFLAGS) $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
     CFLAGS += -std=gnu11
+    # Static CHD workaround
+    CFLAGS += -Dintfstream_internal=intfstream_internal_core \
+         -Dintfstream_internal_t=intfstream_internal_t_core \
+         -Dintfstream_init=intfstream_init_core \
+         -Dintfstream_resize=intfstream_resize_core \
+         -Dintfstream_open=intfstream_open_core \
+         -Dintfstream_read=intfstream_read_core \
+         -Dintfstream_write=intfstream_write_core \
+         -Dintfstream_gets=intfstream_gets_core \
+         -Dintfstream_getc=intfstream_getc_core \
+         -Dintfstream_seek=intfstream_seek_core \
+         -Dintfstream_rewind=intfstream_rewind_core \
+         -Dintfstream_tell=intfstream_tell_core \
+         -Dintfstream_putc=intfstream_putc_core \
+         -Dintfstream_close=intfstream_close_core \
+         -Dintfstream_get_size=intfstream_get_size_core \
+         -Dintfstream_flush=intfstream_flush_core \
+         -Dintfstream_open_file=intfstream_open_file_core \
+         -Dintfstream_open_memory=intfstream_open_memory_core \
+         -Dintfstream_open_chd_track=intfstream_open_chd_track_core
     STATIC_LINKING = 1
     HAVE_CHD = 1
     HAVE_LIBNX = 1
