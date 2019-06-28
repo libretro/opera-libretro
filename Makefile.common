@@ -1,4 +1,6 @@
-LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
+ifeq ($(LIBRETRO_COMM_DIR),)
+	LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
+endif
 4DO_DIR           := $(CORE_DIR)/libfreedo
 DEPS_DIR          := $(CORE_DIR)/deps
 
