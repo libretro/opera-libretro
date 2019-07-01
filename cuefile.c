@@ -4,13 +4,14 @@
 #include <string.h>
 
 #include <libretro.h>
+#include <streams/file_stream.h>
 
 #include "cuefile.h"
 #include "retro_callbacks.h"
 
 #define STRING_MAX 4096
 
-static FILE *cue_get_file_for_image(const char *path)
+static RFILE *cue_get_file_for_image(const char *path)
 {
    int i;
    char cue_path_base[STRING_MAX];
@@ -29,12 +30,12 @@ static FILE *cue_get_file_for_image(const char *path)
 
    for(i=0; i<2; i++)
    {
-      FILE *cue_file = NULL;
+      RFILE *cue_file = NULL;
 
       strcpy(cue_path, cue_path_base);
       strcat(cue_path, exts[i]);
 
-      cue_file = fopen(cue_path, "r");
+      cue_file = filestream_open(cue_path, RETRO_VFS_FILE_ACCESS_READ, 0);
       if (cue_file)
          return cue_file;
    }
@@ -94,9 +95,9 @@ cueFile *cue_get(const char *path)
    char line[STRING_MAX];
    int files_found = 0;
    cueFile *cue   = NULL;
-   FILE *cue_file =
+   RFILE *cue_file =
       cue_is_cue_path(path) ?
-      fopen(path, "r") :
+      filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0) :
       cue_get_file_for_image(path);
 
    if (!cue_file)
@@ -105,7 +106,7 @@ cueFile *cue_get(const char *path)
    cue = (cueFile *)malloc(sizeof(cueFile));
    cue->cd_format = CUE_MODE_UNKNOWN;
 
-   while ((fgets(line, STRING_MAX, cue_file)))
+   while ((filestream_gets(cue_file, line, STRING_MAX)))
    {
       if (strstr(line, "FILE") && files_found == 0)
       {
@@ -134,7 +135,7 @@ cueFile *cue_get(const char *path)
          break;
       }
    }
-   fclose(cue_file);
+   filestream_close(cue_file);
 
    if (retro_log_printf_cb)
    {
