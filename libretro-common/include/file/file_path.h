@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
@@ -28,11 +28,16 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <libretro.h>
 #include <retro_common_api.h>
 
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
+
+#define PATH_REQUIRED_VFS_VERSION 3
+
+void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 /* Order in this enum is equivalent to negative sort order in filelist
  *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
@@ -45,7 +50,6 @@ enum
    RARCH_DIRECTORY,
    RARCH_FILE_UNSUPPORTED
 };
-
 
 /**
  * path_is_compressed_file:
@@ -100,11 +104,15 @@ const char *path_get_extension(const char *path);
  * path_remove_extension:
  * @path               : path
  *
- * Removes the extension from the path and returns the result.
- * Removes all text after and including the last '.'.
+ * Mutates path by removing its extension. Removes all
+ * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: path with the extension part removed.
+ * Returns:
+ * 1) If path has an extension, returns path with the
+ *    extension removed.
+ * 2) If there is no extension, returns NULL.
+ * 3) If path is empty or NULL, returns NULL
  */
 char *path_remove_extension(char *path);
 
@@ -133,6 +141,7 @@ void path_basedir(char *path);
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, returns empty string
  **/
 void path_parent_dir(char *path);
 
@@ -141,10 +150,27 @@ void path_parent_dir(char *path);
  * @buf                : buffer for path
  * @size               : size of buffer
  *
- * Turns relative paths into absolute path.
+ * Turns relative paths into absolute paths and
+ * resolves use of "." and ".." in absolute paths.
  * If relative, rebases on current working dir.
  **/
 void path_resolve_realpath(char *buf, size_t size);
+
+/**
+ * path_relative_to:
+ * @out                : buffer to write the relative path to
+ * @path               : path to be expressed relatively
+ * @base               : relative to this
+ * @size               : size of output buffer
+ *
+ * Turns @path into a path relative to @base and writes it to @out.
+ *
+ * @base is assumed to be a base directory, i.e. a path ending with '/' or '\'.
+ * Both @path and @base are assumed to be absolute paths without "." or "..".
+ *
+ * E.g. path /a/b/e/f.cgp with base /a/b/c/d/ turns into ../../e/f.cgp
+ **/
+void path_relative_to(char *out, const char *path, const char *base, size_t size);
 
 /**
  * path_is_absolute:
@@ -311,6 +337,7 @@ bool fill_pathname_parent_dir_name(char *out_dir,
  *
  * Copies parent directory of @in_dir into @out_dir.
  * Assumes @in_dir is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, @out_dir will be an empty string.
  **/
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size);
@@ -432,7 +459,7 @@ void path_basedir_wrapper(char *path);
 #endif
 
 /**
- * path_default_slash:
+ * path_default_slash and path_default_slash_c:
  *
  * Gets the default slash separator.
  *
@@ -440,8 +467,10 @@ void path_basedir_wrapper(char *path);
  */
 #ifdef _WIN32
 #define path_default_slash() "\\"
+#define path_default_slash_c() '\\'
 #else
 #define path_default_slash() "/"
+#define path_default_slash_c() '/'
 #endif
 
 /**
@@ -456,6 +485,8 @@ void fill_pathname_slash(char *path, size_t size);
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 void fill_pathname_application_path(char *buf, size_t size);
+void fill_pathname_application_dir(char *buf, size_t size);
+void fill_pathname_home_dir(char *buf, size_t size);
 #endif
 
 /**
@@ -480,9 +511,13 @@ bool path_is_directory(const char *path);
 
 bool path_is_character_special(const char *path);
 
+int path_stat(const char *path);
+
 bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
+
+bool is_path_accessible_using_standard_io(const char *path);
 
 RETRO_END_DECLS
 
