@@ -65,6 +65,18 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c
 
+ifeq ($(HAVE_CDROM), 1)
+	FLAGS += -DHAVE_CDROM
+
+ifeq ($(CDROM_DEBUG), 1)
+	FLAGS += -DCDROM_DEBUG
+endif
+
+SOURCES_C += \
+	$(LIBRETRO_COMM_DIR)/cdrom/cdrom.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c
+endif
+
 ifeq ($(HAVE_CHD), 1)
 SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/chd_stream.c

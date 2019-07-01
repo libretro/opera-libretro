@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_assert.h).
+ * The following license statement only applies to this file (retro_math.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,18 +20,75 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __RETRO_ASSERT_H
-#define __RETRO_ASSERT_H
+#ifndef _LIBRETRO_COMMON_MATH_H
+#define _LIBRETRO_COMMON_MATH_H
 
-#include <assert.h>
+#include <stdint.h>
 
-#ifdef RARCH_INTERNAL
-#include <stdio.h>
-#define retro_assert(cond) do { \
-   if (!(cond)) { printf("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
-} while(0)
-#else
-#define retro_assert(cond) assert(cond)
+#if defined(_WIN32) && !defined(_XBOX)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#elif defined(_WIN32) && defined(_XBOX)
+#include <Xtl.h>
 #endif
+
+#include <limits.h>
+
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+#include <retro_inline.h>
+
+#ifndef M_PI
+#if !defined(USE_MATH_DEFINES)
+#define M_PI 3.14159265358979323846264338327
+#endif
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+/**
+ * next_pow2:
+ * @v         : initial value
+ *
+ * Get next power of 2 value based on  initial value.
+ *
+ * Returns: next power of 2 value (derived from @v).
+ **/
+static INLINE uint32_t next_pow2(uint32_t v)
+{
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   v++;
+   return v;
+}
+
+/**
+ * prev_pow2:
+ * @v         : initial value
+ *
+ * Get previous power of 2 value based on initial value.
+ *
+ * Returns: previous power of 2 value (derived from @v).
+ **/
+static INLINE uint32_t prev_pow2(uint32_t v)
+{
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   return v - (v >> 1);
+}
 
 #endif
