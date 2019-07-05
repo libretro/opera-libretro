@@ -61,7 +61,7 @@
  *
  * Returns: next power of 2 value (derived from @v).
  **/
-static INLINE uint32_t next_pow2(uint32_t v)
+INLINE uint32_t next_pow2(uint32_t v)
 {
    v--;
    v |= v >> 1;
@@ -81,7 +81,7 @@ static INLINE uint32_t next_pow2(uint32_t v)
  *
  * Returns: previous power of 2 value (derived from @v).
  **/
-static INLINE uint32_t prev_pow2(uint32_t v)
+INLINE uint32_t prev_pow2(uint32_t v)
 {
    v |= v >> 1;
    v |= v >> 2;

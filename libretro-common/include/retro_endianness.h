@@ -78,7 +78,7 @@
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define is_little_endian() (1)
 #else
-static INLINE uint8_t is_little_endian(void)
+INLINE uint8_t is_little_endian(void)
 {
    union
    {
@@ -106,7 +106,7 @@ static INLINE uint8_t is_little_endian(void)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_big64(val) (val)
 #else
-static INLINE uint64_t swap_if_big64(uint64_t val)
+INLINE uint64_t swap_if_big64(uint64_t val)
 {
    if (is_little_endian())
       return val;
@@ -129,7 +129,7 @@ static INLINE uint64_t swap_if_big64(uint64_t val)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_big32(val) (val)
 #else
-static INLINE uint32_t swap_if_big32(uint32_t val)
+INLINE uint32_t swap_if_big32(uint32_t val)
 {
    if (is_little_endian())
       return val;
@@ -152,7 +152,7 @@ static INLINE uint32_t swap_if_big32(uint32_t val)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_little64(val) (SWAP64(val))
 #else
-static INLINE uint64_t swap_if_little64(uint64_t val)
+INLINE uint64_t swap_if_little64(uint64_t val)
 {
    if (is_little_endian())
       return SWAP64(val);
@@ -175,7 +175,7 @@ static INLINE uint64_t swap_if_little64(uint64_t val)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_little32(val) (SWAP32(val))
 #else
-static INLINE uint32_t swap_if_little32(uint32_t val)
+INLINE uint32_t swap_if_little32(uint32_t val)
 {
    if (is_little_endian())
       return SWAP32(val);
@@ -198,7 +198,7 @@ static INLINE uint32_t swap_if_little32(uint32_t val)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_big16(val) (val)
 #else
-static INLINE uint16_t swap_if_big16(uint16_t val)
+INLINE uint16_t swap_if_big16(uint16_t val)
 {
    if (is_little_endian())
       return val;
@@ -221,7 +221,7 @@ static INLINE uint16_t swap_if_big16(uint16_t val)
 #elif defined(__x86_64) || defined(__i386) || defined(_M_IX86) || defined(_M_X64)
 #define swap_if_little16(val) (SWAP16(val))
 #else
-static INLINE uint16_t swap_if_little16(uint16_t val)
+INLINE uint16_t swap_if_little16(uint16_t val)
 {
    if (is_little_endian())
       return SWAP16(val);
@@ -237,7 +237,7 @@ static INLINE uint16_t swap_if_little16(uint16_t val)
  * Write data to address. Endian-safe. Byteswaps the data
  * first if necessary before storing it.
  **/
-static INLINE void store32be(uint32_t *addr, uint32_t data)
+INLINE void store32be(uint32_t *addr, uint32_t data)
 {
    *addr = swap_if_little32(data);
 }
@@ -250,7 +250,7 @@ static INLINE void store32be(uint32_t *addr, uint32_t data)
  *
  * Returns: value from address, byte-swapped if necessary.
  **/
-static INLINE uint32_t load32be(const uint32_t *addr)
+INLINE uint32_t load32be(const uint32_t *addr)
 {
    return swap_if_little32(*addr);
 }
