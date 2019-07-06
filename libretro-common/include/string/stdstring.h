@@ -35,12 +35,12 @@
 
 RETRO_BEGIN_DECLS
 
-INLINE bool string_is_empty(const char *data)
+static INLINE bool string_is_empty(const char *data)
 {
    return !data || (*data == '\0');
 }
 
-INLINE bool string_is_equal(const char *a, const char *b)
+static INLINE bool string_is_equal(const char *a, const char *b)
 {
    return (a && b) ? !strcmp(a, b) : false;
 }
@@ -62,7 +62,7 @@ INLINE bool string_is_equal(const char *a, const char *b)
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
-INLINE void string_add_between_pairs(char *s, const char *str,
+static INLINE void string_add_between_pairs(char *s, const char *str,
       size_t size)
 {
    string_add_pair_open(s, size);
@@ -70,7 +70,7 @@ INLINE void string_add_between_pairs(char *s, const char *str,
    string_add_pair_close(s, size);
 }
 
-INLINE bool string_is_equal_case_insensitive(const char *a,
+static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
 {
    int result              = 0;
@@ -89,7 +89,7 @@ INLINE bool string_is_equal_case_insensitive(const char *a,
    return (result == 0);
 }
 
-INLINE bool string_is_equal_noncase(const char *a, const char *b)
+static INLINE bool string_is_equal_noncase(const char *a, const char *b)
 {
    int result              = 0;
    const unsigned char *p1 = (const unsigned char*)a;
