@@ -1,6 +1,7 @@
 DEBUG = 0
 HAVE_CHD = 1
 THREADED_DSP=0
+HAVE_CDROM = 0
 
 ifeq ($(platform),)
 platform = unix
@@ -55,6 +56,7 @@ ifneq (,$(findstring unix,$(platform)))
     fpic := -fPIC
     SHARED := -lpthread -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
     THREADED_DSP = 1
+	 HAVE_CDROM = 1
 
     # Raspberry Pi
     ifneq (,$(findstring rpi,$(platform)))
@@ -476,6 +478,7 @@ else
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
    LDFLAGS += -static-libgcc -static-libstdc++ -lwinmm
 WINDOWS_VERSION=1
+	HAVE_CDROM = 1
 endif
 
 CORE_DIR := .
