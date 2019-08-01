@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <libretro.h>
+#include <libretro_core_options.h>
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
@@ -43,132 +44,6 @@ static uint32_t   ACTIVE_DEVICES;
 
 static const freedo_bios_t *BIOS = NULL;
 static const freedo_bios_t *FONT = NULL;
-
-static
-bool
-file_exists(const char *path_)
-{
-  RFILE *fp;
-
-  fp = filestream_open(path_,
-                       RETRO_VFS_FILE_ACCESS_READ,
-                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-  if(fp == NULL)
-    return false;
-
-  filestream_close(fp);
-
-  return true;
-}
-
-static
-bool
-file_exists_in_system_directory(const char *filename_)
-{
-  int rv;
-  char fullpath[PATH_MAX_LENGTH];
-  const char *system_path;
-
-  system_path = NULL;
-  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
-  if((rv == 0) || (system_path == NULL))
-    return false;
-
-  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
-
-  return file_exists(fullpath);
-}
-
-static
-void
-create_bios_option_list(char *buf_)
-{
-  int rv;
-  const freedo_bios_t *bios;
-
-  strcpy(buf_,"BIOS (rom1); ");
-  for(bios = freedo_bios_begin(); bios != freedo_bios_end(); bios++)
-    {
-      rv = file_exists_in_system_directory(bios->filename);
-      if(rv)
-        {
-          strcat(buf_,bios->name);
-          strcat(buf_,"|");
-        }
-    }
-
-  rv = (strlen(buf_) - 1);
-  if(buf_[rv] == '|')
-    buf_[rv] = '\0';
-  else
-    strcat(buf_,"None Found");
-}
-
-static
-void
-create_font_option_list(char *buf_)
-{
-  int rv;
-  const freedo_bios_t *font;
-
-  strcpy(buf_,"Font (rom2); disabled|");
-  for(font = freedo_bios_font_begin(); font != freedo_bios_font_end(); font++)
-    {
-      rv = file_exists_in_system_directory(font->filename);
-      if(rv)
-        {
-          strcat(buf_,font->name);
-          strcat(buf_,"|");
-        }
-    }
-
-  rv = (strlen(buf_) - 1);
-  buf_[rv] = '\0';
-}
-
-static
-void
-retro_environment_set_variables(void)
-{
-  char bios[1024];
-  char font[1024];
-  static struct retro_variable vars[] =
-    {
-      { "4do_bios", NULL },
-      { "4do_font", NULL },
-      { "4do_cpu_overclock",        "CPU overclock; "
-                                    "1.0x (12.50Mhz)|"
-                                    "1.1x (13.75Mhz)|"
-                                    "1.2x (15.00Mhz)|"
-                                    "1.5x (18.75Mhz)|"
-                                    "1.6x (20.00Mhz)|"
-                                    "1.8x (22.50Mhz)|"
-                                    "2.0x (25.00Mhz)" },
-#if THREADED_DSP
-      { "4do_dsp_threaded",         "Threaded DSP; disabled|enabled" },
-#else
-      { "4do_dsp_threaded",         "Threaded DSP; unsupported" },
-#endif
-      { "4do_high_resolution",      "High Resolution; disabled|enabled" },
-      { "4do_nvram_storage",        "NVRAM Storage; per game|shared" },
-      { "4do_active_devices",       "Active Devices; 1|2|3|4|5|6|7|8|0" },
-      { "4do_hack_timing_1",        "Timing Hack 1 (Crash 'n Burn); disabled|enabled" },
-      { "4do_hack_timing_3",        "Timing Hack 3 (Dinopark Tycoon); disabled|enabled" },
-      { "4do_hack_timing_5",        "Timing Hack 5 (Microcosm); disabled|enabled" },
-      { "4do_hack_timing_6",        "Timing Hack 6 (Alone in the Dark); disabled|enabled" },
-      { "4do_hack_graphics_step_y", "Graphics Step Y Hack (Samurai Shodown); disabled|enabled" },
-      { "4do_madam_matrix_engine",  "MADAM Matrix Engine; hardware|software" },
-      { "4do_kprint",               "3DO debugging output (stderr); disabled|enabled" },
-      { NULL, NULL },
-    };
-
-  vars[0].value = bios;
-  vars[1].value = font;
-  create_bios_option_list(bios);
-  create_font_option_list(font);
-  retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES,(void*)vars);
-}
 
 static
 void
@@ -216,7 +91,8 @@ retro_set_environment(retro_environment_t cb_)
   retro_set_environment_cb(cb_);
 
   retro_environment_set_controller_info();
-  retro_environment_set_variables();
+  libretro_init_core_options();
+  libretro_set_core_options();
   retro_environment_set_support_no_game();
 }
 
