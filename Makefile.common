@@ -16,6 +16,7 @@ endif
 
 SOURCES_C := \
 	$(CORE_DIR)/libretro.c \
+	$(CORE_DIR)/libretro_core_options.c \
 	$(CORE_DIR)/cuefile.c \
 	$(CORE_DIR)/nvram.c \
 	$(CORE_DIR)/retro_callbacks.c \
