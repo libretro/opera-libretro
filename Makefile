@@ -121,6 +121,15 @@ else ifeq ($(platform), classic_armv7_a7)
 	endif
 #######################################
 
+# ARM
+else ifneq (,$(findstring armv,$(platform)))
+    AR = ${CC_PREFIX}ar
+    CC = ${CC_PREFIX}gcc
+
+    TARGET := $(TARGET_NAME)_libretro.so
+    fpic := -fPIC
+    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
