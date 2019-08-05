@@ -456,8 +456,13 @@ void libretro_set_core_options(void)
                   break;
             }
 
-            /* Build values string */
-            if (num_values > 1)
+            /* Build values string
+             * > Note: 4DO is unusual in that we have to
+             *   support core options with only one value
+             *   (the number of '4do_bios' and '4do_font'
+             *   options depends upon the number of files
+             *   present in the user's system directory...) */
+            if (num_values > 0)
             {
                size_t j;
 
