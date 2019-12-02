@@ -1,4 +1,3 @@
-
 #include <libretro_core_options.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -65,7 +64,7 @@ static struct retro_core_option_definition option_defs_us[] = {
    {
       "4do_dsp_threaded",
       "Threaded DSP",
-      "Run the 3DO's emulated DSP (audio processor) on a separate CPU thread. Improves performance on multi-core systems.",
+      "Run the 3DO's emulated DSP (audio processor) on a separate CPU thread. Improves performance on multi-core systems. !EXPERIMENTAL!",
       {
          { "disabled", NULL },
          { "enabled",  NULL },
@@ -172,13 +171,24 @@ static struct retro_core_option_definition option_defs_us[] = {
    {
       "4do_madam_matrix_engine",
       "MADAM Matrix Engine",
-      "'MADAM' is the 3DO's graphics accelerator. It contains a custom maths co-processor, used by the 3DO's CPU to offload matrix operations. This corresponds to running in 'Hardware' - but the 3DS could also utilise a built-in ARM 'Software' version of the MADAM matrix engine. 'Hardware' mode is the default, but it has been observed that some games run faster when forcing 'Software' mode (e.g. The Need For Speed).",
+      "'MADAM' is the 3DO's graphics accelerator. It contains a custom maths co-processor, used by the 3DO's CPU to offload matrix operations. This corresponds to running in 'Hardware' - but the 3DO could also utilise a built-in ARM 'Software' version of the MADAM matrix engine. 'Hardware' mode is the default, but it has been observed that some games run faster when forcing 'Software' mode (e.g. The Need For Speed).",
       {
          { "hardware", "Hardware" },
          { "software", "Software" },
          { NULL, NULL },
       },
       "hardware"
+   },
+   {
+     "4do_swi_hle",
+     "OperaOS SWI HLE",
+     "3DO games are built on top of the OperaOS. 4DO has high level emulation of certain OS functions (primarily matrix arithmatic.) This HLE may improve performance in on certain games.",
+     {
+       { "disabled", NULL },
+       { "enabled",  NULL },
+       { NULL, NULL }
+     },
+     "disabled"
    },
    {
       "4do_kprint",
@@ -494,7 +504,7 @@ void libretro_set_core_options(void)
          variables[i].key   = key;
          variables[i].value = values_buf[i];
       }
-      
+
       /* Set variables */
       retro_environment_cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 

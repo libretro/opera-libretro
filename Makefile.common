@@ -24,24 +24,25 @@ SOURCES_C := \
         $(CORE_DIR)/lr_input.c \
         $(CORE_DIR)/lr_input_crosshair.c \
         $(CORE_DIR)/lr_input_descs.c \
-        $(CORE_DIR)/lr_dsp.c                                     
+        $(CORE_DIR)/lr_dsp.c
 
 SOURCES_C += \
-	$(4DO_DIR)/freedo_3do.c \
-	$(4DO_DIR)/freedo_arm.c \
-	$(4DO_DIR)/freedo_bitop.c \
-	$(4DO_DIR)/freedo_cdrom.c \
-	$(4DO_DIR)/freedo_clio.c \
-	$(4DO_DIR)/freedo_diag_port.c \
-	$(4DO_DIR)/freedo_dsp.c \
-	$(4DO_DIR)/freedo_frame.c \
-	$(4DO_DIR)/freedo_madam.c \
-	$(4DO_DIR)/freedo_quarz.c \
-	$(4DO_DIR)/freedo_sport.c \
-	$(4DO_DIR)/freedo_vdlp.c \
-	$(4DO_DIR)/freedo_xbus.c \
+        $(4DO_DIR)/freedo_3do.c \
+        $(4DO_DIR)/freedo_arm.c \
         $(4DO_DIR)/freedo_bios.c \
+        $(4DO_DIR)/freedo_bitop.c \
+        $(4DO_DIR)/freedo_cdrom.c \
+        $(4DO_DIR)/freedo_clio.c \
+        $(4DO_DIR)/freedo_diag_port.c \
+        $(4DO_DIR)/freedo_dsp.c \
+        $(4DO_DIR)/freedo_fixedpoint_math.c \
+        $(4DO_DIR)/freedo_frame.c \
+        $(4DO_DIR)/freedo_madam.c \
         $(4DO_DIR)/freedo_pbus.c \
+        $(4DO_DIR)/freedo_quarz.c \
+        $(4DO_DIR)/freedo_sport.c \
+        $(4DO_DIR)/freedo_vdlp.c \
+        $(4DO_DIR)/freedo_xbus.c \
         $(4DO_DIR)/freedo_xbus_cdrom_plugin.c
 
 ifeq ($(HAVE_LIBNX), 1)

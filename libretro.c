@@ -488,6 +488,17 @@ check_option_4do_dsp_threaded(void)
 
 static
 void
+check_option_4do_swi_hle(void)
+{
+  bool rv;
+
+  rv = option_enabled("4do_swi_hle");
+
+  freedo_arm_swi_hle_set(rv);
+}
+
+static
+void
 check_options(void)
 {
   check_option_4do_bios();
@@ -503,6 +514,7 @@ check_options(void)
   check_option_set_reset_bits("4do_hack_graphics_step_y",&FIXMODE,FIX_BIT_GRAPHICS_STEP_Y);
   check_option_4do_kprint();
   check_option_4do_madam_matrix_engine();
+  check_option_4do_swi_hle();
 }
 
 void
