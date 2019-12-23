@@ -28,21 +28,25 @@
   *  Felix Lazarev
 */
 
+#include "endianness.h"
 #include "freedo_arm.h"
+#include "freedo_arm_core.h"
 #include "freedo_clio.h"
 #include "freedo_core.h"
 #include "freedo_diag_port.h"
+#include "freedo_fixedpoint_math.h"
 #include "freedo_madam.h"
 #include "freedo_sport.h"
+#include "freedo_swi_hle_0x5XXXX.h"
 #include "hack_flags.h"
 #include "inline.h"
-#include "endianness.h"
 
 #include <boolean.h>
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define ARM_INITIAL_PC  0x03000000
 
@@ -112,31 +116,7 @@ const static uint16_t cond_flags_cross[]=
 #define ROM2_SIZE  ( 1 * 1024 * 1024)
 #define NVRAM_SIZE (32 * 1024)
 
-struct arm_core_s
-{
-  uint8_t *ram;
-  uint8_t *rom;                 /* points to current rom bank */
-  uint8_t *rom1;
-  uint8_t *rom2;
-  uint8_t *nvram;
-
-  //ARM60 registers
-  uint32_t USER[16];
-  uint32_t CASH[7];
-  uint32_t SVC[2];
-  uint32_t ABT[2];
-  uint32_t FIQ[7];
-  uint32_t IRQ[2];
-  uint32_t UND[2];
-  uint32_t SPSR[6];
-  uint32_t CPSR;
-
-  bool nFIQ;                    /* external interrupt */
-  bool MAS_Access_Exept;	/* memory exceptions */
-};
-
-typedef struct arm_core_s arm_core_t;
-
+static int        g_SWI_HLE;
 static arm_core_t CPU;
 static int        CYCLES;	//cycle counter
 
@@ -639,6 +619,8 @@ freedo_arm_init(void)
 {
   int i;
 
+  g_SWI_HLE = 0;
+
   CYCLES = 0;
   for(i = 0; i < 16; i++)
     CPU.USER[i] = 0;
@@ -718,6 +700,18 @@ freedo_arm_reset(void)
 
   freedo_clio_reset();
   freedo_madam_reset();
+}
+
+void
+freedo_arm_swi_hle_set(const int hle_)
+{
+  g_SWI_HLE = !!hle_;
+}
+
+int
+freedo_arm_swi_hle_get(void)
+{
+  return g_SWI_HLE;
 }
 
 static int32_t addrr = 0;
@@ -964,9 +958,10 @@ typedef struct TagArg
   uint32_t Arg;
 } TagItem;
 
+
 static
 void
-decode_swi(void)
+decode_swi_lle(void)
 {
   CPU.SPSR[arm_mode_table[0x13]] = CPU.CPSR;
 
@@ -974,9 +969,80 @@ decode_swi(void)
   SETM(0x13);
 
   CPU.USER[14] = CPU.USER[15];
-
   CPU.USER[15] = 0x00000008;
+}
+
+static
+void
+decode_swi_hle(const uint32_t op_)
+{
+  switch(op_ & 0x000FFFFF)
+    {
+    case 0x50000:
+      freedo_swi_hle_0x50000(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2]);
+      return;
+    case 0x50001:
+      freedo_swi_hle_0x50001(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2]);
+      return;
+    case 0x50002:
+      freedo_swi_hle_0x50002(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2],CPU.USER[3]);
+      return;
+    case 0x50003:
+      break;
+    case 0x50004:
+      break;
+    case 0x50005:
+      freedo_swi_hle_0x50005(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2],CPU.USER[3]);
+      return;
+    case 0x50006:
+      freedo_swi_hle_0x50006(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2],CPU.USER[3]);
+      return;
+    case 0x50007:
+      freedo_swi_hle_0x50007(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2]);
+      return;
+    case 0x50008:
+      freedo_swi_hle_0x50008(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2]);
+      return;
+    case 0x50009:
+      freedo_swi_hle_0x50009(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2],CPU.USER[3]);
+      return;
+    case 0x5000A:
+      break;
+    case 0x5000B:
+      break;
+    case 0x5000C:
+      CPU.USER[0] = freedo_swi_hle_0x5000C(CPU.ram,CPU.USER[0],CPU.USER[1]);
+      return;
+    case 0x5000E:
+      freedo_swi_hle_0x5000E(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2]);
+      return;
+    case 0x5000F:
+      CPU.USER[0] = freedo_swi_hle_0x5000F(CPU.ram,CPU.USER[0]);
+      return;
+    case 0x50010:
+      CPU.USER[0] = freedo_swi_hle_0x50010(CPU.ram,CPU.USER[0]);
+      return;
+    case 0x50011:
+      freedo_swi_hle_0x50011(CPU.ram,CPU.USER[0],CPU.USER[1],CPU.USER[2],CPU.USER[3]);
+      return;
+    case 0x50012:
+      freedo_swi_hle_0x50012(CPU.ram,CPU.USER[0]);
+      return;
+    }
+
+  return decode_swi_lle();
+}
+
+static
+void
+decode_swi(const uint32_t op_)
+{
   CYCLES -= (SCYCLE + NCYCLE);  // +2S+1N
+
+  if(g_SWI_HLE)
+    return decode_swi_hle(op_);
+
+  decode_swi_lle();
 }
 
 
@@ -1767,7 +1833,7 @@ freedo_arm_execute(void)
           break;
 
         case 0xf:               //SWI
-          decode_swi();
+          decode_swi(cmd);
           break;
 
         default:                //coprocessor

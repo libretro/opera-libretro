@@ -75,6 +75,9 @@ uint64_t freedo_arm_ram_size(void);
 uint8_t* freedo_arm_vram_get(void);
 uint64_t freedo_arm_vram_size(void);
 
+void     freedo_arm_swi_hle_set(const int hle);
+int      freedo_arm_swi_hle_get(void);
+
 EXTERN_C_END
 
 #endif /* LIBFREEDO_ARM_H_INCLUDED */
