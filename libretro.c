@@ -2,11 +2,11 @@
 #include "libfreedo/freedo_arm.h"
 #include "libfreedo/freedo_bios.h"
 #include "libfreedo/freedo_cdrom.h"
+#include "libfreedo/freedo_clock.h"
 #include "libfreedo/freedo_core.h"
 #include "libfreedo/freedo_frame.h"
 #include "libfreedo/freedo_madam.h"
 #include "libfreedo/freedo_pbus.h"
-#include "libfreedo/freedo_quarz.h"
 #include "libfreedo/freedo_vdlp.h"
 #include "libfreedo/hack_flags.h"
 
@@ -379,7 +379,7 @@ check_option_4do_cpu_overclock(void)
 
       mul = atof(var.value);
 
-      freedo_quarz_cpu_set_freq_mul(mul);
+      freedo_clock_cpu_set_freq_mul(mul);
     }
 }
 
