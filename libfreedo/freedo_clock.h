@@ -28,8 +28,8 @@
   *  Felix Lazarev
 */
 
-#ifndef LIBFREEDO_QUARZ_H_INCLUDED
-#define LIBFREEDO_QUARZ_H_INCLUDED
+#ifndef LIBFREEDO_CLOCK_H_INCLUDED
+#define LIBFREEDO_CLOCK_H_INCLUDED
 
 #include "extern_c.h"
 
@@ -39,27 +39,27 @@
 
 EXTERN_C_BEGIN
 
-void     freedo_quarz_init(void);
+void     freedo_clock_init(void);
 
-int      freedo_quarz_vd_current_line(void);
-int      freedo_quarz_vd_half_frame(void);
-int      freedo_quarz_vd_current_overline(void);
+int      freedo_clock_vdl_current_line(void);
+int      freedo_clock_vdl_half_frame(void);
+int      freedo_clock_vdl_current_overline(void);
 
-bool     freedo_quarz_queue_vdl(void);
-bool     freedo_quarz_queue_dsp(void);
-bool     freedo_quarz_queue_timer(void);
+bool     freedo_clock_vdl_queued(void);
+bool     freedo_clock_dsp_queued(void);
+bool     freedo_clock_timer_queued(void);
 
-void     freedo_quarz_push_cycles(const uint32_t clks_);
+void     freedo_clock_push_cycles(const uint32_t clks_);
 
-void     freedo_quarz_cpu_set_freq(const uint32_t freq_);
-void     freedo_quarz_cpu_set_freq_mul(const float mul_);
-uint32_t freedo_quarz_cpu_get_freq(void);
-uint32_t freedo_quarz_cpu_get_default_freq(void);
+void     freedo_clock_cpu_set_freq(const uint32_t freq_);
+void     freedo_clock_cpu_set_freq_mul(const float mul_);
+uint32_t freedo_clock_cpu_get_freq(void);
+uint32_t freedo_clock_cpu_get_default_freq(void);
 
-uint32_t freedo_quarz_state_size(void);
-void     freedo_quarz_state_save(void *buf_);
-void     freedo_quarz_state_load(const void *buf_);
+uint32_t freedo_clock_state_size(void);
+void     freedo_clock_state_save(void *buf_);
+void     freedo_clock_state_load(const void *buf_);
 
 EXTERN_C_END
 
-#endif /* LIBFREEDO_QUARZ_H_INCLUDED */
+#endif /* LIBFREEDO_CLOCK_H_INCLUDED */

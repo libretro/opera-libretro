@@ -30,9 +30,9 @@
 
 #include "freedo_arm.h"
 #include "freedo_clio.h"
+#include "freedo_clock.h"
 #include "freedo_dsp.h"
 #include "freedo_madam.h"
-#include "freedo_quarz.h"
 #include "freedo_xbus.h"
 
 #include <string.h>
@@ -355,11 +355,10 @@ freedo_clio_poke(uint32_t addr_,
               base = (0x500 + (i << 4));
               RLDADR = CURADR = 0;
               RLDLEN = CURLEN = 0;
-              freedo_clio_fifo_write(base+0x00,0);
-              freedo_clio_fifo_write(base+0x04,0);
-              freedo_clio_fifo_write(base+0x08,0);
-              freedo_clio_fifo_write(base+0x0C,0);
-
+              freedo_clio_fifo_write(base + 0x00,0);
+              freedo_clio_fifo_write(base + 0x04,0);
+              freedo_clio_fifo_write(base + 0x08,0);
+              freedo_clio_fifo_write(base + 0x0C,0);
               val_ &= ~(1 << (i + 16));
               CLIO.fifo_o[i].idx = 0;
             }
@@ -375,7 +374,7 @@ freedo_clio_poke(uint32_t addr_,
         case 0x100000:
           if(TIMER_VAL < 5800)
             TIMER_VAL += 0x33;
-          flagtime = (freedo_quarz_cpu_get_freq() / 2000000);
+          flagtime = (freedo_clock_cpu_get_freq() / 2000000);
           break;
         default:
           if(!CLIO.regs[0x304])
