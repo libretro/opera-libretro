@@ -112,9 +112,10 @@ MulManyVec3Mat33_F16(vec3f16  *dest_,
                      mat33f16  mat_,
                      int32_t   count_)
 {
+  int32_t i;
   vec3f16 tmp;
 
-  for(int32_t i = 0; i < count_; i++)
+  for(i = 0; i < count_; i++)
     {
       tmp[0] = ((((int64_t)src_[i][0] * (int64_t)mat_[0][0]) +
                  ((int64_t)src_[i][1] * (int64_t)mat_[1][0]) +
@@ -139,7 +140,8 @@ MulManyF16(frac16  *dest_,
            frac16  *src2_,
            int32_t  count_)
 {
-  for(int32_t i = 0; i < count_; i++)
+  int32_t i;
+  for(i = 0; i < count_; i++)
     {
       dest_[i] = (((int64_t)src1_[i] * (int64_t)src2_[i]) >> 16);
     }
@@ -152,7 +154,8 @@ MulScalerF16(frac16  *dest_,
              frac16   scaler_,
              int32_t  count_)
 {
-  for(int32_t i = 0; i < count_; i++)
+  int32_t i;
+  for(i = 0; i < count_; i++)
     {
       dest_[i] = (((int64_t)src_[i] * (int64_t)scaler_) >> 16);
     }
@@ -293,9 +296,10 @@ MulManyVec4Mat44_F16(vec4f16  *dest_,
                      mat44f16  mat_,
                      int32_t   count_)
 {
+  int32_t i;
   vec4f16 tmp;
 
-  for(int32_t i = 0; i < count_; i++)
+  for(i = 0; i < count_; i++)
     {
       tmp[0] = ((((int64_t)src_[i][0] * (int64_t)mat_[0][0]) +
                  ((int64_t)src_[i][1] * (int64_t)mat_[1][0]) +
@@ -443,6 +447,7 @@ MulManyVec3Mat33DivZ_F16(vec3f16  *dest_,
                          frac16    n_,
                          uint32_t  count_)
 {
-  for(uint32_t i = 0; i < count_; i++)
+  uint32_t i;
+  for(i = 0; i < count_; i++)
     MulVec3Mat33DivZ_F16(dest_[i],src_[i],*mat_,n_);
 }
