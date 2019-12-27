@@ -250,7 +250,7 @@ static INLINE void store32be(uint32_t *addr, uint32_t data)
  *
  * Returns: value from address, byte-swapped if necessary.
  **/
-INLINE uint32_t load32be(const uint32_t *addr)
+static INLINE uint32_t load32be(const uint32_t *addr)
 {
    return swap_if_little32(*addr);
 }
