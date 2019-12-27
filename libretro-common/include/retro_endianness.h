@@ -237,7 +237,7 @@ INLINE uint16_t swap_if_little16(uint16_t val)
  * Write data to address. Endian-safe. Byteswaps the data
  * first if necessary before storing it.
  **/
-INLINE void store32be(uint32_t *addr, uint32_t data)
+static INLINE void store32be(uint32_t *addr, uint32_t data)
 {
    *addr = swap_if_little32(data);
 }
