@@ -41,8 +41,8 @@
 #define DEFAULT_CPU_FREQUENCY 12500000
 #define SND_CLOCK             44100
 
-typedef struct clock_s clock_t;
-struct clock_s
+typedef struct freedo_clock_s freedo_clock_t;
+struct freedo_clock_s
 {
   uint32_t dsp_acc;
   uint32_t vdl_acc;
@@ -52,7 +52,7 @@ struct clock_s
   uint32_t frame_size;
 };
 
-static clock_t  g_CLOCK         = {0};
+static freedo_clock_t  g_CLOCK         = {0};
 static uint32_t g_CPU_FREQUENCY = DEFAULT_CPU_FREQUENCY;
 
 void
@@ -89,13 +89,13 @@ freedo_clock_state_size(void)
 void
 freedo_clock_state_save(void *buf_)
 {
-  //memcpy(buf_,&g_CLOCK,sizeof(clock_t));
+  //memcpy(buf_,&g_CLOCK,sizeof(freedo_clock_t));
 }
 
 void
 freedo_clock_state_load(const void *buf_)
 {
-  //memcpy(&g_CLOCK,buf_,sizeof(clock_t));
+  //memcpy(&g_CLOCK,buf_,sizeof(freedo_clock_t));
 }
 
 void
