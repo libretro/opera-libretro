@@ -604,6 +604,8 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
+else ifneq (,$(findstring msvc,$(platform)))
+	$(LD) $(fpic) $(LINKOUT)$@ $^ $(LDFLAGS) $(LIBS)
 else
 	$(LD) $(fpic) $(LINKOUT) $@ $^ $(LDFLAGS) $(LIBS)
 endif
