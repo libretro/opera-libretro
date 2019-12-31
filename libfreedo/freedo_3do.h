@@ -13,6 +13,6 @@ bool     freedo_3do_state_load(const void *buf_);
 int      freedo_3do_init(freedo_ext_interface_t callback_);
 void     freedo_3do_destroy(void);
 
-void     freedo_3do_process_frame(vdlp_frame_t *frame_);
+void     freedo_3do_process_frame(void);
 
 #endif /* LIBFREEDO_3DO_H_INCLUDED */

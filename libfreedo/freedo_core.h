@@ -37,9 +37,9 @@ typedef void* (*freedo_ext_interface_t)(int, void*);
 
 EXTERN_C_BEGIN
 
-extern int HIRESMODE;
-extern int CNBFIX;
-extern int FIXMODE;
+extern int      HIRESMODE;
+extern int      CNBFIX;
+extern uint32_t FIXMODE;
 
 EXTERN_C_END
 

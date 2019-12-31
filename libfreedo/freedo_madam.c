@@ -756,7 +756,7 @@ freedo_madam_poke(uint32_t addr_,
       HandleDMA8();
       break;
     case 0x580:
-      freedo_vdlp_process(val_);
+      freedo_vdlp_set_vdl_head(val_);
       return;
     case SPRSTRT:
       if(MADAM.FSM == FSM_IDLE)

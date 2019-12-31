@@ -73,7 +73,7 @@ sport_set_color(const uint32_t idx_)
 
   vram = &vram[idx_];
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
-    *vram++ = SPORT.color;
+    vram[i] = SPORT.color;
 }
 
 static

@@ -1982,7 +1982,13 @@ mreadw(uint32_t addr_)
       return 0xBADACCE5;
     }
 
+  /* Standard ROM */
   index = (addr_ ^ 0x03000000);
+  if(!(index & ~0xFFFFF))
+    return *(uint32_t*)&CPU.rom[index];
+
+  /* ANVIL ROM */
+  index = (addr_ ^ 0x06000000);
   if(!(index & ~0xFFFFF))
     return *(uint32_t*)&CPU.rom[index];
 
@@ -2030,7 +2036,13 @@ mreadb(uint32_t addr_)
   if(addr_ < 0x00300000)
     return freedo_mem_read8(addr_ ^ 3);
 
+  /* Standard ROM */
   index = (addr_ ^ 0x03000003);
+  if(!(index & ~0xFFFFF))
+    return CPU.rom[index];
+
+  /* ANVIL ROM */
+  index = (addr_ ^ 0x06000003);
   if(!(index & ~0xFFFFF))
     return CPU.rom[index];
 

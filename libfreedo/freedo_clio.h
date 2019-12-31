@@ -42,8 +42,8 @@ EXTERN_C_BEGIN
 void     freedo_clio_init(int reason_);
 void     freedo_clio_reset(void);
 
-uint32_t freedo_clio_line_v0(void);
-uint32_t freedo_clio_line_v1(void);
+uint32_t freedo_clio_line_vint0(void);
+uint32_t freedo_clio_line_vint1(void);
 
 bool     freedo_clio_fiq_needed(void);
 void     freedo_clio_fiq_generate(uint32_t reason1_, uint32_t reason2_);

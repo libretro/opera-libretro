@@ -122,13 +122,13 @@ freedo_clio_timer_clear(uint32_t v204_,
 }
 
 uint32_t
-freedo_clio_line_v0(void)
+freedo_clio_line_vint0(void)
 {
   return (CLIO.regs[8] & 0x7FF);
 }
 
 uint32_t
-freedo_clio_line_v1(void)
+freedo_clio_line_vint1(void)
 {
   return (CLIO.regs[12] & 0x7FF);
 }
@@ -228,6 +228,21 @@ clio_handle_dma(uint32_t val_)
     }
 }
 
+static
+void
+if_set_set_reset(uint32_t *output_,
+                 uint32_t  val_,
+                 uint32_t  mask_chk_,
+                 uint32_t  mask_set_)
+{
+  if((val_ & mask_chk_) == mask_chk_)
+    {
+      *output_ = ((val_ & mask_set_) ?
+                  (*output_ |  mask_set_) :
+                  (*output_ & ~mask_set_));
+    }
+}
+
 int
 freedo_clio_poke(uint32_t addr_,
                  uint32_t val_)
@@ -322,8 +337,13 @@ freedo_clio_poke(uint32_t addr_,
     }
   else if(addr_ == 0x84)
     {
-      CLIO.regs[0x84] = (val_ & 0x0F);
-      freedo_arm_rom_select(val_ & 4);
+      if_set_set_reset(&CLIO.regs[0x84],val_,0x10,0x01);
+      if_set_set_reset(&CLIO.regs[0x84],val_,0x20,0x02);
+      if_set_set_reset(&CLIO.regs[0x84],val_,0x40,0x04);
+      if_set_set_reset(&CLIO.regs[0x84],val_,0x80,0x08);
+
+      freedo_arm_rom_select(!!(val_ & 0x4));
+
       return 0;
     }
   else if(addr_ == 0x0300)
@@ -501,8 +521,8 @@ freedo_clio_poke(uint32_t addr_,
     }
   else if(addr_ == 0x220)
     {
-      /* if(val<64)val=64; */
       CLIO.regs[addr_] = (val_ & 0x3FF);
+      freedo_clock_timer_set_delay(CLIO.regs[addr_]);
       return 0;
     }
   else if(addr_ == 0x120)
@@ -581,48 +601,55 @@ freedo_clio_peek(uint32_t addr_)
 
 void
 freedo_clio_vcnt_update(int line_,
-                        int half_frame_)
+                        int field_)
 {
-  CLIO.regs[0x34] = ((half_frame_ << 11) + line_);
+  CLIO.regs[0x34] = ((field_ << 11) + line_);
+}
+
+static
+uint32_t
+timer_flags(const uint32_t timer_)
+{
+  return ((CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] >> ((timer_ << 2) & 0x1F)) & 0xF);
+}
+
+static
+void
+timer_disable(const uint32_t timer_)
+{
+  CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] &= ~(DECREMENT << ((timer_ << 2)));
 }
 
 void
 freedo_clio_timer_execute(void)
 {
-  uint32_t timer;
-  uint16_t counter;
-  bool NeedDecrementNextTimer = true; /* Need decrement for next timer */
+  uint32_t *reg;
+  uint32_t  flags;
+  uint32_t  timer;
+  uint32_t  carry;
 
-  for(timer = 0; timer < 16; timer++)
+  carry = 1;
+  for(timer = 0; timer < 0x10; timer++)
     {
-      uint32_t flag = (CLIO.regs[(timer<8)?0x200:0x208] >> ((timer * 4) & 31));
+      flags = timer_flags(timer);
+      if(!(flags & DECREMENT))
+        continue;
 
-      if(!(flag & CASCADE))
-        NeedDecrementNextTimer = true;
-
-      if(NeedDecrementNextTimer && (flag & DECREMENT))
+      reg = &CLIO.regs[(0x100 + (timer << 3))];
+      reg[0] -= ((flags & CASCADE) ? carry : 1);
+      if(reg[0] == 0xFFFFFFFF)
         {
-          counter = CLIO.regs[0x100 + (timer * 8)];
-          NeedDecrementNextTimer = (counter-- == 0);
-          if(NeedDecrementNextTimer)
-            {
-              /* only odd timers can generate */
-              /* generate the interrupts because be overflow */
-              if(timer & 1)
-                freedo_clio_fiq_generate(1<<(10-timer/2),0);
-
-              /* reload timer by reload value */
-              if(flag & RELOAD)
-                counter = CLIO.regs[0x100 + (timer * 8) + 4];
-              else /* timer stopped -> reset it's flag DECREMENT */
-                CLIO.regs[(timer < 8) ? 0x200 : 0x208] &= ~(DECREMENT<<((timer*4)&31));
-            }
-
-          CLIO.regs[0x100 + (timer * 8)] = counter;
+          carry = 1;
+          if(timer & 1)
+            freedo_clio_fiq_generate(1<<(10-(timer>>1)),0);
+          if(flags & RELOAD)
+            reg[0] = reg[4];
+          else
+            timer_disable(timer);
         }
       else
         {
-          NeedDecrementNextTimer = false;
+          carry = 0;
         }
     }
 }
