@@ -158,11 +158,18 @@ freedo_clock_dsp_queued(void)
   return false;
 }
 
+/* Need to find out where the value 21000000 comes from. */
 bool
 freedo_clock_timer_queued(void)
 {
-  const uint32_t limit = (g_CPU_FREQUENCY / (21000000 / freedo_clio_timer_get_delay()));
+  uint32_t limit;
+  uint32_t timer_delay;
 
+  timer_delay = freedo_clio_timer_get_delay();
+  if(timer_delay == 0)
+    return false;
+
+  limit = (g_CPU_FREQUENCY / (21000000 / timer_delay));
   if(g_CLOCK.timer_acc >= limit)
     {
       g_CLOCK.timer_acc -= limit;
@@ -176,9 +183,7 @@ freedo_clock_timer_queued(void)
 void
 freedo_clock_push_cycles(const uint32_t clks_)
 {
-  g_CLOCK.dsp_acc += clks_;
-  g_CLOCK.vdl_acc += clks_;
-
-  if(freedo_clio_timer_get_delay())
-    g_CLOCK.timer_acc += clks_;
+  g_CLOCK.dsp_acc   += clks_;
+  g_CLOCK.vdl_acc   += clks_;
+  g_CLOCK.timer_acc += clks_;
 }
