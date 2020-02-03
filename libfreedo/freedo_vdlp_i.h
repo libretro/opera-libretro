@@ -134,6 +134,7 @@ struct vdlp_s
   int32_t line_cnt;
 };
 
+#if 0
 STATIC_ASSERT(sizeof(background_value_word_u) == sizeof(uint32_t),
               background_value_word_not_4_bytes);
 STATIC_ASSERT(sizeof(clut_dma_ctrl_word_u) == sizeof(uint32_t),
@@ -142,5 +143,6 @@ STATIC_ASSERT(sizeof(display_ctrl_word_u) == sizeof(uint32_t),
               display_ctrl_word_not_4_bytes);
 STATIC_ASSERT(sizeof(vdl_ctrl_word_u) == sizeof(uint32_t),
               vdl_ctrl_word_not_4_bytes);
+#endif
 
 #endif /* FREEDO_VDLP_I_H_INCLUDED */
