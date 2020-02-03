@@ -57,18 +57,18 @@ vdl_set_clut(const vdl_ctrl_word_u cmd_)
 {
   switch(cmd_.cvw.rgb_enable)
     {
-    case 0b00:
+    case 0x0:
       g_VDLP.clut_r[cmd_.cvw.addr] = cmd_.cvw.r;
       g_VDLP.clut_b[cmd_.cvw.addr] = cmd_.cvw.b;
       g_VDLP.clut_g[cmd_.cvw.addr] = cmd_.cvw.g;
       break;
-    case 0b11:
+    case 0x3:
       g_VDLP.clut_r[cmd_.cvw.addr] = cmd_.cvw.r;
       break;
-    case 0b01:
+    case 0x1:
       g_VDLP.clut_b[cmd_.cvw.addr] = cmd_.cvw.b;
       break;
-    case 0b10:
+    case 0x2:
       g_VDLP.clut_g[cmd_.cvw.addr] = cmd_.cvw.g;
       break;
     }
@@ -88,14 +88,14 @@ vdlp_process_optional_cmds(const int ctrl_word_cnt_)
       cmd.raw = vdl_read(i);
       switch((cmd.raw & 0xE0000000) >> 29)
         {
-        case 0b000:
-        case 0b001:
-        case 0b010:
-        case 0b011:
+        case 0x0:
+        case 0x1:
+        case 0x2:
+        case 0x3:
           vdl_set_clut(cmd);
           break;
-        case 0b100:
-        case 0b101:
+        case 0x4:
+        case 0x5:
           /*
             Page 17 of US Patent 5,502,462
 
@@ -108,13 +108,13 @@ vdlp_process_optional_cmds(const int ctrl_word_cnt_)
             processing.
           */
           break;
-        case 0b110:
+        case 0x6:
           if(colors_only)
             continue;
           g_VDLP.disp_ctrl.raw = cmd.raw;
           colors_only = cmd.dcw.colors_only;
           break;
-        case 0b111:
+        case 0x7:
           g_VDLP.bg_color.raw = cmd.raw;
           break;
         }
