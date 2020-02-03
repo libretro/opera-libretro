@@ -60,11 +60,78 @@ static struct retro_core_option_definition option_defs_us[] = {
       },
       "1.0x (12.50Mhz)"
    },
+   {
+      "4do_region",
+      "Mode",
+      "Select the resolution and field rate. NOTE: some EU games require a EU ROM.",
+      {
+         { "ntsc", "NTSC 320x240@60" },
+         { "pal1", "PAL1 320x288@50" },
+         { "pal2", "PAL2 352x288@50" },
+         { NULL, NULL }
+      },
+      "ntsc"
+   },
+   {
+     "4do_vdlp_pixel_format",
+     "VDLP Pixel Format",
+     "Select the pixel format to request from the runtime and convert to from the internal 16bpp format.",
+     {
+       { "0RGB1555", NULL },
+       { "RGB565",   NULL },
+       { "XRGB8888", NULL }
+     },
+     "XRGB8888"
+   },
+   {
+     "4do_vdlp_bypass_clut",
+     "VDLP Bypass CLUT",
+     "Force 3DO VDLP to bypass the game's CLUT (color lookup table). May result in incorrect colors but faster rendering.",
+     {
+       { "disabled", NULL },
+       { "enabled",  NULL },
+       { NULL, NULL }
+     },
+     "disabled"
+   },
+   {
+      "4do_high_resolution",
+      "HiRes CEL Rendering",
+      "Enabling this option causes CELs to be rendered at 2x the resolution into a 2x output framebuffer, increasing the fidelity of 3D models. Will not affect 2D games. Has a significant performance impact.",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "disabled"
+   },
+   {
+      "4do_madam_matrix_engine",
+      "MADAM Matrix Engine",
+      "'MADAM' is the 3DO's graphics accelerator. It contains a custom maths co-processor, used by the 3DO's CPU to offload matrix operations. This corresponds to running in 'Hardware' - but the 3DO could also utilise a built-in ARM 'Software' version of the MADAM matrix engine. 'Hardware' mode is the default, but it has been observed that some games run faster when forcing 'Software' mode (e.g. The Need For Speed).",
+      {
+         { "hardware", "Hardware" },
+         { "software", "Software" },
+         { NULL, NULL },
+      },
+      "hardware"
+   },
+   {
+     "4do_swi_hle",
+     "OperaOS SWI HLE",
+     "3DO games are built on top of the OperaOS. 4DO has high level emulation of certain OS functions (primarily matrix arithmatic.) This HLE may improve performance in on certain games.",
+     {
+       { "disabled", NULL },
+       { "enabled",  NULL },
+       { NULL, NULL }
+     },
+     "disabled"
+   },
 #if THREADED_DSP
    {
       "4do_dsp_threaded",
       "Threaded DSP",
-      "Run the 3DO's emulated DSP (audio processor) on a separate CPU thread. Improves performance on multi-core systems. !EXPERIMENTAL!",
+      "Run the DSP (audio processor) on a separate CPU thread. Improves performance on multi-core systems. !EXPERIMENTAL!",
       {
          { "disabled", NULL },
          { "enabled",  NULL },
@@ -74,20 +141,9 @@ static struct retro_core_option_definition option_defs_us[] = {
    },
 #endif
    {
-      "4do_high_resolution",
-      "High Resolution",
-      "The 3DO has a default internal resolution of 320x240, but outputs video at 640x480. Enabling 'High Resolution' mode forces content to be rendered at the full 640x480 output resolution, increasing the fidelity of 3D models. Has a significant performance impact.",
-      {
-         { "disabled", NULL },
-         { "enabled",  NULL },
-         { NULL, NULL },
-      },
-      "disabled"
-   },
-   {
       "4do_nvram_storage",
       "NVRAM Storage",
-      "Selects whether NVRAM saves should be created per-game, or as a single NVRAM file shared between all games.",
+      "Selects whether NVRAM saves should be created per-game or as a single NVRAM file shared between all games.",
       {
          { "per game", "Per Game" },
          { "shared",   "Shared" },
@@ -169,31 +225,9 @@ static struct retro_core_option_definition option_defs_us[] = {
       "disabled"
    },
    {
-      "4do_madam_matrix_engine",
-      "MADAM Matrix Engine",
-      "'MADAM' is the 3DO's graphics accelerator. It contains a custom maths co-processor, used by the 3DO's CPU to offload matrix operations. This corresponds to running in 'Hardware' - but the 3DO could also utilise a built-in ARM 'Software' version of the MADAM matrix engine. 'Hardware' mode is the default, but it has been observed that some games run faster when forcing 'Software' mode (e.g. The Need For Speed).",
-      {
-         { "hardware", "Hardware" },
-         { "software", "Software" },
-         { NULL, NULL },
-      },
-      "hardware"
-   },
-   {
-     "4do_swi_hle",
-     "OperaOS SWI HLE",
-     "3DO games are built on top of the OperaOS. 4DO has high level emulation of certain OS functions (primarily matrix arithmatic.) This HLE may improve performance in on certain games.",
-     {
-       { "disabled", NULL },
-       { "enabled",  NULL },
-       { NULL, NULL }
-     },
-     "disabled"
-   },
-   {
       "4do_kprint",
-      "3DO Debugging Output (stderr)",
-      "Output low-level debugging information to the console (terminal). Should be disabled in most cases.",
+      "Debug Output",
+      "Print 3DO debug port output to stderr. Only really useful to 3DO homebrew developers.",
       {
          { "disabled", NULL },
          { "enabled",  NULL },

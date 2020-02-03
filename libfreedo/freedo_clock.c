@@ -1,85 +1,123 @@
-/*
-  www.freedo.org
-  The first and only working 3DO multiplayer emulator.
-
-  The FreeDO licensed under modified GNU LGPL, with following notes:
-
-  *   The owners and original authors of the FreeDO have full right to
-  *   develop closed source derivative work.
-
-  *   Any non-commercial uses of the FreeDO sources or any knowledge
-  *   obtained by studying or reverse engineering of the sources, or
-  *   any other material published by FreeDO have to be accompanied
-  *   with full credits.
-
-  *   Any commercial uses of FreeDO sources or any knowledge obtained
-  *   by studying or reverse engineering of the sources, or any other
-  *   material published by FreeDO is strictly forbidden without
-  *   owners approval.
-
-  The above notes are taking precedence over GNU LGPL in conflicting
-  situations.
-
-  Project authors:
-  *  Alexander Troosh
-  *  Maxim Grishin
-  *  Allen Wright
-  *  John Sammons
-  *  Felix Lazarev
-*/
-
 #include "freedo_clio.h"
 #include "freedo_clock.h"
 #include "freedo_core.h"
 #include "freedo_vdlp.h"
 
-#include <string.h>
-
-//#define NTSC_CLOCK      12270000
-//#define PAL_CLOCK       14750000
-
-#define DEFAULT_CPU_FREQUENCY 12500000
-#define SND_CLOCK             44100
+#define DEFAULT_CPU_FREQ     12500000UL
+#define MIN_CPU_FREQ         1000000UL
+#define SND_FREQ             44100UL
+#define NTSC_FIELD_SIZE      263UL
+#define PAL_FIELD_SIZE       312UL
+#define NTSC_FIELD_RATE_1616 3928227UL
+#define PAL_FIELD_RATE_1616  3276800UL
 
 typedef struct freedo_clock_s freedo_clock_t;
 struct freedo_clock_s
 {
-  uint32_t dsp_acc;
-  uint32_t vdl_acc;
-  uint32_t timer_acc;
-  uint32_t fps;
-  uint32_t vdlline;
-  uint32_t frame_size;
+  uint32_t cpu_freq;
+  int32_t  dsp_acc;
+  int32_t  vdl_acc;
+  int32_t  timer_acc;
+  uint32_t timer_delay;
+  uint32_t field_size;
+  uint32_t field_rate;
+  int32_t  cycles_per_snd;
+  int32_t  cycles_per_scanline;
+  int32_t  cycles_per_timer;
 };
 
-static freedo_clock_t  g_CLOCK         = {0};
-static uint32_t g_CPU_FREQUENCY = DEFAULT_CPU_FREQUENCY;
+static freedo_clock_t g_CLOCK;
+
+
+static
+uint32_t
+calc_cycles_per_snd(void)
+{
+  uint64_t rv;
+
+  rv  = ((uint64_t)g_CLOCK.cpu_freq << 16);
+  rv /= ((uint64_t)SND_FREQ);
+
+  return rv;
+}
+
+/*
+  For greater percision the field rate is stored as 16.16 so cpu_freq
+  requires the 32 rather than 16 LSL
+*/
+static
+uint32_t
+calc_cycles_per_scanline(void)
+{
+  uint64_t rv;
+
+  rv  = ((uint64_t)g_CLOCK.cpu_freq << 32);
+  rv /= ((uint64_t)g_CLOCK.field_rate * (uint64_t)g_CLOCK.field_size);
+
+  return rv;
+}
+
+/*
+  Don't know where the 21,000,000 comes from but it seems like the
+  only reasonable value given the OS sets CLIO 0x220 to 0x150 and the
+  system timer to 62499. (21000000 / 0x150) = 62500.
+*/
+static
+uint32_t
+calc_cycles_per_timer(void)
+{
+  uint64_t rv;
+
+  rv  = ((uint64_t)g_CLOCK.cpu_freq << 32);
+  rv /= (((uint64_t)21000000 << 16)/ (uint64_t)g_CLOCK.timer_delay);
+
+  return rv;
+}
+
+static
+void
+recalculate_cycles_per(void)
+{
+  g_CLOCK.cycles_per_snd      = calc_cycles_per_snd();
+  g_CLOCK.cycles_per_scanline = calc_cycles_per_scanline();
+  g_CLOCK.cycles_per_timer    = calc_cycles_per_timer();
+}
 
 void
 freedo_clock_cpu_set_freq(const uint32_t freq_)
 {
-  g_CPU_FREQUENCY = freq_;
+  uint32_t freq;
+
+  freq = ((freq_ < MIN_CPU_FREQ) ? MIN_CPU_FREQ : freq_);
+
+  g_CLOCK.cpu_freq = freq;
+
+  recalculate_cycles_per();
 }
 
 void
 freedo_clock_cpu_set_freq_mul(const float mul_)
 {
-  g_CPU_FREQUENCY = (uint32_t)(DEFAULT_CPU_FREQUENCY * mul_);
+  float freq;
+
+  freq = (DEFAULT_CPU_FREQ * mul_);
+
+  freedo_clock_cpu_set_freq((uint32_t)freq);
 }
 
 uint32_t
 freedo_clock_cpu_get_freq(void)
 {
-  return g_CPU_FREQUENCY;
+  return g_CLOCK.cpu_freq;
 }
 
 uint32_t
 freedo_clock_cpu_get_default_freq(void)
 {
-  return DEFAULT_CPU_FREQUENCY;
+  return DEFAULT_CPU_FREQ;
 }
 
-/* for backwards compatibility */
+/* Unnecessary. For backwards compatibility. */
 uint32_t
 freedo_clock_state_size(void)
 {
@@ -89,101 +127,98 @@ freedo_clock_state_size(void)
 void
 freedo_clock_state_save(void *buf_)
 {
-  //memcpy(buf_,&g_CLOCK,sizeof(freedo_clock_t));
+  /* memcpy(buf_,&g_CLOCK,sizeof(freedo_clock_t)); */
 }
 
 void
 freedo_clock_state_load(const void *buf_)
 {
-  //memcpy(&g_CLOCK,buf_,sizeof(freedo_clock_t));
+  /* memcpy(&g_CLOCK,buf_,sizeof(freedo_clock_t)); */
 }
 
 void
 freedo_clock_init(void)
 {
-  g_CLOCK.dsp_acc    = 0;
-  g_CLOCK.vdl_acc    = 0;
-  g_CLOCK.timer_acc  = 0;
-  g_CLOCK.fps        = 30;
-  g_CLOCK.vdlline    = 0;
-  g_CLOCK.frame_size = 526;
+  g_CLOCK.cpu_freq    = DEFAULT_CPU_FREQ;
+  g_CLOCK.dsp_acc     = 0;
+  g_CLOCK.vdl_acc     = 0;
+  g_CLOCK.timer_acc   = 0;
+  g_CLOCK.timer_delay = 0x150;  /* same as the OS will set */
+  g_CLOCK.field_size  = NTSC_FIELD_SIZE;
+  g_CLOCK.field_rate  = NTSC_FIELD_RATE_1616;
+
+  recalculate_cycles_per();
 }
 
 int
-freedo_clock_vdl_current_line(void)
-{
-  return (g_CLOCK.vdlline % (g_CLOCK.frame_size >> 1));
-}
-
-int
-freedo_clock_vdl_half_frame(void)
-{
-  return (g_CLOCK.vdlline / (g_CLOCK.frame_size >> 1));
-}
-
-int
-freedo_clock_vdl_current_overline(void)
-{
-  return g_CLOCK.vdlline;
-}
-
-bool
 freedo_clock_vdl_queued(void)
 {
-  const uint32_t limit = (g_CPU_FREQUENCY / (g_CLOCK.frame_size * g_CLOCK.fps));
-
-  if(g_CLOCK.vdl_acc >= limit)
+  if(g_CLOCK.vdl_acc >= g_CLOCK.cycles_per_scanline)
     {
-      g_CLOCK.vdl_acc -= limit;
-      g_CLOCK.vdlline = ((g_CLOCK.vdlline + 1) % g_CLOCK.frame_size);
-
-      return true;
+      g_CLOCK.vdl_acc -= g_CLOCK.cycles_per_scanline;
+      return 1;
     }
 
-  return false;
+  return 0;
 }
 
-bool
+int
 freedo_clock_dsp_queued(void)
 {
-  const uint32_t limit = (g_CPU_FREQUENCY / SND_CLOCK);
-
-  if(g_CLOCK.dsp_acc >= limit)
+  if(g_CLOCK.dsp_acc >= g_CLOCK.cycles_per_snd)
     {
-      g_CLOCK.dsp_acc -= limit;
-
-      return true;
+      g_CLOCK.dsp_acc -= g_CLOCK.cycles_per_snd;
+      return 1;
     }
 
-  return false;
+  return 0;
 }
 
-/* Need to find out where the value 21000000 comes from. */
-bool
+int
 freedo_clock_timer_queued(void)
 {
-  uint32_t limit;
-  uint32_t timer_delay;
-
-  timer_delay = freedo_clio_timer_get_delay();
-  if(timer_delay == 0)
-    return false;
-
-  limit = (g_CPU_FREQUENCY / (21000000 / timer_delay));
-  if(g_CLOCK.timer_acc >= limit)
+  if(g_CLOCK.timer_acc >= g_CLOCK.cycles_per_timer)
     {
-      g_CLOCK.timer_acc -= limit;
-
-      return true;
+      g_CLOCK.timer_acc -= g_CLOCK.cycles_per_timer;
+      return 1;
     }
 
-  return false;
+  return 0;
 }
 
 void
 freedo_clock_push_cycles(const uint32_t clks_)
 {
-  g_CLOCK.dsp_acc   += clks_;
-  g_CLOCK.vdl_acc   += clks_;
-  g_CLOCK.timer_acc += clks_;
+  uint32_t clks1616;
+
+  clks1616 = (clks_ << 16);
+  g_CLOCK.dsp_acc   += clks1616;
+  g_CLOCK.vdl_acc   += clks1616;
+  g_CLOCK.timer_acc += clks1616;
+}
+
+void
+freedo_clock_region_set_ntsc(void)
+{
+  g_CLOCK.field_rate = NTSC_FIELD_RATE_1616;
+  g_CLOCK.field_size = NTSC_FIELD_SIZE;
+
+  recalculate_cycles_per();
+}
+
+void
+freedo_clock_region_set_pal(void)
+{
+  g_CLOCK.field_rate = PAL_FIELD_RATE_1616;
+  g_CLOCK.field_size = PAL_FIELD_SIZE;
+
+  recalculate_cycles_per();
+}
+
+void
+freedo_clock_timer_set_delay(const uint32_t td_)
+{
+  g_CLOCK.timer_delay = td_;
+
+  recalculate_cycles_per();
 }

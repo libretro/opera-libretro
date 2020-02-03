@@ -37,9 +37,9 @@ SOURCES_C += \
         $(4DO_DIR)/freedo_diag_port.c \
         $(4DO_DIR)/freedo_dsp.c \
         $(4DO_DIR)/freedo_fixedpoint_math.c \
-        $(4DO_DIR)/freedo_frame.c \
         $(4DO_DIR)/freedo_madam.c \
         $(4DO_DIR)/freedo_pbus.c \
+        $(4DO_DIR)/freedo_region.c \
         $(4DO_DIR)/freedo_sport.c \
         $(4DO_DIR)/freedo_vdlp.c \
         $(4DO_DIR)/freedo_xbus.c \

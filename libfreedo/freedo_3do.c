@@ -34,8 +34,8 @@
 #include "freedo_core.h"
 #include "freedo_diag_port.h"
 #include "freedo_dsp.h"
-#include "freedo_frame.h"
 #include "freedo_madam.h"
+#include "freedo_region.h"
 #include "freedo_sport.h"
 #include "freedo_vdlp.h"
 #include "freedo_xbus.h"
@@ -50,9 +50,9 @@ static freedo_ext_interface_t io_interface;
 
 extern int flagtime;
 
-int HIRESMODE = 0;
-int FIXMODE   = 0;
-int CNBFIX    = 0;
+int      HIRESMODE = 0;
+uint32_t FIXMODE   = 0;
+int      CNBFIX    = 0;
 
 int
 freedo_3do_init(freedo_ext_interface_t callback_)
@@ -64,6 +64,8 @@ freedo_3do_init(freedo_ext_interface_t callback_)
   io_interface = callback_;
 
   CNBFIX = 0;
+
+  freedo_clock_init();
 
   freedo_arm_init();
 
@@ -114,8 +116,6 @@ freedo_3do_init(freedo_ext_interface_t callback_)
   */
   freedo_xbus_device_load(0,NULL);
 
-  freedo_clock_init();
-
   return 0;
 }
 
@@ -127,13 +127,12 @@ freedo_3do_destroy()
 }
 
 static
+INLINE
 void
-freedo_3do_internal_frame(vdlp_frame_t *frame_,
-                          int           cycles_)
+freedo_3do_internal_frame(uint32_t  cycles_,
+                          uint32_t *line_,
+                          int       field_)
 {
-  int line;
-  int half_frame;
-
   freedo_clock_push_cycles(cycles_);
   if(freedo_clock_dsp_queued())
     io_interface(EXT_DSP_TRIGGER,NULL);
@@ -143,36 +142,33 @@ freedo_3do_internal_frame(vdlp_frame_t *frame_,
 
   if(freedo_clock_vdl_queued())
     {
-      line       = freedo_clock_vdl_current_line();
-      half_frame = freedo_clock_vdl_half_frame();
+      freedo_clio_vcnt_update(*line_,field_);
+      freedo_vdlp_process_line(*line_);
 
-      freedo_clio_vcnt_update(line,half_frame);
-      freedo_vdlp_process_line(line,frame_);
-
-      if(line == freedo_clio_line_v0())
+      if(*line_ == freedo_clio_line_vint0())
         freedo_clio_fiq_generate(1<<0,0);
 
-      if(line == freedo_clio_line_v1())
-        {
-          freedo_clio_fiq_generate(1<<1,0);
-          io_interface(EXT_SWAPFRAME,frame_);
-        }
+      if(*line_ == freedo_clio_line_vint1())
+        freedo_clio_fiq_generate(1<<1,0);
+
+      (*line_)++;
     }
 }
 
 void
-freedo_3do_process_frame(vdlp_frame_t *frame_)
+freedo_3do_process_frame(void)
 {
-  uint32_t i;
-  uint32_t cnt;
-  uint64_t freq;
+  int32_t cnt;
+  uint32_t line;
+  uint32_t scanlines;
+  static int field = 0;
 
   if(flagtime)
     flagtime--;
 
-  i    = 0;
   cnt  = 0;
-  freq = freedo_clock_cpu_get_freq();
+  line = 0;
+  scanlines = freedo_region_scanlines();
   do
     {
       if(freedo_madam_fsm_get() == FSM_INPROCESS)
@@ -182,14 +178,14 @@ freedo_3do_process_frame(vdlp_frame_t *frame_)
         }
 
       cnt += freedo_arm_execute();
-
       if(cnt >= 32)
         {
-          freedo_3do_internal_frame(frame_,cnt);
-          i += cnt;
-          cnt = 0;
+          freedo_3do_internal_frame(cnt,&line,field);
+          cnt -= 32;
         }
-    } while(i < (freq / 60));
+    } while(line < scanlines);
+
+  field = !field;
 }
 
 uint32_t
