@@ -113,7 +113,7 @@ retro_nvram_save(const uint8_t *nvram_)
   if((rv == 0) || (basepath == NULL))
     {
       retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: unable to save %s - system directory unavailable",
+                          "[Opera]: unable to save %s - system directory unavailable",
                           NVRAM_FILENAME);
       return;
     }
@@ -121,7 +121,7 @@ retro_nvram_save(const uint8_t *nvram_)
   rv = nvram_save(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
     retro_log_printf_cb(RETRO_LOG_ERROR,
-                        "[4DO]: unknown error saving %s\n",
+                        "[Opera]: unknown error saving %s\n",
                         NVRAM_FILENAME);
 }
 
@@ -136,7 +136,7 @@ retro_nvram_load(uint8_t *nvram_)
   if((rv == 0) || (basepath == NULL))
     {
       retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[4DO]: unable to load %s - system directory unavailable",
+                          "[Opera]: unable to load %s - system directory unavailable",
                           NVRAM_FILENAME);
       return;
     }
@@ -144,6 +144,6 @@ retro_nvram_load(uint8_t *nvram_)
   rv = nvram_load(nvram_,NVRAM_SIZE,basepath,NVRAM_FILENAME);
   if(rv)
     retro_log_printf_cb(RETRO_LOG_ERROR,
-                        "[4DO]: unknown error loading %s\n",
+                        "[Opera]: unknown error loading %s\n",
                         NVRAM_FILENAME);
 }

@@ -1,9 +1,9 @@
-Package: com.libretro.4do
-Name: 4DO
-Depends: 
+Package: com.libretro.opera
+Name: Opera
+Depends:
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: Libretro iOS core of 4DO
+Description: libretro iOS core of Opera
 Maintainer: libretro
 Author: libretro
 Section: System

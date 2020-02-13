@@ -1,12 +1,12 @@
 ifeq ($(LIBRETRO_COMM_DIR),)
 	LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 endif
-4DO_DIR           := $(CORE_DIR)/libfreedo
+OPERA_DIR         := $(CORE_DIR)/libopera
 DEPS_DIR          := $(CORE_DIR)/deps
 
 INCFLAGS := \
          -I$(CORE_DIR) \
-         -I$(CORE_DIR)/libfreedo \
+         -I$(CORE_DIR)/libopera \
          -I$(LIBRETRO_COMM_DIR)/include \
          -I$(DEPS_DIR)
 
@@ -27,23 +27,23 @@ SOURCES_C := \
         $(CORE_DIR)/lr_dsp.c
 
 SOURCES_C += \
-        $(4DO_DIR)/freedo_3do.c \
-        $(4DO_DIR)/freedo_arm.c \
-        $(4DO_DIR)/freedo_bios.c \
-        $(4DO_DIR)/freedo_bitop.c \
-        $(4DO_DIR)/freedo_cdrom.c \
-        $(4DO_DIR)/freedo_clio.c \
-        $(4DO_DIR)/freedo_clock.c \
-        $(4DO_DIR)/freedo_diag_port.c \
-        $(4DO_DIR)/freedo_dsp.c \
-        $(4DO_DIR)/freedo_fixedpoint_math.c \
-        $(4DO_DIR)/freedo_madam.c \
-        $(4DO_DIR)/freedo_pbus.c \
-        $(4DO_DIR)/freedo_region.c \
-        $(4DO_DIR)/freedo_sport.c \
-        $(4DO_DIR)/freedo_vdlp.c \
-        $(4DO_DIR)/freedo_xbus.c \
-        $(4DO_DIR)/freedo_xbus_cdrom_plugin.c
+        $(OPERA_DIR)/opera_3do.c \
+        $(OPERA_DIR)/opera_arm.c \
+        $(OPERA_DIR)/opera_bios.c \
+        $(OPERA_DIR)/opera_bitop.c \
+        $(OPERA_DIR)/opera_cdrom.c \
+        $(OPERA_DIR)/opera_clio.c \
+        $(OPERA_DIR)/opera_clock.c \
+        $(OPERA_DIR)/opera_diag_port.c \
+        $(OPERA_DIR)/opera_dsp.c \
+        $(OPERA_DIR)/opera_fixedpoint_math.c \
+        $(OPERA_DIR)/opera_madam.c \
+        $(OPERA_DIR)/opera_pbus.c \
+        $(OPERA_DIR)/opera_region.c \
+        $(OPERA_DIR)/opera_sport.c \
+        $(OPERA_DIR)/opera_vdlp.c \
+        $(OPERA_DIR)/opera_xbus.c \
+        $(OPERA_DIR)/opera_xbus_cdrom_plugin.c
 
 ifeq ($(HAVE_LIBNX), 1)
 	SOURCES_C += \
