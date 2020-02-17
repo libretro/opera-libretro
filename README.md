@@ -3,7 +3,7 @@ opera-libretro
 
 Opera is a fork of 4DO, originally a port of 4DO, itself a fork of FreeDO, to libretro. The fork/rename occurred due to the original 4DO project being dormant and to differenciate the project due to new development and focus.
 
-One of several BIOS ROMs must be placed into your RetroArch / libretro "System Directory" folder.
+One of several BIOS ROMs must be placed into your RetroArch / libretro "System Directory" folder. "norsa" versions have the RSA encryption check disabled which should allow unsigned software to run.
 
 | Filename                  | Hash                                 |
 | ------------------------- | ------------------------------------ |
