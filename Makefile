@@ -33,7 +33,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
   system_platform = win
 endif
 
-TARGET_NAME := 4do
+TARGET_NAME := opera
 GIT_VERSION ?= " $(shell git rev-parse --short HEAD || echo unknown)"
 ifneq ($(GIT_VERSION)," unknown")
   CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
