@@ -1,5 +1,5 @@
-#ifndef LIBRETRO_4DO_LR_INPUT_H_INCLUDED
-#define LIBRETRO_4DO_LR_INPUT_H_INCLUDED
+#ifndef LIBRETRO_LR_INPUT_H_INCLUDED
+#define LIBRETRO_LR_INPUT_H_INCLUDED
 
 #include <stdint.h>
 
@@ -13,6 +13,6 @@ void     lr_input_device_set(const uint32_t port_,
                              const uint32_t device_);
 uint32_t lr_input_device_get(const uint32_t port_);
 
-void lr_input_update(const uint32_t active_devices_);
+void     lr_input_update(const uint32_t active_devices_);
 
-#endif /* LIBRETRO_4DO_LR_INPUT_H_INCLUDED */
+#endif

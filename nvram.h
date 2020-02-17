@@ -1,5 +1,5 @@
-#ifndef LIBFREEDO_NVRAM_H_INCLUDED
-#define LIBFREEDO_NVRAM_H_INCLUDED
+#ifndef LIBOPERA_NVRAM_H_INCLUDED
+#define LIBOPERA_NVRAM_H_INCLUDED
 
 #include <stdint.h>
 #include <string.h>
@@ -53,4 +53,4 @@ int nvram_load(void         *nvram_,
 void retro_nvram_save(const uint8_t *nvram_);
 void retro_nvram_load(uint8_t *nvram_);
 
-#endif /* LIBFREEDO_NVRAM_H_INCLUDED */
+#endif /* LIBOPERA_NVRAM_H_INCLUDED */

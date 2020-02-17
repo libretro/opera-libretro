@@ -1,5 +1,5 @@
-#ifndef LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED
-#define LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED
+#ifndef LIBRETRO_RETRO_CALLBACKS_H_INCLUDED
+#define LIBRETRO_RETRO_CALLBACKS_H_INCLUDED
 
 #include <libretro.h>
 
@@ -19,4 +19,4 @@ void retro_set_input_state_cb(retro_input_state_t cb_);
 void retro_set_log_printf_cb(retro_log_printf_t cb_);
 void retro_set_video_refresh_cb(retro_video_refresh_t cb_);
 
-#endif /* LIBRETRO_4DO_RETRO_CALLBACKS_H_INCLUDED */
+#endif

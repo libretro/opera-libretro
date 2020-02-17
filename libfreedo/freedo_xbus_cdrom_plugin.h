@@ -1,6 +1,0 @@
-#ifndef LIBFREEDO_XBUS_CDROM_PLUGIN_H_INCLUDED
-#define LIBFREEDO_XBUS_CDROM_PLUGIN_H_INCLUDED
-
-void* xbus_cdrom_plugin(int proc_, void* data_);
-
-#endif /* LIBFREEDO_XBUS_CDROM_PLUGIN_H_INCLUDED */

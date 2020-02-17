@@ -64,7 +64,7 @@ static char *extract_file_name(const char *path, char *line)
    if (!file_name_start)
    {
       if (retro_log_printf_cb)
-         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: Missing quotes in : %s\n", line);
+         retro_log_printf_cb(RETRO_LOG_INFO, "[Opera]: Missing quotes in : %s\n", line);
       return NULL;
    }
 
@@ -74,7 +74,7 @@ static char *extract_file_name(const char *path, char *line)
    if (!file_name_end)
    {
       if (retro_log_printf_cb)
-         retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: Missing end quote in : %s\n", line);
+         retro_log_printf_cb(RETRO_LOG_INFO, "[Opera]: Missing end quote in : %s\n", line);
       return NULL;
    }
 
@@ -130,7 +130,7 @@ cueFile *cue_get(const char *path)
          else
          {
             if (retro_log_printf_cb)
-              retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: Unknown file format in CUE file: %s -> %s", path, line);
+              retro_log_printf_cb(RETRO_LOG_INFO, "[Opera]: Unknown file format in CUE file: %s -> %s", path, line);
          }
          break;
       }
@@ -139,7 +139,7 @@ cueFile *cue_get(const char *path)
 
    if (retro_log_printf_cb)
    {
-      retro_log_printf_cb(RETRO_LOG_INFO, "[4DO]: CD image file in CUE: %s",
+      retro_log_printf_cb(RETRO_LOG_INFO, "[Opera]: CD image file in CUE: %s",
             cue->cd_image ? cue->cd_image : "Not found");
    }
 

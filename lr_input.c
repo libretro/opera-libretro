@@ -1,8 +1,9 @@
 #include "lr_input.h"
 #include "lr_input_crosshair.h"
+
 #include "retro_callbacks.h"
 
-#include <libfreedo/freedo_pbus.h>
+#include <libopera/opera_pbus.h>
 
 #include <libretro.h>
 
@@ -77,7 +78,7 @@ static
 void
 lr_input_poll_joypad(const int port_)
 {
-  freedo_pbus_joypad_t jp;
+  opera_pbus_joypad_t jp;
 
   jp.u  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_UP);
   jp.d  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_DOWN);
@@ -92,14 +93,14 @@ lr_input_poll_joypad(const int port_)
   jp.b  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_B);
   jp.c  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_A);
 
-  freedo_pbus_add_joypad(&jp);
+  opera_pbus_add_joypad(&jp);
 }
 
 static
 void
 lr_input_poll_flightstick(const int port_)
 {
-  freedo_pbus_flightstick_t fs;
+  opera_pbus_flightstick_t fs;
 
   fs.h_pos = poll_analog_lx(port_);
   fs.v_pos = poll_analog_ly(port_);
@@ -118,14 +119,14 @@ lr_input_poll_flightstick(const int port_)
   fs.lt   = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L);
   fs.rt   = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
 
-  freedo_pbus_add_flightstick(&fs);
+  opera_pbus_add_flightstick(&fs);
 }
 
 static
 void
 lr_input_poll_mouse(const int port_)
 {
-  freedo_pbus_mouse_t m;
+  opera_pbus_mouse_t m;
 
   m.x      = poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_X);
   m.y      = poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_Y);
@@ -134,14 +135,14 @@ lr_input_poll_mouse(const int port_)
   m.right  = poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_RIGHT);
   m.shift  = poll_mouse(port_,RETRO_DEVICE_ID_MOUSE_BUTTON_4);
 
-  freedo_pbus_add_mouse(&m);
+  opera_pbus_add_mouse(&m);
 }
 
 static
 void
 lr_input_poll_lightgun(const int port_)
 {
-  freedo_pbus_lightgun_t lg;
+  opera_pbus_lightgun_t lg;
 
   lg.x       = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
   lg.y       = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
@@ -151,14 +152,14 @@ lr_input_poll_lightgun(const int port_)
 
   lr_input_crosshair_set(port_,lg.x,lg.y);
 
-  freedo_pbus_add_lightgun(&lg);
+  opera_pbus_add_lightgun(&lg);
 }
 
 static
 void
 lr_input_poll_arcade_lightgun(const int port_)
 {
-  freedo_pbus_arcade_lightgun_t lg;
+  opera_pbus_arcade_lightgun_t lg;
 
   lg.x       = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
   lg.y       = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
@@ -170,14 +171,14 @@ lr_input_poll_arcade_lightgun(const int port_)
 
   lr_input_crosshair_set(port_,lg.x,lg.y);
 
-  freedo_pbus_add_arcade_lightgun(&lg);
+  opera_pbus_add_arcade_lightgun(&lg);
 }
 
 static
 void
 lr_input_poll_orbatak_trackball(const int port_)
 {
-  freedo_pbus_orbatak_trackball_t tb;
+  opera_pbus_orbatak_trackball_t tb;
 
   tb.x = (poll_analog_lx(port_) / (32768 / 24));
   tb.y = (poll_analog_ly(port_) / (32768 / 24));
@@ -203,7 +204,7 @@ lr_input_poll_orbatak_trackball(const int port_)
   tb.coin_p2  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
   tb.service  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R2);
 
-  freedo_pbus_add_orbatak_trackball(&tb);
+  opera_pbus_add_orbatak_trackball(&tb);
 }
 
 static
@@ -254,7 +255,7 @@ lr_input_update(const uint32_t active_devices_)
 {
   int i;
 
-  freedo_pbus_reset();
+  opera_pbus_reset();
   retro_input_poll_cb();
   for(i = 0; i < active_devices_; i++)
     {

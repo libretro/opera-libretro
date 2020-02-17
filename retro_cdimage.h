@@ -1,5 +1,5 @@
-#ifndef LIBRETRO_4DO_RETRO_CDIMAGE_H_INCLUDED
-#define LIBRETRO_4DO_RETRO_CDIMAGE_H_INCLUDED
+#ifndef LIBRETRO_RETRO_CDIMAGE_H_INCLUDED
+#define LIBRETRO_RETRO_CDIMAGE_H_INCLUDED
 
 #include "cuefile.h"
 
@@ -42,4 +42,4 @@ retro_cdimage_read(cdimage_t *cdimage_,
 ssize_t
 retro_cdimage_get_number_of_logical_blocks(cdimage_t *cdimage_);
 
-#endif /* LIBRETRO_4DO_RETRO_CDIMAGE_H_INCLUDED */
+#endif
