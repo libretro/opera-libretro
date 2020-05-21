@@ -69,7 +69,14 @@ nvram_save(const void   *nvram_,
   if(rv == 0)
     return -1;
 
-  return filestream_rename(fullpath_tmp,fullpath);
+  rv = filestream_rename(fullpath_tmp,fullpath);
+  if(rv != 0)
+    {
+      filestream_delete(fullpath);
+      rv = filestream_rename(fullpath_tmp,fullpath);
+    }
+
+  return rv;
 }
 
 int
