@@ -54,11 +54,13 @@ ifneq (,$(findstring unix,$(platform)))
 
     TARGET := $(TARGET_NAME)_libretro.so
     fpic := -fPIC
-    ifneq ($(findstring SunOS,$(shell uname -a)),)
-            SHARED := -shared -lpthread -lm -z defs -z gnu-version-script-compat
-        else
-            SHARED := -lpthread -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
+    ifneq ($(findstring SunOS,$(shell uname -s)),)
+        SHARED := -shared -lpthread -lm -z defs -z gnu-version-script-compat
+    else
+        SHARED := -lpthread -lm -shared -Wl,--no-undefined -Wl,--version-script=link.T
+        ifeq ($(findstring Haiku,$(shell uname -s)),)
             HAVE_CDROM = 1
+        endif
     endif
 
     THREADED_DSP = 1
