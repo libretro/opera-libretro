@@ -78,7 +78,15 @@ ifneq (,$(findstring unix,$(platform)))
         # Pi3
         else ifneq (,$(findstring rpi3,$(platform)))
             CFLAGS = -mcpu=cortex-a53
+	# Pi4
+        else ifneq (,$(findstring rpi4,$(platform)))
+            CFLAGS = -mcpu=cortex-a72
         endif
+	
+    # ODROIDN2
+    else ifneq (,$(findstring CortexA73_G12B,$(platform)))
+        CFLAGS += -fomit-frame-pointer -ffast-math
+        CPUFLAGS += -march=armv8-a+crc -mfpu=neon-fp-armv8 -mcpu=cortex-a73 -mtune=cortex-a73.cortex-a53
 
     # ODROIDs
     else ifneq (,$(findstring odroid,$(platform)))
