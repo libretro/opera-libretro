@@ -971,9 +971,7 @@ decode_swi_lle(void)
   CPU.USER[15] = 0x00000008;
 }
 
-static
-void
-decode_swi_hle(const uint32_t op_)
+static void decode_swi_hle(const uint32_t op_)
 {
   switch(op_ & 0x000FFFFF)
     {
@@ -1029,17 +1027,18 @@ decode_swi_hle(const uint32_t op_)
       return;
     }
 
-  return decode_swi_lle();
+  decode_swi_lle();
 }
 
-static
-void
-decode_swi(const uint32_t op_)
+static void decode_swi(const uint32_t op_)
 {
   CYCLES -= (SCYCLE + NCYCLE);  // +2S+1N
 
   if(g_SWI_HLE)
-    return decode_swi_hle(op_);
+  {
+    decode_swi_hle(op_);
+    return;
+  }
 
   decode_swi_lle();
 }
@@ -1915,43 +1914,48 @@ opera_mem_read8(uint32_t addr_)
   return CPU.ram[addr_];
 }
 
-static
-void
-mwritew(uint32_t addr_,
-        uint32_t val_)
+static void mwritew(uint32_t addr_, uint32_t val_)
 {
-  uint32_t index;
+   uint32_t index;
 
-  addr_ &= ~3;
+   addr_ &= ~3;
 
-  if(addr_ < 0x00300000)
-    return opera_mem_write32(addr_,val_);
+   if(addr_ < 0x00300000)
+   {
+      opera_mem_write32(addr_,val_);
+      return;
+   }
 
-  index = (addr_ ^ 0x03300000);
-  if(!(index & ~0x7FF))
-    return opera_madam_poke(index,val_);
+   index = (addr_ ^ 0x03300000);
+   if(!(index & ~0x7FF))
+   {
+      opera_madam_poke(index,val_);
+      return;
+   }
 
-  index = (addr_ ^ 0x03400000);
-  if(!(index & ~0xFFFF))
-    {
+   index = (addr_ ^ 0x03400000);
+   if(!(index & ~0xFFFF))
+   {
       if(opera_clio_poke(index,val_))
-        CPU.USER[15] += 4;  /* ??? */
+         CPU.USER[15] += 4;  /* ??? */
       return;
-    }
+   }
 
-  index = (addr_ ^ 0x03200000);
-  if(!(index & ~0xFFFFF))
-    return opera_sport_write_access(index,val_);
+   index = (addr_ ^ 0x03200000);
+   if(!(index & ~0xFFFFF))
+   {
+      opera_sport_write_access(index,val_);
+      return;
+   }
 
-  index = (addr_ ^ 0x03100000);
-  if(!(index & ~0xFFFFF))
-    {
+   index = (addr_ ^ 0x03100000);
+   if(!(index & ~0xFFFFF))
+   {
       if(index & 0x80000)
-        opera_diag_port_send(val_);
+         opera_diag_port_send(val_);
       else if(index & 0x40000)
-        CPU.nvram[(index >> 2) & 0x7FFF] = (uint8_t)val_;
-      return;
-    }
+         CPU.nvram[(index >> 2) & 0x7FFF] = (uint8_t)val_;
+   }
 }
 
 static
@@ -2005,25 +2009,25 @@ mreadw(uint32_t addr_)
   return 0xBADACCE5;
 }
 
-static
-void
-mwriteb(uint32_t addr_,
-        uint8_t  val_)
+static void mwriteb(uint32_t addr_, uint8_t  val_)
 {
   int32_t index;
 
   if(addr_ < 0x00300000)
-    return opera_mem_write8(addr_ ^ 3,val_);
+  {
+    opera_mem_write8(addr_ ^ 3,val_);
+    return;
+  }
 
   index = (addr_ ^ 0x03100003);
   if(!(index & ~0xFFFFF))
-    {
-      if((index & 0x40000) == 0x40000)
-        {
-          CPU.nvram[(index >> 2) & 0x7FFF] = val_;
-          return;
-        }
-    }
+  {
+     if((index & 0x40000) == 0x40000)
+     {
+        CPU.nvram[(index >> 2) & 0x7FFF] = val_;
+        return;
+     }
+  }
 }
 
 static
@@ -2118,15 +2122,12 @@ readusr(uint32_t n_)
   return 0;
 }
 
-uint32_t
-opera_io_read(const uint32_t addr_)
+uint32_t opera_io_read(const uint32_t addr_)
 {
-  return mreadw(addr_);
+   return mreadw(addr_);
 }
 
-void
-opera_io_write(const uint32_t addr_,
-               const uint32_t val_)
+void opera_io_write(const uint32_t addr_, const uint32_t val_)
 {
   mwritew(addr_,val_);
 }

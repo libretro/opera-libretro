@@ -203,8 +203,7 @@ opera_xbus_set_poll(const uint32_t val_)
     }
 }
 
-void
-opera_xbus_set_sel(uint32_t val_)
+void opera_xbus_set_sel(const uint32_t val_)
 {
   XBUS.xb_sel_l = ((uint8_t)val_ & 0x0F);
   XBUS.xb_sel_h = ((uint8_t)val_ & 0xF0);
@@ -244,14 +243,13 @@ opera_xbus_attach(opera_xbus_device dev_)
 }
 
 void
-opera_xbus_device_load(const int   dev_,
+opera_xbus_device_load(int   dev_,
                        const char *name_)
 {
   xdev[dev_](XBP_RESET,(void*)name_);
 }
 
-void
-opera_xbus_device_eject(const int dev_)
+void opera_xbus_device_eject(int dev_)
 {
   xdev[dev_](XBP_RESET,NULL);
 }

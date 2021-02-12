@@ -740,82 +740,89 @@ void
 opera_madam_poke(uint32_t addr_,
                   uint32_t val_)
 {
-  if((addr_ >= 0x400) && (addr_ <= 0x53F))
-    return opera_clio_fifo_write(addr_,val_);
+   if((addr_ >= 0x400) && (addr_ <= 0x53F))
+   {
+      opera_clio_fifo_write(addr_,val_);
+      return;
+   }
 
-  switch(addr_)
-    {
-    case 0x00:
-      if(KPRINT)
-        fputc(val_,stderr);
-      return;
-    case 0x04:
-      /* readonly */
-      break;
-    case 0x08:
-      MADAM.mregs[0x08] = val_;
-      HandleDMA8();
-      break;
-    case 0x580:
-      opera_vdlp_set_vdl_head(val_);
-      return;
-    case SPRSTRT:
-      if(MADAM.FSM == FSM_IDLE)
-        MADAM.FSM = FSM_INPROCESS;
-      return;
-    case SPRSTOP:
-      MADAM.FSM = FSM_IDLE;
-      NEXTCCB = 0;
-      return;
-    case SPRCNTU:
-      if(MADAM.FSM == FSM_SUSPENDED)
-        MADAM.FSM = FSM_INPROCESS;
-      return;
-    case SPRPAUS:
-      if(MADAM.FSM == FSM_INPROCESS)
-        MADAM.FSM = FSM_SUSPENDED;
-      return;
+   switch(addr_)
+   {
+      case 0x00:
+         if(KPRINT)
+            fputc(val_,stderr);
+         return;
+      case 0x04:
+         /* readonly */
+         break;
+      case 0x08:
+         MADAM.mregs[0x08] = val_;
+         HandleDMA8();
+         break;
+      case 0x580:
+         opera_vdlp_set_vdl_head(val_);
+         return;
+      case SPRSTRT:
+         if(MADAM.FSM == FSM_IDLE)
+            MADAM.FSM = FSM_INPROCESS;
+         return;
+      case SPRSTOP:
+         MADAM.FSM = FSM_IDLE;
+         NEXTCCB = 0;
+         return;
+      case SPRCNTU:
+         if(MADAM.FSM == FSM_SUSPENDED)
+            MADAM.FSM = FSM_INPROCESS;
+         return;
+      case SPRPAUS:
+         if(MADAM.FSM == FSM_INPROCESS)
+            MADAM.FSM = FSM_SUSPENDED;
+         return;
 
-      /* Matix engine */
-    case 0x7FC:
-      switch(val_)
-        {
-        case 0:
-          return madam_matrix_copy();
-        case 1:
-          return madam_matrix_mul4x4();
-        case 2:
-          return madam_matrix_mul3x3();
-        case 3:
-          return madam_matrix_mul3x3_nz();
-        default:
-          return;
-        }
-      break;
+         /* Matrix engine */
+      case 0x7FC:
+         switch(val_)
+         {
+            case 0:
+               madam_matrix_copy();
+               return;
+            case 1:
+               madam_matrix_mul4x4();
+               return;
+            case 2:
+               madam_matrix_mul3x3();
+               return;
+            case 3:
+               madam_matrix_mul3x3_nz();
+               return;
+            default:
+               return;
+         }
+         break;
 
-      /* REGCTL0 */
-    case 0x130:
-      MADAM.mregs[0x130] = val_;
-      MADAM.rmod = (((val_ & 0x01) << 7) +
-                    ((val_ & 0x0C) << 8) +
-                    ((val_ & 0x70) << 4));
-      val_ >>= 8;
-      MADAM.wmod = (((val_ & 0x01) << 7) +
-                    ((val_ & 0x0C) << 8) +
-                    ((val_ & 0x70) << 4));
-      break;
+         /* REGCTL0 */
+      case 0x130:
+         MADAM.mregs[0x130] = val_;
+         MADAM.rmod = (((val_ & 0x01) << 7) +
+               ((val_ & 0x0C) << 8) +
+               ((val_ & 0x70) << 4));
+         val_ >>= 8;
+         MADAM.wmod = (((val_ & 0x01) << 7) +
+               ((val_ & 0x0C) << 8) +
+               ((val_ & 0x70) << 4));
+         break;
 
-      /* REGCTL1 */
-    case 0x134:
-      MADAM.mregs[0x134] = val_;
-      MADAM.clipx = (val_ & 0x3FF);
-      MADAM.clipy = ((val_ >> 16) & 0x3FF);
-      break;
+         /* REGCTL1 */
+      case 0x134:
+         MADAM.mregs[0x134] = val_;
+         MADAM.clipx = (val_ & 0x3FF);
+         MADAM.clipy = ((val_ >> 16) & 0x3FF);
+         break;
 
-    default:
-      MADAM.mregs[addr_] = val_;
-      break;
-    }
+      default:
+         MADAM.mregs[addr_] = val_;
+         break;
+   }
 }
 
 static uint32_t Flag;

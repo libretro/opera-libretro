@@ -49,8 +49,8 @@ uint8_t  opera_mem_read8(uint32_t addr_);
 uint16_t opera_mem_read16(uint32_t addr_);
 uint32_t opera_mem_read32(uint32_t addr_);
 
-void     opera_io_write(uint32_t addr_, uint32_t val_);
-uint32_t opera_io_read(uint32_t addr_);
+void     opera_io_write(const uint32_t addr_, const uint32_t val_);
+uint32_t opera_io_read(const uint32_t addr_);
 
 uint32_t opera_arm_state_size(void);
 void     opera_arm_state_save(void *buf_);
