@@ -33,6 +33,8 @@
 #ifndef FLAC__FORMAT_H
 #define FLAC__FORMAT_H
 
+#include <stdint.h>
+
 #include "export.h"
 #include "ordinals.h"
 

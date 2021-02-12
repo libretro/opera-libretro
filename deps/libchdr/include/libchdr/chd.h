@@ -346,8 +346,11 @@ struct _chd_verify_result
 /***************************************************************************
     FUNCTION PROTOTYPES
 ***************************************************************************/
-
+#ifdef __LIBRETRO__
+#define CHD_EXPORT
+#else
 #define CHD_EXPORT __attribute__ ((visibility("default")))
+#endif
 
 /* ----- CHD file management ----- */
 

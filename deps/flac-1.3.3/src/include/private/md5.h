@@ -26,6 +26,8 @@
  * Still in the public domain, with no warranty.
  */
 
+#include <stdint.h>
+
 #include "FLAC/ordinals.h"
 
 typedef union {

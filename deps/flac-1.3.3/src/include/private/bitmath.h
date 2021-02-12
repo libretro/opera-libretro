@@ -33,6 +33,8 @@
 #ifndef FLAC__PRIVATE__BITMATH_H
 #define FLAC__PRIVATE__BITMATH_H
 
+#include <stdint.h>
+
 #include "FLAC/ordinals.h"
 #include "FLAC/assert.h"
 

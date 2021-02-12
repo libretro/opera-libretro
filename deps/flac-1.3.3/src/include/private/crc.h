@@ -33,6 +33,8 @@
 #ifndef FLAC__PRIVATE__CRC_H
 #define FLAC__PRIVATE__CRC_H
 
+#include <stdint.h>
+
 #include "FLAC/ordinals.h"
 
 /* 8 bit CRC generator, MSB shifted first
