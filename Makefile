@@ -544,28 +544,20 @@ OBJECTS := $(SOURCES_C:.c=.o)
 OPT := -O2
 ifeq ($(DEBUG), 1)
    ifneq (,$(findstring msvc,$(platform)))
-      OPT = -Od
-      CFLAGS += -Zi -DDEBUG -D_DEBUG
-
-      ifeq ($(STATIC_LINKING),1)
-         CFLAGS += -MTd
-      else
-         CFLAGS += -MDd
-      endif
+      OPT     = -Od
+      CFLAGS += -Zi -D_DEBUG
+      CFLAGS += -MTd
    else
-      OPT = -O0
-      CFLAGS += -ggdb -DDEBUG -fno-omit-frame-pointer
+      OPT     = -O0
+      CFLAGS += -ggdb -fno-omit-frame-pointer
    endif
+      CFLAGS += -DDEBUG
 else
-   OPT = -O2
-   CFLAGS += -DNDEBUG
+   OPT        = -O2
+   CFLAGS    += -DNDEBUG
 
    ifneq (,$(findstring msvc,$(platform)))
-      ifeq ($(STATIC_LINKING),1)
-         CFLAGS += -MT
-      else
-         CFLAGS += -MD
-      endif
+      CFLAGS += -MT
    endif
 endif
 
