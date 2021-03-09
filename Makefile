@@ -171,34 +171,37 @@ endif
 
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
-
-   TARGET := $(TARGET_NAME)_libretro_ios.dylib
-   fpic := -fPIC
-   SHARED := -dynamiclib
+   TARGET     := $(TARGET_NAME)_libretro_ios.dylib
+   fpic       := -fPIC
+   SHARED     := -dynamiclib
+   DEFINES    := -DIOS
+   MINVERSION :=
 
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
 endif
 ifeq ($(platform),ios-arm64)
-   CC = cc -arch arm64 -isysroot $(IOSSDK)
+   CC = cc -arch arm64 -isysroot $(IOSSDK) -stdlib=libc++
 else
    CC = cc -arch armv7 -isysroot $(IOSSDK)
 endif
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
-   SHARED += -miphoneos-version-min=8.0
-   CC +=  -miphoneos-version-min=8.0
+   MINVERSION = -miphoneos-version-min=8.0
 else
-   SHARED += -miphoneos-version-min=5.0
-   CC +=  -miphoneos-version-min=5.0
+   MINVERSION = -miphoneos-version-min=5.0
 endif
+   SHARED += $(MINVERSION)
+
 else ifeq ($(platform), tvos-arm64)
 
    TARGET := $(TARGET_NAME)_libretro_tvos.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+   DEFINES := -DIOS
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk appletvos Path)
 endif
+   CC = cc -arch arm64 -isysroot $(IOSSDK)
 
 else ifeq ($(platform), theos_ios)
 DEPLOYMENT_IOSVERSION = 5.0
