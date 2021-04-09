@@ -107,50 +107,14 @@ endif
 ifeq ($(HAVE_CHD), 1)
 FLAGS += \
 	-DHAVE_CHD \
-	-D_7ZIP_ST \
-	-DPACKAGE_VERSION=\"1.3.3\" \
-	-DFLAC_API_EXPORTS \
-	-DFLAC__HAS_OGG=0 \
-	-DFLAC__NO_DLL \
-	-DHAVE_LROUND
+	-D_7ZIP_ST
 
 INCFLAGS += \
-	-I$(DEPS_DIR)/flac-1.3.3/include \
-	-I$(DEPS_DIR)/flac-1.3.3/src/include \
 	-I$(DEPS_DIR)/lzma-19.00/include \
 	-I$(DEPS_DIR)/libchdr/include \
 	-I$(DEPS_DIR)/zlib-1.2.11
 
-ifeq ($(platform), win)
-	FLAGS += -DHAVE_FSEEKO
-endif
-
-ifeq ($(WINDOWS_VERSION), 1)
-	SOURCES_C += \
-		$(DEPS_DIR)/flac-1.3.3/src/windows_unicode_filenames.c
-endif
-
 SOURCES_C += \
-        $(DEPS_DIR)/flac-1.3.3/src/bitmath.c \
-        $(DEPS_DIR)/flac-1.3.3/src/bitreader.c \
-        $(DEPS_DIR)/flac-1.3.3/src/cpu.c \
-        $(DEPS_DIR)/flac-1.3.3/src/crc.c \
-        $(DEPS_DIR)/flac-1.3.3/src/fixed.c \
-        $(DEPS_DIR)/flac-1.3.3/src/fixed_intrin_sse2.c \
-        $(DEPS_DIR)/flac-1.3.3/src/fixed_intrin_ssse3.c \
-        $(DEPS_DIR)/flac-1.3.3/src/float.c \
-        $(DEPS_DIR)/flac-1.3.3/src/format.c \
-        $(DEPS_DIR)/flac-1.3.3/src/lpc.c \
-        $(DEPS_DIR)/flac-1.3.3/src/lpc_intrin_avx2.c \
-        $(DEPS_DIR)/flac-1.3.3/src/lpc_intrin_sse2.c \
-        $(DEPS_DIR)/flac-1.3.3/src/lpc_intrin_sse41.c \
-        $(DEPS_DIR)/flac-1.3.3/src/lpc_intrin_sse.c \
-        $(DEPS_DIR)/flac-1.3.3/src/md5.c \
-        $(DEPS_DIR)/flac-1.3.3/src/memory.c \
-        $(DEPS_DIR)/flac-1.3.3/src/metadata_iterators.c \
-        $(DEPS_DIR)/flac-1.3.3/src/metadata_object.c \
-        $(DEPS_DIR)/flac-1.3.3/src/stream_decoder.c \
-        $(DEPS_DIR)/flac-1.3.3/src/window.c \
         $(DEPS_DIR)/lzma-19.00/src/Alloc.c \
         $(DEPS_DIR)/lzma-19.00/src/Bra86.c \
         $(DEPS_DIR)/lzma-19.00/src/BraIA64.c \
@@ -167,12 +131,6 @@ SOURCES_C += \
         $(DEPS_DIR)/libchdr/src/libchdr_chd.c \
         $(DEPS_DIR)/libchdr/src/libchdr_flac.c \
         $(DEPS_DIR)/libchdr/src/libchdr_huffman.c
-
-ifeq ($(platform), win)
-	SOURCES_C += \
-		$(DEPS_DIR)/flac-1.3.3/src/windows_unicode_filenames.c
-endif
-
 endif
 
 ifneq ($(STATIC_LINKING), 1)
