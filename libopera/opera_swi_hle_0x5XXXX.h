@@ -11,20 +11,14 @@
 static
 INLINE
 void
-opera_swi_hle_0x50000(void     *ram_,
+opera_swi_hle_0x50000(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
 {
-  char     *ram;
-  vec3f16  *dest;
-  vec3f16  *vec;
-  mat33f16 *mat;
-
-  ram  = ram_;
-  dest = (vec3f16*)&ram[r0_];
-  vec  = (vec3f16*)&ram[r1_];
-  mat  = (mat33f16*)&ram[r2_];
+  vec3f16 *dest  = (vec3f16*)&ram_[r0_];
+  vec3f16 *vec   = (vec3f16*)&ram_[r1_];
+  mat33f16 *mat  = (mat33f16*)&ram_[r2_];
 
   MulVec3Mat33_F16(*dest,*vec,*mat);
 }
@@ -33,20 +27,14 @@ opera_swi_hle_0x50000(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50001(void     *ram_,
+opera_swi_hle_0x50001(uint8_t     *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
 {
-  uint8_t  *ram;
-  mat33f16 *dest;
-  mat33f16 *src1;
-  mat33f16 *src2;
-
-  ram  = ram_;
-  dest = (mat33f16*)&ram[r0_];
-  src1 = (mat33f16*)&ram[r1_];
-  src2 = (mat33f16*)&ram[r2_];
+  mat33f16 *dest = (mat33f16*)&ram_[r0_];
+  mat33f16 *src1 = (mat33f16*)&ram_[r1_];
+  mat33f16 *src2 = (mat33f16*)&ram_[r2_];
 
   MulMat33Mat33_F16(*dest,*src1,*src2);
 }
@@ -55,23 +43,16 @@ opera_swi_hle_0x50001(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50002(void     *ram_,
+opera_swi_hle_0x50002(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
                       uint32_t  r3_)
 {
-  uint8_t  *ram;
-  vec3f16  *dest;
-  vec3f16  *src;
-  mat33f16 *mat;
-  int32_t   count;
-
-  ram   = ram_;
-  dest  = (vec3f16*)&ram[r0_];
-  src   = (vec3f16*)&ram[r1_];
-  mat   = (mat33f16*)&ram[r2_];
-  count = (int32_t)r3_;
+  vec3f16 *dest = (vec3f16*)&ram_[r0_];
+  vec3f16 *src  = (vec3f16*)&ram_[r1_];
+  mat33f16 *mat = (mat33f16*)&ram_[r2_];
+  int32_t count = (int32_t)r3_;
 
   MulManyVec3Mat33_F16(dest,src,*mat,count);
 }
@@ -80,7 +61,7 @@ opera_swi_hle_0x50002(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50003(void    *ram_,
+opera_swi_hle_0x50003(char    *ram_,
                       uint8_t  r0_,
                       uint8_t  r1_,
                       uint8_t  r2_)
@@ -92,7 +73,7 @@ opera_swi_hle_0x50003(void    *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50004(void     *ram_,
+opera_swi_hle_0x50004(char     *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
@@ -105,23 +86,16 @@ opera_swi_hle_0x50004(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50005(void     *ram_,
+opera_swi_hle_0x50005(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
                       uint32_t  r3_)
 {
-  uint8_t *ram;
-  frac16  *dest;
-  frac16  *src1;
-  frac16  *src2;
-  int32_t  count;
-
-  ram   = ram_;
-  dest  = (frac16*)&ram[r0_];
-  src1  = (frac16*)&ram[r1_];
-  src2  = (frac16*)&ram[r2_];
-  count = (int32_t)r3_;
+  frac16 *dest  = (frac16*)&ram_[r0_];
+  frac16 *src1  = (frac16*)&ram_[r1_];
+  frac16 *src2  = (frac16*)&ram_[r2_];
+  int32_t count = (int32_t)r3_;
 
   MulManyF16(dest,src1,src2,count);
 }
@@ -130,23 +104,16 @@ opera_swi_hle_0x50005(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50006(void     *ram_,
+opera_swi_hle_0x50006(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
                       uint32_t  r3_)
 {
-  char    *ram;
-  frac16  *dest;
-  frac16  *src;
-  frac16   scaler;
-  int32_t  count;
-
-  ram    = ram_;
-  dest   = (frac16*)&ram[r0_];
-  src    = (frac16*)&ram[r1_];
-  scaler = r2_;
-  count  = (int32_t)r3_;
+  frac16 *dest   = (frac16*)&ram_[r0_];
+  frac16 *src    = (frac16*)&ram_[r1_];
+  frac16 scaler  = r2_;
+  int32_t count  = (int32_t)r3_;
 
   MulScalerF16(dest,src,scaler,count);
 }
@@ -155,20 +122,14 @@ opera_swi_hle_0x50006(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50007(void     *ram_,
+opera_swi_hle_0x50007(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
 {
-  char     *ram;
-  vec4f16  *dest;
-  vec4f16  *vec;
-  mat44f16 *mat;
-
-  ram  = ram_;
-  dest = (vec4f16*)&ram[r0_];
-  vec  = (vec4f16*)&ram[r1_];
-  mat  = (mat44f16*)&ram[r2_];
+  vec4f16 *dest  = (vec4f16*)&ram_[r0_];
+  vec4f16 *vec   = (vec4f16*)&ram_[r1_];
+  mat44f16 *mat  = (mat44f16*)&ram_[r2_];
 
   MulVec4Mat44_F16(*dest,*vec,*mat);
 }
@@ -177,20 +138,14 @@ opera_swi_hle_0x50007(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50008(void     *ram_,
+opera_swi_hle_0x50008(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
 {
-  char     *ram;
-  mat44f16 *dest;
-  mat44f16 *src1;
-  mat44f16 *src2;
-
-  ram  = ram_;
-  dest = (mat44f16*)&ram[r0_];
-  src1 = (mat44f16*)&ram[r1_];
-  src2 = (mat44f16*)&ram[r2_];
+  mat44f16 *dest = (mat44f16*)&ram_[r0_];
+  mat44f16 *src1 = (mat44f16*)&ram_[r1_];
+  mat44f16 *src2 = (mat44f16*)&ram_[r2_];
 
   MulMat44Mat44_F16(*dest,*src1,*src2);
 }
@@ -199,23 +154,16 @@ opera_swi_hle_0x50008(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50009(void     *ram_,
+opera_swi_hle_0x50009(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
                       uint32_t  r3_)
 {
-  char     *ram;
-  vec4f16  *dest;
-  vec4f16  *src;
-  mat44f16 *mat;
-  int32_t   count;
-
-  ram   = ram_;
-  dest  = (vec4f16*)&ram[r0_];
-  src   = (vec4f16*)&ram[r1_];
-  mat   = (mat44f16*)&ram[r2_];
-  count = (int32_t)r3_;
+  vec4f16 *dest   = (vec4f16*)&ram_[r0_];
+  vec4f16 *src    = (vec4f16*)&ram_[r1_];
+  mat44f16 *mat   = (mat44f16*)&ram_[r2_];
+  int32_t count   = (int32_t)r3_;
 
   MulManyVec4Mat44_F16(dest,src,*mat,count);
 }
@@ -224,7 +172,7 @@ opera_swi_hle_0x50009(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x5000A(void     *ram_,
+opera_swi_hle_0x5000A(char     *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
@@ -236,7 +184,7 @@ opera_swi_hle_0x5000A(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x5000B(void     *ram_,
+opera_swi_hle_0x5000B(char     *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
@@ -249,17 +197,12 @@ opera_swi_hle_0x5000B(void     *ram_,
 static
 INLINE
 uint32_t
-opera_swi_hle_0x5000C(void     *ram_,
+opera_swi_hle_0x5000C(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_)
 {
-  char    *ram;
-  vec3f16 *v1;
-  vec3f16 *v2;
-
-  ram = ram_;
-  v1  = (vec3f16*)&ram[r0_];
-  v2  = (vec3f16*)&ram[r1_];
+  vec3f16 *v1  = (vec3f16*)&ram_[r0_];
+  vec3f16 *v2  = (vec3f16*)&ram_[r1_];
 
   return (uint32_t)Dot3_F16(*v1,*v2);
 }
@@ -268,17 +211,12 @@ opera_swi_hle_0x5000C(void     *ram_,
 static
 INLINE
 uint32_t
-opera_swi_hle_0x5000D(void     *ram_,
+opera_swi_hle_0x5000D(char     *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_)
 {
-  char    *ram;
-  vec4f16 *v1;
-  vec4f16 *v2;
-
-  ram = ram_;
-  v1  = (vec4f16*)&ram[r0_];
-  v2  = (vec4f16*)&ram[r1_];
+  vec4f16 *v1  = (vec4f16*)&ram_[r0_];
+  vec4f16 *v2  = (vec4f16*)&ram_[r1_];
 
   return (uint32_t)Dot4_F16(*v1,*v2);
 }
@@ -287,20 +225,14 @@ opera_swi_hle_0x5000D(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x5000E(void     *ram_,
+opera_swi_hle_0x5000E(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_)
 {
-  char    *ram;
-  vec3f16 *dest;
-  vec3f16 *v1;
-  vec3f16 *v2;
-
-  ram  = ram_;
-  dest = (vec3f16*)&ram[r0_];
-  v1   = (vec3f16*)&ram[r1_];
-  v2   = (vec3f16*)&ram[r2_];
+  vec3f16 *dest = (vec3f16*)&ram_[r0_];
+  vec3f16 *v1   = (vec3f16*)&ram_[r1_];
+  vec3f16 *v2   = (vec3f16*)&ram_[r2_];
 
   Cross3_F16(*dest,*v1,*v2);
 }
@@ -309,14 +241,10 @@ opera_swi_hle_0x5000E(void     *ram_,
 static
 INLINE
 uint32_t
-opera_swi_hle_0x5000F(void     *ram_,
+opera_swi_hle_0x5000F(uint8_t *ram_,
                       uint32_t  r0_)
 {
-  char    *ram;
-  vec3f16 *vec;
-
-  ram = ram_;
-  vec = (vec3f16*)&ram[r0_];
+  vec3f16 *vec = (vec3f16*)&ram_[r0_];
 
   return (uint32_t)AbsVec3_F16(*vec);
 }
@@ -325,14 +253,10 @@ opera_swi_hle_0x5000F(void     *ram_,
 static
 INLINE
 uint32_t
-opera_swi_hle_0x50010(void     *ram_,
+opera_swi_hle_0x50010(uint8_t  *ram_,
                       uint32_t  r0_)
 {
-  char    *ram;
-  vec4f16 *vec;
-
-  ram = ram_;
-  vec = (vec4f16*)&ram[r0_];
+  vec4f16 *vec = (vec4f16*)&ram_[r0_];
 
   return (uint32_t)AbsVec4_F16(*vec);
 }
@@ -341,23 +265,16 @@ opera_swi_hle_0x50010(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50011(void     *ram_,
+opera_swi_hle_0x50011(uint8_t *ram_,
                       uint32_t  r0_,
                       uint32_t  r1_,
                       uint32_t  r2_,
                       uint32_t  r3_)
 {
-  char     *ram;
-  vec3f16  *dest;
-  vec3f16  *vec;
-  mat33f16 *mat;
-  frac16    n;
-
-  ram  = ram_;
-  dest = (vec3f16*)&ram[r0_];
-  vec  = (vec3f16*)&ram[r1_];
-  mat  = (mat33f16*)&ram[r2_];
-  n    = (frac16)r3_;
+  vec3f16 *dest  = (vec3f16*)&ram_[r0_];
+  vec3f16 *vec   = (vec3f16*)&ram_[r1_];
+  mat33f16 *mat  = (mat33f16*)&ram_[r2_];
+  frac16 n       = (frac16)r3_;
 
   MulVec3Mat33DivZ_F16(*dest,*vec,*mat,n);
 }
@@ -366,22 +283,14 @@ opera_swi_hle_0x50011(void     *ram_,
 static
 INLINE
 void
-opera_swi_hle_0x50012(void     *ram_,
+opera_swi_hle_0x50012(uint8_t     *ram_,
                       uint32_t  r0_)
 {
-  char     *ram;
-  vec3f16  *dest;
-  vec3f16  *src;
-  mat33f16 *mat;
-  frac16    n;
-  uint32_t  count;
-
-  ram = ram_;
-  dest  = (vec3f16*)&ram[*(uint32_t*)&ram[r0_ + 0x00]];
-  src   = (vec3f16*)&ram[*(uint32_t*)&ram[r0_ + 0x04]];
-  mat   = (mat33f16*)&ram[*(uint32_t*)&ram[r0_ + 0x08]];
-  n     = *(frac16*)&ram[r0_ + 0x0C];
-  count = *(uint32_t*)&ram[r0_ + 0x10];
+  vec3f16 *dest  = (vec3f16*)&ram_[*(uint32_t*)&ram_[r0_ + 0x00]];
+  vec3f16 *src   = (vec3f16*)&ram_[*(uint32_t*)&ram_[r0_ + 0x04]];
+  mat33f16 *mat  = (mat33f16*)&ram_[*(uint32_t*)&ram_[r0_ + 0x08]];
+  frac16 n       = *(frac16*)&ram_[r0_ + 0x0C];
+  uint32_t count = *(uint32_t*)&ram_[r0_ + 0x10];
 
   MulManyVec3Mat33DivZ_F16(dest,src,mat,n,count);
 }
