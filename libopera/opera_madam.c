@@ -827,13 +827,6 @@ opera_madam_poke(uint32_t addr_,
 
 static uint32_t Flag;
 
-static float HDDX;
-static float HDDY;
-static float HDX;
-static float HDY;
-static float VDX;
-static float VDY;
-
 static int32_t  HDDX1616;
 static int32_t  HDDY1616;
 static int32_t  HDX1616;
@@ -993,26 +986,20 @@ opera_madam_cel_handle(void)
       if(CCBFLAGS & CCB_LDSIZE)
         {
           HDX1616     = ((int32_t)mread32(CURRENTCCB)) >> 4;
-          HDX         = HDX1616 / 65536.0;
           CURRENTCCB += 4;
           HDY1616     = ((int32_t)mread32(CURRENTCCB)) >> 4;
-          HDY         = HDY1616 / 65536.0;
           CURRENTCCB += 4;
           VDX1616     = mread32(CURRENTCCB);
-          VDX         = VDX1616 / 65536.0;
           CURRENTCCB += 4;
           VDY1616     = mread32(CURRENTCCB);
-          VDY         = VDY1616 / 65536.0;
           CURRENTCCB += 4;
         }
 
       if(CCBFLAGS & CCB_LDPRS)
         {
           HDDX1616    = ((int32_t)mread32(CURRENTCCB)) >> 4;
-          HDDX        = HDDX1616 / 65536.0;
           CURRENTCCB += 4;
           HDDY1616    = ((int32_t)mread32(CURRENTCCB)) >> 4;
-          HDDY        = HDDY1616 / 65536.0;
           CURRENTCCB += 4;
         }
 
@@ -2359,22 +2346,16 @@ opera_madam_reset(void)
     MADAM.mregs[i] = 0;
 }
 
-static
-INLINE
-uint32_t
-TexelCCWTest(const float hdx_,
-             const float hdy_,
-             const float vdx_,
-             const float vdy_)
+static INLINE uint32_t TexelCCWTest(int64_t hdx, int64_t hdy, int64_t vdx, int64_t vdy)
 {
-  if(((hdx_ + vdx_) * (hdy_ - vdy_) + (vdx_ * vdy_) - (hdx_ * hdy_)) < 0.0)
-    return CCB_ACCW;
-  return CCB_ACW;
+	if (((hdx + vdx) * (hdy - vdy) + vdx * vdy - hdx * hdy) < 0)
+		return CCB_ACCW;
+	return CCB_ACW;
 }
 
 static
 bool_t
-QuardCCWTest(int32_t wdt_)
+QuadCCWTest(int32_t wdt_)
 {
   float wdt;
   uint32_t tmp;
@@ -2383,12 +2364,12 @@ QuardCCWTest(int32_t wdt_)
     return FALSE;
 
   wdt = (float)wdt_;
-  tmp = TexelCCWTest(HDX,HDY,VDX,VDY);
-  if(tmp != TexelCCWTest(HDX,HDY,VDX+HDDX*wdt,VDY+HDDY*wdt))
+  tmp = TexelCCWTest(HDX1616, HDY1616, VDX1616, VDY1616);
+  if (tmp != TexelCCWTest(HDX1616, HDY1616, VDX1616 + HDDX1616*wdt, VDY1616 + HDDY1616*wdt))
     return FALSE;
-  if(tmp != TexelCCWTest(HDX+HDDX*SPRHI,HDY+HDDY*SPRHI,VDX,VDY))
+  if (tmp != TexelCCWTest(HDX1616 + HDDX1616*SPRHI, HDY1616 + HDDY1616*SPRHI, VDX1616, VDY1616))
     return FALSE;
-  if(tmp != TexelCCWTest(HDX+HDDX*SPRHI,HDY+HDDY*SPRHI,VDX+HDDX*(float)SPRHI*wdt,VDY+HDDY*(float)SPRHI*wdt))
+  if (tmp != TexelCCWTest(HDX1616 + HDDX1616*SPRHI, HDY1616 + HDDY1616*SPRHI, VDX1616 + HDDX1616*SPRHI * wdt, VDY1616 + HDDY1616*SPRHI * wdt))
     return FALSE;
   if(tmp == (CCBFLAGS & (CCB_ACCW | CCB_ACW)))
     return TRUE;
@@ -2560,7 +2541,7 @@ TestInitVisual(int32_t packed_)
         }
     }
 
-  if(QuardCCWTest(!packed_ ? SPRWI : 2048))
+  if(QuadCCWTest(!packed_ ? SPRWI : 2048))
     return -1;
 
   Init_Arbitrary_Map();
