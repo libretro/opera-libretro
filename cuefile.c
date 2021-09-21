@@ -19,13 +19,13 @@ static RFILE *cue_get_file_for_image(const char *path)
    char *exts[]   = {".cue", ".CUE"};
    char *last_dot = NULL;
 
-   strncpy(cue_path_base, path, STRING_MAX);
+   strcpy(cue_path_base, path);
 
    last_dot = strrchr(cue_path_base, '.');
    if (last_dot == NULL)
       return NULL;
 
-   // cut original extension
+   /* cut original extension */
    *(last_dot) = '\0';
 
    for(i=0; i<2; i++)
@@ -68,7 +68,7 @@ static char *extract_file_name(const char *path, char *line)
       return NULL;
    }
 
-   strncpy(file, ++file_name_start, STRING_MAX);
+   strcpy(file, ++file_name_start);
    file_name_end = strstr(file, "\"");
 
    if (!file_name_end)
@@ -80,7 +80,7 @@ static char *extract_file_name(const char *path, char *line)
 
    *file_name_end = '\0';
 
-   strncpy(base_path, path, STRING_MAX);
+   strcpy(base_path, path);
 
    last_separator  = strrchr(base_path, slash);
    *last_separator = '\0';
