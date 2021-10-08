@@ -107,7 +107,8 @@ endif
 ifeq ($(HAVE_CHD), 1)
 FLAGS += \
 	-DHAVE_CHD \
-	-D_7ZIP_ST
+	-D_7ZIP_ST \
+	-DDR_FLAC_NO_STDIO
 
 INCFLAGS += \
 	-I$(DEPS_DIR)/lzma-19.00/include \
