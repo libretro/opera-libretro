@@ -1,0 +1,141 @@
+#include "libopera/opera_dsp.h"
+
+#include "opera_lr_callbacks.h"
+
+#include "bool.h"
+
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdint.h>
+
+/* FORWARD DECLARATIONS */
+static void dsp_process(void);
+static void dsp_upload_unlocked(void);
+
+/* MACROS */
+#define DSP_BUF_SIZE      1024
+#define DSP_BUF_SIZE_MASK 0x3FF
+
+/* GLOBAL VARIABLES */
+static bool_t g_DSP_THREADED = FALSE;
+
+static uint32_t g_DSP_BUF_IDX = 0;
+static int32_t  g_DSP_BUF[DSP_BUF_SIZE];
+
+static sem_t g_DSP_SEM;
+static pthread_t g_DSP_THREAD;
+static pthread_mutex_t g_DSP_BUF_MUTEX = PTHREAD_MUTEX_INITIALIZER;
+
+static void (*g_DSP_UPLOAD)(void)  = dsp_upload_unlocked;
+static void (*g_DSP_PROCESS)(void) = dsp_process;
+
+
+/* PRIVATE FUNCTIONS */
+
+static
+void *
+dsp_thread_loop(void *handle_)
+{
+  int32_t sample;
+
+  for(;;)
+    {
+      sem_wait(&g_DSP_SEM);
+
+      sample = opera_dsp_loop();
+
+      pthread_mutex_lock(&g_DSP_BUF_MUTEX);
+      g_DSP_BUF[g_DSP_BUF_IDX++] = sample;
+      g_DSP_BUF_IDX &= DSP_BUF_SIZE_MASK;
+      pthread_mutex_unlock(&g_DSP_BUF_MUTEX);
+    }
+
+  return NULL;
+}
+
+static
+void
+dsp_upload_unlocked(void)
+{
+  retro_audio_sample_batch_cb((int16_t*)g_DSP_BUF,g_DSP_BUF_IDX);
+  g_DSP_BUF_IDX = 0;
+}
+
+static
+void
+dsp_upload_locked(void)
+{
+  pthread_mutex_lock(&g_DSP_BUF_MUTEX);
+
+  dsp_upload_unlocked();
+
+  pthread_mutex_unlock(&g_DSP_BUF_MUTEX);
+}
+
+static
+void
+dsp_process(void)
+{
+  g_DSP_BUF[g_DSP_BUF_IDX++] = opera_dsp_loop();
+  g_DSP_BUF_IDX &= DSP_BUF_SIZE_MASK;
+}
+
+static
+void
+dsp_process_threaded(void)
+{
+  sem_post(&g_DSP_SEM);
+}
+
+
+/* PUBLIC FUNCTIONS */
+
+void
+opera_lr_dsp_process(void)
+{
+  (*g_DSP_PROCESS)();
+}
+
+void
+opera_lr_dsp_upload(void)
+{
+  (*g_DSP_UPLOAD)();
+}
+
+void
+opera_lr_dsp_destroy(void)
+{
+  void *rv;
+
+  if(g_DSP_THREADED)
+    {
+      pthread_cancel(g_DSP_THREAD);
+      pthread_join(g_DSP_THREAD,&rv);
+      sem_destroy(&g_DSP_SEM);
+    }
+}
+
+void
+opera_lr_dsp_init(const bool_t threaded_)
+{
+  if(g_DSP_THREADED == threaded_)
+    return;
+
+  opera_lr_dsp_destroy();
+
+  g_DSP_BUF_IDX = 0;
+
+  g_DSP_THREADED = threaded_;
+  if(g_DSP_THREADED)
+    {
+      sem_init(&g_DSP_SEM,0,0);
+      pthread_create(&g_DSP_THREAD,NULL,dsp_thread_loop,NULL);
+      g_DSP_UPLOAD  = dsp_upload_locked;
+      g_DSP_PROCESS = dsp_process_threaded;
+    }
+  else
+    {
+      g_DSP_UPLOAD  = dsp_upload_unlocked;
+      g_DSP_PROCESS = dsp_process;
+    }
+}

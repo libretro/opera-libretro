@@ -1,5 +1,5 @@
 #include "lr_input.h"
-#include "retro_callbacks.h"
+#include "opera_lr_callbacks.h"
 #include "lr_input_crosshair.h"
 
 #include <libretro.h>

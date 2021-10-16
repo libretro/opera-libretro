@@ -1,11 +1,11 @@
-#include <libretro_core_options.h>
-#include <libretro.h>
-#include <retro_miscellaneous.h>
-
-#include "retro_callbacks.h"
 #include "libopera/opera_bios.h"
 
+#include "opera_lr_callbacks.h"
+
 #include <file/file_path.h>
+#include <libretro.h>
+#include <libretro_core_options.h>
+#include <retro_miscellaneous.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +151,25 @@ static struct retro_core_option_definition option_defs_us[] =
         { NULL, NULL },
       },
       "per game"
+    },
+    {
+      "opera_nvram_version",
+      "NVRAM Version",
+      "Select the NVRAM version.",
+      {
+        { "0", NULL },
+        { "1", NULL },
+        { "2", NULL },
+        { "3", NULL },
+        { "4", NULL },
+        { "5", NULL },
+        { "6", NULL },
+        { "7", NULL },
+        { "8", NULL },
+        { "9", NULL },
+        { NULL, NULL },
+      },
+      "0"
     },
     {
       "opera_active_devices",
