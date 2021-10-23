@@ -78,11 +78,25 @@ retro_environment_set_controller_info(void)
   retro_environment_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,(void*)ports);
 }
 
+static
+void
+retro_vfs_initialize(void)
+{
+  struct retro_vfs_interface_info vfs_info;
+
+  vfs_info.required_interface_version = 1;
+  vfs_info.iface                      = NULL;
+
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info))
+    filestream_vfs_init(&vfs_info);
+}
+
 void
 retro_set_environment(retro_environment_t cb_)
 {
   opera_lr_callbacks_set_environment(cb_);
 
+  retro_vfs_initialize();
   retro_environment_set_controller_info();
   libretro_init_core_options();
   libretro_set_core_options();
