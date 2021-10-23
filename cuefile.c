@@ -7,7 +7,7 @@
 #include <streams/file_stream.h>
 
 #include "cuefile.h"
-#include "retro_callbacks.h"
+#include "opera_lr_callbacks.h"
 
 #define STRING_MAX 4096
 

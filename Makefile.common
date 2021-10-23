@@ -15,16 +15,17 @@ INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
 endif
 
 SOURCES_C := \
+	$(CORE_DIR)/cuefile.c \
 	$(CORE_DIR)/libretro.c \
 	$(CORE_DIR)/libretro_core_options.c \
-	$(CORE_DIR)/cuefile.c \
-	$(CORE_DIR)/nvram.c \
-	$(CORE_DIR)/retro_callbacks.c \
-        $(CORE_DIR)/retro_cdimage.c \
+	$(CORE_DIR)/opera_lr_nvram.c \
+	$(CORE_DIR)/opera_lr_callbacks.c \
+        $(CORE_DIR)/opera_lr_opts.c \
+        $(CORE_DIR)/opera_lr_dsp.c \
         $(CORE_DIR)/lr_input.c \
         $(CORE_DIR)/lr_input_crosshair.c \
         $(CORE_DIR)/lr_input_descs.c \
-        $(CORE_DIR)/lr_dsp.c
+        $(CORE_DIR)/retro_cdimage.c \
 
 SOURCES_C += \
         $(OPERA_DIR)/opera_3do.c \
@@ -38,6 +39,7 @@ SOURCES_C += \
         $(OPERA_DIR)/opera_dsp.c \
         $(OPERA_DIR)/opera_fixedpoint_math.c \
         $(OPERA_DIR)/opera_madam.c \
+        $(OPERA_DIR)/opera_nvram.c \
         $(OPERA_DIR)/opera_pbus.c \
         $(OPERA_DIR)/opera_region.c \
         $(OPERA_DIR)/opera_sport.c \
