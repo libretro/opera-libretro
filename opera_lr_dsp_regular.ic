@@ -1,6 +1,6 @@
 #include "libopera/opera_dsp.h"
 
-#include "retro_callbacks.h"
+#include "opera_lr_callbacks.h"
 
 #include <stdint.h>
 
@@ -24,7 +24,7 @@ opera_lr_dsp_process(void)
 void
 opera_lr_dsp_upload(void)
 {
-  opera_lr_audio_sample_batch((int16_t*)g_DSP_BUF,g_DSP_BUF_IDX);
+  retro_audio_sample_batch_cb((int16_t*)g_DSP_BUF,g_DSP_BUF_IDX);
   g_DSP_BUF_IDX = 0;
 }
 
