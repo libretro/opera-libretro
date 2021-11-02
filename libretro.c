@@ -1,3 +1,14 @@
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <file/file_path.h>
+#include <libretro.h>
+#include <libretro_core_options.h>
+#include <retro_miscellaneous.h>
+#include <streams/file_stream.h>
+
 #include "libopera/hack_flags.h"
 #include "libopera/opera_3do.h"
 #include "libopera/opera_arm.h"
@@ -19,18 +30,6 @@
 #include "opera_lr_callbacks.h"
 #include "opera_lr_opts.h"
 #include "retro_cdimage.h"
-
-#include <file/file_path.h>
-#include <libretro.h>
-#include <libretro_core_options.h>
-#include <retro_miscellaneous.h>
-#include <streams/file_stream.h>
-
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define CDIMAGE_SECTOR_SIZE 2048
 

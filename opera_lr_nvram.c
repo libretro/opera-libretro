@@ -1,9 +1,4 @@
-#include "libopera/opera_arm.h"
-#include "libopera/opera_nvram.h"
-
-#include "opera_lr_callbacks.h"
-#include "opera_lr_nvram.h"
-#include "opera_lr_opts.h"
+#include <string.h>
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -11,8 +6,12 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
-#include <stdio.h>
-#include <string.h>
+#include "libopera/opera_arm.h"
+#include "libopera/opera_nvram.h"
+
+#include "opera_lr_callbacks.h"
+#include "opera_lr_nvram.h"
+#include "opera_lr_opts.h"
 
 static const char OLD_NVRAM_FILENAME[] = "3DO.nvram";
 

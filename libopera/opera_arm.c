@@ -43,7 +43,6 @@
 #include "opera_swi_hle_0x5XXXX.h"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
