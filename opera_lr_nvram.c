@@ -361,7 +361,7 @@ opera_lr_nvram_save(const char *gamepath_)
   nvram_buf  = opera_arm_nvram_get();
   nvram_size = opera_arm_nvram_size();
   version    = opera_lr_opts_nvram_version();
-  if(opera_lr_opts_is_nvram_shared())
+  if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
     {
       opera_lr_nvram_save_shared(nvram_buf,nvram_size,version);
     }
@@ -385,7 +385,7 @@ opera_lr_nvram_load(const char *gamepath_)
   nvram_buf  = opera_arm_nvram_get();
   nvram_size = opera_arm_nvram_size();
   version    = opera_lr_opts_nvram_version();
-  if(opera_lr_opts_is_nvram_shared())
+  if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
     {
       opera_lr_nvram_load_shared(nvram_buf,nvram_size,version);
     }
