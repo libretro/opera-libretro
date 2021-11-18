@@ -33,10 +33,10 @@
 
 #define CDIMAGE_SECTOR_SIZE 2048
 
-static cdimage_t   CDIMAGE;
-static uint32_t    CDIMAGE_SECTOR;
-static uint32_t   *g_VIDEO_BUFFER;
-static const char *g_GAME_INFO_PATH = NULL;
+static cdimage_t  CDIMAGE;
+static uint32_t   CDIMAGE_SECTOR;
+static uint32_t  *g_VIDEO_BUFFER;
+static char      *g_GAME_INFO_PATH = NULL;
 
 static
 void
@@ -410,12 +410,45 @@ open_cdimage_if_needed(const struct retro_game_info *info_)
   return 0;
 }
 
+static
+void
+game_info_path_free(void)
+{
+  if(g_GAME_INFO_PATH != NULL)
+    {
+      free(g_GAME_INFO_PATH);
+      g_GAME_INFO_PATH = NULL;
+    }
+}
+
+static
+void
+game_info_path_save(const struct retro_game_info *info_)
+{
+  size_t len;
+
+  game_info_path_free();
+
+  if((info_ == NULL) || (info_->path == NULL))
+    return;
+
+  g_GAME_INFO_PATH = strdup(info_->path);
+}
+
+static
+const
+char*
+game_info_path_get(void)
+{
+  return g_GAME_INFO_PATH;
+}
+
 bool
 retro_load_game(const struct retro_game_info *info_)
 {
   int rv;
 
-  g_GAME_INFO_PATH = (info_ ? info_->path : NULL);
+  game_info_path_save(info_);
 
   rv = open_cdimage_if_needed(info_);
   if(rv == -1)
@@ -433,7 +466,7 @@ retro_load_game(const struct retro_game_info *info_)
     return false;
 
   opera_nvram_init();
-  opera_lr_nvram_load(g_GAME_INFO_PATH);
+  opera_lr_nvram_load(game_info_path_get());
 
   return true;
 }
@@ -449,7 +482,8 @@ retro_load_game_special(unsigned                      game_type_,
 void
 retro_unload_game(void)
 {
-  opera_lr_nvram_save(g_GAME_INFO_PATH);
+  opera_lr_nvram_save(game_info_path_get());
+  game_info_path_free();
 
   opera_lr_dsp_destroy();
   opera_3do_destroy();
@@ -553,7 +587,7 @@ retro_deinit(void)
 void
 retro_reset(void)
 {
-  opera_lr_nvram_save(g_GAME_INFO_PATH);
+  opera_lr_nvram_save(game_info_path_get());
 
   opera_lr_dsp_destroy();
   opera_3do_destroy();
@@ -567,7 +601,7 @@ retro_reset(void)
 
   /* XXX: Is this really a frontend responsibility? */
   opera_nvram_init();
-  opera_lr_nvram_load(g_GAME_INFO_PATH);
+  opera_lr_nvram_load(game_info_path_get());
 }
 
 void
