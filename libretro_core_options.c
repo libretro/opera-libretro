@@ -454,7 +454,7 @@ libretro_set_core_options(void)
   if (!retro_environment_cb)
     return;
 
-  if (retro_environment_cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version == 1))
+  if (retro_environment_cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version >= 1))
     {
       struct retro_core_options_intl core_options_intl;
       unsigned language = 0;

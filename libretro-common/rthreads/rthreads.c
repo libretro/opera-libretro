@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rthreads.c).
@@ -27,6 +27,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
@@ -49,15 +50,12 @@
 #include "gx_pthread.h"
 #elif defined(_3DS)
 #include "ctr_pthread.h"
-#elif defined(__CELLOS_LV2__)
-#include <pthread.h>
-#include <sys/sys_time.h>
 #else
 #include <pthread.h>
 #include <time.h>
 #endif
 
-#if defined(VITA) || defined(BSD)
+#if defined(VITA) || defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
@@ -94,9 +92,9 @@ struct slock
 #ifdef USE_WIN32_THREADS
 /* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
 /* This will be used as a linked list immplementing a queue of waiting threads */
-struct QueueEntry
+struct queue_entry
 {
-   struct QueueEntry *next;
+   struct queue_entry *next;
 };
 #endif
 
@@ -116,7 +114,7 @@ struct scond
    HANDLE event;
 
    /* the head of the queue; NULL if queue is empty */
-   struct QueueEntry *head;
+   struct queue_entry *head;
 
    /* equivalent to the queue length */
    int waiters;
@@ -159,38 +157,91 @@ static void *thread_wrap(void *data_)
  */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
+	return sthread_create_with_priority(thread_func, userdata, 0);
+}
+
+/* TODO/FIXME - this needs to be implemented for Switch/3DS */
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(EMSCRIPTEN)
+#define HAVE_THREAD_ATTR
+#endif
+
+/**
+ * sthread_create_with_priority:
+ * @start_routine           : thread entry callback function
+ * @userdata                : pointer to userdata that will be made
+ *                            available in thread entry callback function
+ * @thread_priority         : thread priority hint value from [1-100]
+ *
+ * Create a new thread. It is possible for the caller to give a hint
+ * for the thread's priority from [1-100]. Any passed in @thread_priority
+ * values that are outside of this range will cause sthread_create() to
+ * create a new thread using the operating system's default thread
+ * priority.
+ *
+ * Returns: pointer to new thread if successful, otherwise NULL.
+ */
+sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority)
+{
+#ifdef HAVE_THREAD_ATTR
+   pthread_attr_t thread_attr;
+   bool thread_attr_needed  = false;
+#endif
    bool thread_created      = false;
    struct thread_data *data = NULL;
-   sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
+   sthread_t *thread        = (sthread_t*)malloc(sizeof(*thread));
 
    if (!thread)
       return NULL;
 
-   data                     = (struct thread_data*)calloc(1, sizeof(*data));
+   data                     = (struct thread_data*)malloc(sizeof(*data));
    if (!data)
       goto error;
 
-   data->func = thread_func;
-   data->userdata = userdata;
+   data->func               = thread_func;
+   data->userdata           = userdata;
 
 #ifdef USE_WIN32_THREADS
-   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread->id);
-   thread_created = !!thread->thread;
+   thread->id               = 0;
+   thread->thread           = CreateThread(NULL, 0, thread_wrap,
+         data, 0, &thread->id);
+   thread_created           = !!thread->thread;
 #else
-#if defined(VITA)
-   pthread_attr_t thread_attr;
+   thread->id               = 0;
+
+#ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
+
+   if ((thread_priority >= 1) && (thread_priority <= 100))
+   {
+      struct sched_param sp;
+      memset(&sp, 0, sizeof(struct sched_param));
+      sp.sched_priority = thread_priority;
+      pthread_attr_setschedpolicy(&thread_attr, SCHED_RR);
+      pthread_attr_setschedparam(&thread_attr, &sp);
+
+      thread_attr_needed = true;
+   }
+#endif
+
+#if defined(VITA)
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
-   thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
-#else
-   thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+   thread_attr_needed = true;
+#endif
+
+#ifdef HAVE_THREAD_ATTR
+   if (thread_attr_needed)
+      thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
+   else
+#endif
+      thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+
+#ifdef HAVE_THREAD_ATTR
+   pthread_attr_destroy(&thread_attr);
 #endif
 #endif
 
-   if (!thread_created)
-      goto error;
-
-   return thread;
+   if (thread_created)
+      return thread;
 
 error:
    if (data)
@@ -217,7 +268,9 @@ int sthread_detach(sthread_t *thread)
    free(thread);
    return 0;
 #else
-   return pthread_detach(thread->id);
+   int ret = pthread_detach(thread->id);
+   free(thread);
+   return ret;
 #endif
 }
 
@@ -279,11 +332,12 @@ slock_t *slock_new(void)
    if (!lock)
       return NULL;
 
+
 #ifdef USE_WIN32_THREADS
    InitializeCriticalSection(&lock->lock);
-   mutex_created = true;
+   mutex_created             = true;
 #else
-   mutex_created = (pthread_mutex_init(&lock->lock, NULL) == 0);
+   mutex_created             = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
 
    if (!mutex_created)
@@ -335,6 +389,24 @@ void slock_lock(slock_t *lock)
 }
 
 /**
+ * slock_try_lock:
+ * @lock                    : pointer to mutex object
+ *
+ * Attempts to lock a mutex. If a mutex is already locked by
+ * another thread, return false.  If the lock is acquired, return true.
+**/
+bool slock_try_lock(slock_t *lock)
+{
+   if (!lock)
+      return false;
+#ifdef USE_WIN32_THREADS
+   return TryEnterCriticalSection(&lock->lock);
+#else
+   return pthread_mutex_trylock(&lock->lock)==0;
+#endif
+}
+
+/**
  * slock_unlock:
  * @lock                    : pointer to mutex object
  *
@@ -368,7 +440,6 @@ scond_t *scond_new(void)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
-
    /* This is very complex because recreating condition variable semantics
     * with Win32 parts is not easy.
     *
@@ -394,9 +465,10 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
-   cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if (!cond->event) goto error;
-   cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
+   cond->event             = CreateEvent(NULL, FALSE, FALSE, NULL);
+   if (!cond->event)
+      goto error;
+   cond->hot_potato        = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->hot_potato)
    {
       CloseHandle(cond->event);
@@ -404,9 +476,6 @@ scond_t *scond_new(void)
    }
 
    InitializeCriticalSection(&cond->cs);
-   cond->waiters = cond->wakens = 0;
-   cond->head = NULL;
-
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
       goto error;
@@ -443,8 +512,8 @@ void scond_free(scond_t *cond)
 #ifdef USE_WIN32_THREADS
 static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
 {
-   struct QueueEntry myentry;
-   struct QueueEntry **ptr;
+   struct queue_entry myentry;
+   struct queue_entry **ptr;
 
 #if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
    static LARGE_INTEGER performanceCounterFrequency;
@@ -590,7 +659,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
          {
             /* It's not our turn and we're out of time. Give up.
              * Remove ourself from the queue and bail. */
-            struct QueueEntry* curr = cond->head;
+            struct queue_entry *curr = cond->head;
 
             while (curr->next != &myentry)
                curr = curr->next;
@@ -792,14 +861,18 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    mach_port_deallocate(mach_task_self(), cclock);
    now.tv_sec = mts.tv_sec;
    now.tv_nsec = mts.tv_nsec;
-#elif defined(__CELLOS_LV2__)
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
    sys_time_sec_t s;
    sys_time_nsec_t n;
 
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
-#elif defined(__mips__) || defined(VITA) || defined(_3DS)
+#elif defined(PS2)
+   int tickms = ps2_clock();
+   now.tv_sec = tickms/1000;
+   now.tv_nsec = tickms * 1000;
+#elif !defined(DINGUX_BETA) && (defined(__mips__) || defined(VITA) || defined(_3DS))
    struct timeval tm;
 
    gettimeofday(&tm, NULL);
@@ -866,3 +939,19 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 #endif
 }
 #endif
+
+uintptr_t sthread_get_thread_id(sthread_t *thread)
+{
+   if (!thread)
+      return 0;
+   return (uintptr_t)thread->id;
+}
+
+uintptr_t sthread_get_current_thread_id(void)
+{
+#ifdef USE_WIN32_THREADS
+   return (uintptr_t)GetCurrentThreadId();
+#else
+   return (uintptr_t)pthread_self();
+#endif
+}

@@ -1,4 +1,5 @@
 HAVE_CHD = 1
+THREADED_DSP = 1
 
 LOCAL_PATH := $(call my-dir)
 

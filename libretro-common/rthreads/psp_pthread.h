@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (psp_pthread.h).
@@ -61,7 +61,6 @@ typedef struct
    void* arg;
    sthreadEntry start_routine;
 } sthread_args_struct;
-
 
 static int psp_thread_wrap(SceSize args, void *argp)
 {
@@ -136,7 +135,6 @@ static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
    return 1;
 #endif
 }
-
 
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
@@ -238,7 +236,6 @@ static INLINE int pthread_cond_init(pthread_cond_t *cond,
 
    return 0;
 
-
 #else
    /* FIXME: stub */
    return 1;
@@ -281,7 +278,6 @@ static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
   return 1;
 #endif
 }
-
 
 static INLINE int pthread_detach(pthread_t thread)
 {

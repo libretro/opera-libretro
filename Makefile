@@ -1,6 +1,6 @@
 DEBUG = 0
 HAVE_CHD = 1
-THREADED_DSP=0
+THREADED_DSP = 1
 HAVE_CDROM = 0
 
 ifeq ($(platform),)
@@ -63,8 +63,6 @@ ifneq (,$(findstring unix,$(platform)))
         endif
     endif
 
-    THREADED_DSP = 1
-
     # Raspberry Pi
     ifneq (,$(findstring rpi,$(platform)))
         CFLAGS += -fomit-frame-pointer -ffast-math -DARM -marm -mfloat-abi=hard
@@ -124,7 +122,6 @@ else ifeq ($(platform), classic_armv7_a7)
 	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	HAVE_NEON = 1
 	ARCH = arm
-	THREADED_DSP = 1
 	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
 	  CFLAGS += -march=armv7-a
 	else
@@ -307,6 +304,7 @@ else ifeq ($(platform), libnx)
 else ifeq ($(platform), emscripten)
    TARGET := $(TARGET_NAME)_libretro_$(platform).bc
    STATIC_LINKING = 1
+   THREADED_DSP = 0
 
 # Windows MSVC 2003 Xbox 1
 else ifeq ($(platform), xbox1_msvc2003)
