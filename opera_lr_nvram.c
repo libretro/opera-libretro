@@ -368,8 +368,12 @@ opera_lr_nvram_save(const char *gamepath_)
   else
     {
       char filename[256];
-
-      fill_pathname_base_noext(filename,gamepath_,sizeof(filename));
+      const char *ptr = path_basename(gamepath_);
+      if (ptr)
+         strlcpy(filename, ptr, sizeof(filename));
+      else
+	 strlcpy(filename, gamepath_, sizeof(filename));
+      path_remove_extension(filename);
 
       opera_lr_nvram_save_pergame(nvram_buf,nvram_size,filename,version);
     }
@@ -392,8 +396,12 @@ opera_lr_nvram_load(const char *gamepath_)
   else
     {
       char filename[256];
-
-      fill_pathname_base_noext(filename,gamepath_,sizeof(filename));
+      const char *ptr = path_basename(gamepath_);
+      if (ptr)
+         strlcpy(filename, ptr, sizeof(filename));
+      else
+	 strlcpy(filename, gamepath_, sizeof(filename));
+      path_remove_extension(filename);
 
       opera_lr_nvram_load_pergame(nvram_buf,nvram_size,filename,version);
     }
