@@ -209,10 +209,10 @@ opera_pbus_add_arcade_lightgun(const opera_pbus_arcade_lightgun_t *lg_)
                           (lg_->service << PBUS_LG_SHIFT_SERVICE) |
                           (lg_->coins   << PBUS_LG_SHIFT_COINS)   |
                           (lg_->start   << PBUS_LG_SHIFT_START)   |
-                          (lg_->holster << PBUS_LG_SHIFT_HOLSTER) |
-                          ((r & 0x10000) >> 16));
+                          (lg_->holster << PBUS_LG_SHIFT_HOLSTER));
   PBUS.buf[PBUS.idx++] = ((r & 0xFF00) >> 8);
   PBUS.buf[PBUS.idx++] = (r & 0xFF);
+  PBUS.buf[PBUS.idx++] = ((r & 0x10000) >> 16);
 }
 
 void
