@@ -190,6 +190,17 @@ static struct retro_core_option_definition option_defs_us[] =
       "1"
     },
     {
+      "opera_hide_lightgun_crosshairs",
+      "Hide Lightgun Crosshairs",
+      "Hides lightgun crosshairs for all players.",
+      {
+        { "disabled", NULL },
+        { "enabled", NULL },
+        { NULL, NULL },
+      },
+      "disabled"
+    },
+    {
       "opera_hack_timing_1",
       "Timing Hack 1 (Crash 'n Burn)",
       "This must be enabled for correct operation of the game 'Crash 'n Burn'.",
