@@ -54,7 +54,7 @@ static unsigned disk_total = 0;
 static bool disk_tray_open = false;
 
 static struct retro_disk_control_callback retro_disk_control_cb;
-//static struct retro_disk_control_ext_callback retro_disk_control_ext_cb;
+static struct retro_disk_control_ext_callback retro_disk_control_ext_cb;
 
 static bool read_m3u(const char *file)
 {
@@ -632,26 +632,26 @@ static void init_disk_control_interface(void)
    retro_disk_control_cb.add_image_index     = disk_add_image_index;
    retro_disk_control_cb.replace_image_index = disk_replace_image_index;
 
-   /* retro_disk_control_ext_cb.set_eject_state     = disk_set_eject_state; */
-   /* retro_disk_control_ext_cb.get_eject_state     = disk_get_eject_state; */
-   /* retro_disk_control_ext_cb.set_image_index     = disk_set_image_index; */
-   /* retro_disk_control_ext_cb.get_image_index     = disk_get_image_index; */
-   /* retro_disk_control_ext_cb.get_num_images      = disk_get_num_images; */
-   /* retro_disk_control_ext_cb.add_image_index     = disk_add_image_index; */
-   /* retro_disk_control_ext_cb.replace_image_index = disk_replace_image_index; */
-   /* retro_disk_control_ext_cb.set_initial_image   = disk_set_initial_image; */
-   /* retro_disk_control_ext_cb.get_image_path      = disk_get_image_path; */
-   /* retro_disk_control_ext_cb.get_image_label     = disk_get_image_label; */
+   retro_disk_control_ext_cb.set_eject_state     = disk_set_eject_state;
+   retro_disk_control_ext_cb.get_eject_state     = disk_get_eject_state;
+   retro_disk_control_ext_cb.set_image_index     = disk_set_image_index;
+   retro_disk_control_ext_cb.get_image_index     = disk_get_image_index;
+   retro_disk_control_ext_cb.get_num_images      = disk_get_num_images;
+   retro_disk_control_ext_cb.add_image_index     = disk_add_image_index;
+   retro_disk_control_ext_cb.replace_image_index = disk_replace_image_index;
+   retro_disk_control_ext_cb.set_initial_image   = disk_set_initial_image;
+   retro_disk_control_ext_cb.get_image_path      = disk_get_image_path;
+   retro_disk_control_ext_cb.get_image_label     = disk_get_image_label;
 
    disk_initial_index = 0;
    disk_initial_path[0] = '\0';
-   /* if (retro_environ_cb(RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION, &dci_version) && (dci_version >= 1)) */
-   /*    retro_environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE, &retro_disk_control_ext_cb); */
-   /* else */
-   /*    retro_environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &retro_disk_control_cb); */
+   if (retro_environment_cb(RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION, &dci_version) && (dci_version >= 1))
+      retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE, &retro_disk_control_ext_cb);
+   else
+      retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &retro_disk_control_cb);
 
-   retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE,
-                    &retro_disk_control_cb);
+   /* retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, */
+   /*                  &retro_disk_control_cb); */
 }
 
 bool
