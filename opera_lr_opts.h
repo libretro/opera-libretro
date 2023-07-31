@@ -32,6 +32,7 @@ void                 opera_lr_opts_process_vdlp_flags(void);
 void                 opera_lr_opts_process_high_resolution(void);
 void                 opera_lr_opts_process_vdlp_pixel_format(void);
 void                 opera_lr_opts_process_active_devices(void);
+void                 opera_lr_opts_process_hide_lightgun_crosshairs(void);
 void                 opera_lr_opts_process_madam_matrix_engine(void);
 void                 opera_lr_opts_process_debug(void);
 void                 opera_lr_opts_process_dsp_threaded(void);

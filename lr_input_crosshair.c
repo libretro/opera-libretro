@@ -10,6 +10,7 @@ struct lr_crosshair_s
 };
 
 typedef struct lr_crosshair_s lr_crosshair_t;
+extern uint32_t g_OPT_HIDE_LIGHTGUN_CROSSHAIRS;
 
 static const uint32_t COLORS[LR_INPUT_MAX_DEVICES] =
   {
@@ -88,6 +89,7 @@ lr_input_crosshairs_draw(uint32_t       *buf_,
       if(CROSSHAIRS[i].c == 0)
         continue;
 
-      lr_input_crosshair_draw(&CROSSHAIRS[i],buf_,width_,height_);
+      if(g_OPT_HIDE_LIGHTGUN_CROSSHAIRS == 0)
+        lr_input_crosshair_draw(&CROSSHAIRS[i],buf_,width_,height_);
     }
 }
