@@ -142,6 +142,7 @@ opera_lr_dsp_destroy(void)
       g_DSP_COND         = NULL;
       g_DSP_COND_MUTEX   = NULL;
       g_DSP_THREAD_MUTEX = NULL;
+      g_DSP_THREADED     = FALSE;
     }
 }
 
