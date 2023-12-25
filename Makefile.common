@@ -28,6 +28,7 @@ SOURCES_C := \
         $(CORE_DIR)/retro_cdimage.c \
 
 SOURCES_C += \
+        $(OPERA_DIR)/prng16.c \
         $(OPERA_DIR)/opera_3do.c \
         $(OPERA_DIR)/opera_arm.c \
         $(OPERA_DIR)/opera_bios.c \
