@@ -36,6 +36,7 @@
 #include "opera_xbus.h"
 
 #include "boolean.h"
+#include "prng16.h"
 
 #include <string.h>
 
@@ -44,8 +45,6 @@
 #define CASCADE      0x4
 #define FLABLODE     0x8
 #define RELOAD_VAL   0x10
-
-extern int fastrand(void);
 
 struct fifo_s
 {
@@ -618,7 +617,7 @@ opera_clio_peek(uint32_t addr_)
       return opera_dsp_imem_read(CLIO.dsp_address);
     }
   else if(addr_ == 0x17F0)
-    return fastrand();
+    return prng16();
   else if(addr_ == 0x17D0) /* read DSP/ARM semaphore */
     return opera_dsp_arm_semaphore_read();
 

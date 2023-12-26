@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <file/file_path.h>
 #include <libretro.h>
@@ -17,10 +18,11 @@
 #include "libopera/opera_clock.h"
 #include "libopera/opera_core.h"
 #include "libopera/opera_madam.h"
+#include "libopera/opera_nvram.h"
 #include "libopera/opera_pbus.h"
 #include "libopera/opera_region.h"
 #include "libopera/opera_vdlp.h"
-#include "libopera/opera_nvram.h"
+#include "libopera/prng16.h"
 
 #include "opera_lr_dsp.h"
 #include "lr_input.h"
@@ -577,6 +579,8 @@ retro_init(void)
   opera_cdrom_set_callbacks(cdimage_get_size,
                             cdimage_set_sector,
                             cdimage_read_sector);
+
+  prng16_seed(time(NULL));
 }
 
 void

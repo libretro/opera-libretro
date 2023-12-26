@@ -33,6 +33,7 @@
 #include "opera_clio.h"
 #include "opera_core.h"
 #include "opera_dsp.h"
+#include "prng16.h"
 
 #include <string.h>
 
@@ -186,7 +187,7 @@ typedef struct INSTTRAS_s INSTTRAS_t;
 struct REGSTAG_s
 {
   uint32_t PC;                  // 0x0ee
-  uint16_t NOISE;               // 0x0ea
+  //  uint16_t NOISE;               // 0x0ea
   uint16_t AudioOutStatus;      // audlock,lftfull,rgtfull -- 0x0eb//0x3eb
   uint16_t Sema4Status;         // 0x0ec // 0x3ec
   uint16_t Sema4Data;           // 0x0ed // 0x3ed
@@ -226,7 +227,6 @@ struct dsp_s
   int        REGi;
   REGSTAG_t  dregs;
   INTAG_t    flags;
-  uint32_t   g_seed;
   int        CPUSupply[16];
 };
 
@@ -251,11 +251,15 @@ typedef union dsp_alu_flags_u dsp_alu_flags_t;
 
 static dsp_t DSP;
 
-int
-fastrand(void)
+static
+INLINE
+uint32_t
+hash16(uint32_t i_,
+       uint32_t k_)
 {
-  DSP.g_seed = 69069 * DSP.g_seed + 1;
-  return (DSP.g_seed & 0xFFFF);
+  uint32_t const hash = (i_ * k_);
+
+  return (((hash >> 16) ^ hash) & 0xFFFF);
 }
 
 static
@@ -315,8 +319,7 @@ dsp_read(uint32_t addr_)
   switch(addr_)
     {
     case 0xEA:
-      DSP.dregs.NOISE = fastrand();
-      return DSP.dregs.NOISE;
+      return prng16();
     case 0xEB:
       return DSP.dregs.AudioOutStatus;
     case 0xEC:
@@ -345,7 +348,7 @@ dsp_read(uint32_t addr_)
         val=IMem[addr-0x80];
       */
       if(DSP.CPUSupply[addr_ - 0xF0])
-        return (DSP.CPUSupply[addr_ - 0xF0] = 0, fastrand());
+        return (DSP.CPUSupply[addr_ - 0xF0] = 0, prng16());
       return opera_clio_fifo_ei(addr_ & 0x0F);
     case 0x70:
     case 0x71:
@@ -689,7 +692,6 @@ opera_dsp_init(void)
   int32_t a,c;
   ITAG_t inst;
 
-  DSP.g_seed = 0xa5a5a5a5;
   for(a = 0; a < 16; a++)
     {
       for(c = 0; c < 8; c++)
