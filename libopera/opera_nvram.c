@@ -1,6 +1,6 @@
-#include "opera_arm.h"
+#include "opera_mem.h"
 
-#include "retro_endianness.h"
+#include "endianness.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -42,7 +42,7 @@ struct nvram_header_t
 void
 opera_nvram_init(void)
 {
-  nvram_header_t *nvram_hdr = (nvram_header_t*)opera_arm_nvram_get();
+  nvram_header_t *nvram_hdr = (nvram_header_t*)NVRAM;
 
   memset(nvram_hdr,0,sizeof(nvram_header_t));
 
@@ -58,22 +58,22 @@ opera_nvram_init(void)
   nvram_hdr->label[2]            = 'R';
   nvram_hdr->label[3]            = 'A';
   nvram_hdr->label[4]            = 'M';
-  nvram_hdr->id                  = swap_if_little32(0xFFFFFFFF);
-  nvram_hdr->block_size          = swap_if_little32(0x00000001);
-  nvram_hdr->block_count         = swap_if_little32(0x00008000);
-  nvram_hdr->root_dir_id         = swap_if_little32(0xFFFFFFFE);
-  nvram_hdr->root_dir_blocks     = swap_if_little32(0x00000000);
-  nvram_hdr->root_dir_block_size = swap_if_little32(0x00000001);
-  nvram_hdr->last_root_dir_copy  = swap_if_little32(0x00000000);
-  nvram_hdr->root_dir_copies[0]  = swap_if_little32(0x00000084);
-  nvram_hdr->unknown_value0      = swap_if_little32(0x855A02B6);
-  nvram_hdr->unknown_value1      = swap_if_little32(0x00000098);
-  nvram_hdr->unknown_value2      = swap_if_little32(0x00000098);
-  nvram_hdr->unknown_value3      = swap_if_little32(0x00000014);
-  nvram_hdr->unknown_value4      = swap_if_little32(0x00000014);
-  nvram_hdr->unknown_value5      = swap_if_little32(0x7AA565BD);
-  nvram_hdr->unknown_value6      = swap_if_little32(0x00000084);
-  nvram_hdr->unknown_value7      = swap_if_little32(0x00000084);
-  nvram_hdr->blocks_remaining    = swap_if_little32(0x00007F68);
-  nvram_hdr->unknown_value8      = swap_if_little32(0x00000014);
+  nvram_hdr->id                  = swap32_if_little_endian(0xFFFFFFFF);
+  nvram_hdr->block_size          = swap32_if_little_endian(0x00000001);
+  nvram_hdr->block_count         = swap32_if_little_endian(0x00008000);
+  nvram_hdr->root_dir_id         = swap32_if_little_endian(0xFFFFFFFE);
+  nvram_hdr->root_dir_blocks     = swap32_if_little_endian(0x00000000);
+  nvram_hdr->root_dir_block_size = swap32_if_little_endian(0x00000001);
+  nvram_hdr->last_root_dir_copy  = swap32_if_little_endian(0x00000000);
+  nvram_hdr->root_dir_copies[0]  = swap32_if_little_endian(0x00000084);
+  nvram_hdr->unknown_value0      = swap32_if_little_endian(0x855A02B6);
+  nvram_hdr->unknown_value1      = swap32_if_little_endian(0x00000098);
+  nvram_hdr->unknown_value2      = swap32_if_little_endian(0x00000098);
+  nvram_hdr->unknown_value3      = swap32_if_little_endian(0x00000014);
+  nvram_hdr->unknown_value4      = swap32_if_little_endian(0x00000014);
+  nvram_hdr->unknown_value5      = swap32_if_little_endian(0x7AA565BD);
+  nvram_hdr->unknown_value6      = swap32_if_little_endian(0x00000084);
+  nvram_hdr->unknown_value7      = swap32_if_little_endian(0x00000084);
+  nvram_hdr->blocks_remaining    = swap32_if_little_endian(0x00007F68);
+  nvram_hdr->unknown_value8      = swap32_if_little_endian(0x00000014);
 }

@@ -2,9 +2,10 @@
 
 #include "opera_lr_callbacks.h"
 
-#include "bool.h"
+#include "boolean.h"
 
 #include <rthreads/rthreads.h>
+
 #include <stdint.h>
 
 /* FORWARD DECLARATIONS */
@@ -16,7 +17,7 @@ static void dsp_upload_unlocked(void);
 #define DSP_BUF_SIZE_MASK (DSP_BUF_SIZE - 1)
 
 /* GLOBAL VARIABLES */
-static bool_t g_DSP_THREADED = FALSE;
+static bool g_DSP_THREADED = false;
 
 static uint32_t g_DSP_BUF_IDX     = 0;
 static uint32_t g_DSP_BUF_PENDING = 0;
@@ -25,7 +26,7 @@ static int32_t  g_DSP_BUF[DSP_BUF_SIZE];
 static scond_t *g_DSP_COND         = NULL;
 static slock_t *g_DSP_COND_MUTEX   = NULL;
 static sthread_t *g_DSP_THREAD     = NULL;
-static bool g_DSP_THREAD_RUNNING   = FALSE;
+static bool g_DSP_THREAD_RUNNING   = false;
 static slock_t *g_DSP_THREAD_MUTEX = NULL;
 
 static void (*g_DSP_UPLOAD)(void)  = dsp_upload_unlocked;
@@ -40,7 +41,7 @@ dsp_thread_loop(void *handle_)
 {
   int32_t sample;
   uint32_t pending;
-  bool running = TRUE;
+  bool running = true;
 
   while(running)
     {
@@ -126,7 +127,7 @@ opera_lr_dsp_destroy(void)
   if(g_DSP_THREADED)
     {
       slock_lock(g_DSP_THREAD_MUTEX);
-      g_DSP_THREAD_RUNNING = FALSE;
+      g_DSP_THREAD_RUNNING = false;
       g_DSP_BUF_PENDING    = 0;
       g_DSP_BUF_IDX        = 0;
       slock_unlock(g_DSP_THREAD_MUTEX);
@@ -142,12 +143,12 @@ opera_lr_dsp_destroy(void)
       g_DSP_COND         = NULL;
       g_DSP_COND_MUTEX   = NULL;
       g_DSP_THREAD_MUTEX = NULL;
-      g_DSP_THREADED     = FALSE;
+      g_DSP_THREADED     = false;
     }
 }
 
 void
-opera_lr_dsp_init(const bool_t threaded_)
+opera_lr_dsp_init(const bool threaded_)
 {
   if(g_DSP_THREADED == threaded_)
     return;
@@ -162,7 +163,7 @@ opera_lr_dsp_init(const bool_t threaded_)
       g_DSP_COND           = scond_new();
       g_DSP_COND_MUTEX     = slock_new();
       g_DSP_THREAD_MUTEX   = slock_new();
-      g_DSP_THREAD_RUNNING = TRUE;
+      g_DSP_THREAD_RUNNING = true;
       g_DSP_THREAD         = sthread_create(dsp_thread_loop, NULL);
 
       g_DSP_UPLOAD         = dsp_upload_locked;

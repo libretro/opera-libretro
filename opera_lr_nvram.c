@@ -1,17 +1,16 @@
-#include <string.h>
-
-#include <compat/strl.h>
-#include <file/file_path.h>
-#include <retro_endianness.h>
-#include <retro_miscellaneous.h>
-#include <streams/file_stream.h>
-
-#include "libopera/opera_arm.h"
-#include "libopera/opera_nvram.h"
+#include "compat/strl.h"
+#include "file/file_path.h"
+#include "retro_miscellaneous.h"
+#include "streams/file_stream.h"
 
 #include "opera_lr_callbacks.h"
 #include "opera_lr_nvram.h"
 #include "opera_lr_opts.h"
+
+#include "libopera/opera_mem.h"
+#include "libopera/opera_nvram.h"
+
+#include <string.h>
 
 static const char OLD_NVRAM_FILENAME[] = "3DO.nvram";
 
@@ -358,8 +357,8 @@ opera_lr_nvram_save(const char *gamepath_)
   size_t nvram_size;
   const uint8_t *nvram_buf;
 
-  nvram_buf  = opera_arm_nvram_get();
-  nvram_size = opera_arm_nvram_size();
+  nvram_buf  = NVRAM;
+  nvram_size = NVRAM_SIZE;
   version    = opera_lr_opts_nvram_version();
   if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
     {
@@ -386,8 +385,8 @@ opera_lr_nvram_load(const char *gamepath_)
   uint8_t  *nvram_buf;
   uint32_t  nvram_size;
 
-  nvram_buf  = opera_arm_nvram_get();
-  nvram_size = opera_arm_nvram_size();
+  nvram_buf  = NVRAM;
+  nvram_size = NVRAM_SIZE;
   version    = opera_lr_opts_nvram_version();
   if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
     {

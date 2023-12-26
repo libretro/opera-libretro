@@ -63,8 +63,8 @@ uint32_t opera_clio_timer_get_delay(void);
 void     opera_clio_timer_execute(void);
 
 uint32_t opera_clio_state_size(void);
-void     opera_clio_state_save(void *buf_);
-void     opera_clio_state_load(const void *buf_);
+uint32_t opera_clio_state_save(void *buf_);
+uint32_t opera_clio_state_load(const void *buf_);
 
 EXTERN_C_END
 

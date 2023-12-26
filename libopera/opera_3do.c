@@ -34,9 +34,12 @@
 #include "opera_core.h"
 #include "opera_diag_port.h"
 #include "opera_dsp.h"
+#include "opera_log.h"
 #include "opera_madam.h"
+#include "opera_mem.h"
 #include "opera_region.h"
 #include "opera_sport.h"
+#include "opera_state.h"
 #include "opera_vdlp.h"
 #include "opera_xbus.h"
 #include "opera_xbus_cdrom_plugin.h"
@@ -44,21 +47,21 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 static opera_ext_interface_t io_interface;
 
 extern int flagtime;
 
-int      HIRESMODE = 0;
-uint32_t FIXMODE   = 0;
-int      CNBFIX    = 0;
+uint32_t FIXMODE = 0;
+int      CNBFIX  = 0;
 
 int
 opera_3do_init(opera_ext_interface_t callback_)
 {
   int i;
-  uint8_t *dram;
-  uint8_t *vram;
+
+  opera_mem_init();
 
   io_interface = callback_;
 
@@ -68,12 +71,9 @@ opera_3do_init(opera_ext_interface_t callback_)
 
   opera_arm_init();
 
-  dram = opera_arm_ram_get();
-  vram = opera_arm_vram_get();
-
-  opera_vdlp_init(vram);
-  opera_sport_init(vram);
-  opera_madam_init(dram);
+  opera_vdlp_init();
+  opera_sport_init();
+  opera_madam_init();
   opera_xbus_init(xbus_cdrom_plugin);
 
   /*
@@ -187,75 +187,106 @@ opera_3do_process_frame(void)
   field = !field;
 }
 
+static
+uint32_t
+opera_3do_state_size_v1(void)
+{
+  uint32_t size;
+
+  size  = 0;
+  size += opera_state_save_size(sizeof(opera_state_hdr_t));
+  size += opera_arm_state_size();
+  size += opera_clio_state_size();
+  size += opera_dsp_state_size();
+  size += opera_madam_state_size();
+  size += opera_mem_state_size();
+  size += opera_sport_state_size();
+  size += opera_vdlp_state_size();
+  size += opera_xbus_state_size();
+
+  return size;
+}
+
 uint32_t
 opera_3do_state_size(void)
 {
-  uint32_t tmp;
-
-  tmp  = 0;
-  tmp += 16 * 4;
-  tmp += opera_arm_state_size();
-  tmp += opera_vdlp_state_size();
-  tmp += opera_dsp_state_size();
-  tmp += opera_clio_state_size();
-  tmp += opera_clock_state_size();
-  tmp += opera_sport_state_size();
-  tmp += opera_madam_state_size();
-  tmp += opera_xbus_state_size();
-
-  return tmp;
+  return opera_3do_state_size_v1();
 }
 
-void
-opera_3do_state_save(void *buf_)
+static
+uint32_t
+opera_3do_state_save_v1(void         *data_,
+                        size_t const  size_)
 {
-  uint8_t *data;
-  uint32_t *indexes;
+  uint8_t *start = (uint8_t*)data_;
+  uint8_t *data  = (uint8_t*)data_;
+  opera_state_hdr_t hdr = {0};
 
-  data    = buf_;
-  indexes = buf_;
+  hdr.version = 0x01;
 
-  indexes[0] = 0x97970101;
-  indexes[1] = 16 * 4;
-  indexes[2] = indexes[1] + opera_arm_state_size();
-  indexes[3] = indexes[2] + opera_vdlp_state_size();
-  indexes[4] = indexes[3] + opera_dsp_state_size();
-  indexes[5] = indexes[4] + opera_clio_state_size();
-  indexes[6] = indexes[5] + opera_clock_state_size();
-  indexes[7] = indexes[6] + opera_sport_state_size();
-  indexes[8] = indexes[7] + opera_madam_state_size();
-  indexes[9] = indexes[8] + opera_xbus_state_size();
+  data += opera_state_save(data,"3DO",&hdr,sizeof(hdr));
+  data += opera_arm_state_save(data);
+  data += opera_clio_state_save(data);
+  data += opera_dsp_state_save(data);
+  data += opera_madam_state_save(data);
+  data += opera_mem_state_save(data);
+  data += opera_sport_state_save(data);
+  data += opera_vdlp_state_save(data);
+  data += opera_xbus_state_save(data);
 
-  opera_arm_state_save(&data[indexes[1]]);
-  opera_vdlp_state_save(&data[indexes[2]]);
-  opera_dsp_state_save(&data[indexes[3]]);
-  opera_clio_state_save(&data[indexes[4]]);
-  opera_clock_state_save(&data[indexes[5]]);
-  opera_sport_state_save(&data[indexes[6]]);
-  opera_madam_state_save(&data[indexes[7]]);
-  opera_xbus_state_save(&data[indexes[8]]);
+  return (data - start);
 }
 
-int
-opera_3do_state_load(const void *buf_)
+uint32_t
+opera_3do_state_save(void         *data_,
+                     size_t const  size_)
 {
-  const uint8_t *data;
-  const uint32_t *indexes;
+  return opera_3do_state_save_v1(data_,size_);
+}
 
-  data    = buf_;
-  indexes = buf_;
+static
+uint32_t
+opera_3do_state_load_v1(const void   *data_,
+                        size_t const  size_)
+{
+  uint8_t const *start = (uint8_t const*)data_;
+  uint8_t const *data  = (uint8_t const*)data_;
+  opera_state_hdr_t hdr = {0};
 
-  if(indexes[0] != 0x97970101)
+  if(size_ != opera_3do_state_size_v1())
     return 0;
 
-  opera_arm_state_load(&data[indexes[1]]);
-  opera_vdlp_state_load(&data[indexes[2]]);
-  opera_dsp_state_load(&data[indexes[3]]);
-  opera_clio_state_load(&data[indexes[4]]);
-  opera_clock_state_load(&data[indexes[5]]);
-  opera_sport_state_load(&data[indexes[6]]);
-  opera_madam_state_load(&data[indexes[7]]);
-  opera_xbus_state_load(&data[indexes[8]]);
+  data += opera_state_load(&hdr,"3DO",data,sizeof(hdr));
+  data += opera_arm_state_load(data);
+  data += opera_clio_state_load(data);
+  data += opera_dsp_state_load(data);
+  data += opera_madam_state_load(data);
+  data += opera_mem_state_load(data);
+  data += opera_sport_state_load(data);
+  data += opera_vdlp_state_load(data);
+  data += opera_xbus_state_load(data);
 
-  return 1;
+  return (data - start);
+}
+
+uint32_t
+opera_3do_state_load(void const *data_,
+                     size_t      size_)
+{
+  uint32_t version;
+
+  version = opera_state_get_version(data_,size_);
+
+  opera_log_printf(OPERA_LOG_DEBUG,"[Opera]: loading state... version %x\n",version);
+
+  switch(version)
+    {
+    case 0x01:
+      return opera_3do_state_load_v1(data_,size_);
+    default:
+      opera_log_printf(OPERA_LOG_ERROR,
+                       "[Opera]: unable to load state - unknown state version %x\n",
+                       version);
+      return 0;
+    }
 }

@@ -1,14 +1,11 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include <file/file_path.h>
-#include <libretro.h>
-#include <libretro_core_options.h>
-#include <retro_miscellaneous.h>
-#include <streams/file_stream.h>
+#include "lr_input.h"
+#include "lr_input_crosshair.h"
+#include "lr_input_descs.h"
+#include "opera_lr_callbacks.h"
+#include "opera_lr_dsp.h"
+#include "opera_lr_nvram.h"
+#include "opera_lr_opts.h"
+#include "retro_cdimage.h"
 
 #include "libopera/hack_flags.h"
 #include "libopera/opera_3do.h"
@@ -17,21 +14,26 @@
 #include "libopera/opera_cdrom.h"
 #include "libopera/opera_clock.h"
 #include "libopera/opera_core.h"
+#include "libopera/opera_log.h"
 #include "libopera/opera_madam.h"
+#include "libopera/opera_mem.h"
 #include "libopera/opera_nvram.h"
 #include "libopera/opera_pbus.h"
 #include "libopera/opera_region.h"
 #include "libopera/opera_vdlp.h"
 #include "libopera/prng16.h"
 
-#include "opera_lr_dsp.h"
-#include "lr_input.h"
-#include "lr_input_crosshair.h"
-#include "lr_input_descs.h"
-#include "opera_lr_nvram.h"
-#include "opera_lr_callbacks.h"
-#include "opera_lr_opts.h"
-#include "retro_cdimage.h"
+#include "file/file_path.h"
+#include "libretro.h"
+#include "libretro_core_options.h"
+#include "retro_miscellaneous.h"
+#include "streams/file_stream.h"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define CDIMAGE_SECTOR_SIZE 2048
 
@@ -215,24 +217,22 @@ bool
 retro_serialize(void   *data_,
                 size_t  size_)
 {
-  if(size_ != opera_3do_state_size())
-    return false;
+  uint32_t size;
 
-  opera_3do_state_save(data_);
+  size = opera_3do_state_save(data_,size_);
 
-  return true;
+  return (size == size_);
 }
 
 bool
-retro_unserialize(const void *data_,
+retro_unserialize(void const *data_,
                   size_t      size_)
 {
-  if(size_ != opera_3do_state_size())
-    return false;
+  uint32_t size;
 
-  opera_3do_state_load(data_);
+  size = opera_3do_state_load(data_,size_);
 
-  return true;
+  return (size == size_);
 }
 
 void
@@ -306,8 +306,8 @@ load_rom1(void)
       return -1;
     }
 
-  rom  = opera_arm_rom1_get();
-  size = opera_arm_rom1_size();
+  rom  = ROM1;
+  size = ROM1_SIZE;
   if((rv = read_file_from_system_directory(g_OPT_BIOS->filename,rom,size)) < 0)
     {
       retro_log_printf_cb(RETRO_LOG_ERROR,
@@ -316,7 +316,7 @@ load_rom1(void)
       return -1;
     }
 
-  opera_arm_rom1_byteswap_if_necessary();
+  opera_mem_rom1_byteswap32_if_le();
 
   return 0;
 }
@@ -329,8 +329,8 @@ load_rom2(void)
   uint8_t *rom;
   int64_t  size;
 
-  rom  = opera_arm_rom2_get();
-  size = opera_arm_rom2_size();
+  rom  = ROM2;
+  size = ROM2_SIZE;
   if(g_OPT_FONT == NULL)
     {
       memset(rom,0,size);
@@ -345,7 +345,7 @@ load_rom2(void)
       return -1;
     }
 
-  opera_arm_rom2_byteswap_if_necessary();
+  opera_mem_rom2_byteswap32_if_le();
 
   return 0;
 }
@@ -539,9 +539,9 @@ retro_get_memory_data(unsigned id_)
     case RETRO_MEMORY_SAVE_RAM:
       return NULL;
     case RETRO_MEMORY_SYSTEM_RAM:
-      return opera_arm_ram_get();
+      return DRAM;
     case RETRO_MEMORY_VIDEO_RAM:
-      return opera_arm_vram_get();
+      return VRAM;
     }
 
   return NULL;
@@ -555,9 +555,9 @@ retro_get_memory_size(unsigned id_)
     case RETRO_MEMORY_SAVE_RAM:
       return 0;
     case RETRO_MEMORY_SYSTEM_RAM:
-      return opera_arm_ram_size();
+      return DRAM_SIZE;
     case RETRO_MEMORY_VIDEO_RAM:
-      return opera_arm_vram_size();
+      return VRAM_SIZE;
     }
 
   return 0;
@@ -567,11 +567,18 @@ void
 retro_init(void)
 {
   struct retro_log_callback log;
-  unsigned level                = 5;
-  uint64_t serialization_quirks = RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION;
+  unsigned level;
+  uint64_t serialization_quirks;
+
+  level = 5;
+  serialization_quirks = (RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT |
+                          RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT);
 
   if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&log))
-    opera_lr_callbacks_set_log_printf(log.log);
+    {
+      opera_lr_callbacks_set_log_printf(log.log);
+      opera_log_set_func(log.log);
+    }
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL,&level);
   retro_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS,&serialization_quirks);
@@ -586,6 +593,7 @@ retro_init(void)
 void
 retro_deinit(void)
 {
+
 }
 
 void

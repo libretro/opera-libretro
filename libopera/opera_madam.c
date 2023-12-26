@@ -28,7 +28,7 @@
   *  Felix Lazarev
 */
 
-#include "bool.h"
+#include "boolean.h"
 #include "endianness.h"
 #include "hack_flags.h"
 #include "inline.h"
@@ -37,7 +37,9 @@
 #include "opera_clio.h"
 #include "opera_core.h"
 #include "opera_madam.h"
+#include "opera_mem.h"
 #include "opera_pbus.h"
+#include "opera_state.h"
 #include "opera_vdlp.h"
 
 #include <math.h>
@@ -437,22 +439,21 @@ opera_madam_fsm_set(uint32_t val_)
 uint32_t
 opera_madam_state_size(void)
 {
-  return sizeof(madam_t);
+  return opera_state_save_size(sizeof(madam_t));
 }
 
-void
+uint32_t
 opera_madam_state_save(void *buf_)
 {
-  memcpy(buf_,&MADAM,sizeof(madam_t));
+  return opera_state_save(buf_,"MDAM",&MADAM,sizeof(MADAM));
 }
 
-void
+uint32_t
 opera_madam_state_load(const void *buf_)
 {
-  memcpy(&MADAM,buf_,sizeof(madam_t));
+  return opera_state_load(&MADAM,"MDAM",buf_,sizeof(MADAM));
 }
 
-static uint32_t mread32(uint32_t addr);
 static int32_t  TestInitVisual(int32_t packed);
 static int32_t  Init_Line_Map(void);
 static void     Init_Scale_Map(void);
@@ -486,7 +487,6 @@ static struct
   int      Transparent;
 } pproj;
 
-static uint8_t  *DRAM;
 static uint32_t  retuval;
 static uint32_t  BITADDR;
 static uint32_t  CCBFLAGS;
@@ -855,11 +855,7 @@ LoadPLUT(uint32_t pnt_,
 
   for(i = 0; i < n_; i++)
     {
-#ifdef MSB_FIRST
       MADAM.PLUT[i] = opera_mem_read16((((pnt_ >> 1) + i)) << 1);
-#else
-      MADAM.PLUT[i] = opera_mem_read16((((pnt_ >> 1) + i)^1) << 1);
-#endif
     }
 }
 
@@ -886,7 +882,7 @@ opera_madam_cel_handle(void)
           return;
         }
 
-      CCBFLAGS    = mread32(CURRENTCCB);
+      CCBFLAGS    = opera_mem_read32(CURRENTCCB);
       CURRENTCCB += 4;
 
       if(CCBFLAGS & CCB_PXOR)
@@ -905,7 +901,7 @@ opera_madam_cel_handle(void)
       PDATF = 0;
       NCCBF = 0;
 
-      NEXTCCB = mread32(CURRENTCCB) & 0xFFFFFFFC;
+      NEXTCCB = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
 
       if(!(CCBFLAGS & CCB_NPABS))
         {
@@ -920,7 +916,7 @@ opera_madam_cel_handle(void)
 
       CURRENTCCB += 4;
 
-      PDATA = mread32(CURRENTCCB) & 0xFFFFFFFC;
+      PDATA = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
       /*
         if((PDATA==0))
       	PDATF=1;
@@ -937,7 +933,7 @@ opera_madam_cel_handle(void)
 
       if(CCBFLAGS & CCB_LDPLUT)
         {
-          PLUTDATA = mread32(CURRENTCCB) & 0xFFFFFFFC;
+          PLUTDATA = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
           /*
             if((PLUTDATA == 0))
               PLUTF=1;
@@ -962,8 +958,8 @@ opera_madam_cel_handle(void)
 
       if(CCBFLAGS & CCB_YOXY)
         {
-          XPOS1616 = mread32(CURRENTCCB);
-          YPOS1616 = mread32(CURRENTCCB + 4);
+          XPOS1616 = opera_mem_read32(CURRENTCCB);
+          YPOS1616 = opera_mem_read32(CURRENTCCB + 4);
         }
 
       CURRENTCCB += 8;
@@ -985,47 +981,47 @@ opera_madam_cel_handle(void)
 
       if(CCBFLAGS & CCB_LDSIZE)
         {
-          HDX1616     = ((int32_t)mread32(CURRENTCCB)) >> 4;
+          HDX1616     = ((int32_t)opera_mem_read32(CURRENTCCB)) >> 4;
           CURRENTCCB += 4;
-          HDY1616     = ((int32_t)mread32(CURRENTCCB)) >> 4;
+          HDY1616     = ((int32_t)opera_mem_read32(CURRENTCCB)) >> 4;
           CURRENTCCB += 4;
-          VDX1616     = mread32(CURRENTCCB);
+          VDX1616     = opera_mem_read32(CURRENTCCB);
           CURRENTCCB += 4;
-          VDY1616     = mread32(CURRENTCCB);
+          VDY1616     = opera_mem_read32(CURRENTCCB);
           CURRENTCCB += 4;
         }
 
       if(CCBFLAGS & CCB_LDPRS)
         {
-          HDDX1616    = ((int32_t)mread32(CURRENTCCB)) >> 4;
+          HDDX1616    = ((int32_t)opera_mem_read32(CURRENTCCB)) >> 4;
           CURRENTCCB += 4;
-          HDDY1616    = ((int32_t)mread32(CURRENTCCB)) >> 4;
+          HDDY1616    = ((int32_t)opera_mem_read32(CURRENTCCB)) >> 4;
           CURRENTCCB += 4;
         }
 
       if(CCBFLAGS & CCB_LDPPMP)
         {
-          PIXC        = mread32(CURRENTCCB);
+          PIXC        = opera_mem_read32(CURRENTCCB);
           CURRENTCCB += 4;
         }
 
       if(CCBFLAGS & CCB_CCBPRE)
         {
-          PRE0        = mread32(CURRENTCCB);
+          PRE0        = opera_mem_read32(CURRENTCCB);
           CURRENTCCB += 4;
           if(!(CCBFLAGS & CCB_PACKED))
             {
-              PRE1        = mread32(CURRENTCCB);
+              PRE1        = opera_mem_read32(CURRENTCCB);
               CURRENTCCB += 4;
             }
         }
       else if(!PDATF)
         {
-          PRE0   = mread32(PDATA);
+          PRE0   = opera_mem_read32(PDATA);
           PDATA += 4;
           if(!(CCBFLAGS & CCB_PACKED))
             {
-              PRE1   = mread32(PDATA);
+              PRE1   = opera_mem_read32(PDATA);
               PDATA += 4;
             }
         }
@@ -1139,7 +1135,7 @@ DMAPBus(void)
   while(((int32_t)MADAM.mregs[0x574] > 0) && (pbus_size > 0))
     {
       opera_io_write(MADAM.mregs[0x570],
-                      swap32_if_little_endian(*pbus_buf));
+                     swap32_if_little_endian(*pbus_buf));
       pbus_buf++;
       pbus_size          -= 4;
       MADAM.mregs[0x574] -= 4;
@@ -1166,8 +1162,6 @@ opera_madam_init(uint8_t *mem_)
   int32_t n;
 
   opera_madam_reset();
-
-  DRAM = mem_;
 
   bitoper.bitset = 1;
 
@@ -1213,46 +1207,6 @@ opera_madam_init(uint8_t *mem_)
       pix1.raw = i << 5;
       MAPc16bAMV[i] = ((pix1.c16b.mr << 6) + (pix1.c16b.mg << 3) + pix1.c16b.mb);
     }
-}
-
-static
-INLINE
-uint32_t
-mread32(uint32_t addr_)
-{
-  return *((uint32_t*)&DRAM[addr_]);
-}
-
-static
-INLINE
-void
-mwrite16(const uint32_t addr_,
-         const uint16_t val_)
-{
-#ifdef MSB_FIRST
-  const uint32_t addr = addr_;
-#else
-  const uint32_t addr = addr_ ^ 2;
-#endif
-
-  *((uint16_t*)&DRAM[addr]) = val_;
-  if(!HIRESMODE || (addr < 0x200000))
-    return;
-  *((uint16_t*)&DRAM[addr + 1*1024*1024]) = val_;
-  *((uint16_t*)&DRAM[addr + 2*1024*1024]) = val_;
-  *((uint16_t*)&DRAM[addr + 3*1024*1024]) = val_;
-}
-
-static
-INLINE
-uint16_t
-mread16(const uint32_t addr_)
-{
-#ifdef MSB_FIRST
-  return *((uint16_t*)&DRAM[addr_]);
-#else
-  return *((uint16_t*)&DRAM[addr_ ^ 2]);
-#endif
 }
 
 static
@@ -1630,10 +1584,10 @@ process_pixel(int32_t x_,
   int32_t p;
   int32_t fp;
 
-  fp = mread16(REGCTL2 + XY2OFF(x_,y_,MADAM.rmod));
+  fp = opera_mem_read16(REGCTL2 + XY2OFF(x_,y_,MADAM.rmod));
   p  = PPROC(curpix_,fp,lawv_);
   p  = PPROJ_OUTPUT(curpix_,p,fp);
-  mwrite16(REGCTL3 + XY2OFF(x_,y_,MADAM.wmod),p);
+  opera_mem_write16(REGCTL3 + XY2OFF(x_,y_,MADAM.wmod),p);
 }
 
 uint32_t*
@@ -2231,7 +2185,7 @@ DrawLRCel_New(void)
 
           for(j = TEXTURE_WI_START; j < SPRWI; j++)
             {
-              CURPIX = PDEC(mread16((PDATA + XY2OFF(j,i,offset << 2))),&LAMV);
+              CURPIX = PDEC(opera_mem_read16((PDATA + XY2OFF(j,i,offset << 2))),&LAMV);
 
               if(!pproj.Transparent)
                 {
@@ -2239,13 +2193,13 @@ DrawLRCel_New(void)
                   uint32_t framePixel;
 
                   if(FIXMODE & FIX_BIT_TIMING_6)
-                    framePixel = mread16((REGCTL2+XY2OFF(xcur >> 16,(ycur>>16)<<1,MADAM.rmod)));
+                    framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,(ycur>>16)<<1,MADAM.rmod)));
                   else
-                    framePixel = mread16((REGCTL2+XY2OFF(xcur >> 16,ycur>>16,MADAM.rmod)));
+                    framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,ycur>>16,MADAM.rmod)));
 
                   pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(CURPIX,pixel,framePixel);
-                  mwrite16((REGCTL3+XY2OFF(xcur >> 16,ycur >> 16,MADAM.wmod)),pixel);
+                  opera_mem_write16((REGCTL3+XY2OFF(xcur >> 16,ycur >> 16,MADAM.wmod)),pixel);
                 }
 
               xcur += HDX1616;
@@ -2270,7 +2224,7 @@ DrawLRCel_New(void)
 
             for(j = 0; j < SPRWI; j++)
               {
-                CURPIX = PDEC(mread16((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
+                CURPIX = PDEC(opera_mem_read16((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
 
                 if(!pproj.Transparent)
                   {
@@ -2305,7 +2259,7 @@ DrawLRCel_New(void)
 
           for(j = 0; j < SPRWI; j++)
             {
-              CURPIX = PDEC(mread16((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
+              CURPIX = PDEC(opera_mem_read16((PDATA+XY2OFF(j,i,offset<<2))),&LAMV);
 
               if(!pproj.Transparent)
                 {
@@ -2354,26 +2308,26 @@ static INLINE uint32_t TexelCCWTest(int64_t hdx, int64_t hdy, int64_t vdx, int64
 }
 
 static
-bool_t
+bool
 QuadCCWTest(int32_t wdt_)
 {
   float wdt;
   uint32_t tmp;
 
   if((CCBFLAGS & CCB_ACCW) && (CCBFLAGS & CCB_ACW))
-    return FALSE;
+    return false;
 
   wdt = (float)wdt_;
   tmp = TexelCCWTest(HDX1616, HDY1616, VDX1616, VDY1616);
   if (tmp != TexelCCWTest(HDX1616, HDY1616, VDX1616 + HDDX1616*wdt, VDY1616 + HDDY1616*wdt))
-    return FALSE;
+    return false;
   if (tmp != TexelCCWTest(HDX1616 + HDDX1616*SPRHI, HDY1616 + HDDY1616*SPRHI, VDX1616, VDY1616))
-    return FALSE;
+    return false;
   if (tmp != TexelCCWTest(HDX1616 + HDDX1616*SPRHI, HDY1616 + HDDY1616*SPRHI, VDX1616 + HDDX1616*SPRHI * wdt, VDY1616 + HDDY1616*SPRHI * wdt))
-    return FALSE;
+    return false;
   if(tmp == (CCBFLAGS & (CCB_ACCW | CCB_ACW)))
-    return TRUE;
-  return FALSE;
+    return true;
+  return false;
 }
 
 static
@@ -2719,7 +2673,7 @@ TexelDraw_Line(uint16_t CURPIX_,
     {
       uint32_t next;
 
-      next = mread16(REGCTL2 + XY2OFF(xcur_,ycur_,MADAM.rmod));
+      next = opera_mem_read16(REGCTL2 + XY2OFF(xcur_,ycur_,MADAM.rmod));
       if(next != curr)
         {
           curr  = next;
@@ -2727,7 +2681,7 @@ TexelDraw_Line(uint16_t CURPIX_,
           pixel = PPROJ_OUTPUT(CURPIX_,pixel,next);
         }
 
-      mwrite16(REGCTL3 + XY2OFF(xcur_,ycur_,MADAM.wmod),pixel);
+      opera_mem_write16(REGCTL3 + XY2OFF(xcur_,ycur_,MADAM.wmod),pixel);
     }
 }
 
@@ -2742,14 +2696,14 @@ readPIX(int32_t x_,
   if(HIRESMODE)
     {
       src += XY2OFF(x_ >> 1,y_ >> 1,MADAM.rmod);
-      src += ((((y_ & 1) << 1) + (x_ & 1)) * 1024 * 1024);
+      src += ((((y_ & 1) << 1) + (x_ & 1)) * VRAM_SIZE);
     }
   else
     {
       src += XY2OFF(x_,y_,MADAM.rmod);
     }
 
-  return *((uint16_t*)&DRAM[src ^ 2]);
+  return opera_mem_read16(src);
 }
 
 static
@@ -2764,14 +2718,14 @@ writePIX(int32_t  x_,
   if(HIRESMODE)
     {
       src += XY2OFF(x_ >> 1,y_ >> 1,MADAM.wmod);
-      src += ((((y_ & 1) << 1) + (x_ & 1)) * 1024 * 1024);
+      src += ((((y_ & 1) << 1) + (x_ & 1)) * VRAM_SIZE);
     }
   else
     {
       src += XY2OFF(x_,y_,MADAM.wmod);
     }
 
-  *((uint16_t*)&DRAM[src ^ 2]) = p_;
+  opera_mem_write16(src,p_);
 }
 
 static

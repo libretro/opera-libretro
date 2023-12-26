@@ -33,6 +33,8 @@
 #include "opera_clock.h"
 #include "opera_dsp.h"
 #include "opera_madam.h"
+#include "opera_mem.h"
+#include "opera_state.h"
 #include "opera_xbus.h"
 
 #include "boolean.h"
@@ -79,26 +81,26 @@ int flagtime;
 int TIMER_VAL = 0; //0x415
 
 static uint32_t *MADAM_REGS;
-static clio_t    CLIO;
+static clio_t    CLIO = {0};
 
 uint32_t
 opera_clio_state_size(void)
 {
-  return sizeof(clio_t);
+  return opera_state_save_size(sizeof(clio_t));
 }
 
-void
+uint32_t
 opera_clio_state_save(void *buf_)
 {
-  memcpy(buf_,&CLIO,sizeof(clio_t));
+  return opera_state_save(buf_,"CLIO",&CLIO,sizeof(CLIO));
 }
 
-void
+uint32_t
 opera_clio_state_load(const void *buf_)
 {
   TIMER_VAL = 0;
 
-  memcpy(&CLIO,buf_,sizeof(clio_t));
+  return opera_state_load(&CLIO,"CLIO",buf_,sizeof(CLIO));
 }
 
 #define CURADR MADAM_REGS[base+0x00]
@@ -200,17 +202,10 @@ clio_handle_dma(uint32_t val_)
               b1 = opera_xbus_fifo_get_data();
               b0 = opera_xbus_fifo_get_data();
 
-#ifdef MSB_FIRST
               opera_mem_write8(trg+0,b3);
               opera_mem_write8(trg+1,b2);
               opera_mem_write8(trg+2,b1);
               opera_mem_write8(trg+3,b0);
-#else
-              opera_mem_write8(trg+0,b0);
-              opera_mem_write8(trg+1,b1);
-              opera_mem_write8(trg+2,b2);
-              opera_mem_write8(trg+3,b3);
-#endif
 
               trg += 4;
               len -= 4;
@@ -227,17 +222,10 @@ clio_handle_dma(uint32_t val_)
               b1 = opera_xbus_fifo_get_data();
               b0 = opera_xbus_fifo_get_data();
 
-#ifdef MSB_FIRST
               opera_mem_write8(trg+0,b3);
               opera_mem_write8(trg+1,b2);
               opera_mem_write8(trg+2,b1);
               opera_mem_write8(trg+3,b0);
-#else
-              opera_mem_write8(trg+0,b0);
-              opera_mem_write8(trg+1,b1);
-              opera_mem_write8(trg+2,b2);
-              opera_mem_write8(trg+3,b3);
-#endif
 
               trg += 4;
               len -= 4;
@@ -365,7 +353,7 @@ opera_clio_poke(uint32_t addr_,
       if_set_set_reset(&CLIO.regs[0x84],val_,0x40,0x04);
       if_set_set_reset(&CLIO.regs[0x84],val_,0x80,0x08);
 
-      opera_arm_rom_select(!!(val_ & 0x4));
+      opera_mem_rom_select((val_ & 0x4) ? ROM2 : ROM1);
 
       return 0;
     }
@@ -712,11 +700,7 @@ opera_clio_reset(void)
 uint16_t
 opera_clio_fifo_ei_read(uint16_t channel_)
 {
-#ifdef MSB_FIRST
   return opera_mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)));
-#else
-  return opera_mem_read16(((CLIO.fifo_i[channel_].start.addr + CLIO.fifo_i[channel_].idx)^2));
-#endif
 }
 
 static
@@ -724,11 +708,7 @@ void
 opera_clio_fifo_eo_write(uint16_t channel_,
                          uint16_t val_)
 {
-#ifdef MSB_FIRST
   opera_mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)),val_);
-#else
-  opera_mem_write16(((CLIO.fifo_o[channel_].start.addr + CLIO.fifo_o[channel_].idx)^2),val_);
-#endif
 }
 
 static

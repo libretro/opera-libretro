@@ -37,14 +37,14 @@
 
 EXTERN_C_BEGIN
 
-void     opera_sport_init(uint8_t * const vram_);
+void     opera_sport_init();
 
 void     opera_sport_set_source(const uint32_t idx_);
 void     opera_sport_write_access(const uint32_t idx_, const uint32_t mask_);
 
 uint32_t opera_sport_state_size(void);
-void     opera_sport_state_save(void *buf_);
-void     opera_sport_state_load(const void *buf_);
+uint32_t opera_sport_state_save(void *buf_);
+uint32_t opera_sport_state_load(void const *buf_);
 
 EXTERN_C_END
 
