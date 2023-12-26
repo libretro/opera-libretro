@@ -117,25 +117,6 @@ opera_clock_cpu_get_default_freq(void)
   return DEFAULT_CPU_FREQ;
 }
 
-/* Unnecessary. For backwards compatibility. */
-uint32_t
-opera_clock_state_size(void)
-{
-  return (sizeof(uint32_t) * 8);
-}
-
-void
-opera_clock_state_save(void *buf_)
-{
-  /* memcpy(buf_,&g_CLOCK,sizeof(opera_clock_t)); */
-}
-
-void
-opera_clock_state_load(const void *buf_)
-{
-  /* memcpy(&g_CLOCK,buf_,sizeof(opera_clock_t)); */
-}
-
 void
 opera_clock_init(void)
 {

@@ -28,11 +28,13 @@
   *  Felix Lazarev
 */
 
-#include "bool.h"
+#include "boolean.h"
 #include "inline.h"
+
 #include "opera_clio.h"
 #include "opera_core.h"
 #include "opera_dsp.h"
+#include "opera_state.h"
 #include "prng16.h"
 
 #include <string.h>
@@ -210,8 +212,8 @@ struct INTAG_s
   uint16_t nOP_MASK;
   uint16_t WRITEBACK;
   REQ_t    req;
-  bool_t   Running;
-  bool_t   GenFIQ;
+  bool     Running;
+  bool     GenFIQ;
 };
 
 typedef struct INTAG_s INTAG_t;
@@ -433,7 +435,7 @@ dsp_write(uint32_t addr_,
       break;
     case 0x3EE:
       DSP.dregs.INT    = val_;
-      DSP.flags.GenFIQ = TRUE;
+      DSP.flags.GenFIQ = true;
       break;
     case 0x3EF:
       DSP.dregs.DSPPRLD = val_;
@@ -467,19 +469,19 @@ dsp_write(uint32_t addr_,
 uint32_t
 opera_dsp_state_size(void)
 {
-  return sizeof(dsp_t);
+  return opera_state_save_size(sizeof(DSP));
 }
 
-void
+uint32_t
 opera_dsp_state_save(void *buf_)
 {
-  memcpy(buf_,&DSP,sizeof(dsp_t));
+  return opera_state_save(buf_,"DSPP",&DSP,sizeof(DSP));
 }
 
-void
+uint32_t
 opera_dsp_state_load(const void *buf_)
 {
-  memcpy(&DSP,buf_,sizeof(dsp_t));
+  return opera_state_load(&DSP,"DSPP",buf_,sizeof(DSP));
 }
 
 static
@@ -802,8 +804,8 @@ opera_dsp_init(void)
                 }
   }
 
-  DSP.flags.Running = FALSE;
-  DSP.flags.GenFIQ  = FALSE;
+  DSP.flags.Running = false;
+  DSP.flags.GenFIQ  = false;
   DSP.dregs.DSPPRLD = SYSTEM_TICKS;
   DSP.dregs.AUDCNT  = SYSTEM_TICKS;
 
@@ -841,7 +843,7 @@ opera_dsp_loop(void)
       uint32_t AOP    = 0;      /* 1st operand */
       uint32_t RBSR   = 0;	/* return address */
       int      fExact = 0;
-      bool_t   work   = TRUE;
+      bool     work   = true;
 
       opera_dsp_reset();
 
@@ -878,7 +880,7 @@ opera_dsp_loop(void)
                 case 6:         /* -not used2- ins */
                   break;
                 case 7:         /* sleep */
-                  work = FALSE;
+                  work = false;
                   break;
                 case 8:
                 case 9:
@@ -1221,7 +1223,7 @@ opera_dsp_loop(void)
 
       if(1 & DSP.flags.GenFIQ)
         {
-          DSP.flags.GenFIQ = FALSE;
+          DSP.flags.GenFIQ = false;
           opera_clio_fiq_generate(0x800,0); /* AudioFIQ */
         }
 

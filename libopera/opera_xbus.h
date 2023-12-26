@@ -74,8 +74,8 @@ void     opera_xbus_fifo_set_data(const uint32_t val_);
 uint32_t opera_xbus_fifo_get_data(void);
 
 uint32_t opera_xbus_state_size(void);
-void     opera_xbus_state_save(void *buf_);
-void     opera_xbus_state_load(const void *buf_);
+uint32_t opera_xbus_state_save(void *data);
+uint32_t opera_xbus_state_load(void const *data);
 
 EXTERN_C_END
 

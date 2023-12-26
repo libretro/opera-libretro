@@ -1,7 +1,7 @@
 #ifndef OPERA_LR_CALLBACKS_H_INCLUDED
 #define OPERA_LR_CALLBACKS_H_INCLUDED
 
-#include <libretro.h>
+#include "libretro.h"
 
 extern retro_audio_sample_t       retro_audio_sample_cb;
 extern retro_audio_sample_batch_t retro_audio_sample_batch_cb;

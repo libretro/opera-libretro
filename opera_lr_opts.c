@@ -26,6 +26,7 @@
 #include "libopera/opera_clock.h"
 #include "libopera/opera_core.h"
 #include "libopera/opera_madam.h"
+#include "libopera/opera_mem.h"
 #include "libopera/opera_region.h"
 #include "libopera/opera_vdlp.h"
 
@@ -58,14 +59,6 @@ getval(const char *key_)
   int rv;
   char key[64];
   struct retro_variable var;
-
-  strncpy(key,"4do_",(sizeof(key)-1));
-  strncat(key,key_,(sizeof(key)-1));
-  var.key = key;
-  var.value = NULL;
-  rv = getvar(&var);
-  if(rv && (var.value != NULL))
-    return var.value;
 
   strncpy(key,"opera_",(sizeof(key)-1));
   strncat(key,key_,(sizeof(key)-1));
@@ -229,7 +222,7 @@ opera_lr_opts_get_vdlp_flags(void)
   if(opera_lr_opts_is_enabled("high_resolution"))
     flags |= VDLP_FLAG_HIRES_CEL;
   if(opera_lr_opts_is_enabled("vdlp_bypass_clut"))
-    flags |= VDLP_FLAG_CLUT_BYPASS;
+    flags |= VDLP_FLAG_BYPASS_CLUT;
 
   return flags;
 }
@@ -248,13 +241,13 @@ opera_lr_opts_process_high_resolution(void)
   rv = opera_lr_opts_is_enabled("high_resolution");
   if(rv)
     {
-      HIRESMODE          = 1;
+      HIRESMODE          = true;
       g_OPT_VIDEO_WIDTH  = (opera_region_width()  << 1);
       g_OPT_VIDEO_HEIGHT = (opera_region_height() << 1);
     }
   else
     {
-      HIRESMODE          = 0;
+      HIRESMODE          = false;
       g_OPT_VIDEO_WIDTH  = opera_region_width();
       g_OPT_VIDEO_HEIGHT = opera_region_height();
     }

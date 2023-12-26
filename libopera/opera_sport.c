@@ -30,14 +30,17 @@
 
 #include "inline.h"
 #include "opera_core.h"
+#include "opera_mem.h"
+#include "opera_state.h"
 
 #include <stdint.h>
 #include <string.h>
 
 #define SPORT_IDX_MASK   0x7FF
-#define SPORT_IDX_SHIFT  7
+#define SPORT_IDX_SHIFT  9
 #define SPORT_ELEM_COUNT 512
 #define SPORT_BUFSIZE    (SPORT_ELEM_COUNT * sizeof(uint32_t))
+#define SPORT_PAGE_TO_BYTE_OFFSET(IDX) (((IDX) & SPORT_IDX_MASK) << SPORT_IDX_SHIFT)
 
 struct sport_s
 {
@@ -48,19 +51,18 @@ struct sport_s
 
 typedef struct sport_s sport_t;
 
-static sport_t  SPORT = {0};
-static void    *VRAM;
+static sport_t SPORT = {0};
 
 void
-opera_sport_init(uint8_t * const vram_)
+opera_sport_init()
 {
-  VRAM = vram_;
+
 }
 
 void
 opera_sport_set_source(const uint32_t rawidx_)
 {
-  SPORT.source = ((rawidx_ & SPORT_IDX_MASK) << SPORT_IDX_SHIFT);
+  SPORT.source = SPORT_PAGE_TO_BYTE_OFFSET(rawidx_);
 }
 
 static
@@ -69,9 +71,8 @@ void
 sport_set_color(const uint32_t idx_)
 {
   int i;
-  uint32_t *vram = VRAM;
+  uint32_t * const vram = (uint32_t * const)&VRAM[idx_];
 
-  vram = &vram[idx_];
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
     vram[i] = SPORT.color;
 }
@@ -83,9 +84,8 @@ sport_set_color_with_mask(const uint32_t idx_,
                           const uint32_t mask_)
 {
   int i;
-  uint32_t *vram = VRAM;
+  uint32_t * const vram = (uint32_t * const)&VRAM[idx_];
 
-  vram = &vram[idx_];
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
     vram[i] = (((vram[i] ^ SPORT.color) & mask_) ^ SPORT.color);
 }
@@ -96,9 +96,7 @@ void
 sport_memcpy(const uint32_t didx_,
              const uint32_t sidx_)
 {
-  uint32_t *vram = VRAM;
-
-  memcpy(&vram[didx_],&vram[sidx_],SPORT_BUFSIZE);
+  memcpy(&VRAM[didx_],&VRAM[sidx_],SPORT_BUFSIZE);
 }
 
 static
@@ -107,9 +105,9 @@ void
 sport_memcpy_highres(const uint32_t didx_,
                      const uint32_t sidx_)
 {
-  sport_memcpy(didx_ + (1*1024*1024/sizeof(uint32_t)),sidx_);
-  sport_memcpy(didx_ + (2*1024*1024/sizeof(uint32_t)),sidx_);
-  sport_memcpy(didx_ + (3*1024*1024/sizeof(uint32_t)),sidx_);
+  sport_memcpy(didx_ + (1*VRAM_SIZE),sidx_);
+  sport_memcpy(didx_ + (2*VRAM_SIZE),sidx_);
+  sport_memcpy(didx_ + (3*VRAM_SIZE),sidx_);
 }
 
 static
@@ -120,7 +118,7 @@ sport_flash_write(const uint32_t rawidx_,
 {
   uint32_t idx;
 
-  idx = ((rawidx_ & SPORT_IDX_MASK) << SPORT_IDX_SHIFT);
+  idx = SPORT_PAGE_TO_BYTE_OFFSET(rawidx_);
   if(mask_ == 0xFFFFFFFF)
     sport_set_color(idx);
   else
@@ -151,13 +149,8 @@ void
 sport_copy_page_color_with_mask(const uint32_t mask_)
 {
   int i;
-  uint32_t *vram;
-  uint32_t *svram;
-  uint32_t *dvram;
-
-  vram  = VRAM;
-  svram = &vram[SPORT.source];
-  dvram = &vram[SPORT.destination];
+  uint32_t const * const svram = (uint32_t const * const)&VRAM[SPORT.source];
+  uint32_t * const       dvram = (uint32_t * const)&VRAM[SPORT.destination];
 
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
     dvram[i] = (((dvram[i] ^ svram[i]) & mask_) ^ svram[i]);
@@ -174,7 +167,7 @@ void
 sport_copy_page(const uint32_t rawidx_,
                 const uint32_t mask_)
 {
-  SPORT.destination = ((rawidx_ & SPORT_IDX_MASK) << SPORT_IDX_SHIFT);
+  SPORT.destination = SPORT_PAGE_TO_BYTE_OFFSET(rawidx_);
   if(mask_ == 0xFFFFFFFF)
     sport_copy_page_color();
   else
@@ -206,17 +199,17 @@ opera_sport_write_access(const uint32_t idx_,
 uint32_t
 opera_sport_state_size(void)
 {
-  return sizeof(sport_t);
+  return opera_state_save_size(sizeof(sport_t));
 }
 
-void
+uint32_t
 opera_sport_state_save(void *buf_)
 {
-  memcpy(buf_,&SPORT,sizeof(sport_t));
+  return opera_state_save(buf_,"SPRT",&SPORT,sizeof(sport_t));
 }
 
-void
+uint32_t
 opera_sport_state_load(const void *buf_)
 {
-  memcpy(&SPORT,buf_,sizeof(sport_t));
+  return opera_state_load(&SPORT,"SPRT",buf_,sizeof(sport_t));
 }

@@ -39,7 +39,7 @@
 
 EXTERN_C_BEGIN
 
-void      opera_madam_init(uint8_t *mem_);
+void      opera_madam_init();
 void      opera_madam_reset(void);
 
 uint32_t  opera_madam_fsm_get(void);
@@ -58,8 +58,8 @@ void      opera_madam_me_mode_software(void);
 void      opera_madam_me_mode_hardware(void);
 
 uint32_t  opera_madam_state_size(void);
-void      opera_madam_state_save(void *buf_);
-void      opera_madam_state_load(const void *buf_);
+uint32_t  opera_madam_state_save(void *buf_);
+uint32_t  opera_madam_state_load(void const *buf_);
 
 EXTERN_C_END
 

@@ -39,11 +39,14 @@ SOURCES_C += \
         $(OPERA_DIR)/opera_diag_port.c \
         $(OPERA_DIR)/opera_dsp.c \
         $(OPERA_DIR)/opera_fixedpoint_math.c \
+        $(OPERA_DIR)/opera_log.c \
         $(OPERA_DIR)/opera_madam.c \
+        $(OPERA_DIR)/opera_mem.c \
         $(OPERA_DIR)/opera_nvram.c \
         $(OPERA_DIR)/opera_pbus.c \
         $(OPERA_DIR)/opera_region.c \
         $(OPERA_DIR)/opera_sport.c \
+        $(OPERA_DIR)/opera_state.c \
         $(OPERA_DIR)/opera_vdlp.c \
         $(OPERA_DIR)/opera_xbus.c \
         $(OPERA_DIR)/opera_xbus_cdrom_plugin.c
