@@ -31,7 +31,7 @@ static void                *g_BUF          = NULL;
 static void                *g_CURBUF       = NULL;
 static vdlp_renderer_t      g_RENDERER     = NULL;
 static uint32_t             g_FLAGS        = VDLP_FLAG_NONE;
-static vdlp_pixel_format_e  g_PIXEL_FORMAT = VDLP_PIXEL_FORMAT_0RGB1555;
+static vdlp_pixel_format_e  g_PIXEL_FORMAT = VDLP_PIXEL_FORMAT_RGB565;
 
 static const uint32_t PIXELS_PER_LINE_MODULO[8] =
   {320, 384, 512, 640, 1024, 320, 320, 320};
@@ -280,7 +280,9 @@ vdlp_render_line_0RGB1555(void)
   g_CURBUF = &dst[width];
 }
 
-static void vdlp_render_line_0RGB1555_bypass_clut(void)
+static
+void
+vdlp_render_line_0RGB1555_bypass_clut(void)
 {
   int x;
   int width;
@@ -303,7 +305,9 @@ static void vdlp_render_line_0RGB1555_bypass_clut(void)
   g_CURBUF = &dst[width];
 }
 
-static void vdlp_render_line_0RGB1555_hires(void)
+static
+void
+vdlp_render_line_0RGB1555_hires(void)
 {
   int x;
   int width;
@@ -501,7 +505,9 @@ vdlp_render_line_RGB565_bypass_clut(void)
   g_CURBUF = &dst[width];
 }
 
-static void vdlp_render_line_RGB565_hires(void)
+static
+void
+vdlp_render_line_RGB565_hires(void)
 {
   int x;
   int width;
@@ -550,7 +556,9 @@ static void vdlp_render_line_RGB565_hires(void)
   g_CURBUF = dst1;
 }
 
-static void vdlp_render_line_RGB565_hires_bypass_clut(void)
+static
+void
+vdlp_render_line_RGB565_hires_bypass_clut(void)
 {
   int x;
   int width;
@@ -860,7 +868,8 @@ opera_vdlp_init()
     };
 
   g_VDLP.head_vdl = 0xB0000;
-  g_RENDERER = vdlp_render_line_XRGB8888;
+  if(g_RENDERER == NULL)
+    g_RENDERER = vdlp_render_line_RGB565;
 
   for(i = 0; i < (sizeof(StartupVDL)/sizeof(uint32_t)); i++)
     vram_write32((0xB0000 + (i * sizeof(uint32_t))),StartupVDL[i]);
@@ -996,20 +1005,6 @@ opera_vdlp_set_pixel_format(vdlp_pixel_format_e v_)
 
   g_RENDERER     = new_renderer;
   g_PIXEL_FORMAT = v_;
-
-  return 0;
-}
-
-int
-opera_vdlp_configure(void                *buf_,
-                     vdlp_pixel_format_e  pf_,
-                     uint32_t             flags_)
-{
-  g_BUF = buf_;
-
-  g_RENDERER = get_renderer(pf_,flags_);
-  if(g_RENDERER)
-    return -1;
 
   return 0;
 }

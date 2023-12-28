@@ -83,6 +83,13 @@ int TIMER_VAL = 0; //0x415
 static uint32_t *MADAM_REGS;
 static clio_t    CLIO = {0};
 
+static
+void
+opera_clio_set_rom()
+{
+  opera_mem_rom_select((CLIO.regs[0x84] & 0x4) ? ROM2 : ROM1);
+}
+
 uint32_t
 opera_clio_state_size(void)
 {
@@ -98,9 +105,14 @@ opera_clio_state_save(void *buf_)
 uint32_t
 opera_clio_state_load(const void *buf_)
 {
+  uint32_t rv;
+
   TIMER_VAL = 0;
 
-  return opera_state_load(&CLIO,"CLIO",buf_,sizeof(CLIO));
+  rv = opera_state_load(&CLIO,"CLIO",buf_,sizeof(CLIO));
+  opera_clio_set_rom();
+
+  return rv;
 }
 
 #define CURADR MADAM_REGS[base+0x00]
@@ -353,7 +365,7 @@ opera_clio_poke(uint32_t addr_,
       if_set_set_reset(&CLIO.regs[0x84],val_,0x40,0x04);
       if_set_set_reset(&CLIO.regs[0x84],val_,0x80,0x08);
 
-      opera_mem_rom_select((val_ & 0x4) ? ROM2 : ROM1);
+      opera_clio_set_rom();
 
       return 0;
     }

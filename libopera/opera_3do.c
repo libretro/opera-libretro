@@ -61,18 +61,16 @@ opera_3do_init(opera_ext_interface_t callback_)
 {
   int i;
 
-  opera_mem_init();
+  if(opera_mem_cfg() == DRAM_VRAM_UNSET)
+    opera_mem_init(DRAM_VRAM_STOCK);
 
   io_interface = callback_;
 
   CNBFIX = 0;
 
-  opera_clock_init();
-
   opera_arm_init();
 
   opera_vdlp_init();
-  opera_sport_init();
   opera_madam_init();
   opera_xbus_init(xbus_cdrom_plugin);
 

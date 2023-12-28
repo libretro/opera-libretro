@@ -15,6 +15,8 @@ void opera_region_set_PAL2(void);
 
 opera_region_e opera_region_get(void);
 
+uint32_t opera_region_min_width(void);
+uint32_t opera_region_min_height(void);
 uint32_t opera_region_max_width(void);
 uint32_t opera_region_max_height(void);
 

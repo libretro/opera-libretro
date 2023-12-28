@@ -1,3 +1,10 @@
+/*
+  documentation:
+  * https://3dodev.com/documentation/hardware/opera/memory_configurations
+  * About Memory: https://3dodev.com/documentation/development/opera/pf25/ppgfldr/pgsfldr/spg/05spg001
+  * Manageing Memory: https://3dodev.com/documentation/development/opera/pf25/ppgfldr/pgsfldr/spg/01spg003
+  */
+
 #include "opera_mem.h"
 #include "endianness.h"
 #include "opera_state.h"
@@ -21,12 +28,19 @@ uint8_t  *ROM                  = NULL;
 uint8_t  *ROM1                 = NULL;
 uint8_t  *ROM2                 = NULL;
 
+static opera_mem_cfg_t g_MEM_CFG = DRAM_VRAM_UNSET;
+
 typedef struct opera_mem_state_t opera_mem_state_t;
 struct opera_mem_state_t
 {
   uint8_t mem_cfg;
 };
 
+opera_mem_cfg_t
+opera_mem_cfg()
+{
+  return g_MEM_CFG;
+}
 
 uint32_t
 opera_mem_dram_size(opera_mem_cfg_t cfg_)
@@ -56,10 +70,80 @@ _setup_dram_vram(opera_mem_cfg_t const cfg_)
   VRAM = &DRAM[DRAM_SIZE];
 }
 
+#define MADAM_RAM_MASK     0x0000007F
+#define DRAMSIZE_SHIFT     3    /* RED ONLY */
+#define VRAMSIZE_SHIFT     0    /* RED ONLY */
+#define VRAMSIZE_1MB       0x00000001 /* RED ONLY */
+#define VRAMSIZE_2MB       0x00000002 /* RED ONLY */
+#define DRAMSIZE_SETMASK   3    /* RED ONLY */
+#define DRAMSIZE_1MB       0x000000001 /* RED ONLY */
+#define DRAMSIZE_4MB       0x000000002 /* RED ONLY */
+#define DRAMSIZE_16MB      0x000000003 /* RED ONLY */
+#define DRAMSIZE_SET1SHIFT 3    /* RED ONLY */
+#define DRAMSIZE_SET0SHIFT (DRAMSIZE_SET1SHIFT+2) /* RED ONLY */
+
+uint32_t
+opera_mem_madam_red_sysbits(uint32_t const v_)
+{
+  uint32_t v = v_;
+
+  v &= ~MADAM_RAM_MASK;
+
+  switch(g_MEM_CFG)
+    {
+    default:
+    case DRAM_2MB_VRAM_1MB:
+      v |= ((VRAMSIZE_1MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_1MB << DRAMSIZE_SET0SHIFT) |
+            (DRAMSIZE_1MB << DRAMSIZE_SET1SHIFT));
+      break;
+    case DRAM_2MB_VRAM_2MB:
+      v |= ((VRAMSIZE_2MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_1MB << DRAMSIZE_SET0SHIFT) |
+            (DRAMSIZE_1MB << DRAMSIZE_SET1SHIFT));
+      break;
+    case DRAM_4MB_VRAM_1MB:
+      v |= ((VRAMSIZE_1MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_4MB << DRAMSIZE_SET0SHIFT));
+      break;
+    case DRAM_4MB_VRAM_2MB:
+      v |= ((VRAMSIZE_2MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_4MB << DRAMSIZE_SET0SHIFT));
+      break;
+    case DRAM_8MB_VRAM_1MB:
+      v |= ((VRAMSIZE_1MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_4MB << DRAMSIZE_SET0SHIFT) |
+            (DRAMSIZE_4MB << DRAMSIZE_SET1SHIFT));
+      break;
+    case DRAM_8MB_VRAM_2MB:
+      v |= ((VRAMSIZE_2MB << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_4MB << DRAMSIZE_SET0SHIFT) |
+            (DRAMSIZE_4MB << DRAMSIZE_SET1SHIFT));
+      break;
+    case DRAM_14MB_VRAM_2MB:
+      v |= ((VRAMSIZE_2MB  << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_16MB << DRAMSIZE_SET1SHIFT));
+      break;
+    case DRAM_15MB_VRAM_1MB:
+      v |= ((VRAMSIZE_1MB  << VRAMSIZE_SHIFT)     |
+            (DRAMSIZE_16MB << DRAMSIZE_SET1SHIFT));
+      break;
+    }
+
+  return v;
+}
+
 int
-opera_mem_init()
+opera_mem_init(opera_mem_cfg_t const cfg_)
 {
   opera_mem_cfg_t cfg = DRAM_2MB_VRAM_1MB;
+
+  if(g_MEM_CFG != DRAM_VRAM_UNSET)
+    return -1;
+
+  cfg = cfg_;
+  if(cfg == DRAM_VRAM_UNSET)
+    cfg = DRAM_VRAM_STOCK;
 
   /*
     Allocate max possible RAM to make things easier
@@ -70,17 +154,17 @@ opera_mem_init()
   ROM2  = calloc(ROM2_SIZE,1);
   NVRAM = calloc(NVRAM_SIZE,1);
 
+  if(!DRAM || !ROM1 || !ROM2 || !NVRAM)
+    {
+      opera_mem_destroy();
+      return -1;
+    }
+
   _setup_dram_vram(cfg);
 
   opera_mem_rom_select(ROM1);
 
-  return 0;
-}
-
-int
-opera_mem_cfg(opera_mem_cfg_t const cfg_)
-{
-  _setup_dram_vram(cfg_);
+  g_MEM_CFG = cfg;
 
   return 0;
 }
@@ -104,6 +188,8 @@ opera_mem_destroy()
   if(NVRAM)
     free(NVRAM);
   NVRAM = NULL;
+
+  g_MEM_CFG = DRAM_VRAM_UNSET;
 }
 
 void
@@ -173,7 +259,7 @@ opera_mem_state_save(void *data_)
   uint8_t *data  = (uint8_t*)data_;
   opera_mem_state_t memstate;
 
-  memstate.mem_cfg = DRAM_2MB_VRAM_1MB;
+  memstate.mem_cfg = opera_mem_cfg();
 
   data += opera_state_save(data,"MCFG",&memstate,sizeof(memstate));
   data += opera_state_save(data,"RAM",DRAM,MAX_HIRES_RAM_SIZE);
@@ -192,6 +278,7 @@ opera_mem_state_load(void const *data_)
   opera_mem_state_t memstate;
 
   data += opera_state_load(&memstate,"MCFG",data,sizeof(memstate));
+  _setup_dram_vram(memstate.mem_cfg);
   data += opera_state_load(DRAM,"RAM",data,MAX_HIRES_RAM_SIZE);
   data += opera_state_load(ROM1,"ROM1",data,ROM1_SIZE);
   data += opera_state_load(ROM2,"ROM2",data,ROM2_SIZE);

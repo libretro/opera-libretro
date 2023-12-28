@@ -49,6 +49,7 @@ extern uint8_t *ROM2;
 
 enum opera_mem_cfg_t
   {
+    DRAM_VRAM_UNSET    = 0x00,
     DRAM_VRAM_STOCK    = 0x21,
     DRAM_2MB_VRAM_1MB  = 0x21,
     DRAM_2MB_VRAM_2MB  = 0x22,
@@ -61,8 +62,12 @@ enum opera_mem_cfg_t
   };
 typedef enum opera_mem_cfg_t opera_mem_cfg_t;
 
-int  opera_mem_init();
+int  opera_mem_init(opera_mem_cfg_t);
 void opera_mem_destroy();
+
+opera_mem_cfg_t opera_mem_cfg();
+
+uint32_t opera_mem_madam_red_sysbits(uint32_t const);
 
 void opera_mem_rom1_clear();
 void opera_mem_rom1_byteswap32_if_le();
@@ -127,6 +132,21 @@ opera_mem_write8(uint32_t const addr_,
   DRAM[addr + 1*VRAM_SIZE] =
     DRAM[addr + 2*VRAM_SIZE] =
     DRAM[addr + 3*VRAM_SIZE] = val_;
+}
+
+static
+INLINE
+void
+opera_mem_write16_base(uint32_t const addr_,
+                       uint16_t const val_)
+{
+#if IS_BIG_ENDIAN
+  uint32_t const addr = addr_;
+#else
+  uint32_t const addr = (addr_ ^ 2);
+#endif
+
+  *((uint16_t*)&DRAM[addr]) = val_;
 }
 
 static

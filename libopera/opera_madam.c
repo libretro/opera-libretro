@@ -42,6 +42,7 @@
 #include "opera_state.h"
 #include "opera_vdlp.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -497,9 +498,6 @@ static uint32_t  TARGETPROJ;
 static uint32_t  SRCDATA;
 static int32_t   SPRWI;
 static int32_t   SPRHI;
-static uint32_t  PLUTF;
-static uint32_t  PDATF;
-static uint32_t  NCCBF;
 static uint32_t  PXOR1;
 static uint32_t  PXOR2;
 
@@ -538,7 +536,6 @@ static int32_t  nrows;
 #define REGCTL3		MADAM.mregs[0x13c]
 
 #define CURRENTCCB	MADAM.mregs[0x5a0]
-//next ccb == 0 stop the engine
 #define NEXTCCB		MADAM.mregs[0x5a4]
 #define PLUTDATA	MADAM.mregs[0x5a8]
 #define PDATA		MADAM.mregs[0x5ac]
@@ -825,8 +822,6 @@ opera_madam_poke(uint32_t addr_,
    }
 }
 
-static uint32_t Flag;
-
 static int32_t  HDDX1616;
 static int32_t  HDDY1616;
 static int32_t  HDX1616;
@@ -863,24 +858,11 @@ void
 opera_madam_cel_handle(void)
 {
   STATBITS |= SPRON;
-  Flag = 0;
 
-  while((NEXTCCB != 0) && (!Flag))
-    //if(MADAM.FSM==FSM_INPROCESS)
+  while(NEXTCCB != 0)
     {
-      if((NEXTCCB == 0) || (Flag))
-        {
-          MADAM.FSM = FSM_IDLE;
-          return;
-        }
-
-      //1st step -- parce CCB and load it into registers
-      CURRENTCCB = (NEXTCCB & 0x00FFFFFC);
-      if((CURRENTCCB >> 20) > 2)
-        {
-          MADAM.FSM = FSM_IDLE;
-          return;
-        }
+      CURRENTCCB = NEXTCCB;
+      assert(CURRENTCCB < RAM_SIZE);
 
       CCBFLAGS    = opera_mem_read32(CURRENTCCB);
       CURRENTCCB += 4;
@@ -896,65 +878,36 @@ opera_madam_cel_handle(void)
           PXOR2 = 0;
         }
 
-      Flag  = 0;
-      PLUTF = 0;
-      PDATF = 0;
-      NCCBF = 0;
-
-      NEXTCCB = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
-
-      if(!(CCBFLAGS & CCB_NPABS))
+      if(CCBFLAGS & CCB_LAST)
         {
-          NEXTCCB += CURRENTCCB + 4;
-          NEXTCCB &= 0x00FFFFFF;
+          NEXTCCB = 0;
         }
-
-      if(NEXTCCB == 0)
-        NCCBF = 1;
-      if((NEXTCCB >> 20) > 2)
-        NCCBF = 1;
+      else
+      {
+        NEXTCCB = opera_mem_read32(CURRENTCCB);
+        if(!(CCBFLAGS & CCB_NPABS))
+          NEXTCCB += CURRENTCCB + 4;
+        assert(NEXTCCB < RAM_SIZE);
+      }
 
       CURRENTCCB += 4;
 
-      PDATA = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
-      /*
-        if((PDATA==0))
-      	PDATF=1;
-      */
+      PDATA = opera_mem_read32(CURRENTCCB);
       if(!(CCBFLAGS & CCB_SPABS))
-        {
-          PDATA += CURRENTCCB + 4;
-          PDATA &= 0x00FFFFFF;
-        }
+        PDATA += CURRENTCCB + 4;
+      assert(PDATA < RAM_SIZE);
 
-      if((PDATA >> 20) > 2)
-        PDATF = 1;
       CURRENTCCB += 4;
 
       if(CCBFLAGS & CCB_LDPLUT)
         {
-          PLUTDATA = opera_mem_read32(CURRENTCCB) & 0xFFFFFFFC;
-          /*
-            if((PLUTDATA == 0))
-              PLUTF=1;
-          */
+          PLUTDATA = opera_mem_read32(CURRENTCCB);
           if(!(CCBFLAGS & CCB_PPABS))
-            {
-              PLUTDATA += CURRENTCCB + 4;
-              PLUTDATA &= 0x00FFFFFF;
-            }
-
-          if((PLUTDATA >> 20) > 2)
-            PLUTF = 1;
+            PLUTDATA += CURRENTCCB + 4;
+          assert(PLUTDATA < RAM_SIZE);
         }
 
       CURRENTCCB += 4;
-
-      if(NCCBF)
-        CCBFLAGS |= CCB_LAST;
-
-      if(CCBFLAGS & CCB_LAST)
-        Flag = 1;
 
       if(CCBFLAGS & CCB_YOXY)
         {
@@ -970,14 +923,6 @@ opera_madam_cel_handle(void)
         its VH values in the projector.
       */
       CEL_ORIGIN_VH_VALUE = ((XPOS1616 & 0x1) | ((YPOS1616 & 0x1) << 15));
-
-      /*
-        if((CCBFLAGS&CCB_SKIP)&& debug)
-        printf("###Cel skipped!!! PDATF=%d PLUTF=%d NCCBF=%d\n",PDATF,PLUTF,NCCBF);
-      */
-
-      if(CCBFLAGS & CCB_LAST)
-        NEXTCCB = 0;
 
       if(CCBFLAGS & CCB_LDSIZE)
         {
@@ -1015,7 +960,7 @@ opera_madam_cel_handle(void)
               CURRENTCCB += 4;
             }
         }
-      else if(!PDATF)
+      else
         {
           PRE0   = opera_mem_read32(PDATA);
           PDATA += 4;
@@ -1056,8 +1001,7 @@ opera_madam_cel_handle(void)
         pproj.pmodeANDmask = ((pproj.pmode != PMODE_ZERO) ? 0xFFFF : 0x7FFF);
       }
 
-      /* load PLUT */
-      if((CCBFLAGS & CCB_LDPLUT) && !PLUTF)
+      if(CCBFLAGS & CCB_LDPLUT)
         {
           switch(PRE0 & PRE0_BPP_MASK)
             {
@@ -1075,11 +1019,7 @@ opera_madam_cel_handle(void)
             };
         }
 
-      /*
-        CCB decoded -- let's print out our current status
-        step#2 -- getting CEL data
-      */
-      if(!(CCBFLAGS & CCB_SKIP) && !PDATF)
+      if(!(CCBFLAGS & CCB_SKIP))
         {
           if(CCBFLAGS & CCB_PACKED)
             {
@@ -1092,13 +1032,11 @@ opera_madam_cel_handle(void)
               else
                 DrawLiteralCel_New();
             }
-
         }
     }
 
   /* STATBITS &= ~SPRON; */
-  if((NEXTCCB == 0) || (Flag))
-    MADAM.FSM = FSM_IDLE;
+  MADAM.FSM = FSM_IDLE;
 }
 
 static
@@ -1155,7 +1093,7 @@ DMAPBus(void)
 }
 
 void
-opera_madam_init(uint8_t *mem_)
+opera_madam_init()
 {
   int32_t i;
   int32_t j;
@@ -1172,7 +1110,7 @@ opera_madam_init(uint8_t *mem_)
                     MADAM_ID_GREEN_SOFTWARE);
 
   /* DRAM dux init */
-  MADAM.mregs[0x4]   = 0x29;
+  MADAM.mregs[0x4]   = opera_mem_madam_red_sysbits(0x20);
   MADAM.mregs[0x574] = 0xFFFFFFFC;
 
   for(i = 0; i < 32; i++)
@@ -2300,10 +2238,13 @@ opera_madam_reset(void)
     MADAM.mregs[i] = 0;
 }
 
-static INLINE uint32_t TexelCCWTest(int64_t hdx, int64_t hdy, int64_t vdx, int64_t vdy)
+static
+INLINE
+uint32_t
+TexelCCWTest(int64_t hdx, int64_t hdy, int64_t vdx, int64_t vdy)
 {
-	if (((hdx + vdx) * (hdy - vdy) + vdx * vdy - hdx * hdy) < 0)
-		return CCB_ACCW;
+  if (((hdx + vdx) * (hdy - vdy) + vdx * vdy - hdx * hdy) < 0)
+    return CCB_ACCW;
 	return CCB_ACW;
 }
 
@@ -2725,7 +2666,7 @@ writePIX(int32_t  x_,
       src += XY2OFF(x_,y_,MADAM.wmod);
     }
 
-  opera_mem_write16(src,p_);
+  opera_mem_write16_base(src,p_);
 }
 
 static

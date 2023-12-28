@@ -7,8 +7,6 @@
 
 EXTERN_C_BEGIN
 
-void     opera_clock_init(void);
-
 int      opera_clock_vdl_queued(void);
 int      opera_clock_dsp_queued(void);
 int      opera_clock_timer_queued(void);
