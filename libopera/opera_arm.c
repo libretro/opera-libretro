@@ -114,12 +114,12 @@ static int        g_SWI_HLE;
 static arm_core_t CPU;
 static int        CYCLES;	//cycle counter
 
-static uint32_t readusr(uint32_t rn);
-static void     loadusr(uint32_t rn, uint32_t val);
-static uint32_t mreadb(uint32_t addr);
-static void     mwriteb(uint32_t addr, uint8_t val);
-static uint32_t mreadw(uint32_t addr);
-static void     mwritew(uint32_t addr,uint32_t val);
+static uint32_t readusr(uint32_t const rn);
+static void     loadusr(uint32_t const rn, uint32_t const val);
+static uint32_t mreadb(uint32_t const addr);
+static void     mwriteb(uint32_t const addr, uint8_t const val);
+static uint32_t mreadw(uint32_t const addr);
+static void     mwritew(uint32_t const addr,uint32_t const val);
 
 uint32_t
 opera_arm_state_size(void)
@@ -1877,8 +1877,8 @@ mreadb(uint32_t const addr_)
 
 static
 void
-loadusr(uint32_t n_,
-        uint32_t val_)
+loadusr(uint32_t const n_,
+        uint32_t const val_)
 {
   if(n_ == 15)
     {
@@ -1911,7 +1911,7 @@ loadusr(uint32_t n_,
 
 static
 uint32_t
-readusr(uint32_t n_)
+readusr(uint32_t const n_)
 {
   if(n_ == 15)
     return CPU.USER[15];

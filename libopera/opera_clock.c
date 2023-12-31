@@ -3,6 +3,7 @@
 #include "opera_core.h"
 #include "opera_vdlp.h"
 
+#define DEFAULT_TIMER_DELAY  0x150
 #define DEFAULT_CPU_FREQ     12500000UL
 #define MIN_CPU_FREQ         1000000UL
 #define SND_FREQ             44100UL
@@ -10,6 +11,15 @@
 #define PAL_FIELD_SIZE       312UL
 #define NTSC_FIELD_RATE_1616 3928227UL
 #define PAL_FIELD_RATE_1616  3276800UL
+
+#define CYCLES_PER_SND(FQ,FS) ((((uint64_t)FQ) << 16) / ((uint64_t)FS))
+#define CYCLES_PER_SCANLINE(FQ,FR,FS) ((((uint64_t)FQ)<<32)/(((uint64_t)FR)*((uint64_t)FS)))
+#define CYCLES_PER_TIMER(FQ,TD) ((((uint64_t)FQ)<<32)/((((uint64_t)21000000ULL)<<16)/((uint64_t)TD)))
+
+#define DEFAULT_TIMER_DELAY 0x150
+#define DEFAULT_CPSL CYCLES_PER_SCANLINE(DEFAULT_CPU_FREQ, \
+                                         NTSC_FIELD_RATE_1616,  \
+                                         NTSC_FIELD_SIZE)
 
 typedef struct opera_clock_s opera_clock_t;
 struct opera_clock_s
@@ -26,8 +36,19 @@ struct opera_clock_s
   int32_t  cycles_per_timer;
 };
 
-static opera_clock_t g_CLOCK;
-
+static opera_clock_t g_CLOCK =
+  {
+    /*.cpu_freq            =*/ DEFAULT_CPU_FREQ,
+    /*.dsp_acc             =*/ 0,
+    /*.vdl_acc             =*/ 0,
+    /*.timer_acc           =*/ 0,
+    /*.timer_delay         =*/ DEFAULT_TIMER_DELAY,
+    /*.field_size          =*/ NTSC_FIELD_SIZE,
+    /*.field_rate          =*/ NTSC_FIELD_RATE_1616,
+    /*.cycles_per_snd      =*/ CYCLES_PER_SND(DEFAULT_CPU_FREQ,SND_FREQ),
+    /*.cycles_per_scanline =*/ DEFAULT_CPSL,
+    /*.cycles_per_timer    =*/ CYCLES_PER_TIMER(DEFAULT_CPU_FREQ,DEFAULT_TIMER_DELAY)
+  };
 
 static
 uint32_t
@@ -35,8 +56,7 @@ calc_cycles_per_snd(void)
 {
   uint64_t rv;
 
-  rv  = ((uint64_t)g_CLOCK.cpu_freq << 16);
-  rv /= ((uint64_t)SND_FREQ);
+  rv = CYCLES_PER_SND(g_CLOCK.cpu_freq,SND_FREQ);
 
   return rv;
 }
@@ -51,8 +71,9 @@ calc_cycles_per_scanline(void)
 {
   uint64_t rv;
 
-  rv  = ((uint64_t)g_CLOCK.cpu_freq << 32);
-  rv /= ((uint64_t)g_CLOCK.field_rate * (uint64_t)g_CLOCK.field_size);
+  rv = CYCLES_PER_SCANLINE(g_CLOCK.cpu_freq,
+                           g_CLOCK.field_rate,
+                           g_CLOCK.field_size);
 
   return rv;
 }
@@ -68,8 +89,8 @@ calc_cycles_per_timer(void)
 {
   uint64_t rv;
 
-  rv  = ((uint64_t)g_CLOCK.cpu_freq << 32);
-  rv /= (((uint64_t)21000000 << 16) / (uint64_t)g_CLOCK.timer_delay);
+  rv = CYCLES_PER_TIMER(g_CLOCK.cpu_freq,
+                        g_CLOCK.timer_delay);
 
   return rv;
 }
@@ -115,20 +136,6 @@ uint32_t
 opera_clock_cpu_get_default_freq(void)
 {
   return DEFAULT_CPU_FREQ;
-}
-
-void
-opera_clock_init(void)
-{
-  g_CLOCK.cpu_freq    = DEFAULT_CPU_FREQ;
-  g_CLOCK.dsp_acc     = 0;
-  g_CLOCK.vdl_acc     = 0;
-  g_CLOCK.timer_acc   = 0;
-  g_CLOCK.timer_delay = 0x150;  /* same as the OS will set */
-  g_CLOCK.field_size  = NTSC_FIELD_SIZE;
-  g_CLOCK.field_rate  = NTSC_FIELD_RATE_1616;
-
-  recalculate_cycles_per();
 }
 
 int

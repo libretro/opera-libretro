@@ -1,16 +1,18 @@
-#include "compat/strl.h"
-#include "file/file_path.h"
-#include "retro_miscellaneous.h"
-#include "streams/file_stream.h"
+#include <string.h>
+
+#include <compat/strl.h>
+#include <file/file_path.h>
+#include <retro_endianness.h>
+#include <retro_miscellaneous.h>
+#include <streams/file_stream.h>
+
+#include "libopera/opera_arm.h"
+#include "libopera/opera_mem.h"
+#include "libopera/opera_nvram.h"
 
 #include "opera_lr_callbacks.h"
 #include "opera_lr_nvram.h"
 #include "opera_lr_opts.h"
-
-#include "libopera/opera_mem.h"
-#include "libopera/opera_nvram.h"
-
-#include <string.h>
 
 static const char OLD_NVRAM_FILENAME[] = "3DO.nvram";
 
@@ -141,7 +143,7 @@ opera_lr_nvram_save_pergame(const uint8_t *nvram_buf_,
     return -1;
 
   fill_pathname_join(filepath,filepath,"per_game",sizeof(filepath));
-  snprintf(filename,PATH_MAX_LENGTH,"%s.%d.srm",name_,version_);
+  snprintf(filename,PATH_MAX_LENGTH,"%s.%u.srm",name_,version_);
   fill_pathname_join(filepath,filepath,filename,sizeof(filepath));
 
   rv = nvram_save(nvram_buf_,nvram_size_,filepath);
@@ -164,7 +166,7 @@ opera_lr_nvram_save_shared(const uint8_t *nvram_buf_,
     return -1;
 
   fill_pathname_join(filepath,filepath,"shared",sizeof(filepath));
-  snprintf(filename,PATH_MAX_LENGTH,"nvram.%d.srm",version_);
+  snprintf(filename,PATH_MAX_LENGTH,"nvram.%u.srm",version_);
   fill_pathname_join(filepath,filepath,filename,sizeof(filepath));
 
   rv = nvram_save(nvram_buf_,nvram_size_,filepath);
@@ -229,7 +231,7 @@ opera_lr_nvram_load_pergame_operadir(uint8_t       *nvram_buf_,
   if(rv < 0)
     return -1;
 
-  snprintf(filename,sizeof(filename),"%s.%d.srm",name_,version_);
+  snprintf(filename,sizeof(filename),"%s.%u.srm",name_,version_);
   fill_pathname_join(filepath,filepath,"per_game",sizeof(filepath));
   fill_pathname_join(filepath,filepath,filename,sizeof(filepath));
 
@@ -351,57 +353,51 @@ opera_lr_nvram_load_shared(uint8_t       *nvram_buf_,
 */
 
 void
-opera_lr_nvram_save(const char *gamepath_)
+opera_lr_nvram_save(const char    *gamepath_,
+                    const bool     shared_,
+                    const uint8_t  version_)
 {
-  uint8_t version;
-  size_t nvram_size;
-  const uint8_t *nvram_buf;
-
-  nvram_buf  = NVRAM;
-  nvram_size = NVRAM_SIZE;
-  version    = opera_lr_opts_nvram_version();
-  if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
+  if(shared_ || (gamepath_ == NULL))
     {
-      opera_lr_nvram_save_shared(nvram_buf,nvram_size,version);
+      opera_lr_nvram_save_shared(NVRAM,NVRAM_SIZE,version_);
     }
   else
     {
-      char filename[256];
-      const char *ptr = path_basename(gamepath_);
-      if (ptr)
-         strlcpy(filename, ptr, sizeof(filename));
+      const char *ptr;
+      char filename[PATH_MAX_LENGTH];
+
+      ptr = path_basename(gamepath_);
+      if(ptr)
+        strlcpy(filename,ptr,sizeof(filename));
       else
-	 strlcpy(filename, gamepath_, sizeof(filename));
+        strlcpy(filename,gamepath_,sizeof(filename));
       path_remove_extension(filename);
 
-      opera_lr_nvram_save_pergame(nvram_buf,nvram_size,filename,version);
+      opera_lr_nvram_save_pergame(NVRAM,NVRAM_SIZE,filename,version_);
     }
 }
 
 void
-opera_lr_nvram_load(const char *gamepath_)
+opera_lr_nvram_load(const char    *gamepath_,
+                    const bool     shared_,
+                    const uint8_t  version_)
 {
-  uint8_t   version;
-  uint8_t  *nvram_buf;
-  uint32_t  nvram_size;
-
-  nvram_buf  = NVRAM;
-  nvram_size = NVRAM_SIZE;
-  version    = opera_lr_opts_nvram_version();
-  if(opera_lr_opts_is_nvram_shared() || (gamepath_ == NULL))
+  if(shared_ || (gamepath_ == NULL))
     {
-      opera_lr_nvram_load_shared(nvram_buf,nvram_size,version);
+      opera_lr_nvram_load_shared(NVRAM,NVRAM_SIZE,version_);
     }
   else
     {
-      char filename[256];
-      const char *ptr = path_basename(gamepath_);
-      if (ptr)
-         strlcpy(filename, ptr, sizeof(filename));
+      const char *ptr;
+      char filename[PATH_MAX_LENGTH];
+
+      ptr = path_basename(gamepath_);
+      if(ptr)
+        strlcpy(filename,ptr,sizeof(filename));
       else
-	 strlcpy(filename, gamepath_, sizeof(filename));
+        strlcpy(filename,gamepath_,sizeof(filename));
       path_remove_extension(filename);
 
-      opera_lr_nvram_load_pergame(nvram_buf,nvram_size,filename,version);
+      opera_lr_nvram_load_pergame(NVRAM,NVRAM_SIZE,filename,version_);
     }
 }
