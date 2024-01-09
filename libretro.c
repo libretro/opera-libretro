@@ -28,6 +28,7 @@
 #include "libopera/opera_region.h"
 #include "libopera/opera_vdlp.h"
 #include "libopera/prng16.h"
+#include "libopera/prng32.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -482,7 +483,9 @@ retro_init(void)
                             cdimage_set_sector,
                             cdimage_read_sector);
 
+  srand(time(NULL));
   prng16_seed(time(NULL));
+  prng32_seed(time(NULL));
 }
 
 void

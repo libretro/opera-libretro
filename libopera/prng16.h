@@ -4,6 +4,6 @@
 #include <stdint.h>
 
 void     prng16_seed(uint32_t const seed);
-uint32_t prng16();
+uint32_t prng16(void);
 
 #endif
