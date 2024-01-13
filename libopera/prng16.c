@@ -22,7 +22,7 @@ prng16_seed(uint32_t const seed_)
 }
 
 uint32_t
-prng16()
+prng16(void)
 {
   g_PRNG16_STATE += 0xFC15;
 

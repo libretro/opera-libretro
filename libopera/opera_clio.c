@@ -38,7 +38,7 @@
 #include "opera_xbus.h"
 
 #include "boolean.h"
-#include "prng16.h"
+#include "prng32.h"
 
 #include <string.h>
 
@@ -581,6 +581,8 @@ opera_clio_peek(uint32_t addr_)
         return CLIO.regs[0x68];
       return 0;
     }
+  else if(addr_ == 0x3C) // RandSample
+    return prng32();
   else if(addr_ == 0x204)
     return CLIO.regs[0x200];
   else if(addr_ == 0x20C)
@@ -616,8 +618,8 @@ opera_clio_peek(uint32_t addr_)
       CLIO.dsp_address += 0x300;
       return opera_dsp_imem_read(CLIO.dsp_address);
     }
-  else if(addr_ == 0x17F0)
-    return prng16();
+  else if(addr_ == 0x17F0) // DSP NOISE
+    return prng32();
   else if(addr_ == 0x17D0) /* read DSP/ARM semaphore */
     return opera_dsp_arm_semaphore_read();
 

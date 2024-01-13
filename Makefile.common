@@ -29,6 +29,7 @@ SOURCES_C := \
 
 SOURCES_C += \
         $(OPERA_DIR)/prng16.c \
+        $(OPERA_DIR)/prng32.c \
         $(OPERA_DIR)/opera_3do.c \
         $(OPERA_DIR)/opera_arm.c \
         $(OPERA_DIR)/opera_bios.c \
