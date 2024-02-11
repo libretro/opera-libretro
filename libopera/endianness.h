@@ -29,6 +29,7 @@
   defined(__i386) ||                            \
   defined(_M_IX86)
 #define IS_BIG_ENDIAN 0
+#define IS_LITTLE_ENDIAN 1
 #elif                                           \
   (defined(__BYTE_ORDER) &&                     \
    (__BYTE_ORDER == __BIG_ENDIAN)) ||           \
@@ -50,10 +51,13 @@
   defined(_XENON) ||                            \
   defined(__sparc__)
 #define IS_BIG_ENDIAN 1
+#define IS_LITTLE_ENDIAN 0
 #elif defined(MSB_FIRST)
 #define IS_BIG_ENDIAN 1
+#define IS_LITTLE_ENDIAN 0
 #else
 #define IS_BIG_ENDIAN 0
+#define IS_LITTLE_ENDIAN 1
 #endif
 
 #if defined(__GNUC__)
@@ -70,13 +74,11 @@
 
 #if IS_BIG_ENDIAN
 
-#define is_little_endian() (0)
 #define swap32_if_little_endian(X) (X)
 #define swap32_array_if_little_endian(X,Y)
 
 #else
 
-#define is_little_endian() (1)
 #define swap32_if_little_endian(X) (SWAP32(X))
 
 static

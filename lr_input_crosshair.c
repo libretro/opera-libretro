@@ -87,7 +87,6 @@ lr_input_crosshairs_draw(uint32_t       *buf_,
     {
       if(CROSSHAIRS[i].c == 0)
         continue;
-
       lr_input_crosshair_draw(&CROSSHAIRS[i],buf_,width_,height_);
     }
 }

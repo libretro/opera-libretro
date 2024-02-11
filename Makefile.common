@@ -28,6 +28,8 @@ SOURCES_C := \
         $(CORE_DIR)/retro_cdimage.c \
 
 SOURCES_C += \
+        $(OPERA_DIR)/prng16.c \
+        $(OPERA_DIR)/prng32.c \
         $(OPERA_DIR)/opera_3do.c \
         $(OPERA_DIR)/opera_arm.c \
         $(OPERA_DIR)/opera_bios.c \
@@ -38,11 +40,14 @@ SOURCES_C += \
         $(OPERA_DIR)/opera_diag_port.c \
         $(OPERA_DIR)/opera_dsp.c \
         $(OPERA_DIR)/opera_fixedpoint_math.c \
+        $(OPERA_DIR)/opera_log.c \
         $(OPERA_DIR)/opera_madam.c \
+        $(OPERA_DIR)/opera_mem.c \
         $(OPERA_DIR)/opera_nvram.c \
         $(OPERA_DIR)/opera_pbus.c \
         $(OPERA_DIR)/opera_region.c \
         $(OPERA_DIR)/opera_sport.c \
+        $(OPERA_DIR)/opera_state.c \
         $(OPERA_DIR)/opera_vdlp.c \
         $(OPERA_DIR)/opera_xbus.c \
         $(OPERA_DIR)/opera_xbus_cdrom_plugin.c

@@ -29,6 +29,7 @@
 */
 
 #include "opera_clio.h"
+#include "opera_state.h"
 #include "opera_xbus.h"
 
 #include <stdint.h>
@@ -273,68 +274,71 @@ uint32_t
 opera_xbus_state_size(void)
 {
   int i;
-  uint32_t tmp = sizeof(xbus_datum_t);
+  uint32_t size = sizeof(xbus_datum_t);
 
-  tmp += (16 * 4);
+  size = opera_state_save_size(sizeof(xbus_datum_t));
+
   for(i = 0; i < 15; i++)
     {
       if(!xdev[i])
         continue;
-      tmp += (uintptr_t)xdev[i](XBP_GET_SAVESIZE,NULL);
+      size += (uintptr_t)xdev[i](XBP_GET_SAVESIZE,NULL);
     }
 
-  return tmp;
+  return size;
 }
 
-void opera_xbus_state_save(void *buf_)
+uint32_t
+opera_xbus_state_save(void *data_)
 {
   uint32_t i;
-  uint32_t j;
-  uint32_t off;
-  uint32_t tmp;
+  uint32_t rv;
+  uint32_t size;
+  uint8_t *data;
 
-  memcpy(buf_,&XBUS,sizeof(xbus_datum_t));
+  data = data_;
 
-  j = off = sizeof(xbus_datum_t);
-  off += (16 * 4);
+  size = opera_state_save(data,"XBUS",&XBUS,sizeof(XBUS));
+  if(size == 0)
+    return 0;
 
   for(i = 0; i < 15; i++)
     {
       if(!xdev[i])
-        {
-          tmp = 0;
-          memcpy(&((uint8_t*)buf_)[j+i*4],&tmp,4);
-        }
-      else
-        {
-          xdev[i](XBP_GET_SAVEDATA,&((uint8_t*)buf_)[off]);
-          memcpy(&((uint8_t*)buf_)[j+i*4],&off,4);
-          off += (uintptr_t)xdev[i](XBP_GET_SAVESIZE,NULL);
-        }
+        break;
+
+      rv = (uintptr_t)xdev[i](XBP_GET_SAVEDATA,&data[size]);
+      size += rv;
     }
+
+  return size;
 }
 
-void
-opera_xbus_state_load(const void *buf_)
+uint32_t
+opera_xbus_state_load(void const *data_)
 {
   uint32_t i;
-  uint32_t j;
-  uint32_t offd;
+  uint32_t size;
+  uint32_t rv;
+  uint8_t *data;
 
-  j = sizeof(xbus_datum_t);
+  data = (uint8_t*)data_;
 
-  memcpy(&XBUS,buf_,j);
+  size = opera_state_load(&XBUS,"XBUS",data,sizeof(XBUS));
+  if(size == 0)
+    return 0;
 
   for(i = 0; i < 15; i++)
     {
-      memcpy(&offd,&((uint8_t*)buf_)[j+i*4],4);
-
       if(!xdev[i])
-        continue;
+        break;
 
-      if(!offd)
-        xdev[i](XBP_RESET,NULL);
-      else
-        xdev[i](XBP_SET_SAVEDATA,&((uint8_t*)buf_)[offd]);
+      xdev[i](XBP_RESET,NULL);
+      rv = (uintptr_t)xdev[i](XBP_SET_SAVEDATA,&data[size]);
+      if(rv == 0)
+        return 0;
+      size += rv;
     }
+
+  return size;
 }

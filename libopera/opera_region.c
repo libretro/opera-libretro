@@ -83,6 +83,18 @@ opera_region_get(void)
 }
 
 uint32_t
+opera_region_min_width(void)
+{
+  return NTSC_WIDTH;
+}
+
+uint32_t
+opera_region_min_height(void)
+{
+  return NTSC_HEIGHT;
+}
+
+uint32_t
 opera_region_max_width(void)
 {
   return PAL2_WIDTH;

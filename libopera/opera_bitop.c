@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "opera_arm.h"
+#include "opera_mem.h"
 #include "opera_bitop.h"
 
 void BitReaderBig_AttachBuffer(struct BitReaderBig *bit, uint32_t buff)
@@ -62,7 +63,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
 
   if((8 - bit->bitpoint) > bit->bitset)
     {
-      retval    = opera_mem_read8(bit->buf + (bit->point ^ 3));
+      retval    = opera_mem_read8(bit->buf + bit->point);
       retval  >>= 8 - bit->bitpoint - bit->bitset;
       retval   &= mas[bit->bitset];
       bit->bitpoint += bit->bitset;
@@ -71,7 +72,7 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
 
   if (bit->bitpoint)
     {
-      retval = opera_mem_read8(bit->buf + (bit->point ^ 3)) & mas[8 - bit->bitpoint];
+      retval = opera_mem_read8(bit->buf + bit->point) & mas[8 - bit->bitpoint];
       bit->point++;
       bitcnt -= 8 - bit->bitpoint;
     }
@@ -79,15 +80,15 @@ uint32_t BitReaderBig_Read(struct BitReaderBig *bit, uint8_t bits)
   while(bitcnt>=8)
     {
       retval <<= 8;
-      retval  |= opera_mem_read8(bit->buf + (bit->point ^ 3));
+      retval  |= opera_mem_read8(bit->buf + bit->point);
       bit->point++;
       bitcnt-=8;
     }
 
   if(bitcnt)
     {
-      retval<<=bitcnt;
-      retval|=opera_mem_read8(bit->buf + (bit->point^3)) >> (8 - bitcnt);
+      retval <<= bitcnt;
+      retval |= opera_mem_read8(bit->buf + bit->point) >> (8 - bitcnt);
     }
 
   bit->bitpoint = bitcnt;

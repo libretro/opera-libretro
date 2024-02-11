@@ -53,8 +53,8 @@ void     opera_dsp_init(void);
 void     opera_dsp_reset(void);
 
 uint32_t opera_dsp_state_size(void);
-void     opera_dsp_state_save(void *buf_);
-void     opera_dsp_state_load(const void *buf_);
+uint32_t opera_dsp_state_save(void *buf_);
+uint32_t opera_dsp_state_load(void const *buf_);
 
 EXTERN_C_END
 

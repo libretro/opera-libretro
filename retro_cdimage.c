@@ -1,15 +1,15 @@
 #include "retro_cdimage.h"
 
+#include "retro_miscellaneous.h"
+
+#include "file/file_path.h"
+#include "streams/chd_stream.h"
+#include "streams/interface_stream.h"
+
+#include "endianness.h"
+
 #include <stdlib.h>
 #include <string.h>
-
-#include <file/file_path.h>
-#include <retro_endianness.h>
-#include <streams/chd_stream.h>
-#include <streams/interface_stream.h>
-#include <retro_miscellaneous.h>
-
-#include <libretro.h>
 
 static
 void
@@ -202,5 +202,5 @@ retro_cdimage_get_number_of_logical_blocks(cdimage_t *cdimage_)
   if(rv == -1)
     return -1;
 
-  return swap_if_little32(blocks);
+  return swap32_if_little_endian(blocks);
 }

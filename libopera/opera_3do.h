@@ -7,8 +7,8 @@
 #include <stdint.h>
 
 uint32_t opera_3do_state_size(void);
-void     opera_3do_state_save(void *buf);
-int      opera_3do_state_load(const void *buf);
+uint32_t opera_3do_state_save(void *buf, size_t size);
+uint32_t opera_3do_state_load(void const *buf, size_t size);
 
 int      opera_3do_init(opera_ext_interface_t callback);
 void     opera_3do_destroy(void);

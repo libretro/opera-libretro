@@ -6,13 +6,6 @@
 typedef struct arm_core_s arm_core_t;
 struct arm_core_s
 {
-  uint8_t *ram;
-  uint8_t *rom;                 /* points to current rom bank */
-  uint8_t *rom1;
-  uint8_t *rom2;
-  uint8_t *nvram;
-
-  //ARM60 registers
   uint32_t USER[16];
   uint32_t CASH[7];
   uint32_t SVC[2];
