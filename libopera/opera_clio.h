@@ -35,6 +35,9 @@
 
 #include <stdint.h>
 
+#define ADBIO_OTHERROM    0x04
+#define ADBIO_OTHERROM_EN (ADBIO_OTHERROM << 4)
+
 EXTERN_C_BEGIN
 
 void     opera_clio_init(int reason_);

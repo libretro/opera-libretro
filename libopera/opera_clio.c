@@ -87,7 +87,7 @@ static
 void
 opera_clio_set_rom()
 {
-  opera_mem_rom_select((CLIO.regs[0x84] & 0x4) ? ROM2 : ROM1);
+  opera_mem_rom_select((CLIO.regs[0x84] & ADBIO_OTHERROM) ? ROM2 : ROM1);
 }
 
 uint32_t
@@ -253,17 +253,18 @@ clio_handle_dma(uint32_t val_)
 
 static
 void
-if_set_set_reset(uint32_t *output_,
-                 uint32_t  val_,
-                 uint32_t  mask_chk_,
-                 uint32_t  mask_set_)
+adbio_set(uint32_t *output_,
+          uint32_t  val_,
+          uint32_t  bit_)
 {
-  if((val_ & mask_chk_) == mask_chk_)
-    {
-      *output_ = ((val_ & mask_set_) ?
-                  (*output_ |  mask_set_) :
-                  (*output_ & ~mask_set_));
-    }
+  uint32_t mask;
+
+  mask = (1 << bit_);
+
+  if((val_ & mask) == 0)
+    *output_ &= ~mask;
+  else if(val_ & (mask | (mask << 4)))
+    *output_ |= mask;
 }
 
 int
@@ -360,10 +361,10 @@ opera_clio_poke(uint32_t addr_,
     }
   else if(addr_ == 0x84)
     {
-      if_set_set_reset(&CLIO.regs[0x84],val_,0x10,0x01);
-      if_set_set_reset(&CLIO.regs[0x84],val_,0x20,0x02);
-      if_set_set_reset(&CLIO.regs[0x84],val_,0x40,0x04);
-      if_set_set_reset(&CLIO.regs[0x84],val_,0x80,0x08);
+      adbio_set(&CLIO.regs[0x84],val_,0);
+      adbio_set(&CLIO.regs[0x84],val_,1);
+      adbio_set(&CLIO.regs[0x84],val_,2);
+      adbio_set(&CLIO.regs[0x84],val_,3);
 
       opera_clio_set_rom();
 
