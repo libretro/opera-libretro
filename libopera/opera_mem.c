@@ -231,7 +231,7 @@ opera_mem_rom2_byteswap32_if_le()
 void
 opera_mem_rom_select(void *rom_)
 {
-  if((rom_ != ROM1) || (rom_ != ROM2))
+  if((rom_ != ROM1) && (rom_ != ROM2))
     rom_ = ROM1;
 
   ROM = rom_;
