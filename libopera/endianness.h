@@ -75,11 +75,14 @@
 #if IS_BIG_ENDIAN
 
 #define swap32_if_little_endian(X) (X)
+#define swap32_if_le(X) (X)
 #define swap32_array_if_little_endian(X,Y)
+#define swap32_array_if_le(X,Y)
 
 #else
 
 #define swap32_if_little_endian(X) (SWAP32(X))
+#define swap32_if_le(X) (SWAP32(X))
 
 static
 INLINE
@@ -92,6 +95,8 @@ swap32_array_if_little_endian(uint32_t *array_,
   for(i = 0; i < size_; i++)
     array_[i] = SWAP32(array_[i]);
 }
+
+#define swap32_array_if_le(X,Y) swap32_array_if_little_endian(X,Y)
 
 #endif /* IS_BIG_ENDIAN */
 

@@ -1,79 +1,81 @@
+#include "discdata.h"
+#include "linkedmemblock.h"
+
 #include "opera_mem.h"
 
 #include "endianness.h"
 
+#include "boolean.h"
+
 #include <stdint.h>
 #include <string.h>
 
-#pragma pack(push,1)
+#define NVRAM_BLOCKSIZE 1
+#define NVRAM_BLOCKCOUNT (32 * 1024)
 
-typedef struct nvram_header_t nvram_header_t;
-struct nvram_header_t
+bool
+opera_nvram_initialized(void      *buf_,
+                        const int  bufsize_)
 {
-  uint8_t  record_type;
-  uint8_t  sync_bytes[5];
-  uint8_t  record_version;
-  uint8_t  flags;
-  uint8_t  comment[32];
-  uint8_t  label[32];
-  uint32_t id;
-  uint32_t block_size;
-  uint32_t block_count;
-  uint32_t root_dir_id;
-  uint32_t root_dir_blocks;
-  uint32_t root_dir_block_size;
-  uint32_t last_root_dir_copy;
-  uint32_t root_dir_copies[8];
+  int i;
+  DiscLabel *dl;
 
-  uint32_t unknown_value0;
-  uint32_t unknown_value1;
-  uint32_t unknown_value2;
-  uint32_t unknown_value3;
-  uint32_t unknown_value4;
-  uint32_t unknown_value5;
-  uint32_t unknown_value6;
-  uint32_t unknown_value7;
-  uint32_t blocks_remaining;
-  uint32_t unknown_value8;
-};
+  dl = (DiscLabel*)buf_;
 
-#pragma pack(pop)
+  if(dl->dl_RecordType != DISC_LABEL_RECORD_TYPE)
+    return false;
+  if(dl->dl_VolumeStructureVersion != VOLUME_STRUCTURE_LINKED_MEM)
+    return false;
+  for(i = 0; i < VOLUME_SYNC_BYTE_LEN; i++)
+    {
+      if(dl->dl_VolumeSyncBytes[i] != VOLUME_SYNC_BYTE)
+        return false;
+    }
 
+  return true;
+}
+
+// The below code mimics the official 3DO formatting tool "format"
+// https://github.com/trapexit/portfolio_os/blob/master/src/filesystem/format.c
+// https://github.com/trapexit/portfolio_os/blob/master/src/filesystem/lmadm.c
 void
-opera_nvram_init(void)
+opera_nvram_init(void      *buf_,
+                 const int  bufsize_)
 {
-  nvram_header_t *nvram_hdr = (nvram_header_t*)NVRAM;
+  DiscLabel *disc_label;
+  LinkedMemBlock *anchor_block;
+  LinkedMemBlock *free_block;
 
-  memset(nvram_hdr,0,sizeof(nvram_header_t));
+  disc_label   = (DiscLabel*)buf_;
+  anchor_block = (LinkedMemBlock*)&disc_label[1];
+  free_block   = &anchor_block[1];
 
-  nvram_hdr->record_type         = 0x01;
-  nvram_hdr->sync_bytes[0]       = 'Z';
-  nvram_hdr->sync_bytes[1]       = 'Z';
-  nvram_hdr->sync_bytes[2]       = 'Z';
-  nvram_hdr->sync_bytes[3]       = 'Z';
-  nvram_hdr->sync_bytes[4]       = 'Z';
-  nvram_hdr->record_version      = 0x02;
-  nvram_hdr->label[0]            = 'N';
-  nvram_hdr->label[1]            = 'V';
-  nvram_hdr->label[2]            = 'R';
-  nvram_hdr->label[3]            = 'A';
-  nvram_hdr->label[4]            = 'M';
-  nvram_hdr->id                  = swap32_if_little_endian(0xFFFFFFFF);
-  nvram_hdr->block_size          = swap32_if_little_endian(0x00000001);
-  nvram_hdr->block_count         = swap32_if_little_endian(0x00008000);
-  nvram_hdr->root_dir_id         = swap32_if_little_endian(0xFFFFFFFE);
-  nvram_hdr->root_dir_blocks     = swap32_if_little_endian(0x00000000);
-  nvram_hdr->root_dir_block_size = swap32_if_little_endian(0x00000001);
-  nvram_hdr->last_root_dir_copy  = swap32_if_little_endian(0x00000000);
-  nvram_hdr->root_dir_copies[0]  = swap32_if_little_endian(0x00000084);
-  nvram_hdr->unknown_value0      = swap32_if_little_endian(0x855A02B6);
-  nvram_hdr->unknown_value1      = swap32_if_little_endian(0x00000098);
-  nvram_hdr->unknown_value2      = swap32_if_little_endian(0x00000098);
-  nvram_hdr->unknown_value3      = swap32_if_little_endian(0x00000014);
-  nvram_hdr->unknown_value4      = swap32_if_little_endian(0x00000014);
-  nvram_hdr->unknown_value5      = swap32_if_little_endian(0x7AA565BD);
-  nvram_hdr->unknown_value6      = swap32_if_little_endian(0x00000084);
-  nvram_hdr->unknown_value7      = swap32_if_little_endian(0x00000084);
-  nvram_hdr->blocks_remaining    = swap32_if_little_endian(0x00007F68);
-  nvram_hdr->unknown_value8      = swap32_if_little_endian(0x00000014);
+  memset(buf_,0,bufsize_);
+
+  disc_label->dl_RecordType = DISC_LABEL_RECORD_TYPE;
+  memset(disc_label->dl_VolumeSyncBytes,VOLUME_SYNC_BYTE,VOLUME_SYNC_BYTE_LEN);
+  disc_label->dl_VolumeStructureVersion = VOLUME_STRUCTURE_LINKED_MEM;
+  disc_label->dl_VolumeFlags = 0;
+  strncpy((char*)disc_label->dl_VolumeCommentary,"opera formatted", VOLUME_COM_LEN);
+  strncpy((char*)disc_label->dl_VolumeIdentifier,"nvram", VOLUME_ID_LEN);
+  disc_label->dl_VolumeUniqueIdentifier = swap32_if_le(NVRAM_VOLUME_UNIQUE_ID); // ???
+  disc_label->dl_VolumeBlockSize = swap32_if_le(NVRAM_BLOCKSIZE);
+  disc_label->dl_VolumeBlockCount = swap32_if_le(bufsize_);
+  disc_label->dl_RootUniqueIdentifier = swap32_if_le(NVRAM_ROOT_UNIQUE_ID);
+  disc_label->dl_RootDirectoryBlockCount = 0;
+  disc_label->dl_RootDirectoryBlockSize = swap32_if_le(NVRAM_BLOCKSIZE);
+  disc_label->dl_RootDirectoryLastAvatarIndex = 0;
+  disc_label->dl_RootDirectoryAvatarList[0] = swap32_if_le(sizeof(DiscLabel));
+
+  anchor_block->fingerprint = swap32_if_le(FINGERPRINT_ANCHORBLOCK);
+  anchor_block->flinkoffset = swap32_if_le(sizeof(DiscLabel) + sizeof(LinkedMemBlock));
+  anchor_block->blinkoffset = swap32_if_le(sizeof(DiscLabel) + sizeof(LinkedMemBlock));
+  anchor_block->blockcount  = swap32_if_le(sizeof(LinkedMemBlock));
+  anchor_block->headerblockcount = swap32_if_le(sizeof(LinkedMemBlock));
+
+  free_block->fingerprint = swap32_if_le(FINGERPRINT_FREEBLOCK);
+  free_block->flinkoffset = swap32_if_le(sizeof(DiscLabel));
+  free_block->blinkoffset = swap32_if_le(sizeof(DiscLabel));
+  free_block->blockcount  = swap32_if_le(bufsize_ - sizeof(DiscLabel) - sizeof(LinkedMemBlock));
+  free_block->headerblockcount = swap32_if_le(sizeof(LinkedMemBlock));
 }

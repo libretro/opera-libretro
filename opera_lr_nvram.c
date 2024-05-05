@@ -377,6 +377,8 @@ opera_lr_nvram_save(const char    *gamepath_,
     }
 }
 
+// Try to load. If it fails ensure the NVRAM is initialized.
+// Not all games will force a format if the NVRAM is corrupt.
 void
 opera_lr_nvram_load(const char    *gamepath_,
                     const bool     shared_,
@@ -400,4 +402,7 @@ opera_lr_nvram_load(const char    *gamepath_,
 
       opera_lr_nvram_load_pergame(NVRAM,NVRAM_SIZE,filename,version_);
     }
+
+  if(!opera_nvram_initialized(NVRAM,NVRAM_SIZE))
+    opera_nvram_init(NVRAM,NVRAM_SIZE);
 }
