@@ -193,14 +193,13 @@ read_file_from_system_directory(const char *filename_,
   const char *system_path;
   char fullpath[PATH_MAX_LENGTH];
 
-  system_path = NULL;
-  rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
-  if((rv == 0) || (system_path == NULL))
-    return -1;
+  // system_path = NULL;
+  // rv = retro_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,&system_path);
+  // if((rv == 0) || (system_path == NULL))
+  //   return -1;
 
-  fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
-
-  file = filestream_open(fullpath,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  // fill_pathname_join(fullpath,system_path,filename_,PATH_MAX_LENGTH);
+  file = filestream_open(filename_,RETRO_VFS_FILE_ACCESS_READ,RETRO_VFS_FILE_ACCESS_HINT_NONE);
   if(file == NULL)
     return -1;
 

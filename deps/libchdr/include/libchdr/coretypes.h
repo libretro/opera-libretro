@@ -20,6 +20,8 @@ typedef int32_t INT32;
 typedef int16_t INT16;
 typedef int8_t INT8;
 
+#undef _LARGEFILE_SOURCE
+
 #define core_file FILE
 #define core_fopen(file) fopen(file, "rb")
 #if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__WIN64__)
