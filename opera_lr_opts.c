@@ -420,8 +420,8 @@ opera_lr_opts_get_vdlp_pixel_format(opera_lr_opts_t *opts_)
 {
   const char *val;
 
-  opts_->vdlp_pixel_format = VDLP_PIXEL_FORMAT_RGB565;
-  opts_->video_pitch_shift = 1;
+  opts_->vdlp_pixel_format = VDLP_PIXEL_FORMAT_XRGB8888;
+  opts_->video_pitch_shift = 2;
 
   val = getval("vdlp_pixel_format");
   if(val == NULL)

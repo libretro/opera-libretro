@@ -31,7 +31,7 @@ static void                *g_BUF          = NULL;
 static void                *g_CURBUF       = NULL;
 static vdlp_renderer_t      g_RENDERER     = NULL;
 static uint32_t             g_FLAGS        = VDLP_FLAG_NONE;
-static vdlp_pixel_format_e  g_PIXEL_FORMAT = VDLP_PIXEL_FORMAT_RGB565;
+static vdlp_pixel_format_e  g_PIXEL_FORMAT = VDLP_PIXEL_FORMAT_XRGB8888;
 
 static const uint32_t PIXELS_PER_LINE_MODULO[8] =
   {320, 384, 512, 640, 1024, 320, 320, 320};
