@@ -214,23 +214,25 @@ static
 void
 opera_lr_opts_get_bios(opera_lr_opts_t *opts_)
 {
-  const char *val;
-  const opera_bios_t *bios;
+  // const char *val;
+  // const opera_bios_t *bios;
 
-  opts_->bios = NULL;
+  // Bypass bios check to allow any bios to be passed
+  opera_bios_t* newBios = (opera_bios_t*) malloc (sizeof(opera_bios_t));
+  newBios->filename = getval("bios");
+  opts_->bios = newBios;
+  
+  // if(val == NULL)
+  //   return;
 
-  val = getval("bios");
-  if(val == NULL)
-    return;
+  // for(bios = opera_bios_begin(); bios != opera_bios_end(); bios++)
+  //   {
+  //     if(strcmp(bios->filename,val))
+  //       continue;
 
-  for(bios = opera_bios_begin(); bios != opera_bios_end(); bios++)
-    {
-      if(strcmp(bios->filename,val))
-        continue;
-
-      opts_->bios = bios;
-      return;
-    }
+  //     opts_->bios = bios;
+  //     return;
+  //   }
 }
 
 static
