@@ -49,6 +49,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int _nvramChanged;
+
 #define ARM_INITIAL_PC  0x03000000
 
 #define ARM_MUL_MASK    0x0fc000f0
@@ -1766,7 +1768,10 @@ mwritew(uint32_t const addr_,
       if(index & 0x80000)
          opera_diag_port_send(val_);
       else if(index & 0x40000)
+      {
+        _nvramChanged = true;
          NVRAM[(index >> 2) & NVRAM_SIZE_MASK] = (uint8_t)val_;
+      }
    }
 }
 
@@ -1812,7 +1817,10 @@ mreadw(uint32_t const addr_)
       if(index & 0x80000)
         return opera_diag_port_get();
       else if(index & 0x40000)
+      {
+        _nvramChanged = true;
         return NVRAM[(index >> 2) & NVRAM_SIZE_MASK];
+      }
     }
 
   /* MAS_Access_Exept = true; */
@@ -1838,6 +1846,7 @@ mwriteb(uint32_t const addr_,
   {
      if((index & 0x40000) == 0x40000)
      {
+        _nvramChanged = true;
         NVRAM[(index >> 2) & NVRAM_SIZE_MASK] = val_;
         return;
      }
@@ -1867,7 +1876,10 @@ mreadb(uint32_t const addr_)
   if(!(index & ~0xFFFFF))
     {
       if((index & 0x40000) == 0x40000)
+      {
+        _nvramChanged = true;
         return NVRAM[(index >> 2) & NVRAM_SIZE_MASK];
+      }
     }
 
   /* MAS_Access_Exept = true; */
