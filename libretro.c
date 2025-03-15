@@ -349,9 +349,9 @@ retro_load_game(const struct retro_game_info *info_)
 
   game_info_path_save(info_);
 
-  rv = open_cdimage_if_needed(info_);
-  if(rv == -1)
-    return false;
+  // rv = open_cdimage_if_needed(info_);
+  // if(rv == -1)
+  //   return false;
 
   opera_lr_opts_process();
   opera_3do_init(libopera_callback);
