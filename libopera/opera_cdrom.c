@@ -35,8 +35,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int _driveUsed;
-
 #define MSF_BIAS_IN_SECONDS 2
 #define MSF_BIAS_IN_FRAMES  150
 #define FRAMES_PER_SECOND   75
@@ -91,7 +89,6 @@ opera_cdrom_set_callbacks(opera_cdrom_get_size_cb_t    get_size_,
 void
 opera_cdrom_init(cdrom_device_t *cd_)
 {
-  _driveUsed = 1;
   uint32_t file_size_in_blocks;
 
   cd_->current_sector = 0;
@@ -129,7 +126,6 @@ opera_cdrom_init(cdrom_device_t *cd_)
 uint8_t
 opera_cdrom_fifo_get_status(cdrom_device_t *cd_)
 {
-  _driveUsed = 1;
   uint8_t rv;
 
   rv = 0;
@@ -149,7 +145,6 @@ opera_cdrom_fifo_get_status(cdrom_device_t *cd_)
 void
 opera_cdrom_do_cmd(cdrom_device_t *cd_)
 {
-  _driveUsed = 1;
   int i;
 
   cd_->status_len = 0;
@@ -863,7 +858,6 @@ void
 opera_cdrom_send_cmd(cdrom_device_t *cd_,
                      uint8_t         val_)
 {
-  _driveUsed = 1;
   if(cd_->cmd_idx < 7)
     cd_->cmd[cd_->cmd_idx++] = (uint8_t)val_;
 
@@ -877,7 +871,6 @@ opera_cdrom_send_cmd(cdrom_device_t *cd_,
 int
 opera_cdrom_test_fiq(cdrom_device_t *cd_)
 {
-  _driveUsed = 1;
   return (((cd_->poll & POLST) && (cd_->poll & POLSTMASK)) ||
           ((cd_->poll & POLDT) && (cd_->poll & POLDTMASK)));
 }
@@ -886,14 +879,12 @@ void
 opera_cdrom_set_poll(cdrom_device_t *cd_,
                      uint32_t        val_)
 {
-  _driveUsed = 1;
   cd_->poll = ((cd_->poll & 0xF0) | (val_ & 0x0F));
 }
 
 uint8_t
 opera_cdrom_fifo_get_data(cdrom_device_t *cd_)
 {
-  _driveUsed = 1;
   uint8_t rv;
 
   rv = 0;
