@@ -1087,6 +1087,7 @@ HandleDMA8(void)
     }
 }
 
+extern int _inputPortsRead;
 static
 void
 DMAPBus(void)
@@ -1103,6 +1104,8 @@ DMAPBus(void)
   MADAM.mregs[0x570] += 4;
   MADAM.mregs[0x578] += 4;
 
+  // Reading port bus, notifying bizhawk
+  _inputPortsRead = 1;
   pbus_buf  = opera_pbus_buf();
   pbus_size = opera_pbus_size();
   while(((int32_t)MADAM.mregs[0x574] > 0) && (pbus_size > 0))
