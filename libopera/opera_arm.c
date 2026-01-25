@@ -44,6 +44,7 @@
 #include "opera_sport.h"
 #include "opera_state.h"
 #include "opera_swi_hle_0x5XXXX.h"
+#include "opera_log.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -896,6 +897,64 @@ static void decode_swi_hle(const uint32_t op_)
 static void decode_swi(const uint32_t op_)
 {
   CYCLES -= (SCYCLE + NCYCLE);  // +2S+1N
+
+  /* Log kprintf (SWI 0x01000e) with buffering for %c sequences */
+  {
+    static char kprintf_buf[1024];
+    static int kprintf_pos = 0;
+
+    if((op_ & 0x00FFFFFF) == 0x01000e && opera_log_printf)
+      {
+        uint32_t fmt_addr = CPU.USER[0];
+        char fmt[64];
+        int i;
+        for(i = 0; i < 63; i++)
+          {
+            fmt[i] = (char)mreadb(fmt_addr + i);
+            if(fmt[i] == 0) break;
+          }
+        fmt[i] = 0;
+
+        /* Handle %c format - buffer single characters */
+        if(fmt[0] == '%' && fmt[1] == 'c' && fmt[2] == 0)
+          {
+            char c = (char)CPU.USER[1];
+            if(c == '\n' || c == '\r' || c == 0)
+              {
+                /* Flush buffer on newline/null */
+                if(kprintf_pos > 0)
+                  {
+                    kprintf_buf[kprintf_pos] = 0;
+                    opera_log_printf(OPERA_LOG_INFO, "[Opera]: %s\n", kprintf_buf);
+                    kprintf_pos = 0;
+                  }
+              }
+            else if(kprintf_pos < 1023)
+              {
+                kprintf_buf[kprintf_pos++] = c;
+              }
+          }
+        else
+          {
+            /* Flush any buffered chars first */
+            if(kprintf_pos > 0)
+              {
+                kprintf_buf[kprintf_pos] = 0;
+                opera_log_printf(OPERA_LOG_INFO, "[Opera]: %s\n", kprintf_buf);
+                kprintf_pos = 0;
+              }
+            /* Log the format string directly */
+            opera_log_printf(OPERA_LOG_INFO, "[Opera]: %s\n", fmt);
+          }
+      }
+    else if(kprintf_pos > 0 && opera_log_printf)
+      {
+        /* Flush buffer when any other SWI occurs */
+        kprintf_buf[kprintf_pos] = 0;
+        opera_log_printf(OPERA_LOG_INFO, "[Opera]: %s\n", kprintf_buf);
+        kprintf_pos = 0;
+      }
+  }
 
   if(g_SWI_HLE)
   {
