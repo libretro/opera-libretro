@@ -124,7 +124,7 @@ FLAGS += \
 INCFLAGS += \
 	-I$(DEPS_DIR)/lzma-19.00/include \
 	-I$(DEPS_DIR)/libchdr/include \
-	-I$(DEPS_DIR)/zlib-1.2.11
+	-I$(DEPS_DIR)/zlib-1.3.1.2
 
 SOURCES_C += \
         $(DEPS_DIR)/lzma-19.00/src/Alloc.c \
@@ -146,14 +146,14 @@ SOURCES_C += \
 endif
 
 ifneq ($(STATIC_LINKING), 1)
-ZLIB_INCFLAGS  = -I$(DEPS_DIR)/zlib-1.2.11
+ZLIB_INCFLAGS  = -I$(DEPS_DIR)/zlib-1.3.1.2
 ZLIB_SOURCES_C = \
-	$(DEPS_DIR)/zlib-1.2.11/adler32.c \
-	$(DEPS_DIR)/zlib-1.2.11/crc32.c \
-	$(DEPS_DIR)/zlib-1.2.11/inffast.c \
-	$(DEPS_DIR)/zlib-1.2.11/inflate.c \
-	$(DEPS_DIR)/zlib-1.2.11/inftrees.c \
-	$(DEPS_DIR)/zlib-1.2.11/zutil.c
+	$(DEPS_DIR)/zlib-1.3.1.2/adler32.c \
+	$(DEPS_DIR)/zlib-1.3.1.2/crc32.c \
+	$(DEPS_DIR)/zlib-1.3.1.2/inffast.c \
+	$(DEPS_DIR)/zlib-1.3.1.2/inflate.c \
+	$(DEPS_DIR)/zlib-1.3.1.2/inftrees.c \
+	$(DEPS_DIR)/zlib-1.3.1.2/zutil.c
 
     ifeq ($(SYSTEM_ZLIB), 1)
        INCFLAGS += $(shell pkg-config --cflags zlib)
