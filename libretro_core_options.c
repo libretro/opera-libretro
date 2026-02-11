@@ -75,7 +75,10 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "advanced",
       {
         { "0.5x ( 6.25Mhz)", NULL },
+        { "0.6x ( 7.50Mhz)", NULL },
+        { "0.7x ( 8.75Mhz)", NULL },
         { "0.8x (10.00Mhz)", NULL },
+        { "0.9x (11.25Mhz)", NULL },
         { "1.0x (12.50Mhz)", NULL },
         { "1.1x (13.75Mhz)", NULL },
         { "1.2x (15.00Mhz)", NULL },
@@ -411,6 +414,9 @@ static struct retro_core_option_definition option_defs_us[] =
       " Dramatically improves frame rates in many games, but increases performance requirements and in some cases has no effect (or may cause glitches).",
       {
         { "0.5x ( 6.25Mhz)", NULL },
+        { "0.6x ( 7.50Mhz)", NULL },
+        { "0.7x ( 8.75Mhz)", NULL },
+        { "0.9x (11.25Mhz)", NULL },
         { "0.8x (10.00Mhz)", NULL },
         { "1.0x (12.50Mhz)", NULL },
         { "1.1x (13.75Mhz)", NULL },
