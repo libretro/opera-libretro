@@ -49,8 +49,8 @@ unixpath = $(subst \,/,$1)
 unixcygpath = /$(subst :,,$(call unixpath,$1))
 
 ifneq (,$(findstring unix,$(platform)))
-    AR = ${CC_PREFIX}ar
-    CC = ${CC_PREFIX}gcc
+    AR ?= ${CC_PREFIX}ar
+    CC ?= ${CC_PREFIX}gcc
 
     TARGET := $(TARGET_NAME)_libretro.so
     fpic := -fPIC
