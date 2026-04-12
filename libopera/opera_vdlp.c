@@ -830,7 +830,7 @@ opera_vdlp_process_line(int line_)
       vdlp_process_vdl_entry();
     }
 
-  if(g_VDLP.line_cnt <= 0 || g_VDLP.line_cnt == 0) 
+  if(g_VDLP.line_cnt <= 0) 
     vdlp_process_vdl_entry();
 
   if(visible_scanline(line_))
