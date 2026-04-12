@@ -830,17 +830,17 @@ opera_vdlp_process_line(int line_)
       vdlp_process_vdl_entry();
     }
 
-  // CORREÇÃO 1: Garante que o processamento do VDL (Color Lookup Table) 
-  // ocorra antes da renderização para evitar as linhas verticais (ghosting/vazamento)
+  // CORRECTION 1: Ensures that VDL (Color Lookup Table) processing
+  // occurs before rendering to avoid vertical lines (ghosting/leakage)
   if(g_VDLP.line_cnt <= 0) 
     vdlp_process_vdl_entry();
 
   if(visible_scanline(line_))
     g_RENDERER();
 
-  // CORREÇÃO 2: Ajuste na lógica de avanço do Bitmap (FMVs e Estabilidade)
-  // O NFS usa um modo de vídeo que exige que o frame buffer anterior 
-  // seja preservado corretamente entre as linhas para não corromper o vídeo.
+  // CORRECTION 2: Adjustment to Bitmap Advancement Logic (FMVs and Stability)
+  // NFS uses a video mode that requires the previous frame buffer
+  // to be correctly preserved between lines to avoid video corruption.
   if (g_VDLP.clut_ctrl.cdcw.prev_fba_tick)
     g_VDLP.prev_bmp = tick_fba(g_VDLP.prev_bmp);
   else
@@ -848,8 +848,8 @@ opera_vdlp_process_line(int line_)
 
   g_VDLP.curr_bmp = tick_fba(g_VDLP.curr_bmp);
 
-  // CORREÇÃO 3: Reseta o offset apenas se houver processamento de linha ativo
-  // Isso evita que o renderizador se perca após a 3ª corrida (Issue #235)
+  // CORRECTION 3: Reset the offset only if line processing is active
+  // This prevents the renderer from getting lost after the 3rd run (Issue #235)
   g_VDLP.disp_ctrl.dcw.vi_off_1_line = 0;
   
   if (g_VDLP.line_cnt > 0)
