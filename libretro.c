@@ -497,10 +497,14 @@ retro_deinit(void)
 void
 retro_reset(void)
 {
-  opera_lr_nvram_save(game_info_path_get(),
-                      g_OPTS.nvram_shared,
-                      g_OPTS.nvram_version);
+   uint8_t *NVRAM_TMP_BUFFER; 
 
+  // Storing NVRAM prior to reset
+  if (NVRAM != NULL)
+  {
+    NVRAM_TMP_BUFFER = (uint8_t*) malloc (NVRAM_SIZE);
+    memcpy(NVRAM_TMP_BUFFER, NVRAM, NVRAM_SIZE);
+  }
 
   opera_3do_destroy();
   opera_lr_opts_reset();
@@ -509,9 +513,12 @@ retro_reset(void)
   opera_3do_init(libopera_callback);
   cdimage_set_sector(0);
 
-  opera_lr_nvram_load(game_info_path_get(),
-                      g_OPTS.nvram_shared,
-                      g_OPTS.nvram_version);
+  // Recovering NVRAM
+  if (NVRAM != NULL)
+  {
+    memcpy(NVRAM, NVRAM_TMP_BUFFER, NVRAM_SIZE);
+    free(NVRAM_TMP_BUFFER);
+  } 
 }
 
 static
