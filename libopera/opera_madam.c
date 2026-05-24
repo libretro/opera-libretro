@@ -1257,7 +1257,9 @@ PDEC(const uint32_t  pixel_,
     pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
   */
 
-  pproj.Transparent = (((pres & 0x7FFF) == 0x0) & pdec.tmask);
+  /* Gameblabla : This fixes black portrait issue in Idol sanshi. This needs careful handling or you may have no black outlines in Doom 3DO at menu. */
+  uint16_t transparentMask = (CCBFLAGS & CCB_NOBLK) ? 0x7fff : 0x7ffe;
+  pproj.Transparent = (((pres & transparentMask) == 0x0000) && pdec.tmask);
 
   return pres;
 }
