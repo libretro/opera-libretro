@@ -18,6 +18,7 @@ void     opera_clock_cpu_set_freq_mul(const float mul);
 uint32_t opera_clock_cpu_get_freq(void);
 uint32_t opera_clock_cpu_get_default_freq(void);
 uint64_t opera_clock_cpu_cycles_per_field(void);
+double   opera_clock_field_rate(void);
 
 void     opera_clock_region_set_ntsc(void);
 void     opera_clock_region_set_pal(void);

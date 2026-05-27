@@ -7,6 +7,12 @@
 #include "libopera/opera_region.h"
 
 typedef struct opera_lr_opts_t opera_lr_opts_t;
+
+#define OPERA_LR_OPTS_CHANGE_NONE     0x00000000
+#define OPERA_LR_OPTS_CHANGE_REGION   0x00000001
+#define OPERA_LR_OPTS_CHANGE_TIMING   0x00000002
+#define OPERA_LR_OPTS_CHANGE_GEOMETRY 0x00000004
+
 struct opera_lr_opts_t
 {
   bool initialized_libretro;
@@ -36,7 +42,7 @@ struct opera_lr_opts_t
 
 extern opera_lr_opts_t g_OPTS;
 
-void opera_lr_opts_process();
+uint32_t opera_lr_opts_process();
 void opera_lr_opts_reset();
 void opera_lr_opts_destroy();
 
