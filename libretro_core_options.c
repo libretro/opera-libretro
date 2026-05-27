@@ -125,7 +125,7 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       {
         { "ntsc", "NTSC 320x240@60" },
         { "pal1", "PAL1 320x288@50" },
-        { "pal2", "PAL2 352x288@50" },
+        { "pal2", "PAL2 384x288@50" },
         { NULL, NULL }
       },
       "ntsc"
@@ -458,7 +458,7 @@ static struct retro_core_option_definition option_defs_us[] =
       {
         { "ntsc", "NTSC 320x240@60" },
         { "pal1", "PAL1 320x288@50" },
-        { "pal2", "PAL2 352x288@50" },
+        { "pal2", "PAL2 384x288@50" },
         { NULL, NULL }
       },
       "ntsc"

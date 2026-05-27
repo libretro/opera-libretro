@@ -1,16 +1,13 @@
 #include "opera_clio.h"
 #include "opera_clock.h"
 #include "opera_core.h"
+#include "opera_timing.h"
 #include "opera_vdlp.h"
 
 #define DEFAULT_TIMER_DELAY  0x150
 #define DEFAULT_CPU_FREQ     12500000UL
 #define MIN_CPU_FREQ         1000000UL
 #define SND_FREQ             44100UL
-#define NTSC_FIELD_SIZE      263UL
-#define PAL_FIELD_SIZE       312UL
-#define NTSC_FIELD_RATE_1616 3928227UL
-#define PAL_FIELD_RATE_1616  3276800UL
 
 #define CYCLES_PER_SND(FQ,FS) ((((uint64_t)FQ) << 16) / ((uint64_t)FS))
 #define CYCLES_PER_SCANLINE(FQ,FR,FS) ((((uint64_t)FQ)<<32)/(((uint64_t)FR)*((uint64_t)FS)))
@@ -18,8 +15,8 @@
 
 #define DEFAULT_TIMER_DELAY 0x150
 #define DEFAULT_CPSL CYCLES_PER_SCANLINE(DEFAULT_CPU_FREQ, \
-                                         NTSC_FIELD_RATE_1616,  \
-                                         NTSC_FIELD_SIZE)
+                                         OPERA_NTSC_FIELD_RATE_1616,  \
+                                         OPERA_NTSC_FIELD_SIZE)
 
 typedef struct opera_clock_s opera_clock_t;
 struct opera_clock_s
@@ -43,8 +40,8 @@ static opera_clock_t g_CLOCK =
     /*.vdl_acc             =*/ 0,
     /*.timer_acc           =*/ 0,
     /*.timer_delay         =*/ DEFAULT_TIMER_DELAY,
-    /*.field_size          =*/ NTSC_FIELD_SIZE,
-    /*.field_rate          =*/ NTSC_FIELD_RATE_1616,
+    /*.field_size          =*/ OPERA_NTSC_FIELD_SIZE,
+    /*.field_rate          =*/ OPERA_NTSC_FIELD_RATE_1616,
     /*.cycles_per_snd      =*/ CYCLES_PER_SND(DEFAULT_CPU_FREQ,SND_FREQ),
     /*.cycles_per_scanline =*/ DEFAULT_CPSL,
     /*.cycles_per_timer    =*/ CYCLES_PER_TIMER(DEFAULT_CPU_FREQ,DEFAULT_TIMER_DELAY)
@@ -138,6 +135,12 @@ opera_clock_cpu_get_default_freq(void)
   return DEFAULT_CPU_FREQ;
 }
 
+double
+opera_clock_field_rate(void)
+{
+  return ((double)g_CLOCK.field_rate / OPERA_FIELD_RATE_ONE_1616);
+}
+
 int
 opera_clock_vdl_queued(void)
 {
@@ -188,8 +191,8 @@ opera_clock_push_cycles(const uint32_t clks_)
 void
 opera_clock_region_set_ntsc(void)
 {
-  g_CLOCK.field_rate = NTSC_FIELD_RATE_1616;
-  g_CLOCK.field_size = NTSC_FIELD_SIZE;
+  g_CLOCK.field_rate = OPERA_NTSC_FIELD_RATE_1616;
+  g_CLOCK.field_size = OPERA_NTSC_FIELD_SIZE;
 
   recalculate_cycles_per();
 }
@@ -197,8 +200,8 @@ opera_clock_region_set_ntsc(void)
 void
 opera_clock_region_set_pal(void)
 {
-  g_CLOCK.field_rate = PAL_FIELD_RATE_1616;
-  g_CLOCK.field_size = PAL_FIELD_SIZE;
+  g_CLOCK.field_rate = OPERA_PAL_FIELD_RATE_1616;
+  g_CLOCK.field_size = OPERA_PAL_FIELD_SIZE;
 
   recalculate_cycles_per();
 }

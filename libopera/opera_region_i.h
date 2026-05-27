@@ -20,7 +20,6 @@ struct opera_region_s
   uint32_t       scanlines;
   uint32_t       start_scanline;
   uint32_t       end_scanline;
-  uint32_t       field_rate;
 };
 
 typedef struct opera_region_s opera_region_t;

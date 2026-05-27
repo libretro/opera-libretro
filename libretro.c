@@ -391,18 +391,52 @@ retro_unload_game(void)
   opera_lr_opts_reset();
 }
 
+static
 void
-retro_get_system_av_info(struct retro_system_av_info *info_)
+get_system_geometry(struct retro_game_geometry *geometry_)
+{
+  geometry_->base_width   = (opera_region_width()  << g_OPTS.high_resolution);
+  geometry_->base_height  = (opera_region_height() << g_OPTS.high_resolution);
+  geometry_->max_width    = (opera_region_max_width()  * 2);
+  geometry_->max_height   = (opera_region_max_height() * 2);
+  geometry_->aspect_ratio = 4.0 / 3.0;
+}
+
+static
+void
+get_system_av_info(struct retro_system_av_info *info_)
 {
   memset(info_,0,sizeof(*info_));
 
-  info_->timing.fps            = opera_region_field_rate();
-  info_->timing.sample_rate    = 44100;
-  info_->geometry.base_width   = opera_region_min_width();
-  info_->geometry.base_height  = opera_region_min_height();
-  info_->geometry.max_width    = (opera_region_max_width()  * 2);
-  info_->geometry.max_height   = (opera_region_max_height() * 2);
-  info_->geometry.aspect_ratio = 4.0 / 3.0;
+  info_->timing.fps         = opera_region_refresh_rate();
+  info_->timing.sample_rate = 44100;
+  get_system_geometry(&info_->geometry);
+}
+
+void
+retro_get_system_av_info(struct retro_system_av_info *info_)
+{
+  get_system_av_info(info_);
+}
+
+static
+void
+set_system_av_info(void)
+{
+  struct retro_system_av_info info;
+
+  get_system_av_info(&info);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO,&info);
+}
+
+static
+void
+set_system_geometry(void)
+{
+  struct retro_game_geometry geometry;
+
+  get_system_geometry(&geometry);
+  retro_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY,&geometry);
 }
 
 unsigned
@@ -530,10 +564,17 @@ static
 void
 process_opts_if_updated()
 {
+  uint32_t changes;
+
   if(!variable_updated())
     return;
 
-  opera_lr_opts_process();
+  changes = opera_lr_opts_process();
+
+  if(changes & OPERA_LR_OPTS_CHANGE_TIMING)
+    set_system_av_info();
+  else if(changes & OPERA_LR_OPTS_CHANGE_GEOMETRY)
+    set_system_geometry();
 }
 
 static

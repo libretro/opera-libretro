@@ -705,13 +705,43 @@ opera_lr_opts_set(opera_lr_opts_t const *opts_)
   g_OPTS.initialized_opera    = true;
 }
 
-void
+static
+uint32_t
+opera_lr_opts_changes(opera_lr_opts_t const *opts_)
+{
+  uint32_t changes;
+
+  changes = OPERA_LR_OPTS_CHANGE_NONE;
+
+  if(!opts_->initialized_libretro)
+    return changes;
+
+  if(opts_->region != g_OPTS.region)
+    changes |= (OPERA_LR_OPTS_CHANGE_REGION |
+                OPERA_LR_OPTS_CHANGE_TIMING |
+                OPERA_LR_OPTS_CHANGE_GEOMETRY);
+
+  if(opts_->high_resolution != g_OPTS.high_resolution)
+    changes |= OPERA_LR_OPTS_CHANGE_GEOMETRY;
+
+  return changes;
+}
+
+uint32_t
 opera_lr_opts_process()
 {
+  uint32_t changes;
+  opera_lr_opts_t old_opts;
   opera_lr_opts_t opts = {0};
+
+  old_opts = g_OPTS;
 
   opera_lr_opts_get(&opts);
   opera_lr_opts_set(&opts);
+
+  changes = opera_lr_opts_changes(&old_opts);
+
+  return changes;
 }
 
 void
