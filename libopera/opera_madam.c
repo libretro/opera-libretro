@@ -51,6 +51,12 @@
 
 static struct BitReaderBig bitoper;
 
+#define MakeRGB15(r,g,b)  (((uint32_t)(r)<<10)|((uint32_t)(g)<<5)|(uint32_t)(b))
+#define RGB15_BLACK       MakeRGB15(0,0,0)
+#define RGB15_NEAR_BLACK  MakeRGB15(1,0,0)
+#define RGB15_MAGENTA     MakeRGB15(0x1b,0,0x1b)
+#define IS_RGB15_BLACK(P) (((P)&0x7FFF) == RGB15_BLACK)
+
 /* === CCB control word flags === */
 #define CCB_SKIP        0x80000000
 #define CCB_LAST        0x40000000
@@ -477,7 +483,7 @@ static struct
 {
   uint32_t plutaCCBbits;
   uint32_t pixelBitsMask;
-  int      tmask;
+  uint32_t rawVHBits;
 } pdec;
 
 static struct
@@ -1034,8 +1040,6 @@ opera_madam_cel_handle(void)
             break;
           }
 
-        pdec.tmask = flag_is_clr(CCBFLAGS,CCB_BGND);
-
         pproj.pmode        = (CCBFLAGS & CCB_POVER_MASK);
         pproj.pmodeORmask  = ((pproj.pmode == PMODE_ONE ) ? 0x8000 : 0x0000);
         pproj.pmodeANDmask = ((pproj.pmode != PMODE_ZERO) ? 0xFFFF : 0x7FFF);
@@ -1182,6 +1186,37 @@ opera_madam_init()
     }
 }
 
+/*
+  https://3dodev.com?do=search&id=start&q=UNCLSB
+  https://3dodev.com?do=search&id=start&q=PDCLSB
+*/
+static
+uint16_t
+PDEC_SubstituteBlueLSB(const uint16_t pixel_,
+                       const uint32_t mode_)
+{
+  uint16_t blueLSB;
+
+  switch(mode_ & 0x3)
+    {
+    default:
+    case 0:
+      blueLSB = 0;
+      break;
+    case 1:
+      blueLSB = (pixel_ & 0x1);
+      break;
+    case 2:
+      blueLSB = ((pixel_ >> 4) & 0x1);
+      break;
+    case 3:
+      blueLSB = ((pixel_ >> 5) & 0x1);
+      break;
+    }
+
+  return ((pixel_ & ~0x1) | blueLSB);
+}
+
 static
 uint32_t
 PDEC(const uint32_t  pixel_,
@@ -1242,6 +1277,14 @@ PDEC(const uint32_t  pixel_,
 
   *amv_ = resamv;
 
+  /* Saving bit 0 (blue lsb) and bit 15 (p-mode) */
+  pdec.rawVHBits = (pres & 0x8001);
+
+  if(flag_is_clr(CCBFLAGS,CCB_PACKED))
+    pres = PDEC_SubstituteBlueLSB(pres,((PRE1 & PRE1_TLLSB_MASK) >> PRE1_TLLSB_SHIFT));
+  else
+    pres = PDEC_SubstituteBlueLSB(pres,((CCBCTL0 & PDCLSB_MASK) >> PDCLSB_SHIFT));
+
   /* conceptual end of decoder */
 
   /*
@@ -1257,17 +1300,15 @@ PDEC(const uint32_t  pixel_,
     pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
   */
 
-  /* Gameblabla : This fixes black portrait issue in Idol sanshi. This needs careful handling or you may have no black outlines in Doom 3DO at menu. */
-  uint16_t transparentMask = (CCBFLAGS & CCB_NOBLK) ? 0x7fff : 0x7ffe;
-  pproj.Transparent = (((pres & transparentMask) == 0x0000) && pdec.tmask);
+  pproj.Transparent = (flag_is_clr(CCBFLAGS,CCB_BGND) &&
+                       IS_RGB15_BLACK(pres));
 
   return pres;
 }
 
 static
 uint32_t
-PPROJ_OUTPUT(uint32_t pdec_output_,
-             uint32_t pproc_output_,
+PPROJ_OUTPUT(uint32_t pproc_output_,
              uint32_t pframe_input_)
 {
   int32_t  b15mode;
@@ -1280,7 +1321,7 @@ PPROJ_OUTPUT(uint32_t pdec_output_,
   */
 
   if(flag_is_set(CCBFLAGS,CCB_PLUTPOS)) /* Use pixel decoder output. */
-    VHOutput = (pdec_output_ & 0x8001);
+    VHOutput = pdec.rawVHBits;
   else /* Use VH values determined from the CEL's origin. */
     VHOutput = CEL_ORIGIN_VH_VALUE;
 
@@ -1490,16 +1531,7 @@ PPROC(uint32_t pixel_,
 
   /* Use this to render magenta for testing. */
 #if 0
-  {
-    pdeco_t magenta;
-
-    magenta.r16b.r = 0x1b;
-    magenta.r16b.g = 0x00;
-    magenta.r16b.b = 0x1b;
-    magenta.r16b.p = 1;
-
-    return magenta.raw;
-  }
+  return RGB15_MAGENTA;
 #endif
 
   /*
@@ -1539,8 +1571,8 @@ PPROC(uint32_t pixel_,
   out.r16b.b = color2.B;
 
   /* TODO: Is this something the PROJECTOR should do? */
-  if(flag_is_clr(CCBFLAGS,CCB_NOBLK) && (out.raw == 0))
-    out.raw = (1 << 10);
+  if(flag_is_clr(CCBFLAGS,CCB_NOBLK) && IS_RGB15_BLACK(out.raw))
+    out.raw = RGB15_NEAR_BLACK;
 
   /*
     if(!(PRE1 & PRE1_NOSWAP) && (CCBCTL0 & (1 << 27)))
@@ -1571,7 +1603,7 @@ process_pixel(int32_t x_,
 
   fp = opera_mem_read16(REGCTL2 + XY2OFF(x_,y_,MADAM.rmod));
   p  = PPROC(curpix_,fp,lawv_);
-  p  = PPROJ_OUTPUT(curpix_,p,fp);
+  p  = PPROJ_OUTPUT(p,fp);
   opera_mem_write16(REGCTL3 + XY2OFF(x_,y_,MADAM.wmod),p);
 }
 
@@ -2221,7 +2253,7 @@ DrawLRCel(void)
                     framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,ycur>>16,MADAM.rmod)));
 
                   pixel = PPROC(CURPIX,framePixel,LAMV);
-                  pixel = PPROJ_OUTPUT(CURPIX,pixel,framePixel);
+                  pixel = PPROJ_OUTPUT(pixel,framePixel);
                   opera_mem_write16((REGCTL3+XY2OFF(xcur >> 16,ycur >> 16,MADAM.wmod)),pixel);
                 }
 
@@ -2705,7 +2737,7 @@ TexelDrawLine(uint16_t CURPIX_,
         {
           curr  = next;
           pixel = PPROC(CURPIX_,next,LAMV_);
-          pixel = PPROJ_OUTPUT(CURPIX_,pixel,next);
+          pixel = PPROJ_OUTPUT(pixel,next);
         }
 
       opera_mem_write16(REGCTL3 + XY2OFF(xcur_,ycur_,MADAM.wmod),pixel);
@@ -2972,7 +3004,7 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                         {
                           curr  = next;
                           pixel = PPROC(CURPIX_,next,LAMV_);
-                          pixel = PPROJ_OUTPUT(CURPIX_,pixel,next);
+                          pixel = PPROJ_OUTPUT(pixel,next);
                         }
                       writePIX(x,y,pixel);
                     }
@@ -2997,7 +3029,7 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                     {
                       curr  = next;
                       pixel = PPROC(CURPIX_,next,LAMV_);
-                      pixel = PPROJ_OUTPUT(CURPIX_,pixel,next);
+                      pixel = PPROJ_OUTPUT(pixel,next);
                     }
                   writePIX(x,y,pixel);
                 }
