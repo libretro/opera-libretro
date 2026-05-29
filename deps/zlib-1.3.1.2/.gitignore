@@ -13,7 +13,7 @@
 *.gcno
 *.gcov
 
-/zconf.h
+# /zconf.h is committed here: this vendored zlib has no configure step
 /Makefile
 /example
 /example64
