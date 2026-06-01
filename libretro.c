@@ -200,6 +200,9 @@ retro_serialize(void   *data_,
 {
   uint32_t size;
 
+  if(size_ == 0)
+    return false;
+
   size = opera_3do_state_save(data_,size_);
 
   return (size == size_);
@@ -210,17 +213,26 @@ retro_unserialize(void const *data_,
                   size_t      size_)
 {
   uint32_t size;
+  uint32_t backup_size;
+  uint32_t restore_size;
   void *backup_state;
 
   backup_state = malloc(retro_serialize_size());
   if(backup_state == NULL)
     return false;
-  size = retro_serialize(backup_state,retro_serialize_size());
+  backup_size = retro_serialize_size();
+  size = retro_serialize(backup_state,backup_size);
   if(size)
     {
       size = opera_3do_state_load(data_,size_);
       if(size != size_)
-        opera_3do_state_load(backup_state,retro_serialize_size());
+        {
+          restore_size = opera_3do_state_load(backup_state,backup_size);
+          if(restore_size != backup_size)
+            opera_log_printf(OPERA_LOG_ERROR,
+                             "[Opera]: failed to restore previous state after unsuccessful state load\n");
+          size = 0;
+        }
     }
 
   free(backup_state);
