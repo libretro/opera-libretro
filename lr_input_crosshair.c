@@ -36,8 +36,21 @@ lr_input_crosshair_draw(const lr_crosshair_t *crosshair_,
   int32_t y;
   uint32_t *p;
 
-  x = ((crosshair_->x + 32768) / (65535 / width_));
-  y = ((crosshair_->y + 32768) / (65535 / height_));
+  if((width_ <= 0) || (height_ <= 0))
+    return;
+
+  x = (((crosshair_->x + 32768) * width_) / 65536);
+  y = (((crosshair_->y + 32768) * height_) / 65536);
+
+  if(x < 0)
+    x = 0;
+  else if(x >= width_)
+    x = (width_ - 1);
+
+  if(y < 0)
+    y = 0;
+  else if(y >= height_)
+    y = (height_ - 1);
 
   p = &buf_[x + (y * width_)];
 

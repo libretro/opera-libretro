@@ -249,16 +249,42 @@ lr_input_poll(const int port_)
     }
 }
 
+static
+uint32_t
+lr_input_get_active_devices(const uint32_t active_devices_)
+{
+  unsigned frontend_devices;
+  uint32_t active_devices;
+
+  active_devices = active_devices_;
+  if(active_devices > LR_INPUT_MAX_DEVICES)
+    active_devices = LR_INPUT_MAX_DEVICES;
+
+  frontend_devices = 0;
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS,&frontend_devices) &&
+     (frontend_devices > 0) &&
+     (frontend_devices < active_devices))
+    active_devices = frontend_devices;
+
+  return active_devices;
+}
+
 void
 lr_input_device_set(const uint32_t port_,
                     const uint32_t device_)
 {
+  if(port_ >= LR_INPUT_MAX_DEVICES)
+    return;
+
   PBUS_DEVICES[port_] = device_;
 }
 
 uint32_t
 lr_input_device_get(const uint32_t port_)
 {
+  if(port_ >= LR_INPUT_MAX_DEVICES)
+    return RETRO_DEVICE_NONE;
+
   return PBUS_DEVICES[port_];
 }
 
@@ -266,10 +292,13 @@ void
 lr_input_update(const uint32_t active_devices_)
 {
   int i;
+  uint32_t active_devices;
 
   opera_pbus_reset();
   retro_input_poll_cb();
-  for(i = 0; i < active_devices_; i++)
+  active_devices = lr_input_get_active_devices(active_devices_);
+
+  for(i = 0; i < active_devices; i++)
     {
       if(PBUS_DEVICES[i] == RETRO_DEVICE_NONE)
         continue;
