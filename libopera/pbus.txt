@@ -76,12 +76,10 @@ MSB -> LSB
 * 8bit: identifier 0 (0x01)
 * 8bit: identifier 1 (0x7B)
 * 8bit: length? (0x08)
-* 8bit: horizontal position
-* 2bit: 0
-* 8bit: vertical position
-* 2bit: 0
-* 8bit: depth position
-* 4bit: 0x02 (unsure what this means)
+* 10bit: horizontal position
+* 10bit: vertical position
+* 10bit: depth position
+* 2bit: capability bits (0x02 for 4-way stick)
 * 1bit: trigger / fire
 * 1bit: A
 * 1bit: B
@@ -112,9 +110,11 @@ MSB -> LSB
 
 ### LIGHTGUN
 
-x = 0 - 639
-y = 0 - 240
-offset = (((y * 794.386) + x) / 5.0)
+x = 0 - 319
+y = 0 - 239
+counter = (((y * NTSC_DEFAULT_YSCANTIME) +
+           ((x * NTSC_DEFAULT_XSCANTIME * 10) / NTSC_WIDTH)) / 10) -
+          NTSC_DEFAULT_TIMEOFFSET
 
 MSB -> LSB
 8bit: identifier (0x4D)
@@ -123,13 +123,12 @@ MSB -> LSB
 1bit: coin button (arcade shooters)
 1bit: start (arcade shooters)
 1bit: holster (arcade shooters) / option (retail)
-1bit: unused?
-1bit: unused?
-17bit: screen offset
+2bit: unused?
+20bit: scan counter
+5bit: line pulse / hit count
 
-It's not clear where '794.386' or '5.0' are derived from. Also, unlike
-the mouse, when placed twice in a buffer it doesn't get picked up as
-1p and 2p. One instance shows up as player 2.
+Unlike the mouse, when placed twice in a buffer it doesn't get picked up
+as 1p and 2p. One instance shows up as player 2.
 
 To reload in Mad Dog II (retail) requires "shooting off screen" which
 appears to be represented as y = 0 and x = ~20 - ~640.
