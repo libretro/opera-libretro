@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (chd_stream.h).
@@ -23,6 +23,7 @@
 #ifndef _LIBRETRO_SDK_FILE_CHD_STREAM_H
 #define _LIBRETRO_SDK_FILE_CHD_STREAM_H
 
+#include <boolean.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -31,6 +32,21 @@
 RETRO_BEGIN_DECLS
 
 typedef struct chdstream chdstream_t;
+typedef struct _chd_file chd_file;
+
+typedef struct chdstream_cdrom_metadata
+{
+   uint32_t frame_offset;
+   uint32_t frames;
+   uint32_t extra;
+   uint32_t pregap;
+   uint32_t postgap;
+   uint32_t track;
+   char type[64];
+   char subtype[32];
+   char pgtype[32];
+   char pgsub[32];
+} chdstream_cdrom_metadata_t;
 
 /* First data track */
 #define CHDSTREAM_TRACK_FIRST_DATA (-1)
@@ -38,6 +54,8 @@ typedef struct chdstream chdstream_t;
 #define CHDSTREAM_TRACK_LAST (-2)
 /* Primary (largest) data track, used for CRC identification purposes */
 #define CHDSTREAM_TRACK_PRIMARY (-3)
+/* Opera extension: full disc with all tracks concatenated in metadata order */
+#define CHDSTREAM_TRACK_FULL_DISC (-4)
 
 chdstream_t *chdstream_open(const char *path, int32_t track);
 
@@ -56,6 +74,9 @@ void chdstream_rewind(chdstream_t *stream);
 int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence);
 
 ssize_t chdstream_get_size(chdstream_t *stream);
+
+bool chdstream_get_cdrom_metadata(chd_file *chd, int idx,
+      chdstream_cdrom_metadata_t *metadata);
 
 RETRO_END_DECLS
 
