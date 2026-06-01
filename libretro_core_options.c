@@ -260,7 +260,7 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "opera_active_devices",
       "Active Input Devices",
       NULL,
-      "There exists a bug (perhaps in Opera itself, but possibly in certain games) where having more than 1 emulated controller causes content to ignore gamepad input. Setting 'Active Input Devices' to 1 provides a workaround for this issue.",
+      "Sets the maximum number of emulated input devices. Certain games, particularly when using >16x CDROM speed and have more than 1 emulated controller, causes content to ignore gamepad input or crash. Setting 'Active Input Devices' to 1 can be workaround for this issue on some titles.",
       NULL,
       "input",
       {
@@ -568,7 +568,7 @@ static struct retro_core_option_definition option_defs_us[] =
     {
       "opera_active_devices",
       "Active Input Devices",
-      "There exists a bug (perhaps in Opera itself, but possibly in certain games) where having more than 1 emulated controller causes content to ignore gamepad input. Setting 'Active Input Devices' to 1 provides a workaround for this issue.",
+      "Sets the maximum number of emulated input devices. There exists a bug (perhaps in Opera itself, but possibly in certain games) where having more than 1 emulated controller causes content to ignore gamepad input. Setting 'Active Input Devices' to 1 provides a workaround for this issue.",
       {
         { "0", NULL },
         { "1", NULL },

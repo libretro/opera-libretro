@@ -218,6 +218,9 @@ lr_input_device_set_with_descs(const uint32_t port_,
   uint32_t rv;
   struct retro_input_descriptor desc[256];
 
+  if(port_ >= LR_INPUT_MAX_DEVICES)
+    return;
+
   lr_input_device_set(port_,device_);
 
   rv = 0;
