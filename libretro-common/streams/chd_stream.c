@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (chd_stream.c).
@@ -66,7 +66,6 @@ typedef struct metadata {
    char pgsub[32];
    uint32_t frame_offset;
    uint32_t frames;
-   uint32_t pad;
    uint32_t extra;
    uint32_t pregap;
    uint32_t postgap;
@@ -79,50 +78,195 @@ static uint32_t padding_frames(uint32_t frames)
 }
 
 static bool
+chdstream_get_metadata_text(chd_file *chd,
+      uint32_t tag, int idx,
+      char *meta, size_t meta_size,
+      bool *found)
+{
+   uint32_t actual_size = 0;
+   chd_error err;
+
+   *found = false;
+   if (meta_size == 0)
+      return false;
+
+   meta[0] = '\0';
+   err = chd_get_metadata(chd, tag, idx, meta, meta_size - 1,
+         &actual_size, NULL, NULL);
+   if (err != CHDERR_NONE)
+      return err == CHDERR_METADATA_NOT_FOUND;
+
+   *found = true;
+   if (actual_size >= meta_size)
+      return false;
+
+   meta[actual_size] = '\0';
+   return true;
+}
+
+static bool
+chdstream_parse_uint(const char *value, size_t len, uint32_t *out)
+{
+   uint32_t result = 0;
+   uint32_t max = (uint32_t)~0U;
+   size_t i;
+
+   if (len == 0)
+      return false;
+
+   for (i = 0; i < len; i++)
+   {
+      unsigned digit;
+
+      if (value[i] < '0' || value[i] > '9')
+         return false;
+
+      digit = (unsigned)(value[i] - '0');
+      if (result > (max - digit) / 10)
+         return false;
+      result = (result * 10) + digit;
+   }
+
+   *out = result;
+   return true;
+}
+
+static bool
+chdstream_copy_field(char *dst, size_t dst_size,
+      const char *value, size_t len)
+{
+   if (len == 0 || len >= dst_size)
+      return false;
+
+   memcpy(dst, value, len);
+   dst[len] = '\0';
+   return true;
+}
+
+static bool
+chdstream_parse_cdrom_metadata(const char *meta, metadata_t *md,
+      bool extended)
+{
+   enum
+   {
+      HAVE_TRACK   = 1 << 0,
+      HAVE_TYPE    = 1 << 1,
+      HAVE_SUBTYPE = 1 << 2,
+      HAVE_FRAMES  = 1 << 3,
+      HAVE_PREGAP  = 1 << 4,
+      HAVE_PGTYPE  = 1 << 5,
+      HAVE_PGSUB   = 1 << 6,
+      HAVE_POSTGAP = 1 << 7
+   };
+   const char *ptr = meta;
+   unsigned have = 0;
+
+   while (*ptr)
+   {
+      const char *key;
+      const char *value;
+      size_t klen;
+      size_t vlen;
+
+      while (*ptr == ' ')
+         ptr++;
+      if (!*ptr)
+         break;
+
+      key = ptr;
+      while (*ptr && *ptr != ':' && *ptr != ' ')
+         ptr++;
+      if (*ptr != ':')
+         return false;
+
+      klen = (size_t)(ptr - key);
+      value = ++ptr;
+      while (*ptr && *ptr != ' ')
+         ptr++;
+      vlen = (size_t)(ptr - value);
+
+      if (klen == 5 && !memcmp(key, "TRACK", 5))
+      {
+         if (!chdstream_parse_uint(value, vlen, &md->track))
+            return false;
+         have |= HAVE_TRACK;
+      }
+      else if (klen == 4 && !memcmp(key, "TYPE", 4))
+      {
+         if (!chdstream_copy_field(md->type, sizeof(md->type), value, vlen))
+            return false;
+         have |= HAVE_TYPE;
+      }
+      else if (klen == 7 && !memcmp(key, "SUBTYPE", 7))
+      {
+         if (!chdstream_copy_field(md->subtype, sizeof(md->subtype), value, vlen))
+            return false;
+         have |= HAVE_SUBTYPE;
+      }
+      else if (klen == 6 && !memcmp(key, "FRAMES", 6))
+      {
+         if (!chdstream_parse_uint(value, vlen, &md->frames))
+            return false;
+         have |= HAVE_FRAMES;
+      }
+      else if (klen == 6 && !memcmp(key, "PREGAP", 6))
+      {
+         if (!chdstream_parse_uint(value, vlen, &md->pregap))
+            return false;
+         have |= HAVE_PREGAP;
+      }
+      else if (klen == 6 && !memcmp(key, "PGTYPE", 6))
+      {
+         if (!chdstream_copy_field(md->pgtype, sizeof(md->pgtype), value, vlen))
+            return false;
+         have |= HAVE_PGTYPE;
+      }
+      else if (klen == 5 && !memcmp(key, "PGSUB", 5))
+      {
+         if (!chdstream_copy_field(md->pgsub, sizeof(md->pgsub), value, vlen))
+            return false;
+         have |= HAVE_PGSUB;
+      }
+      else if (klen == 7 && !memcmp(key, "POSTGAP", 7))
+      {
+         if (!chdstream_parse_uint(value, vlen, &md->postgap))
+            return false;
+         have |= HAVE_POSTGAP;
+      }
+   }
+
+   if ((have & (HAVE_TRACK | HAVE_TYPE | HAVE_SUBTYPE | HAVE_FRAMES)) !=
+       (HAVE_TRACK | HAVE_TYPE | HAVE_SUBTYPE | HAVE_FRAMES))
+      return false;
+
+   if (extended &&
+       (have & (HAVE_PREGAP | HAVE_PGTYPE | HAVE_PGSUB | HAVE_POSTGAP)) !=
+       (HAVE_PREGAP | HAVE_PGTYPE | HAVE_PGSUB | HAVE_POSTGAP))
+      return false;
+
+   md->extra = padding_frames(md->frames);
+   return true;
+}
+
+static bool
 chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 {
    char meta[256];
-   uint32_t meta_size = 0;
-   chd_error err;
+   bool found;
 
    memset(md, 0, sizeof(*md));
 
-   err = chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
-         sizeof(meta), &meta_size, NULL, NULL);
+   if (!chdstream_get_metadata_text(chd, CDROM_TRACK_METADATA2_TAG,
+            idx, meta, sizeof(meta), &found))
+      return false;
+   if (found)
+      return chdstream_parse_cdrom_metadata(meta, md, true);
 
-   if (err == CHDERR_NONE)
-   {
-      sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
-            &md->track, md->type,
-            md->subtype, &md->frames, &md->pregap,
-            md->pgtype, md->pgsub,
-            &md->postgap);
-      md->extra = padding_frames(md->frames);
-      return true;
-   }
-
-   err = chd_get_metadata(chd, CDROM_TRACK_METADATA_TAG, idx, meta,
-         sizeof(meta), &meta_size, NULL, NULL);
-
-   if (err == CHDERR_NONE)
-   {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames);
-      md->extra = padding_frames(md->frames);
-      return true;
-   }
-
-   err = chd_get_metadata(chd, GDROM_TRACK_METADATA_TAG, idx, meta,
-         sizeof(meta), &meta_size, NULL, NULL);
-
-   if (err == CHDERR_NONE)
-   {
-      sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
-             md->pgsub, &md->postgap);
-      md->extra = padding_frames(md->frames);
-      return true;
-   }
+   if (!chdstream_get_metadata_text(chd, CDROM_TRACK_METADATA_TAG,
+            idx, meta, sizeof(meta), &found))
+      return false;
+   if (found)
+      return chdstream_parse_cdrom_metadata(meta, md, false);
 
    return false;
 }
@@ -138,7 +282,7 @@ chdstream_find_track_number(chd_file *fd, int32_t track, metadata_t *meta)
       if (!chdstream_get_meta(fd, i, meta))
          return false;
 
-      if (track == meta->track)
+      if (track == (int)meta->track)
       {
          meta->frame_offset = frame_offset;
          return true;
@@ -161,12 +305,12 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
       if (!chdstream_find_track_number(fd, i, &iter))
       {
          if (track == CHDSTREAM_TRACK_LAST && i > 1)
-         {
-            *meta = iter;
-            return true;
-         }
-         else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
+            return chdstream_find_track_number(fd, i - 1, meta);
+
+         if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
             return chdstream_find_track_number(fd, largest_track, meta);
+
+         return false;
       }
 
       switch (track)
@@ -181,7 +325,7 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
          case CHDSTREAM_TRACK_PRIMARY:
             if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size)
             {
-               largest_size = iter.frames;
+               largest_size  = iter.frames;
                largest_track = iter.track;
             }
             break;
