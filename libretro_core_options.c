@@ -116,6 +116,27 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "21"
     },
     {
+      "opera_cd_speed",
+      "CD Speed",
+      NULL,
+      "Select the effective CD-ROM read speed."
+      " Warning: can expose timing issues in some titles. Particularly above 16x.",
+      NULL,
+      "system",
+      {
+        { "unbounded", NULL },
+        { "1x",  " 1x - ~150KB/s" },
+        { "2x",  " 2x - ~300KB/s (stock)" },
+        { "4x",  " 4x - ~600KB/s" },
+        { "8x",  " 8x - ~1200KB/s" },
+        { "16x", "16x - 2400KB/s" },
+        { "24x", "24x - 3600KB/s" },
+        { "32x", "32x - 4800KB/s" },
+        { NULL, NULL },
+      },
+      "unbounded"
+    },
+    {
       "opera_region",
       "Region / Mode",
       NULL,
@@ -450,6 +471,24 @@ static struct retro_core_option_definition option_defs_us[] =
         { NULL, NULL },
       },
       "21"
+    },
+    {
+      "opera_cd_speed",
+      "CD Speed",
+      "Select the effective CD-ROM read speed."
+      " Warning: can expose timing issues in some titles. Particularly above 16x.",
+      {
+        { "unbounded", NULL },
+        { "1x",  " 1x - ~150KB/s" },
+        { "2x",  " 2x - ~300KB/s (stock)" },
+        { "4x",  " 4x - ~600KB/s" },
+        { "8x",  " 8x - ~1200KB/s" },
+        { "16x", "16x - 2400KB/s" },
+        { "24x", "24x - 3600KB/s" },
+        { "32x", "32x - 4800KB/s" },
+        { NULL, NULL },
+      },
+      "unbounded"
     },
     {
       "opera_region",

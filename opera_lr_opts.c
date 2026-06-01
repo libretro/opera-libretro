@@ -25,6 +25,7 @@
 #include "libopera/hack_flags.h"
 #include "libopera/opera_arm.h"
 #include "libopera/opera_bios.h"
+#include "libopera/opera_cdrom.h"
 #include "libopera/opera_clock.h"
 #include "libopera/opera_core.h"
 #include "libopera/opera_madam.h"
@@ -402,6 +403,43 @@ opera_lr_opts_set_region(opera_lr_opts_t const *opts_)
 
 static
 void
+opera_lr_opts_get_cd_speed(opera_lr_opts_t *opts_)
+{
+  const char *val = getval("cd_speed");
+
+  if((val == NULL) || !strcmp(val,"unbounded"))
+    {
+      opts_->cd_speed = 0;
+      return;
+    }
+
+  opts_->cd_speed = atoi(val);
+  switch(opts_->cd_speed)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+    case 16:
+    case 24:
+    case 32:
+      break;
+    default:
+      opts_->cd_speed = 0;
+      break;
+    }
+}
+
+static
+void
+opera_lr_opts_set_cd_speed(opera_lr_opts_t const *opts_)
+{
+  opera_cdrom_set_speed(opts_->cd_speed);
+  g_OPTS.cd_speed = opts_->cd_speed;
+}
+
+static
+void
 opera_lr_opts_get_cpu_overclock(opera_lr_opts_t *opts_)
 {
   opts_->cpu_overclock = getval_as_float("cpu_overclock",1.0);
@@ -662,6 +700,7 @@ opera_lr_opts_get(opera_lr_opts_t *opts_)
   opera_lr_opts_get_madam_matrix_engine(opts_);
 
   opera_lr_opts_get_active_devices(opts_);
+  opera_lr_opts_get_cd_speed(opts_);
   opera_lr_opts_get_cpu_overclock(opts_);
   opera_lr_opts_get_dsp_threaded(opts_);
   opera_lr_opts_get_hacks(opts_);
@@ -689,6 +728,7 @@ opera_lr_opts_set(opera_lr_opts_t const *opts_)
 
   // Can be updated at any time
   opera_lr_opts_set_active_devices(opts_);
+  opera_lr_opts_set_cd_speed(opts_);
   opera_lr_opts_set_cpu_overclock(opts_);
   opera_lr_opts_set_dsp_threaded(opts_);
   opera_lr_opts_set_hacks(opts_);

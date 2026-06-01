@@ -22,6 +22,7 @@ struct opera_lr_opts_t
   bool nvram_shared;
   uint8_t nvram_version;
   opera_region_e region;
+  uint32_t cd_speed;
   float cpu_overclock;
   vdlp_pixel_format_e vdlp_pixel_format;
   bool vdlp_bypass_clut;
