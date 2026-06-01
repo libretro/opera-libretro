@@ -152,9 +152,26 @@ cdimage_set_sector(const uint32_t sector_)
 
 static
 void
-cdimage_read_sector(void *buf_)
+cdimage_read_sector(void  *buf_,
+                    size_t len_)
 {
-  retro_cdimage_read(&CDIMAGE,CDIMAGE_SECTOR,buf_,CDIMAGE_SECTOR_SIZE);
+  retro_cdimage_read_sector(&CDIMAGE,CDIMAGE_SECTOR,buf_,len_);
+}
+
+static
+void
+cdimage_get_toc(uint8_t  *track_first_,
+                uint8_t  *track_last_,
+                uint8_t  *disc_id_,
+                void     *disc_toc_,
+                uint32_t  disc_toc_size_)
+{
+  retro_cdimage_get_toc(&CDIMAGE,
+                        track_first_,
+                        track_last_,
+                        disc_id_,
+                        disc_toc_,
+                        disc_toc_size_);
 }
 
 static
@@ -527,7 +544,8 @@ retro_init(void)
 
   opera_cdrom_set_callbacks(cdimage_get_size,
                             cdimage_set_sector,
-                            cdimage_read_sector);
+                            cdimage_read_sector,
+                            cdimage_get_toc);
 
   srand(time(NULL));
   prng16_seed(time(NULL));
