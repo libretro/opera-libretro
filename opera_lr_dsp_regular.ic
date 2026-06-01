@@ -1,6 +1,7 @@
 #include "libopera/opera_dsp.h"
 
 #include "opera_lr_callbacks.h"
+#include "opera_lr_dsp.h"
 
 #include <stdint.h>
 
@@ -35,7 +36,7 @@ opera_lr_dsp_destroy(void)
 }
 
 void
-opera_lr_dsp_init(const int threaded_)
+opera_lr_dsp_init(const bool threaded_)
 {
 
 }
