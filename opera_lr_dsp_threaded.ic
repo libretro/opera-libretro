@@ -32,7 +32,6 @@ static slock_t *g_DSP_THREAD_MUTEX = NULL;
 static void (*g_DSP_UPLOAD)(void)  = dsp_upload_unlocked;
 static void (*g_DSP_PROCESS)(void) = dsp_process;
 
-
 /* PRIVATE FUNCTIONS */
 
 static

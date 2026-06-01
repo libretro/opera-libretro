@@ -38,6 +38,12 @@
 
 #define CDIMAGE_SECTOR_SIZE 2048
 
+typedef enum retro_reset_flags_t
+  {
+    RETRO_RESET_FLAG_NONE       = 0,
+    RETRO_RESET_FLAG_SAVE_NVRAM = (1 << 0)
+  } retro_reset_flags_t;
+
 static cdimage_t  CDIMAGE;
 static uint32_t   CDIMAGE_SECTOR;
 static char      *g_GAME_INFO_PATH = NULL;
@@ -172,6 +178,14 @@ cdimage_get_toc(uint8_t  *track_first_,
                         disc_id_,
                         disc_toc_,
                         disc_toc_size_);
+}
+
+static
+void
+content_runtime_reset(void)
+{
+  cdimage_set_sector(0);
+  opera_cdrom_ode_set_root(NULL);
 }
 
 static
@@ -364,6 +378,18 @@ game_info_path_save(const struct retro_game_info *info_)
 }
 
 static
+void
+game_info_path_save_path(const char *path_)
+{
+  game_info_path_free();
+
+  if(path_ == NULL)
+    return;
+
+  g_GAME_INFO_PATH = strdup(path_);
+}
+
+static
 const
 char*
 game_info_path_get(void)
@@ -371,17 +397,70 @@ game_info_path_get(void)
   return g_GAME_INFO_PATH;
 }
 
+static
+int
+cdimage_ode_launch(const char *path_)
+{
+  cdimage_t next;
+  int rv;
+
+  memset(&next,0,sizeof(next));
+  rv = retro_cdimage_open(path_,&next);
+  if(rv == -1)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[Opera]: ODE launch failed opening image - %s\n",
+                          path_);
+      return -1;
+    }
+
+  opera_lr_nvram_save(game_info_path_get(),
+                      g_OPTS.nvram_shared,
+                      g_OPTS.nvram_version);
+
+  retro_cdimage_close(&CDIMAGE);
+  CDIMAGE = next;
+  cdimage_set_sector(0);
+  game_info_path_save_path(path_);
+
+  retro_log_printf_cb(RETRO_LOG_INFO,
+                      "[Opera]: ODE launched image - %s\n",
+                      path_);
+  return 0;
+}
+
+static
+void
+ode_root_set_for_content(const struct retro_game_info *info_)
+{
+  char root[PATH_MAX_LENGTH];
+
+  if((info_ == NULL) || (info_->path == NULL))
+    {
+      opera_cdrom_ode_set_root(NULL);
+      return;
+    }
+
+  strncpy(root,info_->path,sizeof(root) - 1);
+  root[sizeof(root) - 1] = 0;
+  path_basedir(root);
+
+  opera_cdrom_ode_set_root(root);
+}
+
 bool
 retro_load_game(const struct retro_game_info *info_)
 {
   int rv;
 
+  content_runtime_reset();
   game_info_path_save(info_);
 
   rv = open_cdimage_if_needed(info_);
   if(rv == -1)
     return false;
 
+  ode_root_set_for_content(info_);
   opera_lr_opts_process();
   opera_3do_init(libopera_callback);
   cdimage_set_sector(0);
@@ -414,7 +493,9 @@ retro_unload_game(void)
   game_info_path_free();
 
   opera_3do_destroy();
+  opera_mem_destroy();
 
+  content_runtime_reset();
   retro_cdimage_close(&CDIMAGE);
 
   opera_lr_opts_reset();
@@ -546,6 +627,7 @@ retro_init(void)
                             cdimage_set_sector,
                             cdimage_read_sector,
                             cdimage_get_toc);
+  opera_cdrom_ode_set_launch_callback(cdimage_ode_launch);
 
   srand(time(NULL));
   prng16_seed(time(NULL));
@@ -558,13 +640,14 @@ retro_deinit(void)
 
 }
 
+static
 void
-retro_reset(void)
+retro_reset_core(retro_reset_flags_t flags_)
 {
-  opera_lr_nvram_save(game_info_path_get(),
-                      g_OPTS.nvram_shared,
-                      g_OPTS.nvram_version);
-
+  if(flags_ & RETRO_RESET_FLAG_SAVE_NVRAM)
+    opera_lr_nvram_save(game_info_path_get(),
+                        g_OPTS.nvram_shared,
+                        g_OPTS.nvram_version);
 
   opera_3do_destroy();
   opera_lr_opts_reset();
@@ -576,6 +659,26 @@ retro_reset(void)
   opera_lr_nvram_load(game_info_path_get(),
                       g_OPTS.nvram_shared,
                       g_OPTS.nvram_version);
+}
+
+void
+retro_reset(void)
+{
+  retro_reset_core(RETRO_RESET_FLAG_SAVE_NVRAM);
+}
+
+static
+bool
+ode_reset_if_requested(void)
+{
+  if(!opera_cdrom_ode_consume_restart_request())
+    return false;
+
+  retro_log_printf_cb(RETRO_LOG_INFO,
+                      "[Opera]: ODE media launch requested core reset\n");
+  /* cdimage_ode_launch already saved NVRAM before switching game paths. */
+  retro_reset_core(RETRO_RESET_FLAG_NONE);
+  return true;
 }
 
 static
@@ -622,11 +725,16 @@ draw_crosshairs_if_enabled()
 void
 retro_run(void)
 {
+  if(ode_reset_if_requested())
+    return;
+
   process_opts_if_updated();
 
   lr_input_update(g_OPTS.active_devices);
 
   opera_3do_process_frame();
+  if(ode_reset_if_requested())
+    return;
 
   draw_crosshairs_if_enabled();
 
