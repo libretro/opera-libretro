@@ -33,6 +33,8 @@
 
 #include "extern_c.h"
 
+#include <stdint.h>
+
 #define XBP_INIT	 0	//plugin init, returns plugin version
 #define XBP_RESET	 1	//plugin reset with parameter(image path)
 #define XBP_SET_COMMAND  2	//XBUS
@@ -53,16 +55,27 @@ EXTERN_C_BEGIN
 
 typedef void* (*opera_xbus_device)(int, void*);
 
+typedef struct opera_xbus_savedata_s
+{
+  void const *data;
+  uint32_t    size;
+} opera_xbus_savedata_t;
+
 void     opera_xbus_init(opera_xbus_device zero_dev_);
+void     opera_xbus_reset(void);
 void     opera_xbus_destroy(void);
 
 int      opera_xbus_attach(opera_xbus_device dev);
 
 void     opera_xbus_device_load(int dev, const char *name);
 void     opera_xbus_device_eject(int dev);
+void     opera_xbus_tick(void);
 
 void     opera_xbus_set_sel(const uint32_t val_);
 uint32_t opera_xbus_get_res(void);
+int      opera_xbus_selected_device_absent(void);
+void     opera_xbus_set_legacy_no_device_abort(int enabled);
+int      opera_xbus_legacy_no_device_abort(void);
 
 void     opera_xbus_set_poll(const uint32_t val_);
 uint32_t opera_xbus_get_poll(void);
@@ -74,8 +87,10 @@ void     opera_xbus_fifo_set_data(const uint32_t val_);
 uint32_t opera_xbus_fifo_get_data(void);
 
 uint32_t opera_xbus_state_size(void);
+uint32_t opera_xbus_state_size_v1(void);
 uint32_t opera_xbus_state_save(void *data);
-uint32_t opera_xbus_state_load(void const *data);
+uint32_t opera_xbus_state_load(void const *data, uint32_t size);
+uint32_t opera_xbus_state_load_v1(void const *data, uint32_t size);
 
 EXTERN_C_END
 
