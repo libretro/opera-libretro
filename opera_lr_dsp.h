@@ -1,7 +1,9 @@
 #ifndef OPERA_LR_DSP_H_INCLUDED
 #define OPERA_LR_DSP_H_INCLUDED
 
-void opera_lr_dsp_init(const int threaded);
+#include <stdbool.h>
+
+void opera_lr_dsp_init(const bool threaded);
 void opera_lr_dsp_destroy(void);
 
 void opera_lr_dsp_upload(void);
