@@ -1103,7 +1103,12 @@ DMAPBus(void)
 
   opera_pbus_pad();
 
-  MADAM.mregs[0x574] -= 4;
+  /*
+    Portfolio OS src/app/oper/ControlPort.c, EnableControlPort(), sets
+    RAMtofrPLAYER[1] = cpDMASize - 4. The first DMA word is control-port
+    sludge; Length counts bytes after it.
+  */
+  opera_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
   MADAM.mregs[0x570] += 4;
   MADAM.mregs[0x578] += 4;
 
@@ -2350,10 +2355,8 @@ DrawLRCel(void)
 void
 opera_madam_reset(void)
 {
-  uint32_t i;
-
-  for(i = 0; i < MADAM_REGISTER_COUNT; i++)
-    MADAM.mregs[i] = 0;
+  memset(&MADAM,0,sizeof(MADAM));
+  memset(&bitoper,0,sizeof(bitoper));
 }
 
 static

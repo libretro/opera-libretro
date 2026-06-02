@@ -851,6 +851,10 @@ void
 opera_vdlp_init()
 {
   uint32_t i;
+  void *buf;
+  vdlp_renderer_t renderer;
+  uint32_t flags;
+  vdlp_pixel_format_e pixel_format;
   static const uint32_t StartupVDL[]=
     { /* Startup VDL at address 0x2B0000 */
       0x00004410, 0x002C0000, 0x002C0000, 0x002B0098,
@@ -866,6 +870,18 @@ opera_vdlp_init()
       0x002C0000, 0x002B00A8, 0x00000000, 0x002C0000,
       0x002C0000, 0x002B0000
     };
+
+  buf          = g_BUF;
+  renderer     = g_RENDERER;
+  flags        = g_FLAGS;
+  pixel_format = g_PIXEL_FORMAT;
+
+  memset(&g_VDLP,0,sizeof(g_VDLP));
+  g_BUF          = buf;
+  g_CURBUF       = buf;
+  g_RENDERER     = renderer;
+  g_FLAGS        = flags;
+  g_PIXEL_FORMAT = pixel_format;
 
   g_VDLP.head_vdl = 0xB0000;
   if(g_RENDERER == NULL)

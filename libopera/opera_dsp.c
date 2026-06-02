@@ -694,6 +694,8 @@ opera_dsp_init(void)
   int32_t a,c;
   ITAG_t inst;
 
+  memset(&DSP,0,sizeof(DSP));
+
   for(a = 0; a < 16; a++)
     {
       for(c = 0; c < 8; c++)
