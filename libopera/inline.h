@@ -17,16 +17,16 @@
 
 #endif /* INLINE */
 
-#ifndef FORCEINLINE
+#ifndef OPERA_FORCEINLINE
 
 #ifdef _MSC_VER
-#define FORCEINLINE __forceinline
+#define OPERA_FORCEINLINE __forceinline
 #elif defined(__GNUC__)
-#define FORCEINLINE __attribute__((always_inline)) INLINE
+#define OPERA_FORCEINLINE __attribute__((always_inline)) INLINE
 #else
-#define FORCEINLINE INLINE
+#define OPERA_FORCEINLINE INLINE
 #endif
 
-#endif /* FORCEINLINE */
+#endif /* OPERA_FORCEINLINE */
 
 #endif /* LIBOPERA_INLINE_H_INCLUDED */

@@ -265,7 +265,7 @@ hash16(uint32_t i_,
 }
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int
 ADD_CFLAG(const uint32_t a_,
           const uint32_t b_,
@@ -277,7 +277,7 @@ ADD_CFLAG(const uint32_t a_,
 }
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int
 SUB_CFLAG(const uint32_t a_,
           const uint32_t b_,
@@ -289,7 +289,7 @@ SUB_CFLAG(const uint32_t a_,
 }
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int
 ADD_VFLAG(const uint32_t a_,
           const uint32_t b_,
@@ -300,7 +300,7 @@ ADD_VFLAG(const uint32_t a_,
 }
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int
 SUB_VFLAG(const uint32_t a_,
           const uint32_t b_,
