@@ -48,6 +48,17 @@
 #define FLABLODE     0x8
 #define RELOAD_VAL   0x10
 
+#define VINT_MASK    0x7FF
+#define HCNT_MASK    0x7FF
+#define VCNT_MASK    0x7FF
+#define VCNT_FIELD   0x800
+
+#define CSTAT_SOFT_RESET  0x10
+#define CSTAT_CLEAR_DIPIR 0x20
+#define CSTAT_DIPIR_RESET 0x40
+
+#define WDOG_RESTART      0x0B
+
 struct fifo_s
 {
   uint32_t addr;
@@ -164,13 +175,13 @@ opera_clio_timer_clear(uint32_t v204_,
 uint32_t
 opera_clio_line_vint0(void)
 {
-  return (CLIO.regs[8] & 0x7FF);
+  return (CLIO.regs[8] & VINT_MASK);
 }
 
 uint32_t
 opera_clio_line_vint1(void)
 {
-  return (CLIO.regs[12] & 0x7FF);
+  return (CLIO.regs[12] & VINT_MASK);
 }
 
 int
@@ -491,8 +502,31 @@ opera_clio_poke(uint32_t addr_,
     }
   else if(addr_ == 0x28)
     {
-      CLIO.regs[addr_] = val_;
-      return (val_ == 0x30);
+      CLIO.regs[addr_] = (val_ & ~(CSTAT_SOFT_RESET | CSTAT_CLEAR_DIPIR));
+      if(val_ & CSTAT_CLEAR_DIPIR)
+        CLIO.regs[addr_] &= ~CSTAT_DIPIR_RESET;
+      return (val_ & CSTAT_SOFT_RESET);
+    }
+  else if(addr_ == 0x2C)
+    {
+      if((val_ & 0x0F) == WDOG_RESTART)
+        CLIO.regs[addr_] = WDOG_RESTART;
+      return 0;
+    }
+  else if((addr_ == 0x08) || (addr_ == 0x0C))
+    {
+      CLIO.regs[addr_] = (val_ & VINT_MASK);
+      return 0;
+    }
+  else if(addr_ == 0x30)
+    {
+      CLIO.regs[addr_] = (val_ & HCNT_MASK);
+      return 0;
+    }
+  else if(addr_ == 0x34)
+    {
+      CLIO.regs[addr_] = (val_ & (VCNT_MASK | VCNT_FIELD));
+      return 0;
     }
   else if((addr_ >= 0x1800) && (addr_ <= 0x1FFF))
     {
@@ -576,11 +610,9 @@ opera_clio_poke(uint32_t addr_,
       opera_clock_timer_set_delay(CLIO.regs[addr_]);
       return 0;
     }
-  else if(addr_ == 0x120)
+  else if(clio_timer_reg_addr(addr_))
     {
-      /* 316 or 800? */
-      CLIO.regs[addr_] = ((TIMER_VAL > 800) ?
-                          (TIMER_VAL+(val_/0x30)) : val_);
+      CLIO.regs[addr_] = (val_ & 0xFFFF);
       return 0;
     }
 
@@ -609,6 +641,8 @@ opera_clio_peek(uint32_t addr_)
     }
   else if(addr_ == 0x3C) // RandSample
     return prng32();
+  else if(addr_ == 0x2C)
+    return 0;
   else if(addr_ == 0x204)
     return CLIO.regs[0x200];
   else if(addr_ == 0x20C)
@@ -627,6 +661,12 @@ opera_clio_peek(uint32_t addr_)
     return opera_xbus_fifo_get_data();
   else if(addr_ == 0x0)
     return 0x02020000;
+  else if((addr_ == 0x08) || (addr_ == 0x0C))
+    return (CLIO.regs[addr_] & VINT_MASK);
+  else if(addr_ == 0x30)
+    return (CLIO.regs[addr_] & HCNT_MASK);
+  else if(addr_ == 0x34)
+    return (CLIO.regs[addr_] & (VCNT_MASK | VCNT_FIELD));
   else if((addr_ >= 0x3800) && (addr_ <= 0x3BFF))
     {
       /* 2DSPW per 1ARMW */
@@ -648,6 +688,8 @@ opera_clio_peek(uint32_t addr_)
     return prng32();
   else if(addr_ == 0x17D0) /* read DSP/ARM semaphore */
     return opera_dsp_arm_semaphore_read();
+  else if(clio_timer_reg_addr(addr_))
+    return (CLIO.regs[addr_] & 0xFFFF);
 
   return CLIO.regs[addr_];
 }
@@ -656,7 +698,8 @@ void
 opera_clio_vcnt_update(int line_,
                        int field_)
 {
-  CLIO.regs[0x34] = ((field_ << 11) + line_);
+  CLIO.regs[0x34] = (((field_ << 11) & VCNT_FIELD) |
+                     ((uint32_t)line_ & VCNT_MASK));
 }
 
 static
