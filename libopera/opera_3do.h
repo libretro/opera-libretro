@@ -13,6 +13,7 @@ uint32_t opera_3do_state_load(void const *buf, size_t size);
 int      opera_3do_init(opera_ext_interface_t callback);
 void     opera_3do_destroy(void);
 
+void     opera_3do_soft_reset(void);
 void     opera_3do_process_frame(void);
 
 #endif /* LIBOPERA_3DO_H_INCLUDED */
