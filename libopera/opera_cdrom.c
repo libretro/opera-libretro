@@ -161,7 +161,7 @@ static cdrom_callbacks_t g_CDROM_CALLBACKS = {0};
 #define ODE_TOC_NAME_LIMIT   128
 #define ODE_TOC_DEVICE_MASK  0xFF000000
 #define ODE_TOC_ENTRY_MASK   0x00FFFFFF
-#define ODE_SUPPORTED_EXTS   "iso|cue|bin|chd|ISO|CUE|BIN|CHD"
+#define ODE_TOC_SUPPORTED_EXTS "iso|ISO|cue|CUE"
 #define ODE_PLAYLIST_MAX     16
 
 enum ODE_Commands
@@ -1532,11 +1532,11 @@ ode_build_toc(uint32_t start_id_,
     }
 
   list = dir_list_new(g_CDROM_STATE.ode.current,
-                      ODE_SUPPORTED_EXTS,
-                      true,
-                      false,
-                      false,
-                      false);
+                      ODE_TOC_SUPPORTED_EXTS,
+                      true,     /* include_dirs */
+                      false,    /* include_hidden */
+                      false,    /* include_compressed */
+                      false);   /* recursive */
   if(list == NULL)
     return;
 
@@ -1609,11 +1609,11 @@ ode_find_toc_path(uint32_t  toc_id_,
     }
 
   list = dir_list_new(g_CDROM_STATE.ode.current,
-                      ODE_SUPPORTED_EXTS,
-                      true,
-                      false,
-                      false,
-                      false);
+                      ODE_TOC_SUPPORTED_EXTS,
+                      true,     /* include_dirs */
+                      false,    /* include_hidden */
+                      false,    /* include_compressed */
+                      false);   /* recursive */
   if(list == NULL)
     return false;
 
