@@ -2641,10 +2641,11 @@ opera_cdrom_init(cdrom_device_t *cd_)
 
   cd_->xbus_status  = 0;
   cd_->poll         = CDROM_POLL_INTEN_MASK;
-  cd_->xbus_status |= (CDROM_STATUS_READY |
-                       CDROM_STATUS_DOOR |
-                       CDROM_STATUS_DISC_IN |
-                       CDROM_STATUS_SPIN_UP);
+  cd_->xbus_status |= CDROM_STATUS_READY;
+  if(cd_->callbacks.get_size() > 0)
+    cd_->xbus_status |= (CDROM_STATUS_DOOR |
+                         CDROM_STATUS_DISC_IN |
+                         CDROM_STATUS_SPIN_UP);
 
   cdrom_mode_reset(cd_);
   cd_->MEI_status = MEI_CDROM_no_error;

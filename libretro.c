@@ -3,6 +3,9 @@
 #include "libretro_core_options.h"
 #include "retro_miscellaneous.h"
 #include "streams/file_stream.h"
+#include "compat/posix_string.h"
+#include "compat/strl.h"
+#include "string/stdstring.h"
 
 #include "lr_input.h"
 #include "lr_input_crosshair.h"
@@ -44,9 +47,26 @@ typedef enum retro_reset_flags_t
     RETRO_RESET_FLAG_SAVE_NVRAM = (1 << 0)
   } retro_reset_flags_t;
 
+typedef struct disk_image_s
+{
+  char *path;
+  char *label;
+} disk_image_t;
+
 static cdimage_t  CDIMAGE;
 static uint32_t   CDIMAGE_SECTOR;
 static char      *g_GAME_INFO_PATH = NULL;
+static disk_image_t *g_DISK_IMAGES = NULL;
+static unsigned      g_DISK_IMAGE_CAPACITY = 0;
+static unsigned      g_DISK_IMAGE_COUNT = 0;
+static unsigned      g_DISK_IMAGE_INDEX = 0;
+static unsigned      g_DISK_INITIAL_INDEX = 0;
+static char         *g_DISK_INITIAL_PATH = NULL;
+static bool          g_DISK_TRAY_OPEN = false;
+
+static
+void
+retro_reset_core(retro_reset_flags_t flags_);
 
 static
 void
@@ -146,7 +166,15 @@ static
 uint32_t
 cdimage_get_size(void)
 {
-  return retro_cdimage_get_number_of_logical_blocks(&CDIMAGE);
+  ssize_t blocks;
+
+  blocks = retro_cdimage_get_number_of_logical_blocks(&CDIMAGE);
+  if(blocks <= 0)
+    return 0;
+  if(blocks > UINT32_MAX)
+    return UINT32_MAX;
+
+  return (uint32_t)blocks;
 }
 
 static
@@ -216,7 +244,7 @@ retro_get_system_info(struct retro_system_info *info_)
   info_->library_name     = "Opera";
   info_->library_version  = "1.0.0" GIT_VERSION;
   info_->need_fullpath    = true;
-  info_->valid_extensions = "iso|bin|chd|cue";
+  info_->valid_extensions = "iso|bin|chd|cue|m3u";
 }
 
 size_t
@@ -338,16 +366,16 @@ print_cdimage_open_fail(const char *path_)
 
 static
 int
-open_cdimage_if_needed(const struct retro_game_info *info_)
+open_cdimage(const char *path_)
 {
   int rv;
 
-  if(!info_)
+  if(path_ == NULL)
     return 0;
 
-  rv = retro_cdimage_open(info_->path,&CDIMAGE);
+  rv = retro_cdimage_open(path_,&CDIMAGE);
   if(rv == -1)
-    return print_cdimage_open_fail(info_->path);
+    return print_cdimage_open_fail(path_);
 
   return 0;
 }
@@ -367,8 +395,6 @@ static
 void
 game_info_path_save(const struct retro_game_info *info_)
 {
-  size_t len;
-
   game_info_path_free();
 
   if((info_ == NULL) || (info_->path == NULL))
@@ -398,6 +424,574 @@ game_info_path_get(void)
 }
 
 static
+void
+disk_image_free(disk_image_t *image_)
+{
+  if(image_ == NULL)
+    return;
+
+  free(image_->path);
+  free(image_->label);
+  image_->path  = NULL;
+  image_->label = NULL;
+}
+
+static
+void
+disk_images_clear(void)
+{
+  unsigned i;
+
+  for(i = 0; i < g_DISK_IMAGE_COUNT; i++)
+    disk_image_free(&g_DISK_IMAGES[i]);
+
+  free(g_DISK_IMAGES);
+  g_DISK_IMAGES         = NULL;
+  g_DISK_IMAGE_CAPACITY = 0;
+  g_DISK_IMAGE_COUNT    = 0;
+  g_DISK_IMAGE_INDEX    = 0;
+  g_DISK_TRAY_OPEN      = false;
+}
+
+static
+void
+disk_initial_image_clear(void)
+{
+  free(g_DISK_INITIAL_PATH);
+  g_DISK_INITIAL_PATH  = NULL;
+  g_DISK_INITIAL_INDEX = 0;
+}
+
+static
+bool
+disk_images_ensure_capacity(unsigned capacity_)
+{
+  disk_image_t *images;
+  unsigned old_capacity;
+  unsigned new_capacity;
+
+  if(capacity_ <= g_DISK_IMAGE_CAPACITY)
+    return true;
+
+  old_capacity = g_DISK_IMAGE_CAPACITY;
+  new_capacity = (g_DISK_IMAGE_CAPACITY > 0) ? (g_DISK_IMAGE_CAPACITY * 2) : 4;
+  while(new_capacity < capacity_)
+    new_capacity *= 2;
+
+  images = (disk_image_t*)realloc(g_DISK_IMAGES,new_capacity * sizeof(*g_DISK_IMAGES));
+  if(images == NULL)
+    return false;
+
+  g_DISK_IMAGES = images;
+  memset(&g_DISK_IMAGES[old_capacity],0,(new_capacity - old_capacity) * sizeof(*g_DISK_IMAGES));
+  g_DISK_IMAGE_CAPACITY = new_capacity;
+
+  return true;
+}
+
+static
+bool
+disk_image_extension_supported(const char *path_)
+{
+  const char *ext;
+
+  if(string_is_empty(path_))
+    return false;
+
+  ext = path_get_extension(path_);
+  return (!strcasecmp(ext,"iso") ||
+          !strcasecmp(ext,"bin") ||
+          !strcasecmp(ext,"chd") ||
+          !strcasecmp(ext,"cue"));
+}
+
+static
+bool
+disk_image_normalize_path(char       *path_out_,
+                          const char *path_,
+                          size_t      path_out_size_)
+{
+  if((path_out_ == NULL) || (path_out_size_ == 0))
+    return false;
+
+  path_out_[0] = 0;
+  if(string_is_empty(path_))
+    return false;
+
+  if(strlcpy(path_out_,path_,path_out_size_) >= path_out_size_)
+    return false;
+  path_resolve_realpath(path_out_,path_out_size_);
+
+  return (path_out_[0] != 0);
+}
+
+static
+char*
+disk_image_label_alloc(const char *path_)
+{
+  const char *base;
+  char label[PATH_MAX_LENGTH];
+
+  base = path_basename(path_);
+  if(string_is_empty(base))
+    base = path_;
+
+  fill_pathname(label,base,"",sizeof(label));
+  if(string_is_empty(label))
+    strlcpy(label,base,sizeof(label));
+
+  return strdup(label);
+}
+
+static
+bool
+disk_images_set_path(unsigned    index_,
+                     const char *path_)
+{
+  char path[PATH_MAX_LENGTH];
+  char *path_dup;
+  char *label_dup;
+
+  if(index_ >= g_DISK_IMAGE_COUNT)
+    return false;
+  if(!disk_image_normalize_path(path,path_,sizeof(path)))
+    return false;
+  if(!disk_image_extension_supported(path))
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[Opera]: unsupported disk image - %s\n",
+                          path);
+      return false;
+    }
+
+  path_dup = strdup(path);
+  label_dup = disk_image_label_alloc(path);
+  if((path_dup == NULL) || (label_dup == NULL))
+    {
+      free(path_dup);
+      free(label_dup);
+      return false;
+    }
+
+  disk_image_free(&g_DISK_IMAGES[index_]);
+  g_DISK_IMAGES[index_].path  = path_dup;
+  g_DISK_IMAGES[index_].label = label_dup;
+
+  return true;
+}
+
+static
+bool
+disk_images_append_empty(void)
+{
+  if(!disk_images_ensure_capacity(g_DISK_IMAGE_COUNT + 1))
+    return false;
+
+  g_DISK_IMAGES[g_DISK_IMAGE_COUNT].path  = NULL;
+  g_DISK_IMAGES[g_DISK_IMAGE_COUNT].label = NULL;
+  g_DISK_IMAGE_COUNT++;
+
+  return true;
+}
+
+static
+bool
+disk_images_append_path(const char *path_)
+{
+  if(!disk_images_append_empty())
+    return false;
+
+  if(!disk_images_set_path(g_DISK_IMAGE_COUNT - 1,path_))
+    {
+      g_DISK_IMAGE_COUNT--;
+      return false;
+    }
+
+  return true;
+}
+
+static
+bool
+disk_images_remove(unsigned index_)
+{
+  unsigned i;
+
+  if(index_ >= g_DISK_IMAGE_COUNT)
+    return false;
+
+  disk_image_free(&g_DISK_IMAGES[index_]);
+  for(i = index_; (i + 1) < g_DISK_IMAGE_COUNT; i++)
+    g_DISK_IMAGES[i] = g_DISK_IMAGES[i + 1];
+
+  g_DISK_IMAGE_COUNT--;
+  memset(&g_DISK_IMAGES[g_DISK_IMAGE_COUNT],0,sizeof(g_DISK_IMAGES[g_DISK_IMAGE_COUNT]));
+
+  if(g_DISK_IMAGE_INDEX > index_)
+    g_DISK_IMAGE_INDEX--;
+  else if((g_DISK_IMAGE_INDEX == index_) &&
+          (g_DISK_IMAGE_INDEX >= g_DISK_IMAGE_COUNT))
+    g_DISK_IMAGE_INDEX = g_DISK_IMAGE_COUNT;
+
+  return true;
+}
+
+static
+void
+m3u_strip_bom(char *line_)
+{
+  if((line_ == NULL) || (strlen(line_) < 3))
+    return;
+
+  if(((uint8_t)line_[0] == 0xEF) &&
+     ((uint8_t)line_[1] == 0xBB) &&
+     ((uint8_t)line_[2] == 0xBF))
+    memmove(line_,line_ + 3,strlen(line_ + 3) + 1);
+}
+
+static
+void
+m3u_strip_quotes(char *line_)
+{
+  size_t len;
+
+  if(line_ == NULL)
+    return;
+
+  len = strlen(line_);
+  if((len >= 2) && (line_[0] == '"') && (line_[len - 1] == '"'))
+    {
+      memmove(line_,line_ + 1,len - 2);
+      line_[len - 2] = 0;
+    }
+}
+
+static
+bool
+disk_images_load_m3u(const char *path_)
+{
+  RFILE *file;
+  char line[PATH_MAX_LENGTH];
+  char disk_path[PATH_MAX_LENGTH];
+  unsigned line_number;
+  bool rv;
+
+  file = filestream_open(path_,
+                         RETRO_VFS_FILE_ACCESS_READ,
+                         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  if(file == NULL)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[Opera]: failed to open M3U playlist - %s\n",
+                          path_);
+      return false;
+    }
+
+  line_number = 0;
+  rv = true;
+  while(filestream_gets(file,line,sizeof(line)) != NULL)
+    {
+      line_number++;
+      m3u_strip_bom(line);
+      string_trim_whitespace(line);
+      m3u_strip_quotes(line);
+      string_trim_whitespace(line);
+
+      if(string_is_empty(line) || (line[0] == '#'))
+        continue;
+
+      fill_pathname_resolve_relative(disk_path,path_,line,sizeof(disk_path));
+      if(!disk_images_append_path(disk_path))
+        {
+          retro_log_printf_cb(RETRO_LOG_ERROR,
+                              "[Opera]: failed to add M3U entry %u - %s\n",
+                              line_number,
+                              line);
+          rv = false;
+          break;
+        }
+    }
+
+  filestream_close(file);
+
+  if(!rv)
+    {
+      disk_images_clear();
+      return false;
+    }
+  if(g_DISK_IMAGE_COUNT == 0)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,
+                          "[Opera]: M3U playlist contains no disk images - %s\n",
+                          path_);
+      return false;
+    }
+
+  return true;
+}
+
+static
+bool
+disk_images_load_content(const struct retro_game_info *info_)
+{
+  const char *ext;
+
+  if((info_ == NULL) || (info_->path == NULL))
+    return true;
+
+  ext = path_get_extension(info_->path);
+  if(!strcasecmp(ext,"m3u"))
+    return disk_images_load_m3u(info_->path);
+
+  return disk_images_append_path(info_->path);
+}
+
+static
+void
+disk_image_select_initial(void)
+{
+  disk_image_t *image;
+
+  g_DISK_IMAGE_INDEX = 0;
+  if((g_DISK_INITIAL_PATH == NULL) ||
+     (g_DISK_INITIAL_INDEX >= g_DISK_IMAGE_COUNT))
+    return;
+
+  image = &g_DISK_IMAGES[g_DISK_INITIAL_INDEX];
+  if((image->path != NULL) && !strcmp(image->path,g_DISK_INITIAL_PATH))
+    g_DISK_IMAGE_INDEX = g_DISK_INITIAL_INDEX;
+}
+
+static
+int
+cdimage_replace(const char *path_)
+{
+  cdimage_t next;
+  int rv;
+
+  memset(&next,0,sizeof(next));
+  if(path_ != NULL)
+    {
+      rv = retro_cdimage_open(path_,&next);
+      if(rv == -1)
+        return print_cdimage_open_fail(path_);
+    }
+
+  opera_lr_nvram_save(game_info_path_get(),
+                      g_OPTS.nvram_shared,
+                      g_OPTS.nvram_version);
+
+  retro_cdimage_close(&CDIMAGE);
+  CDIMAGE = next;
+  cdimage_set_sector(0);
+
+  if(path_ != NULL)
+    retro_log_printf_cb(RETRO_LOG_INFO,
+                        "[Opera]: inserted disk image - %s\n",
+                        path_);
+  else
+    retro_log_printf_cb(RETRO_LOG_INFO,
+                        "[Opera]: ejected disk image\n");
+
+  retro_reset_core(RETRO_RESET_FLAG_NONE);
+
+  return 0;
+}
+
+static
+bool
+disk_set_eject_state(bool ejected_)
+{
+  const char *path;
+
+  if(g_DISK_TRAY_OPEN == ejected_)
+    return true;
+
+  if(ejected_)
+    {
+      if(cdimage_replace(NULL) == -1)
+        return false;
+
+      g_DISK_TRAY_OPEN = true;
+      return true;
+    }
+
+  path = NULL;
+  if(g_DISK_IMAGE_INDEX < g_DISK_IMAGE_COUNT)
+    {
+      path = g_DISK_IMAGES[g_DISK_IMAGE_INDEX].path;
+      if(path == NULL)
+        return false;
+    }
+
+  if(cdimage_replace(path) == -1)
+    return false;
+
+  g_DISK_TRAY_OPEN = false;
+  return true;
+}
+
+static
+bool
+disk_get_eject_state(void)
+{
+  return g_DISK_TRAY_OPEN;
+}
+
+static
+unsigned
+disk_get_image_index(void)
+{
+  return g_DISK_IMAGE_INDEX;
+}
+
+static
+bool
+disk_set_image_index(unsigned index_)
+{
+  if(!g_DISK_TRAY_OPEN)
+    return false;
+
+  if(index_ < g_DISK_IMAGE_COUNT)
+    {
+      if(g_DISK_IMAGES[index_].path == NULL)
+        return false;
+
+      g_DISK_IMAGE_INDEX = index_;
+      return true;
+    }
+
+  g_DISK_IMAGE_INDEX = g_DISK_IMAGE_COUNT;
+  return true;
+}
+
+static
+unsigned
+disk_get_num_images(void)
+{
+  return g_DISK_IMAGE_COUNT;
+}
+
+static
+bool
+disk_replace_image_index(unsigned                      index_,
+                         const struct retro_game_info *info_)
+{
+  if(!g_DISK_TRAY_OPEN)
+    return false;
+  if(index_ >= g_DISK_IMAGE_COUNT)
+    return false;
+
+  if(info_ == NULL)
+    return disk_images_remove(index_);
+
+  return disk_images_set_path(index_,info_->path);
+}
+
+static
+bool
+disk_add_image_index(void)
+{
+  return disk_images_append_empty();
+}
+
+static
+bool
+disk_set_initial_image(unsigned    index_,
+                       const char *path_)
+{
+  char path[PATH_MAX_LENGTH];
+  char *path_dup;
+
+  if(!disk_image_normalize_path(path,path_,sizeof(path)))
+    return false;
+
+  path_dup = strdup(path);
+  if(path_dup == NULL)
+    return false;
+
+  disk_initial_image_clear();
+  g_DISK_INITIAL_INDEX = index_;
+  g_DISK_INITIAL_PATH  = path_dup;
+
+  return true;
+}
+
+static
+bool
+disk_get_image_path(unsigned  index_,
+                    char     *path_,
+                    size_t    path_size_)
+{
+  if((path_ == NULL) || (path_size_ == 0))
+    return false;
+  if(index_ >= g_DISK_IMAGE_COUNT)
+    return false;
+  if(g_DISK_IMAGES[index_].path == NULL)
+    return false;
+
+  return (strlcpy(path_,g_DISK_IMAGES[index_].path,path_size_) < path_size_);
+}
+
+static
+bool
+disk_get_image_label(unsigned  index_,
+                     char     *label_,
+                     size_t    label_size_)
+{
+  if((label_ == NULL) || (label_size_ == 0))
+    return false;
+  if(index_ >= g_DISK_IMAGE_COUNT)
+    return false;
+  if(g_DISK_IMAGES[index_].label == NULL)
+    return false;
+
+  return (strlcpy(label_,g_DISK_IMAGES[index_].label,label_size_) < label_size_);
+}
+
+static const struct retro_disk_control_callback DISK_CONTROL =
+{
+  disk_set_eject_state,
+  disk_get_eject_state,
+  disk_get_image_index,
+  disk_set_image_index,
+  disk_get_num_images,
+  disk_replace_image_index,
+  disk_add_image_index
+};
+
+static const struct retro_disk_control_ext_callback DISK_CONTROL_EXT =
+{
+  disk_set_eject_state,
+  disk_get_eject_state,
+  disk_get_image_index,
+  disk_set_image_index,
+  disk_get_num_images,
+  disk_replace_image_index,
+  disk_add_image_index,
+  disk_set_initial_image,
+  disk_get_image_path,
+  disk_get_image_label
+};
+
+static
+void
+disk_control_set_interface(void)
+{
+  unsigned dci_version;
+
+  dci_version = 0;
+  retro_environment_cb(RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION,
+                       &dci_version);
+
+  if(dci_version >= 1)
+    retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE,
+                         (void*)&DISK_CONTROL_EXT);
+  else
+    retro_environment_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE,
+                         (void*)&DISK_CONTROL);
+}
+
+static
 int
 cdimage_ode_launch(const char *path_)
 {
@@ -422,6 +1016,8 @@ cdimage_ode_launch(const char *path_)
   CDIMAGE = next;
   cdimage_set_sector(0);
   game_info_path_save_path(path_);
+  disk_images_clear();
+  disk_images_append_path(path_);
 
   retro_log_printf_cb(RETRO_LOG_INFO,
                       "[Opera]: ODE launched image - %s\n",
@@ -453,12 +1049,26 @@ retro_load_game(const struct retro_game_info *info_)
 {
   int rv;
 
+  disk_images_clear();
   content_runtime_reset();
   game_info_path_save(info_);
 
-  rv = open_cdimage_if_needed(info_);
+  if(!disk_images_load_content(info_))
+    {
+      disk_initial_image_clear();
+      return false;
+    }
+
+  disk_image_select_initial();
+  rv = 0;
+  if(g_DISK_IMAGE_INDEX < g_DISK_IMAGE_COUNT)
+    rv = open_cdimage(g_DISK_IMAGES[g_DISK_IMAGE_INDEX].path);
+  disk_initial_image_clear();
   if(rv == -1)
-    return false;
+    {
+      disk_images_clear();
+      return false;
+    }
 
   ode_root_set_for_content(info_);
   opera_lr_opts_process();
@@ -491,6 +1101,8 @@ retro_unload_game(void)
                       g_OPTS.nvram_shared,
                       g_OPTS.nvram_version);
   game_info_path_free();
+  disk_images_clear();
+  disk_initial_image_clear();
 
   opera_3do_destroy();
   opera_mem_destroy();
@@ -628,6 +1240,7 @@ retro_init(void)
                             cdimage_read_sector,
                             cdimage_get_toc);
   opera_cdrom_ode_set_launch_callback(cdimage_ode_launch);
+  disk_control_set_interface();
 
   srand(time(NULL));
   prng16_seed(time(NULL));
@@ -637,7 +1250,8 @@ retro_init(void)
 void
 retro_deinit(void)
 {
-
+  disk_images_clear();
+  disk_initial_image_clear();
 }
 
 static
