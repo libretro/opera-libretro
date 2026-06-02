@@ -63,7 +63,7 @@ int      opera_clio_poke(uint32_t addr_, uint32_t val_);
 void     opera_clio_vcnt_update(int line_, int half_frame_);
 
 uint32_t opera_clio_timer_get_delay(void);
-void     opera_clio_timer_execute(void);
+void     opera_clio_timer_execute(uint32_t timer);
 
 uint32_t opera_clio_state_size(void);
 uint32_t opera_clio_state_save(void *buf_);
