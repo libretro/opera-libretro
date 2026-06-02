@@ -1488,7 +1488,7 @@ PPROJ_OUTPUT(uint32_t pproc_output_,
 #endif
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int8_t
 clamp_i8(const int8_t x_,
          const int8_t min_,
@@ -2467,7 +2467,7 @@ QuadCCWTest(int32_t wdt_)
 }
 
 static
-FORCEINLINE
+OPERA_FORCEINLINE
 int32_t
 ABS(const int32_t val_)
 {

@@ -3,8 +3,9 @@
 
 #include "cuefile.h"
 
-#include <boolean.h>
-#include <streams/interface_stream.h>
+#include "boolean.h"
+#include "streams/interface_stream.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
