@@ -29,6 +29,7 @@
   */
 
 #include "opera_arm.h"
+#include "opera_cdrom.h"
 #include "opera_clio.h"
 #include "opera_clock.h"
 #include "opera_core.h"
@@ -37,6 +38,7 @@
 #include "opera_log.h"
 #include "opera_madam.h"
 #include "opera_mem.h"
+#include "opera_pbus.h"
 #include "opera_region.h"
 #include "opera_sport.h"
 #include "opera_state.h"
@@ -53,8 +55,27 @@ static opera_ext_interface_t io_interface;
 
 extern int flagtime;
 
+#define OPERA_3DO_CD_DIPIR_RESET 0x40
+#define OPERA_3DO_CLOCK_STEP     32
+
 uint32_t FIXMODE = 0;
 int      CNBFIX  = 0;
+static int field = 0;
+static int32_t g_FRAME_CYCLE_REMAINDER = 0;
+
+static
+void
+opera_3do_reset_runtime_state(void)
+{
+  CNBFIX = 0;
+  field = 0;
+  g_FRAME_CYCLE_REMAINDER = 0;
+
+  opera_clock_reset();
+  opera_pbus_reset();
+  opera_sport_init();
+  opera_xbus_set_legacy_no_device_abort(0);
+}
 
 int
 opera_3do_init(opera_ext_interface_t callback_)
@@ -63,11 +84,12 @@ opera_3do_init(opera_ext_interface_t callback_)
 
   if(opera_mem_cfg() == DRAM_VRAM_UNSET)
     opera_mem_init(DRAM_VRAM_STOCK);
+  else
+    opera_mem_rom_select(ROM1);
 
   io_interface = callback_;
 
-  CNBFIX = 0;
-
+  opera_3do_reset_runtime_state();
   opera_arm_init();
 
   opera_vdlp_init();
@@ -79,7 +101,7 @@ opera_3do_init(opera_ext_interface_t callback_)
     0x01/0x02 from PhotoCD ??
     (NO use 0x40/0x02 for BIOS test)
   */
-  opera_clio_init(0x40);
+  opera_clio_init(OPERA_3DO_CD_DIPIR_RESET);
   opera_dsp_init();
   /* select test, use -1 -- if don't need tests */
   opera_diag_port_init(-1);
@@ -123,6 +145,21 @@ opera_3do_destroy()
   opera_xbus_destroy();
 }
 
+void
+opera_3do_soft_reset(void)
+{
+  opera_3do_reset_runtime_state();
+  opera_arm_reset();
+
+  opera_vdlp_init();
+  opera_madam_init();
+  opera_xbus_reset();
+
+  opera_clio_init(OPERA_3DO_CD_DIPIR_RESET);
+  opera_dsp_init();
+  opera_diag_port_init(-1);
+}
+
 static
 INLINE
 void
@@ -133,6 +170,7 @@ opera_3do_internal_frame(uint32_t  cycles_,
   uint32_t timer;
 
   opera_clock_push_cycles(cycles_);
+
   if(opera_clock_dsp_queued())
     io_interface(EXT_DSP_TRIGGER,NULL);
 
@@ -152,6 +190,8 @@ opera_3do_internal_frame(uint32_t  cycles_,
 
       (*line_)++;
     }
+
+  opera_xbus_tick();
 }
 
 void
@@ -160,15 +200,20 @@ opera_3do_process_frame(void)
   int32_t cnt;
   uint32_t line;
   uint32_t scanlines;
-  static int field = 0;
 
   if(flagtime)
     flagtime--;
 
-  cnt  = 0;
+  cnt  = g_FRAME_CYCLE_REMAINDER;
   line = 0;
   scanlines = opera_region_scanlines();
-  do
+  while((cnt >= OPERA_3DO_CLOCK_STEP) && (line < scanlines))
+    {
+      opera_3do_internal_frame(OPERA_3DO_CLOCK_STEP,&line,field);
+      cnt -= OPERA_3DO_CLOCK_STEP;
+    }
+
+  while(line < scanlines)
     {
       if(opera_madam_fsm_get() == FSM_INPROCESS)
         {
@@ -177,13 +222,19 @@ opera_3do_process_frame(void)
         }
 
       cnt += opera_arm_execute();
-      if(cnt >= 32)
+      if(opera_cdrom_ode_restart_requested())
         {
-          opera_3do_internal_frame(cnt,&line,field);
-          cnt -= 32;
+          g_FRAME_CYCLE_REMAINDER = cnt;
+          return;
         }
-    } while(line < scanlines);
+      while((cnt >= OPERA_3DO_CLOCK_STEP) && (line < scanlines))
+        {
+          opera_3do_internal_frame(OPERA_3DO_CLOCK_STEP,&line,field);
+          cnt -= OPERA_3DO_CLOCK_STEP;
+        }
+    }
 
+  g_FRAME_CYCLE_REMAINDER = cnt;
   field = !field;
 }
 
