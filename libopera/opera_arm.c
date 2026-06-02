@@ -52,6 +52,7 @@
 #include <string.h>
 
 #define ARM_INITIAL_PC  0x03000000
+#define ARM_ARRAY_COUNT(A_) ((uint32_t)(sizeof(A_) / sizeof((A_)[0])))
 
 #define ARM_MUL_MASK    0x0fc000f0
 #define ARM_MUL_SIGN    0x00000090
@@ -142,21 +143,119 @@ clio_xbus_access_aborts(uint32_t const index_)
 }
 
 uint32_t
-opera_arm_state_size(void)
+opera_arm_state_size_v1(void)
 {
   return opera_state_save_size(sizeof(CPU));
+}
+
+static
+bool
+opera_arm_state_write_payload(opera_state_writer_t *writer_,
+                              arm_core_t const     *state_)
+{
+  return (opera_state_write_u32_array(writer_,state_->USER,ARM_ARRAY_COUNT(state_->USER)) &&
+          opera_state_write_u32_array(writer_,state_->CASH,ARM_ARRAY_COUNT(state_->CASH)) &&
+          opera_state_write_u32_array(writer_,state_->SVC,ARM_ARRAY_COUNT(state_->SVC)) &&
+          opera_state_write_u32_array(writer_,state_->ABT,ARM_ARRAY_COUNT(state_->ABT)) &&
+          opera_state_write_u32_array(writer_,state_->FIQ,ARM_ARRAY_COUNT(state_->FIQ)) &&
+          opera_state_write_u32_array(writer_,state_->IRQ,ARM_ARRAY_COUNT(state_->IRQ)) &&
+          opera_state_write_u32_array(writer_,state_->UND,ARM_ARRAY_COUNT(state_->UND)) &&
+          opera_state_write_u32_array(writer_,state_->SPSR,ARM_ARRAY_COUNT(state_->SPSR)) &&
+          opera_state_write_u32(writer_,state_->CPSR) &&
+          opera_state_write_u8(writer_,state_->nFIQ) &&
+          opera_state_write_u8(writer_,state_->MAS_Access_Exept) &&
+          opera_state_write_u8(writer_,g_SOFT_RESET_PENDING));
+}
+
+static
+uint32_t
+opera_arm_state_payload_size(void)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,NULL,UINT32_MAX);
+  opera_arm_state_write_payload(&writer,&CPU);
+
+  return opera_state_writer_used(&writer);
+}
+
+uint32_t
+opera_arm_state_size(void)
+{
+  return opera_state_chunk_size(opera_arm_state_payload_size());
 }
 
 uint32_t
 opera_arm_state_save(void *data_)
 {
-  return opera_state_save(data_,"ARM",&CPU,sizeof(CPU));
+  uint32_t payload_size;
+  opera_state_writer_t writer;
+
+  payload_size = opera_arm_state_payload_size();
+  opera_state_writer_init(&writer,data_,opera_state_chunk_size(payload_size));
+  opera_state_write_chunk_header(&writer,"ARM",payload_size);
+  opera_arm_state_write_payload(&writer,&CPU);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
 uint32_t
-opera_arm_state_load(void const *data_)
+opera_arm_state_load_v1(void const     *data_,
+                        uint32_t const  size_)
 {
-  return opera_state_load(&CPU,"ARM",data_,sizeof(CPU));
+  uint32_t rv;
+
+  rv = opera_state_load_sized(&CPU,"ARM",data_,size_,sizeof(CPU));
+  if(rv != 0)
+    g_SOFT_RESET_PENDING = false;
+
+  return rv;
+}
+
+static
+bool
+opera_arm_state_read_payload(opera_state_reader_t *reader_,
+                             arm_core_t           *state_,
+                             bool                 *soft_reset_pending_)
+{
+  uint8_t soft_reset_pending;
+
+  soft_reset_pending = false;
+
+  return (opera_state_read_u32_array(reader_,state_->USER,ARM_ARRAY_COUNT(state_->USER)) &&
+          opera_state_read_u32_array(reader_,state_->CASH,ARM_ARRAY_COUNT(state_->CASH)) &&
+          opera_state_read_u32_array(reader_,state_->SVC,ARM_ARRAY_COUNT(state_->SVC)) &&
+          opera_state_read_u32_array(reader_,state_->ABT,ARM_ARRAY_COUNT(state_->ABT)) &&
+          opera_state_read_u32_array(reader_,state_->FIQ,ARM_ARRAY_COUNT(state_->FIQ)) &&
+          opera_state_read_u32_array(reader_,state_->IRQ,ARM_ARRAY_COUNT(state_->IRQ)) &&
+          opera_state_read_u32_array(reader_,state_->UND,ARM_ARRAY_COUNT(state_->UND)) &&
+          opera_state_read_u32_array(reader_,state_->SPSR,ARM_ARRAY_COUNT(state_->SPSR)) &&
+          opera_state_read_u32(reader_,&state_->CPSR) &&
+          opera_state_read_u8(reader_,&state_->nFIQ) &&
+          opera_state_read_u8(reader_,&state_->MAS_Access_Exept) &&
+          opera_state_read_u8(reader_,&soft_reset_pending) &&
+          ((*soft_reset_pending_ = (soft_reset_pending != 0)), true));
+}
+
+uint32_t
+opera_arm_state_load(void const     *data_,
+                     uint32_t const  size_)
+{
+  arm_core_t state;
+  bool soft_reset_pending;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,data_,size_);
+  if(!opera_state_read_chunk(&reader,"ARM",&payload) ||
+     !opera_arm_state_read_payload(&payload,&state,&soft_reset_pending) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  CPU = state;
+  g_SOFT_RESET_PENDING = soft_reset_pending;
+
+  return opera_state_reader_used(&reader);
 }
 
 static

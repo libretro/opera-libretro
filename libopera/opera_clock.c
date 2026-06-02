@@ -1,8 +1,11 @@
 #include "opera_clio.h"
 #include "opera_clock.h"
 #include "opera_core.h"
+#include "opera_state.h"
 #include "opera_timing.h"
 #include "opera_vdlp.h"
+
+#include <string.h>
 
 #define DEFAULT_TIMER_SLACK  64UL
 #define DEFAULT_CPU_FREQ     12500000UL
@@ -64,6 +67,35 @@ static opera_clock_t g_CLOCK =
     /*.cycles_per_timer_gap =*/ CYCLES_PER_TIMER_GAP(DEFAULT_CPU_FREQ,DEFAULT_TIMER_SLACK),
     /*.cycles_until_timer  =*/ CYCLES_PER_TIMER_SLOT(DEFAULT_CPU_FREQ)
   };
+
+static
+bool
+opera_clock_state_write_payload(opera_state_writer_t *writer_,
+                                opera_clock_t const  *state_)
+{
+  return (opera_state_write_u32(writer_,state_->cpu_freq) &&
+          opera_state_write_u64(writer_,state_->cpu_cycles) &&
+          opera_state_write_i32(writer_,state_->dsp_acc) &&
+          opera_state_write_i32(writer_,state_->vdl_acc) &&
+          opera_state_write_i32(writer_,state_->timer_acc) &&
+          opera_state_write_u32(writer_,state_->timer_slack) &&
+          opera_state_write_u32(writer_,state_->timer_slot) &&
+          opera_state_write_u32(writer_,state_->timer_in_gap) &&
+          opera_state_write_u32(writer_,state_->field_size) &&
+          opera_state_write_u32(writer_,state_->field_rate));
+}
+
+static
+uint32_t
+opera_clock_state_payload_size(void)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,NULL,UINT32_MAX);
+  opera_clock_state_write_payload(&writer,&g_CLOCK);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
+}
 
 static
 uint32_t
@@ -140,6 +172,73 @@ opera_clock_reset(void)
   g_CLOCK.timer_slot = 0;
   g_CLOCK.timer_in_gap = 0;
   recalculate_cycles_per();
+}
+
+uint32_t
+opera_clock_state_size(void)
+{
+  uint32_t payload_size;
+
+  payload_size = opera_clock_state_payload_size();
+  if(payload_size == 0)
+    return 0;
+
+  return opera_state_chunk_size(payload_size);
+}
+
+uint32_t
+opera_clock_state_save(void *buf_)
+{
+  uint32_t payload_size;
+  opera_state_writer_t writer;
+
+  payload_size = opera_clock_state_payload_size();
+  if(payload_size == 0)
+    return 0;
+
+  opera_state_writer_init(&writer,buf_,opera_state_chunk_size(payload_size));
+  opera_state_write_chunk_header(&writer,"CLCK",payload_size);
+  opera_clock_state_write_payload(&writer,&g_CLOCK);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
+}
+
+uint32_t
+opera_clock_state_load(void const     *buf_,
+                       uint32_t const  size_)
+{
+  opera_clock_t state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  memset(&state,0,sizeof(state));
+
+  opera_state_reader_init(&reader,buf_,size_);
+  if(!opera_state_read_chunk(&reader,"CLCK",&payload) ||
+     !opera_state_read_u32(&payload,&state.cpu_freq) ||
+     !opera_state_read_u64(&payload,&state.cpu_cycles) ||
+     !opera_state_read_i32(&payload,&state.dsp_acc) ||
+     !opera_state_read_i32(&payload,&state.vdl_acc) ||
+     !opera_state_read_i32(&payload,&state.timer_acc) ||
+     !opera_state_read_u32(&payload,&state.timer_slack) ||
+     !opera_state_read_u32(&payload,&state.timer_slot) ||
+     !opera_state_read_u32(&payload,&state.timer_in_gap) ||
+     !opera_state_read_u32(&payload,&state.field_size) ||
+     !opera_state_read_u32(&payload,&state.field_rate) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  if((state.cpu_freq < MIN_CPU_FREQ) ||
+     (state.timer_slot >= TIMER_SLOT_COUNT) ||
+     (state.timer_in_gap > 1) ||
+     (state.field_size == 0) ||
+     (state.field_rate == 0))
+    return 0;
+
+  g_CLOCK = state;
+  recalculate_cycles_per();
+
+  return opera_state_reader_used(&reader);
 }
 
 void

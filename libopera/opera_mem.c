@@ -238,7 +238,7 @@ opera_mem_rom_select(void *rom_)
 }
 
 uint32_t
-opera_mem_state_size()
+opera_mem_state_size_v1()
 {
   uint32_t size;
 
@@ -253,36 +253,102 @@ opera_mem_state_size()
 }
 
 uint32_t
+opera_mem_state_size()
+{
+  return opera_state_chunk_size(sizeof(uint8_t) +
+                                MAX_HIRES_RAM_SIZE +
+                                ROM1_SIZE +
+                                ROM2_SIZE +
+                                NVRAM_SIZE);
+}
+
+uint32_t
 opera_mem_state_save(void *data_)
 {
-  uint8_t *start = (uint8_t*)data_;
-  uint8_t *data  = (uint8_t*)data_;
   opera_mem_state_t memstate;
+  opera_state_writer_t writer;
 
   memstate.mem_cfg = opera_mem_cfg();
 
-  data += opera_state_save(data,"MCFG",&memstate,sizeof(memstate));
-  data += opera_state_save(data,"RAM",DRAM,MAX_HIRES_RAM_SIZE);
-  data += opera_state_save(data,"ROM1",ROM1,ROM1_SIZE);
-  data += opera_state_save(data,"ROM2",ROM2,ROM2_SIZE);
-  data += opera_state_save(data,"NVRM",NVRAM,NVRAM_SIZE);
+  opera_state_writer_init(&writer,data_,opera_mem_state_size());
+  opera_state_write_chunk_header(&writer,
+                                 "MEM",
+                                 sizeof(memstate.mem_cfg) +
+                                 MAX_HIRES_RAM_SIZE +
+                                 ROM1_SIZE +
+                                 ROM2_SIZE +
+                                 NVRAM_SIZE);
+  opera_state_write_u8(&writer,memstate.mem_cfg);
+  opera_state_write_bytes(&writer,DRAM,MAX_HIRES_RAM_SIZE);
+  opera_state_write_bytes(&writer,ROM1,ROM1_SIZE);
+  opera_state_write_bytes(&writer,ROM2,ROM2_SIZE);
+  opera_state_write_bytes(&writer,NVRAM,NVRAM_SIZE);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
+}
+
+uint32_t
+opera_mem_state_load_v1(void const     *data_,
+                        uint32_t const  size_)
+{
+  uint8_t const *start = (uint8_t const*)data_;
+  uint8_t const *data  = (uint8_t const*)data_;
+  uint8_t const *end   = (uint8_t const*)data_ + size_;
+  opera_mem_state_t memstate;
+  uint32_t rv;
+
+  rv = opera_state_load_sized(&memstate,"MCFG",data,(uint32_t)(end - data),sizeof(memstate));
+  if(rv == 0)
+    return 0;
+  data += rv;
+  _setup_dram_vram(memstate.mem_cfg);
+  g_MEM_CFG = memstate.mem_cfg;
+  rv = opera_state_load_sized(DRAM,"RAM",data,(uint32_t)(end - data),MAX_HIRES_RAM_SIZE);
+  if(rv == 0)
+    return 0;
+  data += rv;
+  rv = opera_state_load_sized(ROM1,"ROM1",data,(uint32_t)(end - data),ROM1_SIZE);
+  if(rv == 0)
+    return 0;
+  data += rv;
+  rv = opera_state_load_sized(ROM2,"ROM2",data,(uint32_t)(end - data),ROM2_SIZE);
+  if(rv == 0)
+    return 0;
+  data += rv;
+  rv = opera_state_load_sized(NVRAM,"NVRM",data,(uint32_t)(end - data),NVRAM_SIZE);
+  if(rv == 0)
+    return 0;
+  data += rv;
 
   return (data - start);
 }
 
 uint32_t
-opera_mem_state_load(void const *data_)
+opera_mem_state_load(void const     *data_,
+                     uint32_t const  size_)
 {
-  uint8_t const *start = (uint8_t const*)data_;
-  uint8_t const *data  = (uint8_t const*)data_;
-  opera_mem_state_t memstate;
+  uint8_t mem_cfg;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
 
-  data += opera_state_load(&memstate,"MCFG",data,sizeof(memstate));
-  _setup_dram_vram(memstate.mem_cfg);
-  data += opera_state_load(DRAM,"RAM",data,MAX_HIRES_RAM_SIZE);
-  data += opera_state_load(ROM1,"ROM1",data,ROM1_SIZE);
-  data += opera_state_load(ROM2,"ROM2",data,ROM2_SIZE);
-  data += opera_state_load(NVRAM,"NVRM",data,NVRAM_SIZE);
+  opera_state_reader_init(&reader,data_,size_);
 
-  return (data - start);
+  if(!opera_state_read_chunk(&reader,"MEM",&payload) ||
+     !opera_state_read_u8(&payload,&mem_cfg) ||
+     (opera_state_reader_remaining(&payload) != (MAX_HIRES_RAM_SIZE +
+                                                 ROM1_SIZE +
+                                                 ROM2_SIZE +
+                                                 NVRAM_SIZE)))
+    return 0;
+  _setup_dram_vram(mem_cfg);
+  g_MEM_CFG = (opera_mem_cfg_t)mem_cfg;
+
+  if(!opera_state_read_bytes(&payload,DRAM,MAX_HIRES_RAM_SIZE) ||
+     !opera_state_read_bytes(&payload,ROM1,ROM1_SIZE) ||
+     !opera_state_read_bytes(&payload,ROM2,ROM2_SIZE) ||
+     !opera_state_read_bytes(&payload,NVRAM,NVRAM_SIZE) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  return opera_state_reader_used(&reader);
 }

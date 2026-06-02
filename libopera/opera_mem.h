@@ -77,8 +77,10 @@ void opera_mem_rom2_byteswap32_if_le();
 void opera_mem_rom_select(void *rom);
 
 uint32_t opera_mem_state_size();
+uint32_t opera_mem_state_size_v1();
 uint32_t opera_mem_state_save(void *data);
-uint32_t opera_mem_state_load(void const *data);
+uint32_t opera_mem_state_load(void const *data, uint32_t size);
+uint32_t opera_mem_state_load_v1(void const *data, uint32_t size);
 
 static
 INLINE

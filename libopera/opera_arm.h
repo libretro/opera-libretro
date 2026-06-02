@@ -45,8 +45,10 @@ void     opera_arm_destroy(void);
 void     opera_io_write(const uint32_t addr_, const uint32_t val_);
 
 uint32_t opera_arm_state_size(void);
+uint32_t opera_arm_state_size_v1(void);
 uint32_t opera_arm_state_save(void *buf_);
-uint32_t opera_arm_state_load(const void *buf_);
+uint32_t opera_arm_state_load(void const *buf_, uint32_t size_);
+uint32_t opera_arm_state_load_v1(void const *buf_, uint32_t size_);
 
 void     opera_arm_swi_hle_set(const int hle);
 int      opera_arm_swi_hle_get(void);

@@ -4,6 +4,7 @@
 #include "opera_core.h"
 #include "opera_vdlp.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 uint32_t opera_3do_state_size(void);
