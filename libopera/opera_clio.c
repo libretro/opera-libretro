@@ -82,6 +82,31 @@ int TIMER_VAL = 0; //0x415
 
 static uint32_t *MADAM_REGS;
 static clio_t    CLIO = {0};
+static uint32_t  TIMER_CARRY = 0;
+
+static
+bool
+clio_timer_reg_addr(uint32_t addr_)
+{
+  return ((addr_ >= 0x100) && (addr_ <= 0x17C) && !(addr_ & 3));
+}
+
+static
+uint32_t
+timer_control_shift(const uint32_t timer_)
+{
+  return ((timer_ & 7) << 2);
+}
+
+static
+void
+clio_timer_regs_mask(void)
+{
+  uint32_t addr;
+
+  for(addr = 0x100; addr <= 0x17C; addr += 4)
+    CLIO.regs[addr] &= 0xFFFF;
+}
 
 static
 void
@@ -638,48 +663,60 @@ static
 uint32_t
 timer_flags(const uint32_t timer_)
 {
-  return ((CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] >> ((timer_ << 2) & 0x1F)) & 0xF);
+  return ((CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] >> timer_control_shift(timer_)) & 0xF);
 }
 
 static
 void
 timer_disable(const uint32_t timer_)
 {
-  CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] &= ~(DECREMENT << ((timer_ << 2)));
+  CLIO.regs[((timer_ < 8) ? 0x200 : 0x208)] &= ~(DECREMENT << timer_control_shift(timer_));
 }
 
 void
-opera_clio_timer_execute(void)
+opera_clio_timer_execute(uint32_t timer_)
 {
   uint32_t *reg;
+  uint32_t  count;
   uint32_t  flags;
-  uint32_t  timer;
-  uint32_t  carry;
+  uint32_t  underflow;
 
-  carry = 1;
-  for(timer = 0; timer < 0x10; timer++)
+  timer_ &= 0x0F;
+  if(timer_ == 0)
+    TIMER_CARRY = 0;
+
+  underflow = 0;
+  flags = timer_flags(timer_);
+  if(flags & DECREMENT)
     {
-      flags = timer_flags(timer);
-      if(!(flags & DECREMENT))
-        continue;
-
-      reg = &CLIO.regs[(0x100 + (timer << 3))];
-      reg[0] -= ((flags & CASCADE) ? carry : 1);
-      if(reg[0] == 0xFFFFFFFF)
+      if((flags & CASCADE) && !TIMER_CARRY)
         {
-          carry = 1;
-          if(timer & 1)
-            opera_clio_fiq_generate(1<<(10-(timer>>1)),0);
+          TIMER_CARRY = 0;
+          return;
+        }
+
+      reg   = &CLIO.regs[(0x100 + (timer_ << 3))];
+      count = (reg[0] & 0xFFFF);
+      if(count == 0)
+        {
+          underflow = 1;
+          if(timer_ & 1)
+            opera_clio_fiq_generate(1<<(10-(timer_>>1)),0);
           if(flags & RELOAD)
-            reg[0] = reg[4];
+            reg[0] = (reg[4] & 0xFFFF);
           else
-            timer_disable(timer);
+            {
+              reg[0] = 0xFFFF;
+              timer_disable(timer_);
+            }
         }
       else
         {
-          carry = 0;
+          reg[0] = (count - 1);
         }
     }
+
+  TIMER_CARRY = underflow;
 }
 
 uint32_t
@@ -699,8 +736,11 @@ void opera_clio_init(int reason_)
   CLIO.regs[0x0028] = reason_;
   CLIO.regs[0x0400] = 0x80;
   CLIO.regs[0x0220] = 64;
+  opera_clock_timer_set_delay(CLIO.regs[0x220]);
   MADAM_REGS = opera_madam_registers();
   TIMER_VAL  = 0;
+  flagtime   = 0;
+  TIMER_CARRY = 0;
 }
 
 void
