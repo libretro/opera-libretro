@@ -30,8 +30,10 @@ void opera_vdlp_set_vdl_head(const uint32_t addr);
 void opera_vdlp_process_line(int line);
 
 uint32_t opera_vdlp_state_size(void);
+uint32_t opera_vdlp_state_size_v1(void);
 uint32_t opera_vdlp_state_save(void *buf);
-uint32_t opera_vdlp_state_load(void const *buf);
+uint32_t opera_vdlp_state_load(void const *buf, uint32_t size);
+uint32_t opera_vdlp_state_load_v1(void const *buf, uint32_t size);
 
 int opera_vdlp_set_video_buffer(void* buf);
 int opera_vdlp_set_hires(bool v);

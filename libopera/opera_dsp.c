@@ -467,21 +467,195 @@ dsp_write(uint32_t addr_,
 }
 
 uint32_t
-opera_dsp_state_size(void)
+opera_dsp_state_size_v1(void)
 {
   return opera_state_save_size(sizeof(DSP));
+}
+
+static
+bool
+dsp_state_write_payload(opera_state_writer_t *writer_,
+                        dsp_t const          *state_)
+{
+  uint32_t i;
+  uint32_t j;
+
+  if(!opera_state_write_u32(writer_,state_->RBASEx4))
+    return false;
+
+  for(i = 0; i < 0x8000; i++)
+    if(!opera_state_write_u8(writer_,state_->INSTTRAS[i].req.raw) ||
+       !opera_state_write_i8(writer_,(int8_t)state_->INSTTRAS[i].BS))
+      return false;
+
+  if(!opera_state_write_u16_array(writer_,&state_->REGCONV[0][0],8 * 16))
+    return false;
+
+  for(i = 0; i < 32; i++)
+    for(j = 0; j < 32; j++)
+      if(!opera_state_write_i32(writer_,state_->BRCONDTAB[i][j]))
+        return false;
+
+  if(!opera_state_write_u16_array(writer_,state_->NMem,2048) ||
+     !opera_state_write_u16_array(writer_,state_->IMem,1024) ||
+     !opera_state_write_i32(writer_,state_->REGi) ||
+     !opera_state_write_u32(writer_,state_->dregs.PC) ||
+     !opera_state_write_u16(writer_,state_->dregs.AudioOutStatus) ||
+     !opera_state_write_u16(writer_,state_->dregs.Sema4Status) ||
+     !opera_state_write_u16(writer_,state_->dregs.Sema4Data) ||
+     !opera_state_write_i16(writer_,state_->dregs.DSPPCNT) ||
+     !opera_state_write_i16(writer_,state_->dregs.DSPPRLD) ||
+     !opera_state_write_i16(writer_,state_->dregs.AUDCNT) ||
+     !opera_state_write_u16(writer_,state_->dregs.INT) ||
+     !opera_state_write_i16(writer_,state_->flags.MULT1) ||
+     !opera_state_write_i16(writer_,state_->flags.MULT2) ||
+     !opera_state_write_i16(writer_,state_->flags.ALU1) ||
+     !opera_state_write_i16(writer_,state_->flags.ALU2) ||
+     !opera_state_write_i32(writer_,state_->flags.BS) ||
+     !opera_state_write_u16(writer_,state_->flags.RMAP) ||
+     !opera_state_write_u16(writer_,state_->flags.nOP_MASK) ||
+     !opera_state_write_u16(writer_,state_->flags.WRITEBACK) ||
+     !opera_state_write_u8(writer_,state_->flags.req.raw) ||
+     !opera_state_write_u8(writer_,state_->flags.Running ? 1 : 0) ||
+     !opera_state_write_u8(writer_,state_->flags.GenFIQ ? 1 : 0))
+    return false;
+
+  for(i = 0; i < 16; i++)
+    if(!opera_state_write_i32(writer_,state_->CPUSupply[i]))
+      return false;
+
+  return true;
+}
+
+static
+uint32_t
+dsp_state_payload_size(void)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,NULL,UINT32_MAX);
+  dsp_state_write_payload(&writer,&DSP);
+
+  return opera_state_writer_used(&writer);
+}
+
+uint32_t
+opera_dsp_state_size(void)
+{
+  return opera_state_chunk_size(dsp_state_payload_size());
 }
 
 uint32_t
 opera_dsp_state_save(void *buf_)
 {
-  return opera_state_save(buf_,"DSPP",&DSP,sizeof(DSP));
+  uint32_t payload_size;
+  opera_state_writer_t writer;
+
+  payload_size = dsp_state_payload_size();
+  opera_state_writer_init(&writer,buf_,opera_state_chunk_size(payload_size));
+  opera_state_write_chunk_header(&writer,"DSPP",payload_size);
+  dsp_state_write_payload(&writer,&DSP);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
 uint32_t
-opera_dsp_state_load(const void *buf_)
+opera_dsp_state_load_v1(const void     *buf_,
+                        uint32_t const  size_)
 {
-  return opera_state_load(&DSP,"DSPP",buf_,sizeof(DSP));
+  return opera_state_load_sized(&DSP,"DSPP",buf_,size_,sizeof(DSP));
+}
+
+static
+bool
+dsp_state_read_payload(opera_state_reader_t *reader_,
+                       dsp_t                *state_)
+{
+  uint32_t i;
+  uint32_t j;
+  int8_t bs;
+  uint8_t b;
+
+  memset(state_,0,sizeof(*state_));
+
+  if(!opera_state_read_u32(reader_,&state_->RBASEx4))
+    return false;
+
+  for(i = 0; i < 0x8000; i++)
+    {
+      if(!opera_state_read_u8(reader_,&state_->INSTTRAS[i].req.raw) ||
+         !opera_state_read_i8(reader_,&bs))
+        return false;
+      state_->INSTTRAS[i].BS = (char)bs;
+    }
+
+  if(!opera_state_read_u16_array(reader_,&state_->REGCONV[0][0],8 * 16))
+    return false;
+
+  for(i = 0; i < 32; i++)
+    for(j = 0; j < 32; j++)
+      {
+        int32_t v;
+        if(!opera_state_read_i32(reader_,&v))
+          return false;
+        state_->BRCONDTAB[i][j] = v;
+      }
+
+  if(!opera_state_read_u16_array(reader_,state_->NMem,2048) ||
+     !opera_state_read_u16_array(reader_,state_->IMem,1024) ||
+     !opera_state_read_i32(reader_,&state_->REGi) ||
+     !opera_state_read_u32(reader_,&state_->dregs.PC) ||
+     !opera_state_read_u16(reader_,&state_->dregs.AudioOutStatus) ||
+     !opera_state_read_u16(reader_,&state_->dregs.Sema4Status) ||
+     !opera_state_read_u16(reader_,&state_->dregs.Sema4Data) ||
+     !opera_state_read_i16(reader_,&state_->dregs.DSPPCNT) ||
+     !opera_state_read_i16(reader_,&state_->dregs.DSPPRLD) ||
+     !opera_state_read_i16(reader_,&state_->dregs.AUDCNT) ||
+     !opera_state_read_u16(reader_,&state_->dregs.INT) ||
+     !opera_state_read_i16(reader_,&state_->flags.MULT1) ||
+     !opera_state_read_i16(reader_,&state_->flags.MULT2) ||
+     !opera_state_read_i16(reader_,&state_->flags.ALU1) ||
+     !opera_state_read_i16(reader_,&state_->flags.ALU2) ||
+     !opera_state_read_i32(reader_,&state_->flags.BS) ||
+     !opera_state_read_u16(reader_,&state_->flags.RMAP) ||
+     !opera_state_read_u16(reader_,&state_->flags.nOP_MASK) ||
+     !opera_state_read_u16(reader_,&state_->flags.WRITEBACK) ||
+     !opera_state_read_u8(reader_,&state_->flags.req.raw) ||
+     !opera_state_read_u8(reader_,&b))
+    return false;
+  state_->flags.Running = (b != 0);
+  if(!opera_state_read_u8(reader_,&b))
+    return false;
+  state_->flags.GenFIQ = (b != 0);
+
+  for(i = 0; i < 16; i++)
+    {
+      int32_t v;
+      if(!opera_state_read_i32(reader_,&v))
+        return false;
+      state_->CPUSupply[i] = v;
+    }
+
+  return true;
+}
+
+uint32_t
+opera_dsp_state_load(const void     *buf_,
+                     uint32_t const  size_)
+{
+  dsp_t state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,buf_,size_);
+  if(!opera_state_read_chunk(&reader,"DSPP",&payload) ||
+     !dsp_state_read_payload(&payload,&state) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  DSP = state;
+
+  return opera_state_reader_used(&reader);
 }
 
 static

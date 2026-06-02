@@ -197,19 +197,62 @@ opera_sport_write_access(const uint32_t idx_,
 }
 
 uint32_t
-opera_sport_state_size(void)
+opera_sport_state_size_v1(void)
 {
   return opera_state_save_size(sizeof(sport_t));
+}
+
+static
+uint32_t
+sport_state_payload_size(void)
+{
+  return (sizeof(uint32_t) * 3);
+}
+
+uint32_t
+opera_sport_state_size(void)
+{
+  return opera_state_chunk_size(sport_state_payload_size());
 }
 
 uint32_t
 opera_sport_state_save(void *buf_)
 {
-  return opera_state_save(buf_,"SPRT",&SPORT,sizeof(sport_t));
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,buf_,opera_sport_state_size());
+  opera_state_write_chunk_header(&writer,"SPRT",sport_state_payload_size());
+  opera_state_write_u32(&writer,SPORT.color);
+  opera_state_write_u32(&writer,SPORT.source);
+  opera_state_write_u32(&writer,SPORT.destination);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
 uint32_t
-opera_sport_state_load(const void *buf_)
+opera_sport_state_load_v1(const void     *buf_,
+                          uint32_t const  size_)
 {
-  return opera_state_load(&SPORT,"SPRT",buf_,sizeof(sport_t));
+  return opera_state_load_sized(&SPORT,"SPRT",buf_,size_,sizeof(sport_t));
+}
+
+uint32_t
+opera_sport_state_load(const void     *buf_,
+                       uint32_t const  size_)
+{
+  sport_t state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,buf_,size_);
+  if(!opera_state_read_chunk(&reader,"SPRT",&payload) ||
+     !opera_state_read_u32(&payload,&state.color) ||
+     !opera_state_read_u32(&payload,&state.source) ||
+     !opera_state_read_u32(&payload,&state.destination) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  SPORT = state;
+
+  return opera_state_reader_used(&reader);
 }

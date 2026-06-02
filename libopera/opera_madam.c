@@ -446,21 +446,95 @@ opera_madam_fsm_set(uint32_t val_)
 }
 
 uint32_t
-opera_madam_state_size(void)
+opera_madam_state_size_v1(void)
 {
   return opera_state_save_size(sizeof(madam_t));
+}
+
+static
+bool
+madam_state_write_payload(opera_state_writer_t *writer_,
+                          madam_t const        *state_)
+{
+  return (opera_state_write_u32_array(writer_,state_->mregs,MADAM_REGISTER_COUNT + 64) &&
+          opera_state_write_u16_array(writer_,state_->PLUT,MADAM_PLUT_COUNT) &&
+          opera_state_write_i32(writer_,state_->rmod) &&
+          opera_state_write_i32(writer_,state_->wmod) &&
+          opera_state_write_i32(writer_,state_->clipx) &&
+          opera_state_write_i32(writer_,state_->clipy) &&
+          opera_state_write_u32(writer_,state_->FSM));
+}
+
+static
+uint32_t
+madam_state_payload_size(void)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,NULL,UINT32_MAX);
+  madam_state_write_payload(&writer,&MADAM);
+
+  return opera_state_writer_used(&writer);
+}
+
+uint32_t
+opera_madam_state_size(void)
+{
+  return opera_state_chunk_size(madam_state_payload_size());
 }
 
 uint32_t
 opera_madam_state_save(void *buf_)
 {
-  return opera_state_save(buf_,"MDAM",&MADAM,sizeof(MADAM));
+  uint32_t payload_size;
+  opera_state_writer_t writer;
+
+  payload_size = madam_state_payload_size();
+  opera_state_writer_init(&writer,buf_,opera_state_chunk_size(payload_size));
+  opera_state_write_chunk_header(&writer,"MDAM",payload_size);
+  madam_state_write_payload(&writer,&MADAM);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
 uint32_t
-opera_madam_state_load(const void *buf_)
+opera_madam_state_load_v1(const void     *buf_,
+                          uint32_t const  size_)
 {
-  return opera_state_load(&MADAM,"MDAM",buf_,sizeof(MADAM));
+  return opera_state_load_sized(&MADAM,"MDAM",buf_,size_,sizeof(MADAM));
+}
+
+static
+bool
+madam_state_read_payload(opera_state_reader_t *reader_,
+                         madam_t              *state_)
+{
+  return (opera_state_read_u32_array(reader_,state_->mregs,MADAM_REGISTER_COUNT + 64) &&
+          opera_state_read_u16_array(reader_,state_->PLUT,MADAM_PLUT_COUNT) &&
+          opera_state_read_i32(reader_,&state_->rmod) &&
+          opera_state_read_i32(reader_,&state_->wmod) &&
+          opera_state_read_i32(reader_,&state_->clipx) &&
+          opera_state_read_i32(reader_,&state_->clipy) &&
+          opera_state_read_u32(reader_,&state_->FSM));
+}
+
+uint32_t
+opera_madam_state_load(const void     *buf_,
+                       uint32_t const  size_)
+{
+  madam_t state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,buf_,size_);
+  if(!opera_state_read_chunk(&reader,"MDAM",&payload) ||
+     !madam_state_read_payload(&payload,&state) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  MADAM = state;
+
+  return opera_state_reader_used(&reader);
 }
 
 #define PACKED   true

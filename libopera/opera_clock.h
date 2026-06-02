@@ -27,6 +27,10 @@ void     opera_clock_region_set_pal(void);
 
 void     opera_clock_timer_set_delay(const uint32_t td);
 
+uint32_t opera_clock_state_size(void);
+uint32_t opera_clock_state_save(void *buf);
+uint32_t opera_clock_state_load(const void *buf, uint32_t size);
+
 EXTERN_C_END
 
 #endif /* LIBOPERA_CLOCK_H_INCLUDED */

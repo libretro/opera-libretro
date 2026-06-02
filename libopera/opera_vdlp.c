@@ -898,21 +898,105 @@ opera_vdlp_set_vdl_head(const uint32_t addr_)
 }
 
 uint32_t
-opera_vdlp_state_size(void)
+opera_vdlp_state_size_v1(void)
 {
   return opera_state_save_size(sizeof(g_VDLP));
+}
+
+static
+bool
+vdlp_state_write_payload(opera_state_writer_t *writer_,
+                         vdlp_t const         *state_)
+{
+  return (opera_state_write_bytes(writer_,state_->clut_r,CLUT_LEN) &&
+          opera_state_write_bytes(writer_,state_->clut_g,CLUT_LEN) &&
+          opera_state_write_bytes(writer_,state_->clut_b,CLUT_LEN) &&
+          opera_state_write_u32(writer_,state_->background_color) &&
+          opera_state_write_u32(writer_,state_->head_vdl) &&
+          opera_state_write_u32(writer_,state_->curr_vdl) &&
+          opera_state_write_u32(writer_,state_->prev_bmp) &&
+          opera_state_write_u32(writer_,state_->curr_bmp) &&
+          opera_state_write_u32(writer_,state_->bg_color.raw) &&
+          opera_state_write_u32(writer_,state_->clut_ctrl.raw) &&
+          opera_state_write_u32(writer_,state_->disp_ctrl.raw) &&
+          opera_state_write_i32(writer_,state_->line_cnt));
+}
+
+static
+uint32_t
+vdlp_state_payload_size(void)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,NULL,UINT32_MAX);
+  vdlp_state_write_payload(&writer,&g_VDLP);
+
+  return opera_state_writer_used(&writer);
+}
+
+uint32_t
+opera_vdlp_state_size(void)
+{
+  return opera_state_chunk_size(vdlp_state_payload_size());
 }
 
 uint32_t
 opera_vdlp_state_save(void *buf_)
 {
-  return opera_state_save(buf_,"VDLP",&g_VDLP,sizeof(g_VDLP));
+  uint32_t payload_size;
+  opera_state_writer_t writer;
+
+  payload_size = vdlp_state_payload_size();
+  opera_state_writer_init(&writer,buf_,opera_state_chunk_size(payload_size));
+  opera_state_write_chunk_header(&writer,"VDLP",payload_size);
+  vdlp_state_write_payload(&writer,&g_VDLP);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
 uint32_t
-opera_vdlp_state_load(const void *buf_)
+opera_vdlp_state_load_v1(const void     *buf_,
+                         uint32_t const  size_)
 {
-  return opera_state_load(&g_VDLP,"VDLP",buf_,sizeof(g_VDLP));
+  return opera_state_load_sized(&g_VDLP,"VDLP",buf_,size_,sizeof(g_VDLP));
+}
+
+static
+bool
+vdlp_state_read_payload(opera_state_reader_t *reader_,
+                        vdlp_t               *state_)
+{
+  return (opera_state_read_bytes(reader_,state_->clut_r,CLUT_LEN) &&
+          opera_state_read_bytes(reader_,state_->clut_g,CLUT_LEN) &&
+          opera_state_read_bytes(reader_,state_->clut_b,CLUT_LEN) &&
+          opera_state_read_u32(reader_,&state_->background_color) &&
+          opera_state_read_u32(reader_,&state_->head_vdl) &&
+          opera_state_read_u32(reader_,&state_->curr_vdl) &&
+          opera_state_read_u32(reader_,&state_->prev_bmp) &&
+          opera_state_read_u32(reader_,&state_->curr_bmp) &&
+          opera_state_read_u32(reader_,&state_->bg_color.raw) &&
+          opera_state_read_u32(reader_,&state_->clut_ctrl.raw) &&
+          opera_state_read_u32(reader_,&state_->disp_ctrl.raw) &&
+          opera_state_read_i32(reader_,&state_->line_cnt));
+}
+
+uint32_t
+opera_vdlp_state_load(const void     *buf_,
+                      uint32_t const  size_)
+{
+  vdlp_t state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,buf_,size_);
+  if(!opera_state_read_chunk(&reader,"VDLP",&payload) ||
+     !vdlp_state_read_payload(&payload,&state) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  g_VDLP = state;
+
+  return opera_state_reader_used(&reader);
 }
 
 /*
