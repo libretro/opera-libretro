@@ -56,7 +56,7 @@ static sport_t SPORT = {0};
 void
 opera_sport_init()
 {
-
+  memset(&SPORT,0,sizeof(SPORT));
 }
 
 void
