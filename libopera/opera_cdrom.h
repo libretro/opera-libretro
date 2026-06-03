@@ -264,7 +264,10 @@ typedef void (*opera_cdrom_get_toc_cb_t)(uint8_t  *track_first_,
                                           uint8_t  *disc_id_,
                                           void     *disc_toc_,
                                           uint32_t  disc_toc_size_);
-typedef int (*opera_cdrom_ode_launch_cb_t)(const char *path_);
+#define OPERA_CDROM_ODE_LAUNCH_UPDATE_CONTENT_PATH 0x00000001
+
+typedef int (*opera_cdrom_ode_launch_cb_t)(const char *path_,
+                                           uint32_t    flags_);
 
 typedef struct cdrom_callbacks_s cdrom_callbacks_t;
 struct cdrom_callbacks_s
@@ -314,8 +317,11 @@ void    opera_cdrom_set_callbacks(opera_cdrom_get_size_cb_t    get_size_,
                                   opera_cdrom_set_sector_cb_t  set_sector_,
                                   opera_cdrom_read_sector_cb_t read_sector_,
                                   opera_cdrom_get_toc_cb_t     get_toc_);
+int     opera_cdrom_media_ejected(const cdrom_device_t *cd_);
+void    opera_cdrom_media_eject(cdrom_device_t *cd_);
 void    opera_cdrom_ode_set_root(const char *root_);
 void    opera_cdrom_ode_set_launch_callback(opera_cdrom_ode_launch_cb_t launch_);
+int     opera_cdrom_ode_request_launch(const char *path_, uint32_t flags_);
 int     opera_cdrom_ode_consume_restart_request(void);
 int     opera_cdrom_ode_restart_requested(void);
 void     opera_cdrom_ode_reset_session(void);

@@ -8,6 +8,18 @@
 
 static cdrom_device_t g_CDROM_DEVICE = {0};
 
+int
+xbus_cdrom_media_ejected(void)
+{
+  return opera_cdrom_media_ejected(&g_CDROM_DEVICE);
+}
+
+void
+xbus_cdrom_media_eject(void)
+{
+  opera_cdrom_media_eject(&g_CDROM_DEVICE);
+}
+
 void*
 xbus_cdrom_plugin(int   proc_,
                   void* data_)

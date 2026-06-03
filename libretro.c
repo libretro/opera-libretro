@@ -30,6 +30,7 @@
 #include "libopera/opera_pbus.h"
 #include "libopera/opera_region.h"
 #include "libopera/opera_vdlp.h"
+#include "libopera/opera_xbus_cdrom_plugin.h"
 #include "libopera/prng16.h"
 #include "libopera/prng32.h"
 
@@ -62,11 +63,14 @@ static unsigned      g_DISK_IMAGE_COUNT = 0;
 static unsigned      g_DISK_IMAGE_INDEX = 0;
 static unsigned      g_DISK_INITIAL_INDEX = 0;
 static char         *g_DISK_INITIAL_PATH = NULL;
-static bool          g_DISK_TRAY_OPEN = false;
 
 static
 void
 retro_reset_core(retro_reset_flags_t flags_);
+
+static
+bool
+ode_reset_if_requested(void);
 
 static
 void
@@ -450,7 +454,6 @@ disk_images_clear(void)
   g_DISK_IMAGE_CAPACITY = 0;
   g_DISK_IMAGE_COUNT    = 0;
   g_DISK_IMAGE_INDEX    = 0;
-  g_DISK_TRAY_OPEN      = false;
 }
 
 static
@@ -762,56 +765,22 @@ disk_image_select_initial(void)
 }
 
 static
-int
-cdimage_replace(const char *path_)
-{
-  cdimage_t next;
-  int rv;
-
-  memset(&next,0,sizeof(next));
-  if(path_ != NULL)
-    {
-      rv = retro_cdimage_open(path_,&next);
-      if(rv == -1)
-        return print_cdimage_open_fail(path_);
-    }
-
-  opera_lr_nvram_save(game_info_path_get(),
-                      g_OPTS.nvram_shared,
-                      g_OPTS.nvram_version);
-
-  retro_cdimage_close(&CDIMAGE);
-  CDIMAGE = next;
-  cdimage_set_sector(0);
-
-  if(path_ != NULL)
-    retro_log_printf_cb(RETRO_LOG_INFO,
-                        "[Opera]: inserted disk image - %s\n",
-                        path_);
-  else
-    retro_log_printf_cb(RETRO_LOG_INFO,
-                        "[Opera]: ejected disk image\n");
-
-  retro_reset_core(RETRO_RESET_FLAG_NONE);
-
-  return 0;
-}
-
-static
 bool
 disk_set_eject_state(bool ejected_)
 {
   const char *path;
 
-  if(g_DISK_TRAY_OPEN == ejected_)
+  if(xbus_cdrom_media_ejected() == ejected_)
     return true;
 
   if(ejected_)
     {
-      if(cdimage_replace(NULL) == -1)
+      if(!opera_cdrom_ode_request_launch(NULL,0))
+        return false;
+      xbus_cdrom_media_eject();
+      if(!ode_reset_if_requested())
         return false;
 
-      g_DISK_TRAY_OPEN = true;
       return true;
     }
 
@@ -823,10 +792,11 @@ disk_set_eject_state(bool ejected_)
         return false;
     }
 
-  if(cdimage_replace(path) == -1)
+  if(!opera_cdrom_ode_request_launch(path,0))
+    return false;
+  if(!ode_reset_if_requested())
     return false;
 
-  g_DISK_TRAY_OPEN = false;
   return true;
 }
 
@@ -834,7 +804,7 @@ static
 bool
 disk_get_eject_state(void)
 {
-  return g_DISK_TRAY_OPEN;
+  return xbus_cdrom_media_ejected();
 }
 
 static
@@ -848,7 +818,7 @@ static
 bool
 disk_set_image_index(unsigned index_)
 {
-  if(!g_DISK_TRAY_OPEN)
+  if(!xbus_cdrom_media_ejected())
     return false;
 
   if(index_ < g_DISK_IMAGE_COUNT)
@@ -876,7 +846,7 @@ bool
 disk_replace_image_index(unsigned                      index_,
                          const struct retro_game_info *info_)
 {
-  if(!g_DISK_TRAY_OPEN)
+  if(!xbus_cdrom_media_ejected())
     return false;
   if(index_ >= g_DISK_IMAGE_COUNT)
     return false;
@@ -993,19 +963,23 @@ disk_control_set_interface(void)
 
 static
 int
-cdimage_ode_launch(const char *path_)
+cdimage_ode_launch(const char *path_,
+                   uint32_t    flags_)
 {
   cdimage_t next;
   int rv;
 
   memset(&next,0,sizeof(next));
-  rv = retro_cdimage_open(path_,&next);
-  if(rv == -1)
+  if(path_ != NULL)
     {
-      retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[Opera]: ODE launch failed opening image - %s\n",
-                          path_);
-      return -1;
+      rv = retro_cdimage_open(path_,&next);
+      if(rv == -1)
+        {
+          retro_log_printf_cb(RETRO_LOG_ERROR,
+                              "[Opera]: ODE launch failed opening image - %s\n",
+                              path_);
+          return -1;
+        }
     }
 
   opera_lr_nvram_save(game_info_path_get(),
@@ -1015,13 +989,17 @@ cdimage_ode_launch(const char *path_)
   retro_cdimage_close(&CDIMAGE);
   CDIMAGE = next;
   cdimage_set_sector(0);
-  game_info_path_save_path(path_);
-  disk_images_clear();
-  disk_images_append_path(path_);
+  if((path_ != NULL) &&
+     (flags_ & OPERA_CDROM_ODE_LAUNCH_UPDATE_CONTENT_PATH))
+    game_info_path_save_path(path_);
 
-  retro_log_printf_cb(RETRO_LOG_INFO,
-                      "[Opera]: ODE launched image - %s\n",
-                      path_);
+  if(path_ != NULL)
+    retro_log_printf_cb(RETRO_LOG_INFO,
+                        "[Opera]: ODE launched image - %s\n",
+                        path_);
+  else
+    retro_log_printf_cb(RETRO_LOG_INFO,
+                        "[Opera]: ODE ejected image\n");
   return 0;
 }
 
@@ -1289,8 +1267,8 @@ ode_reset_if_requested(void)
     return false;
 
   retro_log_printf_cb(RETRO_LOG_INFO,
-                      "[Opera]: ODE media launch requested core reset\n");
-  /* cdimage_ode_launch already saved NVRAM before switching game paths. */
+                      "[Opera]: CDROM media change requested core reset\n");
+  /* cdimage_ode_launch already saved NVRAM before switching media. */
   retro_reset_core(RETRO_RESET_FLAG_NONE);
   return true;
 }

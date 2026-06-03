@@ -197,6 +197,7 @@ typedef struct cdrom_ode_runtime_state_s
   char     playlist[ODE_PLAYLIST_MAX][PATH_MAX_LENGTH];
   uint32_t playlist_count;
   char     pending_launch_path[PATH_MAX_LENGTH];
+  uint32_t pending_launch_flags;
   uint8_t  toc[REQSIZE];
   uint8_t  file_buffer[REQSIZE];
   uint8_t  file_buffer_write_data[REQSIZE];
@@ -1235,6 +1236,7 @@ ode_reset_session(void)
   ode_str_copy(g_CDROM_STATE.ode.current,g_CDROM_STATE.ode.root,sizeof(g_CDROM_STATE.ode.current));
   ode_playlist_clear();
   g_CDROM_STATE.ode.pending_launch_path[0] = 0;
+  g_CDROM_STATE.ode.pending_launch_flags = 0;
   memset(g_CDROM_STATE.ode.toc,0xFF,sizeof(g_CDROM_STATE.ode.toc));
   memset(g_CDROM_STATE.ode.file_buffer,0,sizeof(g_CDROM_STATE.ode.file_buffer));
   ode_file_buffer_write_reset();
@@ -1293,9 +1295,27 @@ ode_complete_restart_if_armed(cdrom_device_t *cd_)
 }
 
 int
+opera_cdrom_ode_request_launch(const char *path_,
+                               uint32_t    flags_)
+{
+  if(g_CDROM_STATE.ode.launch == NULL)
+    return false;
+
+  ode_str_copy(g_CDROM_STATE.ode.pending_launch_path,
+               path_,
+               sizeof(g_CDROM_STATE.ode.pending_launch_path));
+  g_CDROM_STATE.ode.pending_launch_flags = flags_;
+  g_CDROM_STATE.ode.restart_requested = true;
+
+  return true;
+}
+
+int
 opera_cdrom_ode_consume_restart_request(void)
 {
+  const char *path;
   bool requested;
+  uint32_t flags;
 
   requested = g_CDROM_STATE.ode.restart_requested;
   g_CDROM_STATE.ode.restart_requested = false;
@@ -1303,15 +1323,18 @@ opera_cdrom_ode_consume_restart_request(void)
     return false;
 
   requested = false;
-  if((g_CDROM_STATE.ode.pending_launch_path[0] != 0) &&
-     (g_CDROM_STATE.ode.launch != NULL) &&
-     (g_CDROM_STATE.ode.launch(g_CDROM_STATE.ode.pending_launch_path) == 0))
+  flags = g_CDROM_STATE.ode.pending_launch_flags;
+  path = (g_CDROM_STATE.ode.pending_launch_path[0] != 0) ?
+    g_CDROM_STATE.ode.pending_launch_path : NULL;
+  if((g_CDROM_STATE.ode.launch != NULL) &&
+     (g_CDROM_STATE.ode.launch(path,flags) == 0))
     {
       g_CDROM_STATE.ode.media_access_after_reset = true;
       requested = true;
     }
 
   g_CDROM_STATE.ode.pending_launch_path[0] = 0;
+  g_CDROM_STATE.ode.pending_launch_flags = 0;
 
   return requested;
 }
@@ -2618,17 +2641,22 @@ void
 opera_cdrom_init(cdrom_device_t *cd_)
 {
   char pending_launch_path[PATH_MAX_LENGTH];
+  uint32_t pending_launch_flags;
   bool preserve_pending_launch;
   bool media_access_after_reset;
 
   pending_launch_path[0] = 0;
+  pending_launch_flags = 0;
   preserve_pending_launch = ((g_CDROM_STATE.ode.restart_armed || g_CDROM_STATE.ode.restart_requested) &&
                              (g_CDROM_STATE.ode.pending_launch_path[0] != 0));
   media_access_after_reset = g_CDROM_STATE.ode.media_access_after_reset;
   if(preserve_pending_launch)
-    ode_str_copy(pending_launch_path,
-                 g_CDROM_STATE.ode.pending_launch_path,
-                 sizeof(pending_launch_path));
+    {
+      ode_str_copy(pending_launch_path,
+                   g_CDROM_STATE.ode.pending_launch_path,
+                   sizeof(pending_launch_path));
+      pending_launch_flags = g_CDROM_STATE.ode.pending_launch_flags;
+    }
 
   if(!cdrom_persona_is_portfolio_native_mei())
     opera_log_printf(OPERA_LOG_WARN,
@@ -2657,6 +2685,7 @@ opera_cdrom_init(cdrom_device_t *cd_)
       ode_str_copy(g_CDROM_STATE.ode.pending_launch_path,
                    pending_launch_path,
                    sizeof(g_CDROM_STATE.ode.pending_launch_path));
+      g_CDROM_STATE.ode.pending_launch_flags = pending_launch_flags;
       g_CDROM_STATE.ode.restart_requested = true;
     }
   if(media_access_after_reset)
@@ -2983,6 +3012,8 @@ ode_launch_playlist(cdrom_device_t *cd_)
       ode_str_copy(g_CDROM_STATE.ode.pending_launch_path,
                    g_CDROM_STATE.ode.playlist[0],
                    sizeof(g_CDROM_STATE.ode.pending_launch_path));
+      g_CDROM_STATE.ode.pending_launch_flags =
+        OPERA_CDROM_ODE_LAUNCH_UPDATE_CONTENT_PATH;
       g_CDROM_STATE.ode.restart_armed = true;
     }
 
@@ -3261,7 +3292,8 @@ cdrom_cmd_diagnostics(cdrom_device_t *cd_)
 
 static
 void
-cdrom_cmd_eject_disc(cdrom_device_t *cd_)
+cdrom_media_eject(cdrom_device_t *cd_,
+                  bool            command_status_)
 {
   cdrom_data_clear_transfer(cd_);
   cd_->xbus_status |= CDROM_STATUS_READY;
@@ -3272,12 +3304,22 @@ cdrom_cmd_eject_disc(cdrom_device_t *cd_)
   cd_->xbus_status &= ~CDROM_STATUS_ERROR;
   cd_->MEI_status   = MEI_CDROM_no_error;
 
-  cd_->status_len = 2;
-  cd_->status[0]  = CDROM_CMD_EJECT_DISC;
-  cd_->status[1]  = cd_->xbus_status;
+  if(command_status_)
+    {
+      cd_->status_len = 2;
+      cd_->status[0]  = CDROM_CMD_EJECT_DISC;
+      cd_->status[1]  = cd_->xbus_status;
 
-  cd_->poll |= POLST;
+      cd_->poll |= POLST;
+    }
   cdrom_media_access_latch(cd_);
+}
+
+static
+void
+cdrom_cmd_eject_disc(cdrom_device_t *cd_)
+{
+  cdrom_media_eject(cd_,true);
 }
 
 static
@@ -3300,6 +3342,24 @@ cdrom_cmd_inject_disc(cdrom_device_t *cd_)
 
   cd_->poll |= POLST;
   cdrom_media_access_latch(cd_);
+}
+
+int
+opera_cdrom_media_ejected(const cdrom_device_t *cd_)
+{
+  if(cd_ == NULL)
+    return true;
+
+  return !(cd_->xbus_status & CDROM_STATUS_DOOR);
+}
+
+void
+opera_cdrom_media_eject(cdrom_device_t *cd_)
+{
+  if(cd_ == NULL)
+    return;
+
+  cdrom_media_eject(cd_,false);
 }
 
 static
