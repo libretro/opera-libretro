@@ -6,6 +6,7 @@
 
 #include "opera_arm.h"
 #include "opera_core.h"
+#include "opera_madam.h"
 #include "opera_mem.h"
 #include "opera_region.h"
 #include "opera_state.h"
@@ -35,6 +36,30 @@ static vdlp_pixel_format_e  g_PIXEL_FORMAT = VDLP_PIXEL_FORMAT_RGB565;
 
 static const uint32_t PIXELS_PER_LINE_MODULO[8] =
   {320, 384, 512, 640, 1024, 320, 320, 320};
+
+static
+INLINE
+bool
+madam_clut_dma_enabled(void)
+{
+  return flag_is_set(opera_madam_mctl(),MADAM_MCTL_CLUTXEN);
+}
+
+static
+INLINE
+bool
+madam_video_dma_enabled(void)
+{
+  return flag_is_set(opera_madam_mctl(),MADAM_MCTL_VSCTXEN);
+}
+
+static
+INLINE
+bool
+bitmap_dma_enabled(void)
+{
+  return (madam_video_dma_enabled() && g_VDLP.clut_ctrl.cdcw.enable_dma);
+}
 
 /*
   TODO: why the "& VRAM_SIZE_MASK"?
@@ -258,7 +283,7 @@ vdlp_render_line_0RGB1555(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -291,7 +316,7 @@ vdlp_render_line_0RGB1555_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -320,7 +345,7 @@ vdlp_render_line_0RGB1555_hires(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -371,7 +396,7 @@ vdlp_render_line_0RGB1555_hires_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -458,7 +483,7 @@ vdlp_render_line_RGB565(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -491,7 +516,7 @@ vdlp_render_line_RGB565_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint16_t));
       return;
@@ -520,7 +545,7 @@ vdlp_render_line_RGB565_hires(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black_hires(width,sizeof(uint16_t));
       return;
@@ -571,7 +596,7 @@ vdlp_render_line_RGB565_hires_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black_hires(width,sizeof(uint16_t));
       return;
@@ -650,7 +675,7 @@ vdlp_render_line_XRGB8888(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint32_t));
       return;
@@ -683,7 +708,7 @@ vdlp_render_line_XRGB8888_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black(width,sizeof(uint32_t));
       return;
@@ -712,7 +737,7 @@ vdlp_render_line_XRGB8888_hires(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black_hires(width,sizeof(uint32_t));
       return;
@@ -763,7 +788,7 @@ vdlp_render_line_XRGB8888_hires_bypass_clut(void)
 
   width = PIXELS_PER_LINE_MODULO[g_VDLP.clut_ctrl.cdcw.fba_incr_modulo];
 
-  if(!g_VDLP.clut_ctrl.cdcw.enable_dma)
+  if(!bitmap_dma_enabled())
     {
       vdlp_render_line_black_hires(width,sizeof(uint32_t));
       return;
@@ -829,10 +854,11 @@ opera_vdlp_process_line(int line_)
     {
       g_CURBUF = g_BUF;
       g_VDLP.curr_vdl = g_VDLP.head_vdl;
-      vdlp_process_vdl_entry();
+      if(madam_clut_dma_enabled())
+        vdlp_process_vdl_entry();
     }
 
-  if(g_VDLP.line_cnt == 0)
+  if(madam_clut_dma_enabled() && (g_VDLP.line_cnt <= 0))
     vdlp_process_vdl_entry();
 
   if(visible_scanline(line_))
@@ -843,7 +869,8 @@ opera_vdlp_process_line(int line_)
   g_VDLP.curr_bmp = tick_fba(g_VDLP.curr_bmp);
 
   g_VDLP.disp_ctrl.dcw.vi_off_1_line = 0;
-  g_VDLP.line_cnt--;
+  if(g_VDLP.line_cnt > 0)
+    g_VDLP.line_cnt--;
 }
 
 

@@ -37,6 +37,11 @@
 #define FSM_INPROCESS 2
 #define FSM_SUSPENDED 3
 
+/* MADAM MemCtl bits, using Portfolio OS names. */
+#define MADAM_MCTL_CLUTXEN 0x00002000
+#define MADAM_MCTL_VSCTXEN 0x00004000
+#define MADAM_MCTL_PLAYXEN 0x00008000
+
 EXTERN_C_BEGIN
 
 void      opera_madam_init();
@@ -44,6 +49,7 @@ void      opera_madam_reset(void);
 
 uint32_t  opera_madam_fsm_get(void);
 void      opera_madam_fsm_set(uint32_t val_);
+uint32_t  opera_madam_mctl(void);
 
 void      opera_madam_cel_handle(void);
 
