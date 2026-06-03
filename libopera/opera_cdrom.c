@@ -3276,7 +3276,6 @@ cdrom_cmd_eject_disc(cdrom_device_t *cd_)
   cd_->status[1]  = cd_->xbus_status;
 
   cd_->poll |= POLST;
-  cdrom_media_access_latch(cd_);
 }
 
 static
