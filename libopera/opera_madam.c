@@ -439,6 +439,12 @@ opera_madam_fsm_get(void)
   return MADAM.FSM;
 }
 
+uint32_t
+opera_madam_mctl(void)
+{
+  return MADAM.mregs[0x08];
+}
+
 void
 opera_madam_fsm_set(uint32_t val_)
 {
@@ -1157,10 +1163,10 @@ void
 HandleDMA8(void)
 {
   /* pbus transfer */
-  if(MADAM.mregs[0x8] & 0x8000)
+  if(MADAM.mregs[0x8] & MADAM_MCTL_PLAYXEN)
     {
       DMAPBus();
-      MADAM.mregs[0x8] &= ~0x8000; /* dma done */
+      MADAM.mregs[0x8] &= ~MADAM_MCTL_PLAYXEN; /* dma done */
       opera_clio_fiq_generate(0,1);
     }
 }
