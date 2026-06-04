@@ -1102,13 +1102,17 @@ opera_madam_cel_handle(void)
         /* pdec.mode = PRE0 & PRE0_BPP_MASK; */
         switch(PRE0 & PRE0_BPP_MASK)
           {
+          /*
+            WO1994010642A1 describes BPP=0 in the low-bit-depth PIP load
+            group with BPP=1 and BPP=2, rather than as a CEL no-op.
+          */
           case 0:
-          case 7:
-            continue;
           case 1:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x0F) * 4);
             pdec.pixelBitsMask = 1; /* 1 bit */
             break;
+          case 7:
+            continue;
           case 2:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x0E) * 4);
             pdec.pixelBitsMask = 3; /* 2 bit */
@@ -1129,6 +1133,7 @@ opera_madam_cel_handle(void)
         {
           switch(PRE0 & PRE0_BPP_MASK)
             {
+            case 0:
             case 1:
               LoadPLUT(PLUTDATA,2);
               break;
