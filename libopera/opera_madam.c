@@ -94,12 +94,12 @@ static struct BitReaderBig bitoper;
 #define PMODE_ZERO  ((0x00000002)<<CCB_POVER_SHIFT)
 #define PMODE_ONE   ((0x00000003)<<CCB_POVER_SHIFT)
 
-/* === CCBCTL0 flags === */
+/* === CECONTROL flags === */
 #define B15POS_MASK   0xC0000000
 #define B0POS_MASK    0x30000000
 #define SWAPHV        0x08000000
 #define ASCALL        0x04000000
-#define _CCBCTL0_u25  0x02000000
+#define CECONTROL_u25 0x02000000
 #define CFBDSUB       0x01000000
 #define CFBDLSB_MASK  0x00C00000
 #define PDCLSB_MASK   0x00300000
@@ -118,6 +118,7 @@ static struct BitReaderBig bitoper;
 #define B0POS_0     0x00000000
 #define B0POS_1     0x10000000
 #define B0POS_PPMP  0x20000000
+#define B0POS_PIXC  B0POS_PPMP
 #define B0POS_PDC   0x30000000
 
 /* CFBDLSB_MASK definitions */
@@ -186,6 +187,12 @@ static struct BitReaderBig bitoper;
 /* Subtract this value from the actual pixel count */
 #define PRE1_TLHPCNT_PREFETCH 1
 
+/* === Packed cel data control tokens === */
+#define PACK_EOL          0x00000000
+#define PACK_LITERAL      0x00000001
+#define PACK_TRANSPARENT  0x00000002
+#define PACK_PACKED       0x00000003
+
 #define PPMP_0_SHIFT 0
 #define PPMP_1_SHIFT 16
 
@@ -210,8 +217,8 @@ static struct BitReaderBig bitoper;
 /* PPMPC_MS_MASK definitions */
 #define PPMPC_MS_CCB         0x00000000
 #define PPMPC_MS_PIN         0x00002000
-#define PPMPC_MS_PDC_MFONLY  0x00004000
 #define PPMPC_MS_PDC         0x00004000
+#define PPMPC_MS_PDC_MFONLY  0x00006000
 
 /* PPMPC_MF_MASK definitions */
 #define PPMPC_MF_1  0x00000000
@@ -385,14 +392,78 @@ union PXC_u
 
 typedef union PXC_u PXC_t;
 
-#define MADAM_REGISTER_COUNT   2048
-#define MADAM_PLUT_COUNT       32
+#define MADAM_REGISTER_COUNT        2048
+#define MADAM_REGISTER_EXTRA_COUNT  64
+#define MADAM_REGISTER_SAVE_COUNT   (MADAM_REGISTER_COUNT + MADAM_REGISTER_EXTRA_COUNT)
+#define MADAM_PLUT_COUNT            32
+
+#define MADAM_REG_ID          0x000
+#define MADAM_REG_MSYSBITS    0x004
+#define MADAM_REG_MCTL        0x008
+#define MADAM_REG_STATBITS    0x028
+
+#define MADAM_REG_CLIO_FIFO_FIRST  0x400
+#define MADAM_REG_CLIO_FIFO_LAST   0x53F
+
+#define MADAM_REG_DMA8_DEST      0x570
+#define MADAM_REG_DMA8_LEN       0x574
+#define MADAM_REG_DMA8_PROGRESS  0x578
+#define MADAM_DMA8_IDLE_LEN      0xFFFFFFFC
+
+#define MADAM_REG_VDL_HEAD  0x580
+
+#define MADAM_REG_SPRSTRT   0x100
+#define MADAM_REG_SPRSTOP   0x104
+#define MADAM_REG_SPRCNTU   0x108
+#define MADAM_REG_SPRPAUS   0x10C
+
+#define MADAM_REG_CECONTROL  0x110
+#define MADAM_REG_REGCTL0    0x130
+#define MADAM_REG_REGCTL1    0x134
+#define MADAM_REG_REGCTL2    0x138
+#define MADAM_REG_REGCTL3    0x13C
+#define MADAM_REG_XYPOSL     0x140
+#define MADAM_REG_XYPOSH     0x144
+#define MADAM_REG_DXYL       0x148
+#define MADAM_REG_DXYH       0x14C
+#define MADAM_REG_LINEDXYL   0x150
+#define MADAM_REG_LINEDXYH   0x154
+#define MADAM_REG_DDXYL      0x158
+#define MADAM_REG_DDXYH      0x15C
+
+#define MADAM_REG_CURRENTCCB  0x5A0
+#define MADAM_REG_NEXTCCB     0x5A4
+#define MADAM_REG_PLUTDATA    0x5A8
+#define MADAM_REG_PDATA       0x5AC
+#define MADAM_REG_ENGAFETCH   0x5B0
+#define MADAM_REG_ENGALEN     0x5B4
+#define MADAM_REG_ENGBFETCH   0x5B8
+#define MADAM_REG_ENGBLEN     0x5BC
+
+#define MADAM_REG_MATRIX_INPUT     0x600
+#define MADAM_REG_MATRIX_VECTOR    0x640
+#define MADAM_REG_MATRIX_OUTPUT    0x660
+#define MADAM_REG_MATRIX_NFRAC_HI  0x680
+#define MADAM_REG_MATRIX_NFRAC_LO  0x684
+#define MADAM_REG_MATRIX_CONTROL   0x7FC
+
+#define MADAM_MATRIX_ROW_STRIDE      0x10
+#define MADAM_MATRIX_REGISTER_STRIDE 0x04
+#define MADAM_MATRIX_INPUT_REG(ROW,COL)                         \
+  (MADAM_REG_MATRIX_INPUT + ((ROW) * MADAM_MATRIX_ROW_STRIDE) + \
+   ((COL) * MADAM_MATRIX_REGISTER_STRIDE))
+#define MADAM_MATRIX_VECTOR_REG(IDX)                                    \
+  (MADAM_REG_MATRIX_VECTOR + ((IDX) * MADAM_MATRIX_REGISTER_STRIDE))
+#define MADAM_MATRIX_OUTPUT_REG(IDX)                                    \
+  (MADAM_REG_MATRIX_OUTPUT + ((IDX) * MADAM_MATRIX_REGISTER_STRIDE))
+
+#define MADAM_SYSBITS_RED 0x20
 
 #pragma pack(pop)
 
 struct madam_s
 {
-  uint32_t mregs[MADAM_REGISTER_COUNT+64];
+  uint32_t mregs[MADAM_REGISTER_SAVE_COUNT];
   uint16_t PLUT[MADAM_PLUT_COUNT];
   int32_t  rmod;
   int32_t  wmod;
@@ -407,7 +478,8 @@ typedef struct madam_s madam_t;
 #define ME_MODE_SOFTWARE 1
 #define MADAM_ID_RED_HARDWARE   0x01000000
 #define MADAM_ID_GREEN_HARDWARE 0x01020000
-#define MADAM_ID_GREEN_SOFTWARE 0x01020001
+#define MADAM_GREENWW           0x01020001
+#define MADAM_ID_GREEN_SOFTWARE MADAM_GREENWW
 
 static madam_t MADAM;
 static int KPRINT  = 0;
@@ -446,7 +518,7 @@ opera_madam_fsm_get(void)
 uint32_t
 opera_madam_mctl(void)
 {
-  return MADAM.mregs[0x08];
+  return MADAM.mregs[MADAM_REG_MCTL];
 }
 
 void
@@ -466,7 +538,7 @@ bool
 madam_state_write_payload(opera_state_writer_t *writer_,
                           madam_t const        *state_)
 {
-  return (opera_state_write_u32_array(writer_,state_->mregs,MADAM_REGISTER_COUNT + 64) &&
+  return (opera_state_write_u32_array(writer_,state_->mregs,MADAM_REGISTER_SAVE_COUNT) &&
           opera_state_write_u16_array(writer_,state_->PLUT,MADAM_PLUT_COUNT) &&
           opera_state_write_i32(writer_,state_->rmod) &&
           opera_state_write_i32(writer_,state_->wmod) &&
@@ -519,7 +591,7 @@ bool
 madam_state_read_payload(opera_state_reader_t *reader_,
                          madam_t              *state_)
 {
-  return (opera_state_read_u32_array(reader_,state_->mregs,MADAM_REGISTER_COUNT + 64) &&
+  return (opera_state_read_u32_array(reader_,state_->mregs,MADAM_REGISTER_SAVE_COUNT) &&
           opera_state_read_u16_array(reader_,state_->PLUT,MADAM_PLUT_COUNT) &&
           opera_state_read_i32(reader_,&state_->rmod) &&
           opera_state_read_i32(reader_,&state_->wmod) &&
@@ -601,39 +673,34 @@ static uint16_t MAPc16bAMV[8*8*8+64];
 */
 
 // CelEngine STATBits
-#define STATBITS	MADAM.mregs[0x28]
+#define STATBITS	MADAM.mregs[MADAM_REG_STATBITS]
 
 #define SPRON		0x10
 #define SPRPAU		0x20
 
 // CelEngine Registers
-#define SPRSTRT		0x100
-#define SPRSTOP		0x104
-#define SPRCNTU		0x108
-#define SPRPAUS		0x10c
+#define CECONTROL	MADAM.mregs[MADAM_REG_CECONTROL]
+#define REGCTL0		MADAM.mregs[MADAM_REG_REGCTL0]
+#define REGCTL1		MADAM.mregs[MADAM_REG_REGCTL1]
+#define REGCTL2		MADAM.mregs[MADAM_REG_REGCTL2]
+#define REGCTL3		MADAM.mregs[MADAM_REG_REGCTL3]
+#define XYPOSL          MADAM.mregs[MADAM_REG_XYPOSL]
+#define XYPOSH          MADAM.mregs[MADAM_REG_XYPOSH]
+#define DXYL            MADAM.mregs[MADAM_REG_DXYL]
+#define DXYH            MADAM.mregs[MADAM_REG_DXYH]
+#define LINEDXYL        MADAM.mregs[MADAM_REG_LINEDXYL]
+#define LINEDXYH        MADAM.mregs[MADAM_REG_LINEDXYH]
+#define DDXYL           MADAM.mregs[MADAM_REG_DDXYL]
+#define DDXYH           MADAM.mregs[MADAM_REG_DDXYH]
 
-#define CCBCTL0		MADAM.mregs[0x110]
-#define REGCTL0		MADAM.mregs[0x130]
-#define REGCTL1		MADAM.mregs[0x134]
-#define REGCTL2		MADAM.mregs[0x138]
-#define REGCTL3		MADAM.mregs[0x13c]
-#define XYPOSL          MADAM.mregs[0x140]
-#define XYPOSH          MADAM.mregs[0x144]
-#define DXYL            MADAM.mregs[0x148]
-#define DXYH            MADAM.mregs[0x14c]
-#define LINEDXYL        MADAM.mregs[0x150]
-#define LINEDXYH        MADAM.mregs[0x154]
-#define DDXYL           MADAM.mregs[0x158]
-#define DDXYH           MADAM.mregs[0x15c]
-
-#define CURRENTCCB	MADAM.mregs[0x5a0]
-#define NEXTCCB		MADAM.mregs[0x5a4]
-#define PLUTDATA	MADAM.mregs[0x5a8]
-#define PDATA		MADAM.mregs[0x5ac]
-#define ENGAFETCH	MADAM.mregs[0x5b0]
-#define ENGALEN		MADAM.mregs[0x5b4]
-#define	ENGBFETCH	MADAM.mregs[0x5b8]
-#define ENGBLEN		MADAM.mregs[0x5bc]
+#define CURRENTCCB	MADAM.mregs[MADAM_REG_CURRENTCCB]
+#define NEXTCCB		MADAM.mregs[MADAM_REG_NEXTCCB]
+#define PLUTDATA	MADAM.mregs[MADAM_REG_PLUTDATA]
+#define PDATA		MADAM.mregs[MADAM_REG_PDATA]
+#define ENGAFETCH	MADAM.mregs[MADAM_REG_ENGAFETCH]
+#define ENGALEN		MADAM.mregs[MADAM_REG_ENGALEN]
+#define	ENGBFETCH	MADAM.mregs[MADAM_REG_ENGBFETCH]
+#define ENGBLEN		MADAM.mregs[MADAM_REG_ENGBLEN]
 
 static
 INLINE
@@ -670,20 +737,20 @@ uint32_t
 opera_madam_peek(uint32_t addr_)
 {
   /* we need to return actual fifo status */
-  if((addr_ >= 0x400) && (addr_ <= 0x53F))
+  if((addr_ >= MADAM_REG_CLIO_FIFO_FIRST) && (addr_ <= MADAM_REG_CLIO_FIFO_LAST))
     return opera_clio_fifo_read(addr_);
 
   /* status of CEL */
-  if(addr_ == 0x28)
+  if(addr_ == MADAM_REG_STATBITS)
     {
       switch(MADAM.FSM)
         {
         case FSM_IDLE:
           return 0x00;
         case FSM_SUSPENDED:
-          return 0x30;
+          return SPRON | SPRPAU;
         case FSM_INPROCESS:
-          return 0x10;
+          return SPRON;
         }
     }
 
@@ -692,42 +759,42 @@ opera_madam_peek(uint32_t addr_)
 
 /* Matrix engine macros */
 /* input */
-#define MI00 ((int64_t)(int32_t)MADAM.mregs[0x600])
-#define MI01 ((int64_t)(int32_t)MADAM.mregs[0x604])
-#define MI02 ((int64_t)(int32_t)MADAM.mregs[0x608])
-#define MI03 ((int64_t)(int32_t)MADAM.mregs[0x60C])
-#define MI10 ((int64_t)(int32_t)MADAM.mregs[0x610])
-#define MI11 ((int64_t)(int32_t)MADAM.mregs[0x614])
-#define MI12 ((int64_t)(int32_t)MADAM.mregs[0x618])
-#define MI13 ((int64_t)(int32_t)MADAM.mregs[0x61C])
-#define MI20 ((int64_t)(int32_t)MADAM.mregs[0x620])
-#define MI21 ((int64_t)(int32_t)MADAM.mregs[0x624])
-#define MI22 ((int64_t)(int32_t)MADAM.mregs[0x628])
-#define MI23 ((int64_t)(int32_t)MADAM.mregs[0x62C])
-#define MI30 ((int64_t)(int32_t)MADAM.mregs[0x630])
-#define MI31 ((int64_t)(int32_t)MADAM.mregs[0x634])
-#define MI32 ((int64_t)(int32_t)MADAM.mregs[0x638])
-#define MI33 ((int64_t)(int32_t)MADAM.mregs[0x63C])
+#define MI00 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(0,0)])
+#define MI01 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(0,1)])
+#define MI02 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(0,2)])
+#define MI03 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(0,3)])
+#define MI10 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(1,0)])
+#define MI11 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(1,1)])
+#define MI12 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(1,2)])
+#define MI13 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(1,3)])
+#define MI20 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(2,0)])
+#define MI21 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(2,1)])
+#define MI22 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(2,2)])
+#define MI23 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(2,3)])
+#define MI30 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(3,0)])
+#define MI31 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(3,1)])
+#define MI32 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(3,2)])
+#define MI33 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_INPUT_REG(3,3)])
 
 /* output */
-#define MO0 MADAM.mregs[0x660]
-#define MO1 MADAM.mregs[0x664]
-#define MO2 MADAM.mregs[0x668]
-#define MO3 MADAM.mregs[0x66C]
+#define MO0 MADAM.mregs[MADAM_MATRIX_OUTPUT_REG(0)]
+#define MO1 MADAM.mregs[MADAM_MATRIX_OUTPUT_REG(1)]
+#define MO2 MADAM.mregs[MADAM_MATRIX_OUTPUT_REG(2)]
+#define MO3 MADAM.mregs[MADAM_MATRIX_OUTPUT_REG(3)]
 
 /* vector */
-#define MV0 ((int64_t)(int32_t)MADAM.mregs[0x640])
-#define MV1 ((int64_t)(int32_t)MADAM.mregs[0x644])
-#define MV2 ((int64_t)(int32_t)MADAM.mregs[0x648])
-#define MV3 ((int64_t)(int32_t)MADAM.mregs[0x64C])
+#define MV0 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_VECTOR_REG(0)])
+#define MV1 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_VECTOR_REG(1)])
+#define MV2 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_VECTOR_REG(2)])
+#define MV3 ((int64_t)(int32_t)MADAM.mregs[MADAM_MATRIX_VECTOR_REG(3)])
 
 static int64_t tmpMO0;
 static int64_t tmpMO1;
 static int64_t tmpMO2;
 static int64_t tmpMO3;
 
-#define Nfrac16 (((int64_t)MADAM.mregs[0x680]<<32) |    \
-                 (uint32_t)MADAM.mregs[0x684])
+#define Nfrac16 (((int64_t)MADAM.mregs[MADAM_REG_MATRIX_NFRAC_HI]<<32) | \
+                 (uint32_t)MADAM.mregs[MADAM_REG_MATRIX_NFRAC_LO])
 
 static
 INLINE
@@ -828,7 +895,7 @@ void
 opera_madam_poke(uint32_t addr_,
                  uint32_t val_)
 {
-  if((addr_ >= 0x400) && (addr_ <= 0x53F))
+  if((addr_ >= MADAM_REG_CLIO_FIFO_FIRST) && (addr_ <= MADAM_REG_CLIO_FIFO_LAST))
     {
       opera_clio_fifo_write(addr_,val_);
       return;
@@ -836,39 +903,39 @@ opera_madam_poke(uint32_t addr_,
 
   switch(addr_)
     {
-    case 0x00:
+    case MADAM_REG_ID:
       if(KPRINT)
         fputc(val_,stderr);
       return;
-    case 0x04:
+    case MADAM_REG_MSYSBITS:
       /* readonly */
       break;
-    case 0x08:
-      MADAM.mregs[0x08] = val_;
+    case MADAM_REG_MCTL:
+      MADAM.mregs[MADAM_REG_MCTL] = val_;
       HandleDMA8();
       break;
-    case 0x580:
+    case MADAM_REG_VDL_HEAD:
       opera_vdlp_set_vdl_head(val_);
       return;
-    case SPRSTRT:
+    case MADAM_REG_SPRSTRT:
       if(MADAM.FSM == FSM_IDLE)
         MADAM.FSM = FSM_INPROCESS;
       return;
-    case SPRSTOP:
+    case MADAM_REG_SPRSTOP:
       MADAM.FSM = FSM_IDLE;
       NEXTCCB = 0;
       return;
-    case SPRCNTU:
+    case MADAM_REG_SPRCNTU:
       if(MADAM.FSM == FSM_SUSPENDED)
         MADAM.FSM = FSM_INPROCESS;
       return;
-    case SPRPAUS:
+    case MADAM_REG_SPRPAUS:
       if(MADAM.FSM == FSM_INPROCESS)
         MADAM.FSM = FSM_SUSPENDED;
       return;
 
       /* Matrix engine */
-    case 0x7FC:
+    case MADAM_REG_MATRIX_CONTROL:
       switch(val_)
         {
         case 0:
@@ -889,8 +956,8 @@ opera_madam_poke(uint32_t addr_,
       break;
 
       /* REGCTL0 */
-    case 0x130:
-      MADAM.mregs[0x130] = val_;
+    case MADAM_REG_REGCTL0:
+      REGCTL0 = val_;
       MADAM.rmod = (((val_ & 0x01) << 7) +
                     ((val_ & 0x0C) << 8) +
                     ((val_ & 0x70) << 4));
@@ -901,8 +968,8 @@ opera_madam_poke(uint32_t addr_,
       break;
 
       /* REGCTL1 */
-    case 0x134:
-      MADAM.mregs[0x134] = val_;
+    case MADAM_REG_REGCTL1:
+      REGCTL1 = val_;
       MADAM.clipx = ((val_ >>  0) & 0x3FF);
       MADAM.clipy = ((val_ >> 16) & 0x3FF);
       break;
@@ -1106,10 +1173,10 @@ opera_madam_cel_handle(void)
         /* pdec.mode = PRE0 & PRE0_BPP_MASK; */
         switch(PRE0 & PRE0_BPP_MASK)
           {
-          /*
-            WO1994010642A1 describes BPP=0 in the low-bit-depth PIP load
-            group with BPP=1 and BPP=2, rather than as a CEL no-op.
-          */
+            /*
+              WO1994010642A1 describes BPP=0 in the low-bit-depth PIP load
+              group with BPP=1 and BPP=2, rather than as a CEL no-op.
+            */
           case PRE0_BPP_RESERVED_0:
           case PRE0_BPP_1:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x0F) * 4);
@@ -1172,10 +1239,10 @@ void
 HandleDMA8(void)
 {
   /* pbus transfer */
-  if(MADAM.mregs[0x8] & MADAM_MCTL_PLAYXEN)
+  if(MADAM.mregs[MADAM_REG_MCTL] & MADAM_MCTL_PLAYXEN)
     {
       DMAPBus();
-      MADAM.mregs[0x8] &= ~MADAM_MCTL_PLAYXEN; /* dma done */
+      MADAM.mregs[MADAM_REG_MCTL] &= ~MADAM_MCTL_PLAYXEN; /* dma done */
       opera_clio_fiq_generate(0,1);
     }
 }
@@ -1187,7 +1254,7 @@ DMAPBus(void)
   uint32_t *pbus_buf;
   int32_t   pbus_size;
 
-  if((int32_t)MADAM.mregs[0x574] < 0)
+  if((int32_t)MADAM.mregs[MADAM_REG_DMA8_LEN] < 0)
     return;
 
   opera_pbus_pad();
@@ -1197,32 +1264,32 @@ DMAPBus(void)
     RAMtofrPLAYER[1] = cpDMASize - 4. The first DMA word is control-port
     sludge; Length counts bytes after it.
   */
-  opera_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
-  MADAM.mregs[0x570] += 4;
-  MADAM.mregs[0x578] += 4;
+  opera_io_write(MADAM.mregs[MADAM_REG_DMA8_DEST],0xFFFFFFFF);
+  MADAM.mregs[MADAM_REG_DMA8_DEST] += 4;
+  MADAM.mregs[MADAM_REG_DMA8_PROGRESS] += 4;
 
   pbus_buf  = opera_pbus_buf();
   pbus_size = opera_pbus_size();
-  while(((int32_t)MADAM.mregs[0x574] > 0) && (pbus_size > 0))
+  while(((int32_t)MADAM.mregs[MADAM_REG_DMA8_LEN] > 0) && (pbus_size > 0))
     {
-      opera_io_write(MADAM.mregs[0x570],
+      opera_io_write(MADAM.mregs[MADAM_REG_DMA8_DEST],
                      swap32_if_little_endian(*pbus_buf));
       pbus_buf++;
       pbus_size          -= 4;
-      MADAM.mregs[0x574] -= 4;
-      MADAM.mregs[0x570] += 4;
-      MADAM.mregs[0x578] += 4;
+      MADAM.mregs[MADAM_REG_DMA8_LEN] -= 4;
+      MADAM.mregs[MADAM_REG_DMA8_DEST] += 4;
+      MADAM.mregs[MADAM_REG_DMA8_PROGRESS] += 4;
     }
 
-  while((int32_t)MADAM.mregs[0x574] > 0)
+  while((int32_t)MADAM.mregs[MADAM_REG_DMA8_LEN] > 0)
     {
-      opera_io_write(MADAM.mregs[0x570],0xFFFFFFFF);
-      MADAM.mregs[0x574] -= 4;
-      MADAM.mregs[0x570] += 4;
-      MADAM.mregs[0x578] += 4;
+      opera_io_write(MADAM.mregs[MADAM_REG_DMA8_DEST],0xFFFFFFFF);
+      MADAM.mregs[MADAM_REG_DMA8_LEN] -= 4;
+      MADAM.mregs[MADAM_REG_DMA8_DEST] += 4;
+      MADAM.mregs[MADAM_REG_DMA8_PROGRESS] += 4;
     }
 
-  MADAM.mregs[0x574] = 0xFFFFFFFC;
+  MADAM.mregs[MADAM_REG_DMA8_LEN] = MADAM_DMA8_IDLE_LEN;
 }
 
 void
@@ -1238,13 +1305,13 @@ opera_madam_init()
 
   MADAM.FSM = FSM_IDLE;
 
-  MADAM.mregs[0] = ((ME_MODE == ME_MODE_HARDWARE) ?
-                    MADAM_ID_GREEN_HARDWARE :
-                    MADAM_ID_GREEN_SOFTWARE);
+  MADAM.mregs[MADAM_REG_ID] = ((ME_MODE == ME_MODE_HARDWARE) ?
+                               MADAM_ID_GREEN_HARDWARE :
+                               MADAM_ID_GREEN_SOFTWARE);
 
   /* DRAM dux init */
-  MADAM.mregs[0x4]   = opera_mem_madam_red_sysbits(0x20);
-  MADAM.mregs[0x574] = 0xFFFFFFFC;
+  MADAM.mregs[MADAM_REG_MSYSBITS] = opera_mem_madam_red_sysbits(MADAM_SYSBITS_RED);
+  MADAM.mregs[MADAM_REG_DMA8_LEN] = MADAM_DMA8_IDLE_LEN;
 
   for(i = 0; i < 32; i++)
     for(j = 0; j < 8; j++)
@@ -1378,7 +1445,7 @@ PDEC(const uint32_t  pixel_,
   if(flag_is_clr(CCBFLAGS,CCB_PACKED))
     pres = PDEC_SubstituteBlueLSB(pres,((PRE1 & PRE1_TLLSB_MASK) >> PRE1_TLLSB_SHIFT));
   else
-    pres = PDEC_SubstituteBlueLSB(pres,((CCBCTL0 & PDCLSB_MASK) >> PDCLSB_SHIFT));
+    pres = PDEC_SubstituteBlueLSB(pres,((CECONTROL & PDCLSB_MASK) >> PDCLSB_SHIFT));
 
   /* conceptual end of decoder */
 
@@ -1386,11 +1453,11 @@ PDEC(const uint32_t  pixel_,
     TODO: Do PROJECTOR functions now?
     They'll be done before using the PROCESSOR.
 
-    if(!(PRE1&PRE1_NOSWAP) && (CCBCTL0&(1<<27)))
+    if(!(PRE1&PRE1_NOSWAP) && (CECONTROL&(1<<27)))
     pres = (pres&0x7ffe)|((pres&0x8000)>>15)|((pres&1)<<15);
 
-    if(!(CCBCTL0 & 0x80000000))
-    pres = (pres&0x7fff)|((CCBCTL0>>15)&0x8000);
+    if(!(CECONTROL & 0x80000000))
+    pres = (pres&0x7fff)|((CECONTROL>>15)&0x8000);
 
     pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
   */
@@ -1424,7 +1491,7 @@ PPROJ_OUTPUT(uint32_t pproc_output_,
     SWAPHV flag
     Swap the H and V values now if requested.
   */
-  if(flag_is_set(CCBCTL0,SWAPHV))
+  if(flag_is_set(CECONTROL,SWAPHV))
     {
       /* TODO: I have read that PRE1 is only set for unpacked CELs.
          So... should this be ignored if using packed CELs? I don't
@@ -1438,7 +1505,7 @@ PPROJ_OUTPUT(uint32_t pproc_output_,
     CFBDSUB flag
     Substitute the VH values from the frame buffer if requested.
   */
-  if(flag_is_set(CCBCTL0,CFBDSUB))
+  if(flag_is_set(CECONTROL,CFBDSUB))
     {
       /* TODO: This should be re-enabled sometime. However, it currently
          causes the wing commander 3 movies to screw up again! There
@@ -1451,7 +1518,7 @@ PPROJ_OUTPUT(uint32_t pproc_output_,
     B15POS_MASK settings
     Substitute the V value explicitly if requested.
   */
-  b15mode = (CCBCTL0 & B15POS_MASK);
+  b15mode = (CECONTROL & B15POS_MASK);
   switch(b15mode)
     {
     case B15POS_PDC:
@@ -1470,13 +1537,13 @@ PPROJ_OUTPUT(uint32_t pproc_output_,
     B15POS_MASK settings
     Substitute the H value explicitly if requested.
   */
-  b0mode = (CCBCTL0 & B0POS_MASK);
+  b0mode = (CECONTROL & B0POS_MASK);
   switch(b0mode)
     {
     case B0POS_PDC:
       /* do nothing  */
       break;
-    case B0POS_PPMP:
+    case B0POS_PIXC:
       /* Use LSB from pixel processor output. */
       VHOutput = ((VHOutput & ~0x1) | (pproc_output_ & 0x1));
       break;
@@ -1670,15 +1737,15 @@ PPROC(uint32_t pixel_,
     out.raw = RGB15_NEAR_BLACK;
 
   /*
-    if(!(PRE1 & PRE1_NOSWAP) && (CCBCTL0 & (1 << 27)))
+    if(!(PRE1 & PRE1_NOSWAP) && (CECONTROL & (1 << 27)))
     out.raw = ((out.raw & 0x7FFE) |
     ((out.raw & 0x8000) >> 15) |
     ((out.raw & 1) << 15));
   */
 
   /*
-    if(!(CCBCTL0 & 0x80000000))
-    out.raw = ((out.raw & 0x7FFF) | ((CCBCTL0 >> 15) & 0x8000));
+    if(!(CECONTROL & 0x80000000))
+    out.raw = ((out.raw & 0x7FFF) | ((CECONTROL >> 15) & 0x8000));
   */
 
   return out.raw;
@@ -1708,14 +1775,6 @@ opera_madam_registers(void)
   return MADAM.mregs;
 }
 
-enum packed_packet_type_e
-{
-  PACKED_PACKET_EOL         = 0,
-  PACKED_PACKET_LITERAL     = 1,
-  PACKED_PACKET_TRANSPARENT = 2,
-  PACKED_PACKET_REPEAT      = 3
-};
-
 static
 INLINE
 uint32_t
@@ -1726,17 +1785,17 @@ PackedSkipPixels(const uint32_t  type_,
 {
   uint32_t skipped;
 
-  if((*skip_pixels_ == 0) || (pixel_count_ == 0) || (type_ == PACKED_PACKET_EOL))
+  if((*skip_pixels_ == 0) || (pixel_count_ == 0) || (type_ == PACK_EOL))
     return pixel_count_;
 
   skipped = (*skip_pixels_ < pixel_count_) ? *skip_pixels_ : pixel_count_;
 
   switch(type_)
     {
-    case PACKED_PACKET_LITERAL:
+    case PACK_LITERAL:
       BitReaderBig_Skip(&bitoper,bpp_ * skipped);
       break;
-    case PACKED_PACKET_REPEAT:
+    case PACK_PACKED:
       if(skipped == pixel_count_)
         BitReaderBig_Skip(&bitoper,bpp_);
       break;
@@ -1824,7 +1883,7 @@ DrawPackedCel(void)
               {
                 type = BitReaderBig_Read(&bitoper,2);
                 if((int32_t)(bitoper.point + pdata) >= (lastaddr))
-                  type = 0;
+                  type = PACK_EOL;
 
                 pixel_count = BitReaderBig_Read(&bitoper,6) + 1;
 
@@ -1837,7 +1896,7 @@ DrawPackedCel(void)
 
                 if(scipw)
                   {
-                    if(type == 0)
+                    if(type == PACK_EOL)
                       break;
                     if(scipw >= (int32_t)(pixel_count))
                       {
@@ -1846,9 +1905,9 @@ DrawPackedCel(void)
                           xcur += (HDX1616 * pixel_count);
                         if(HDY1616)
                           ycur += (HDY1616 * pixel_count);
-                        if(type == 1)
+                        if(type == PACK_LITERAL)
                           BitReaderBig_Skip(&bitoper,bpp*pixel_count);
-                        else if(type == 3)
+                        else if(type == PACK_PACKED)
                           BitReaderBig_Skip(&bitoper,bpp);
                         continue;
                       }
@@ -1859,7 +1918,7 @@ DrawPackedCel(void)
                         if(HDY1616)
                           ycur += (HDY1616 * scipw);
                         pixel_count -= scipw;
-                        if(type == 1)
+                        if(type == PACK_LITERAL)
                           BitReaderBig_Skip(&bitoper,bpp*scipw);
                         scipw = 0;
                       }
@@ -1881,10 +1940,10 @@ DrawPackedCel(void)
 
                 switch(type)
                   {
-                  case 0: /* end of row */
+                  case PACK_EOL:
                     eor = true;
                     break;
-                  case 1: /* PACK_LITERAL */
+                  case PACK_LITERAL:
                     {
                       int pix;
                       for(pix = 0; pix < pixel_count; pix++)
@@ -1898,13 +1957,13 @@ DrawPackedCel(void)
                         }
                     }
                     break;
-                  case 2: /* PACK_TRANSPARENT */
+                  case PACK_TRANSPARENT:
                     if(HDX1616)
                       xcur += (HDX1616 * pixel_count);
                     if(HDY1616)
                       ycur += (HDY1616 * pixel_count);
                     break;
-                  case 3: /* PACK_REPEAT */
+                  case PACK_PACKED:
                     CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
 
                     if(!pproj.Transparent)
@@ -1957,7 +2016,7 @@ DrawPackedCel(void)
 
                 type = BitReaderBig_Read(&bitoper,2);
                 if((bitoper.point + pdata) >= lastaddr)
-                  type = 0;
+                  type = PACK_EOL;
 
                 pixel_count = (BitReaderBig_Read(&bitoper,6) + 1);
 
@@ -1970,10 +2029,10 @@ DrawPackedCel(void)
 
                 switch(type)
                   {
-                  case 0: /* end of row */
+                  case PACK_EOL:
                     eor = true;
                     break;
-                  case 1: /* PACK_LITERAL */
+                  case PACK_LITERAL:
                     while(pixel_count)
                       {
                         pixel_count--;
@@ -1994,12 +2053,12 @@ DrawPackedCel(void)
                         ycur += HDY1616;
                       }
                     break;
-                  case 2: /* PACK_TRANSPARENT */
+                  case PACK_TRANSPARENT:
                     xcur  += (HDX1616 * pixel_count);
                     ycur  += (HDY1616 * pixel_count);
                     pixel_count  = 0;
                     break;
-                  case 3: /* PACK_REPEAT */
+                  case PACK_PACKED:
                     CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
                     if(!pproj.Transparent)
                       {
@@ -2060,7 +2119,7 @@ DrawPackedCel(void)
               {
                 type = BitReaderBig_Read(&bitoper,2);
                 if((bitoper.point + pdata) >= lastaddr)
-                  type = 0;
+                  type = PACK_EOL;
 
                 pixel_count = (BitReaderBig_Read(&bitoper,6) + 1);
 
@@ -2073,10 +2132,10 @@ DrawPackedCel(void)
 
                 switch(type)
                   {
-                  case 0: /* end of row */
+                  case PACK_EOL:
                     eor = true;
                     break;
-                  case 1: /* PACK_LITERAL */
+                  case PACK_LITERAL:
                     while(pixel_count)
                       {
                         CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
@@ -2103,14 +2162,14 @@ DrawPackedCel(void)
                         ydown += HDY1616;
                       }
                     break;
-                  case 2: /* PACK_TRANSPARENT */
+                  case PACK_TRANSPARENT:
                     xcur  += (hdx * pixel_count);
                     ycur  += (hdy * pixel_count);
                     xdown += (HDX1616 * pixel_count);
                     ydown += (HDY1616 * pixel_count);
                     pixel_count = 0;
                     break;
-                  case 3: /* PACK_REPEAT */
+                  case PACK_PACKED:
                     CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
 
                     if(!pproj.Transparent)
