@@ -149,12 +149,16 @@ static struct BitReaderBig bitoper;
 #define PRE0_BPP_SHIFT   0
 
 /* PRE0_BPP_MASK definitions */
-#define PRE0_BPP_1   0x00000001
-#define PRE0_BPP_2   0x00000002
-#define PRE0_BPP_4   0x00000003
-#define PRE0_BPP_6   0x00000004
-#define PRE0_BPP_8   0x00000005
-#define PRE0_BPP_16  0x00000006
+#define PRE0_BPP_RESERVED_0 0x00000000
+#define PRE0_BPP_1          0x00000001
+#define PRE0_BPP_2          0x00000002
+#define PRE0_BPP_4          0x00000003
+#define PRE0_BPP_6          0x00000004
+#define PRE0_BPP_8          0x00000005
+#define PRE0_BPP_16         0x00000006
+#define PRE0_BPP_RESERVED_7 0x00000007
+
+#define PRE0_SKIPX(pre0_) (((pre0_) & PRE0_SKIPX_MASK) >> PRE0_SKIPX_SHIFT)
 
 /* Subtract this value from the actual vertical source line count */
 #define PRE0_VCNT_PREFETCH    1
@@ -1106,18 +1110,18 @@ opera_madam_cel_handle(void)
             WO1994010642A1 describes BPP=0 in the low-bit-depth PIP load
             group with BPP=1 and BPP=2, rather than as a CEL no-op.
           */
-          case 0:
-          case 1:
+          case PRE0_BPP_RESERVED_0:
+          case PRE0_BPP_1:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x0F) * 4);
             pdec.pixelBitsMask = 1; /* 1 bit */
             break;
-          case 7:
+          case PRE0_BPP_RESERVED_7:
             continue;
-          case 2:
+          case PRE0_BPP_2:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x0E) * 4);
             pdec.pixelBitsMask = 3; /* 2 bit */
             break;
-          case 3:
+          case PRE0_BPP_4:
           default:
             pdec.plutaCCBbits  = ((CCBFLAGS & 0x08) * 4);
             pdec.pixelBitsMask = 15; /* 4 bit */
@@ -1133,14 +1137,14 @@ opera_madam_cel_handle(void)
         {
           switch(PRE0 & PRE0_BPP_MASK)
             {
-            case 0:
-            case 1:
+            case PRE0_BPP_RESERVED_0:
+            case PRE0_BPP_1:
               LoadPLUT(PLUTDATA,2);
               break;
-            case 2:
+            case PRE0_BPP_2:
               LoadPLUT(PLUTDATA,4);
               break;
-            case 3:
+            case PRE0_BPP_4:
               LoadPLUT(PLUTDATA,16);
               break;
             default:
@@ -1321,21 +1325,22 @@ PDEC(const uint32_t  pixel_,
   switch(PRE0 & PRE0_BPP_MASK)
     {
     default:
-    case 1: /* 1 bit  */
-    case 2: /* 2 bits */
-    case 3: /* 4 bits */
+    case PRE0_BPP_RESERVED_0:
+    case PRE0_BPP_1:
+    case PRE0_BPP_2:
+    case PRE0_BPP_4:
       pres   = MADAM.PLUT[(pdec.plutaCCBbits + ((pix1.raw & pdec.pixelBitsMask) * 2)) >> 1];
       resamv = 0x49;
       break;
 
-    case 4:   /* 6 bits */
+    case PRE0_BPP_6:
       /* pmode = pix1.c6b.pw; ??? */
       pres   = MADAM.PLUT[pix1.c6b.c];
       pres   = (pres & 0x7FFF) + (pix1.c6b.pw << 15);
       resamv = 0x49;
       break;
 
-    case 5:   /* 8 bits */
+    case PRE0_BPP_8:
       if(flag_is_set(PRE0,PRE0_LINEAR))
         {
           pres   = MAPu8b[pix1.raw & 0xFF];
@@ -1348,8 +1353,8 @@ PDEC(const uint32_t  pixel_,
         }
       break;
 
-    case 6:  /* 16 bits */
-    case 7:
+    case PRE0_BPP_16:
+    case PRE0_BPP_RESERVED_7:
       if(flag_is_set(PRE0,PRE0_LINEAR))
         {
           pres   = pix1.raw;
@@ -1703,6 +1708,47 @@ opera_madam_registers(void)
   return MADAM.mregs;
 }
 
+enum packed_packet_type_e
+{
+  PACKED_PACKET_EOL         = 0,
+  PACKED_PACKET_LITERAL     = 1,
+  PACKED_PACKET_TRANSPARENT = 2,
+  PACKED_PACKET_REPEAT      = 3
+};
+
+static
+INLINE
+uint32_t
+PackedSkipPixels(const uint32_t  type_,
+                 const uint32_t  pixel_count_,
+                 uint32_t       *skip_pixels_,
+                 const uint32_t  bpp_)
+{
+  uint32_t skipped;
+
+  if((*skip_pixels_ == 0) || (pixel_count_ == 0) || (type_ == PACKED_PACKET_EOL))
+    return pixel_count_;
+
+  skipped = (*skip_pixels_ < pixel_count_) ? *skip_pixels_ : pixel_count_;
+
+  switch(type_)
+    {
+    case PACKED_PACKET_LITERAL:
+      BitReaderBig_Skip(&bitoper,bpp_ * skipped);
+      break;
+    case PACKED_PACKET_REPEAT:
+      if(skipped == pixel_count_)
+        BitReaderBig_Skip(&bitoper,bpp_);
+      break;
+    default:
+      break;
+    }
+
+  *skip_pixels_ -= skipped;
+
+  return pixel_count_ - skipped;
+}
+
 static
 void
 DrawPackedCel(void)
@@ -1726,11 +1772,13 @@ DrawPackedCel(void)
   uint32_t nrows;
   uint32_t offset;
   uint32_t offsetl;
+  uint32_t skipx;
 
   pdata   = PDATA;
   nrows   = ((PRE0 & PRE0_VCNT_MASK) >> PRE0_VCNT_SHIFT);
   bpp     = BPP[PRE0 & PRE0_BPP_MASK];
   offsetl = ((bpp < 8) ? 1 : 2);
+  skipx   = PRE0_SKIPX(PRE0);
   SPRHI   = nrows + 1;
 
   if(TestInitVisual(PACKED))
@@ -1748,6 +1796,7 @@ DrawPackedCel(void)
           {
             int wcnt;
             int scipw;
+            uint32_t src_skip;
 
             BitReaderBig_AttachBuffer(&bitoper,pdata);
             offset = BitReaderBig_Read(&bitoper,(offsetl << 3));
@@ -1766,6 +1815,7 @@ DrawPackedCel(void)
                 continue;
               }
 
+            src_skip = skipx;
             scipw = TEXTURE_WI_START;
             wcnt  = scipw;
 
@@ -1777,6 +1827,13 @@ DrawPackedCel(void)
                   type = 0;
 
                 pixel_count = BitReaderBig_Read(&bitoper,6) + 1;
+
+                if(src_skip)
+                  {
+                    pixel_count = PackedSkipPixels(type,pixel_count,&src_skip,bpp);
+                    if(!pixel_count)
+                      continue;
+                  }
 
                 if(scipw)
                   {
@@ -1872,6 +1929,7 @@ DrawPackedCel(void)
       {
         int row;
         int drawHeight;
+        uint32_t src_skip;
 
         drawHeight = VDY1616;
         if(flag_is_set(CCBFLAGS,CCB_MARIA) && (drawHeight > (1 << 16)))
@@ -1886,6 +1944,7 @@ DrawPackedCel(void)
 
             eor = false;
 
+            src_skip = skipx;
             xcur   = xvert;
             ycur   = yvert;
             xvert += VDX1616;
@@ -1901,6 +1960,13 @@ DrawPackedCel(void)
                   type = 0;
 
                 pixel_count = (BitReaderBig_Read(&bitoper,6) + 1);
+
+                if(src_skip)
+                  {
+                    pixel_count = (int32_t)PackedSkipPixels(type,(uint32_t)pixel_count,&src_skip,bpp);
+                    if(!pixel_count)
+                      continue;
+                  }
 
                 switch(type)
                   {
@@ -1965,6 +2031,7 @@ DrawPackedCel(void)
       {
         int row;
         uint32_t pixel_count;
+        uint32_t src_skip;
         for(row = 0; row < SPRHI; row++)
           {
             BitReaderBig_AttachBuffer(&bitoper,pdata);
@@ -1974,6 +2041,7 @@ DrawPackedCel(void)
 
             eor = false;
 
+            src_skip = skipx;
             xcur = xvert;
             ycur = yvert;
             hdx  = HDX1616;
@@ -1995,6 +2063,13 @@ DrawPackedCel(void)
                   type = 0;
 
                 pixel_count = (BitReaderBig_Read(&bitoper,6) + 1);
+
+                if(src_skip)
+                  {
+                    pixel_count = PackedSkipPixels(type,pixel_count,&src_skip,bpp);
+                    if(!pixel_count)
+                      continue;
+                  }
 
                 switch(type)
                   {
@@ -2128,7 +2203,7 @@ DrawLiteralCel(void)
       {
         uint32_t i;
 
-        SPRWI -= ((PRE0 >> 24) & 0xF);
+        SPRWI -= PRE0_SKIPX(PRE0);
         xvert += (TEXTURE_HI_START * VDX1616);
         yvert += (TEXTURE_HI_START * VDY1616);
         PDATA += (((offset + 2) << 2) * TEXTURE_HI_START);
@@ -2143,7 +2218,7 @@ DrawLiteralCel(void)
             BitReaderBig_AttachBuffer(&bitoper,PDATA);
             xcur = (xvert + TEXTURE_WI_START * HDX1616);
             ycur = (yvert + TEXTURE_WI_START * HDY1616);
-            BitReaderBig_Skip(&bitoper,(bpp * (((PRE0 >> 24) & 0xF))));
+            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
             if(TEXTURE_WI_START)
               BitReaderBig_Skip(&bitoper,(bpp * TEXTURE_WI_START));
 
@@ -2171,7 +2246,7 @@ DrawLiteralCel(void)
         uint32_t i;
         uint32_t j;
 
-        SPRWI -= ((PRE0 >> 24) & 0xF);
+        SPRWI -= PRE0_SKIPX(PRE0);
 
         drawHeight = VDY1616;
         if(flag_is_set(CCBFLAGS,CCB_MARIA) && (drawHeight > (1 << 16)))
@@ -2184,7 +2259,7 @@ DrawLiteralCel(void)
             ycur   = yvert;
             xvert += VDX1616;
             yvert += VDY1616;
-            BitReaderBig_Skip(&bitoper,(bpp * (((PRE0 >> 24) & 0xF))));
+            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
 
             for(j = 0; j < SPRWI; j++)
               {
@@ -2215,7 +2290,7 @@ DrawLiteralCel(void)
         uint32_t i;
         uint32_t j;
 
-        SPRWI -= ((PRE0 >> 24) & 0xF);
+        SPRWI -= PRE0_SKIPX(PRE0);
         for(i = 0; i < SPRHI; i++)
           {
             BitReaderBig_AttachBuffer(&bitoper,PDATA);
@@ -2230,7 +2305,7 @@ DrawLiteralCel(void)
             HDX1616 += HDDX1616;
             HDY1616 += HDDY1616;
 
-            BitReaderBig_Skip(&bitoper,(bpp * (((PRE0 >> 24) & 0xF))));
+            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
 
             xdown = xvert;
             ydown = yvert;
