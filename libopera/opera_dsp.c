@@ -350,7 +350,7 @@ dsp_read(uint32_t addr_)
         val=IMem[addr-0x80];
       */
       if(DSP.CPUSupply[addr_ - 0xF0])
-        return (DSP.CPUSupply[addr_ - 0xF0] = 0, prng16());
+        return (DSP.CPUSupply[addr_ - 0xF0] = 0, DSP.IMem[addr_ - 0x80]);
       return opera_clio_fifo_ei(addr_ & 0x0F);
     case 0x70:
     case 0x71:
