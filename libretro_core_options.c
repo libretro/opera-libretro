@@ -313,20 +313,6 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "disabled"
     },
     {
-      "opera_hack_timing_1",
-      "Timing Hack 1 (Crash 'n Burn)",
-      NULL,
-      "This must be enabled for correct operation of the game 'Crash 'n Burn'.",
-      NULL,
-      "advanced",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
       "opera_hack_timing_3",
       "Timing Hack 3 (Dinopark Tycoon)",
       NULL,
@@ -629,17 +615,6 @@ static struct retro_core_option_definition option_defs_us[] =
       {
         { "disabled", NULL },
         { "enabled", NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
-      "opera_hack_timing_1",
-      "Timing Hack 1 (Crash 'n Burn)",
-      "This must be enabled for correct operation of the game 'Crash 'n Burn'.",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
         { NULL, NULL },
       },
       "disabled"
