@@ -116,9 +116,6 @@ const static uint16_t cond_flags_cross[]=
 static int        g_SWI_HLE;
 static arm_core_t CPU;
 static int        CYCLES;	//cycle counter
-static int32_t    addrr = 0;
-static int32_t    vall  = 0;
-static bool       inuse = false;
 static bool       g_SOFT_RESET_PENDING = false;
 static uint32_t   carry_out = 0;
 
@@ -634,9 +631,6 @@ opera_arm_init(void)
   int i;
 
   g_SWI_HLE = 0;
-  addrr = 0;
-  vall = 0;
-  inuse = false;
   carry_out = 0;
 
   CYCLES = 0;
@@ -790,30 +784,6 @@ ldm_accur(uint32_t opc_,
           if(list & 1)
             {
               tmp = mreadw(base_comp);
-              if((tmp == 0xF1000)         &&
-                 (i == 0x1)               &&
-                 (CPU.USER[2] != 0xF0000) &&
-                 (CNBFIX == 0)            &&
-                 (FIXMODE & FIX_BIT_TIMING_1))
-                {
-                  tmp+=0x1000;
-                }
-
-              if(inuse && base_comp)
-                {
-                  if(base_comp == addrr)
-                    inuse = false;
-
-                  if(tmp != vall)
-                    {
-                      if((tmp == 0xEFE54) &&
-                         (i == 0x4)       &&
-                         (CNBFIX == 0)    &&
-                         (FIXMODE & FIX_BIT_TIMING_1))
-                        tmp -= 0xF;
-                    }
-                }
-
               CPU.USER[i]  = tmp;
               base_comp   += 4;
             }
@@ -902,12 +872,6 @@ stm_accur(uint32_t opc_,
               mwritew(base_comp,CPU.USER[i]);
               if(g_SOFT_RESET_PENDING)
                 return;
-              if(base_comp)
-                {
-                  addrr = base_comp;
-                  vall  = CPU.USER[i];
-                  inuse = true;
-                }
               base_comp += 4;
             }
 
@@ -1537,16 +1501,6 @@ opera_arm_execute(void)
   int isexeption;
 
   isexeption = false;
-  if((CPU.USER[15] == 0x94D60) &&
-     (CPU.USER[0] == 0x113000) &&
-     (CPU.USER[1] == 0x113000) &&
-     (CNBFIX == 0)             &&
-     (FIXMODE & FIX_BIT_TIMING_1))
-    {
-      CPU.USER[15] = 0x9E9CC;
-      CNBFIX = 1;
-    }
-
   cmd = mreadw(CPU.USER[15]);
   CPU.USER[15] += 4;
 

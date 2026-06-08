@@ -30,6 +30,8 @@ uint8_t  *ROM2                 = NULL;
 
 static opera_mem_cfg_t g_MEM_CFG = DRAM_VRAM_UNSET;
 
+#define COLD_BOOT_LOW_PAGE_BYTES 0x200
+
 typedef struct opera_mem_state_t opera_mem_state_t;
 struct opera_mem_state_t
 {
@@ -208,6 +210,26 @@ opera_mem_rom1_byteswap32_if_le()
   size = (ROM1_SIZE / sizeof(uint32_t));
 
   swap32_array_if_little_endian(mem,size);
+}
+
+void
+opera_mem_seed_low_boot_page()
+{
+  /*
+    Cold boot leaves the low boot page initialized from the selected boot ROM,
+    not just the ARM exception vectors. The original Portfolio OS sources treat
+    this area as boot handoff state: dipir.h defines MAGIC_KERNELADR at 0x28,
+    SYSROMTAG_ADDR at 0x2C, and MAGIC_RESET at 0x30; dipir.s starts the dipir
+    vector table at 0x200; and kernel/mem.c excludes addresses below 0x200 from
+    normal RAM.
+
+    This is a HACK. Normally the ROM is mapped into the low address
+    space until a write occurs to the address range and then it is
+    DRAM. However, that doesn't explain why DRAM[0] isn't being set to
+    ROM[0] which is required for some titles (Crash & Burn) to
+    function correctly. Needs more investigation.
+  */
+  memcpy(DRAM,ROM1,COLD_BOOT_LOW_PAGE_BYTES);
 }
 
 void

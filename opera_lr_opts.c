@@ -266,6 +266,7 @@ opera_lr_opts_set_bios(opera_lr_opts_t const *opts_)
                       opts_->bios->filename);
 
   opera_mem_rom1_byteswap32_if_le();
+  opera_mem_seed_low_boot_page();
 
   g_OPTS.bios = opts_->bios;
 }
@@ -671,7 +672,6 @@ opera_lr_opts_get_hacks(opera_lr_opts_t *opts_)
   uint32_t rv;
 
   rv = 0;
-  rv = set_reset_bits("hack_timing_1",rv,FIX_BIT_TIMING_1);
   rv = set_reset_bits("hack_timing_3",rv,FIX_BIT_TIMING_3);
   rv = set_reset_bits("hack_timing_5",rv,FIX_BIT_TIMING_5);
   rv = set_reset_bits("hack_timing_6",rv,FIX_BIT_TIMING_6);
