@@ -30,7 +30,7 @@ uint8_t  *ROM2                 = NULL;
 
 static opera_mem_cfg_t g_MEM_CFG = DRAM_VRAM_UNSET;
 
-#define COLD_BOOT_LOW_PAGE_BYTES 0x200
+#define LOW_BOOT_ROM_WORD_SIZE sizeof(uint32_t)
 
 typedef struct opera_mem_state_t opera_mem_state_t;
 struct opera_mem_state_t
@@ -213,23 +213,21 @@ opera_mem_rom1_byteswap32_if_le()
 }
 
 void
-opera_mem_seed_low_boot_page()
+opera_mem_seed_low_boot_word()
 {
   /*
-    Cold boot leaves the low boot page initialized from the selected boot ROM,
-    not just the ARM exception vectors. The original Portfolio OS sources treat
-    this area as boot handoff state: dipir.h defines MAGIC_KERNELADR at 0x28,
-    SYSROMTAG_ADDR at 0x2C, and MAGIC_RESET at 0x30; dipir.s starts the dipir
-    vector table at 0x200; and kernel/mem.c excludes addresses below 0x200 from
-    normal RAM.
-
-    This is a HACK. Normally the ROM is mapped into the low address
-    space until a write occurs to the address range and then it is
-    DRAM. However, that doesn't explain why DRAM[0] isn't being set to
-    ROM[0] which is required for some titles (Crash & Burn) to
-    function correctly. Needs more investigation.
+    HACK
+    Preserve the BIOS reset vector word in DRAM[0] for software that
+    later consults the boot handoff area after execution has started
+    from the high ROM mapping. It's not yet clear how this works on
+    real hardware where the ROM is mapped to 0x00000000 at startup and
+    any write to the DRAM range swaps out ROM for DRAM. What is
+    unclear is how this value is set on real hardware or why
+    overwriting more of DRAM with ROM causes some things to stop
+    booting.
   */
-  memcpy(DRAM,ROM1,COLD_BOOT_LOW_PAGE_BYTES);
+  if(DRAM && ROM)
+    memcpy(DRAM,ROM,LOW_BOOT_ROM_WORD_SIZE);
 }
 
 void
