@@ -51,6 +51,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+  HACK
+  This is not accurate. Real ARM60 would start at 0x00000000. The
+  ROM is mapped to the bottom of the address space till any write
+  happens and then it is swapped out for the DRAM. Instead of having
+  that overhead ever memory access we just start in ROM.
+*/
 #define ARM_INITIAL_PC  0x03000000
 #define ARM_ARRAY_COUNT(A_) ((uint32_t)(sizeof(A_) / sizeof((A_)[0])))
 
@@ -648,6 +655,8 @@ opera_arm_init(void)
   for(i = 0;i < 7; i++)
     CPU.CASH[i] = CPU.FIQ[i] = 0;
 
+  opera_mem_seed_low_boot_word();
+
   CPU.nFIQ = false;
   CPU.MAS_Access_Exept = false;
 
@@ -669,6 +678,7 @@ opera_arm_reset(void)
   CYCLES = 0;
   g_SOFT_RESET_PENDING = false;
   opera_mem_rom_select(ROM1);
+  opera_mem_seed_low_boot_word();
 
   for(i = 0; i < 16; i++)
     CPU.USER[i] = 0;
