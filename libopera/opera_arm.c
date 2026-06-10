@@ -94,7 +94,19 @@ const static uint8_t arm_mode_table[]=
     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK,     ARM_MODE_UNK
   };
 
-#define NCYCLE 4
+/*
+ * ARM60 instruction timings are expressed in N/S/I/C cycle classes rather
+ * than fixed cycle counts.  The ARM60 datasheet defines the cycle classes and
+ * notes that extra N-cycle length is a memory-system property, not an ARM60
+ * requirement.  The ARM toolkit docs bundled with the 3DO SDK use N=2S in an
+ * uncached ARM example, and 3DO hardware is documented as an uncached ARM60.
+ *
+ * References:
+ * - https://github.com/trapexit/3do-devkit/blob/master/docs/cpu/arm60_datasheet_-_zarlink_semiconductor.pdf
+ * - https://github.com/trapexit/3do-devkit/blob/master/docs/3dosdk/tktfldr/atsfldr/4atsd.html#L71-L78
+ * - https://github.com/trapexit/portfolio_os/blob/master/src/audio/audiofolio/dspp_instr.c#L220-L245
+ */
+#define NCYCLE 2
 #define SCYCLE 1
 #define ICYCLE 1
 
