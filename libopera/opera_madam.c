@@ -422,12 +422,12 @@ typedef union PXC_u PXC_t;
 #define MADAM_REG_REGCTL1    0x134
 #define MADAM_REG_REGCTL2    0x138
 #define MADAM_REG_REGCTL3    0x13C
-#define MADAM_REG_XYPOSL     0x140
-#define MADAM_REG_XYPOSH     0x144
-#define MADAM_REG_DXYL       0x148
-#define MADAM_REG_DXYH       0x14C
-#define MADAM_REG_LINEDXYL   0x150
-#define MADAM_REG_LINEDXYH   0x154
+#define MADAM_REG_XYPOSH     0x140
+#define MADAM_REG_XYPOSL     0x144
+#define MADAM_REG_LINEDXYH   0x148
+#define MADAM_REG_LINEDXYL   0x14C
+#define MADAM_REG_DXYH       0x150
+#define MADAM_REG_DXYL       0x154
 #define MADAM_REG_DDXYL      0x158
 #define MADAM_REG_DDXYH      0x15C
 
@@ -684,14 +684,14 @@ static uint16_t MAPc16bAMV[8*8*8+64];
 #define REGCTL1		MADAM.mregs[MADAM_REG_REGCTL1]
 #define REGCTL2		MADAM.mregs[MADAM_REG_REGCTL2]
 #define REGCTL3		MADAM.mregs[MADAM_REG_REGCTL3]
-#define XYPOSL          MADAM.mregs[MADAM_REG_XYPOSL]
 #define XYPOSH          MADAM.mregs[MADAM_REG_XYPOSH]
-#define DXYL            MADAM.mregs[MADAM_REG_DXYL]
-#define DXYH            MADAM.mregs[MADAM_REG_DXYH]
-#define LINEDXYL        MADAM.mregs[MADAM_REG_LINEDXYL]
+#define XYPOSL          MADAM.mregs[MADAM_REG_XYPOSL]
 #define LINEDXYH        MADAM.mregs[MADAM_REG_LINEDXYH]
-#define DDXYL           MADAM.mregs[MADAM_REG_DDXYL]
+#define LINEDXYL        MADAM.mregs[MADAM_REG_LINEDXYL]
+#define DXYH            MADAM.mregs[MADAM_REG_DXYH]
+#define DXYL            MADAM.mregs[MADAM_REG_DXYL]
 #define DDXYH           MADAM.mregs[MADAM_REG_DDXYH]
+#define DDXYL           MADAM.mregs[MADAM_REG_DDXYL]
 
 #define CURRENTCCB	MADAM.mregs[MADAM_REG_CURRENTCCB]
 #define NEXTCCB		MADAM.mregs[MADAM_REG_NEXTCCB]
@@ -1006,6 +1006,40 @@ static int32_t  TEXTURE_WI_LIM;
 static int32_t  TEXTURE_HI_LIM;
 
 static
+INLINE
+void
+LoadXYPosFromRegisters(void)
+{
+  XPOS1616 = (int32_t)((XYPOSH & 0xFFFF0000) | ((XYPOSL >> 16) & 0xFFFF));
+  YPOS1616 = (int32_t)(((XYPOSH & 0x0000FFFF) << 16) | (XYPOSL & 0xFFFF));
+}
+
+static
+INLINE
+void
+StoreXYPosToRegisters(int32_t const x_,
+                      int32_t const y_)
+{
+  XYPOSH   = (((uint32_t)x_ & 0xFFFF0000) | (((uint32_t)y_ >> 16) & 0xFFFF));
+  XYPOSL   = ((((uint32_t)x_ & 0xFFFF) << 16) | ((uint32_t)y_ & 0xFFFF));
+  XPOS1616 = x_;
+  YPOS1616 = y_;
+}
+
+static
+INLINE
+void
+StoreXYPosFromDrawHeight(int32_t const x_,
+                         int32_t const y_,
+                         int32_t const vdx_,
+                         int32_t const vdy_,
+                         int32_t const height_)
+{
+  StoreXYPosToRegisters((int32_t)((uint32_t)x_ + ((uint32_t)vdx_ * (uint32_t)height_)),
+                        (int32_t)((uint32_t)y_ + ((uint32_t)vdy_ * (uint32_t)height_)));
+}
+
+static
 void
 LoadPLUT(uint32_t pnt_,
          int32_t  n_)
@@ -1095,10 +1129,13 @@ opera_madam_cel_handle(void)
         YOXY bit is zero, then the X and Y values are not written to
         the hardware.
       */
-      if(flag_is_clr(CCBFLAGS,CCB_SKIP) && flag_is_set(CCBFLAGS,CCB_YOXY))
+      if(flag_is_clr(CCBFLAGS,CCB_SKIP))
         {
-          XPOS1616 = opera_mem_read32(CURRENTCCB + 0);
-          YPOS1616 = opera_mem_read32(CURRENTCCB + 4);
+          if(flag_is_set(CCBFLAGS,CCB_YOXY))
+            StoreXYPosToRegisters(opera_mem_read32(CURRENTCCB + 0),
+                                  opera_mem_read32(CURRENTCCB + 4));
+          else
+            LoadXYPosFromRegisters();
         }
 
       CURRENTCCB += 8;
@@ -1825,6 +1862,10 @@ DrawPackedCel(void)
   int32_t ydown;
   int32_t hdx;
   int32_t hdy;
+  int32_t origin_x;
+  int32_t origin_y;
+  int32_t origin_vdx;
+  int32_t origin_vdy;
   uint32_t bpp;
   uint32_t type;
   uint32_t pdata;
@@ -1840,8 +1881,16 @@ DrawPackedCel(void)
   skipx   = PRE0_SKIPX(PRE0);
   SPRHI   = nrows + 1;
 
+  origin_x   = XPOS1616;
+  origin_y   = YPOS1616;
+  origin_vdx = VDX1616;
+  origin_vdy = VDY1616;
+
   if(TestInitVisual(PACKED))
-    return;
+    {
+      StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
+      return;
+    }
 
   xvert = XPOS1616;
   yvert = YPOS1616;
@@ -2217,10 +2266,7 @@ DrawPackedCel(void)
 
   SPRWI++;
 
-  if(flag_is_set(FIXMODE,FIX_BIT_GRAPHICS_STEP_Y))
-    YPOS1616 = ycur;
-  else
-    XPOS1616 = xcur;
+  StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
 }
 
 static
@@ -2235,6 +2281,10 @@ DrawLiteralCel(void)
   int32_t ydown;
   int32_t hdx;
   int32_t hdy;
+  int32_t origin_x;
+  int32_t origin_y;
+  int32_t origin_vdx;
+  int32_t origin_vdy;
   uint16_t CURPIX;
   uint16_t LAMV;
   uint32_t bpp;
@@ -2250,8 +2300,16 @@ DrawLiteralCel(void)
   SPRWI = (1 + (PRE1 & PRE1_TLHPCNT_MASK));
   SPRHI = (1 + ((PRE0 & PRE0_VCNT_MASK) >> PRE0_VCNT_SHIFT));
 
+  origin_x   = XPOS1616;
+  origin_y   = YPOS1616;
+  origin_vdx = VDX1616;
+  origin_vdy = VDY1616;
+
   if(TestInitVisual(UNPACKED))
-    return;
+    {
+      StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
+      return;
+    }
 
   xvert = XPOS1616;
   yvert = YPOS1616;
@@ -2400,10 +2458,7 @@ DrawLiteralCel(void)
       break;
     }
 
-  if(flag_is_set(FIXMODE,FIX_BIT_GRAPHICS_STEP_Y))
-    YPOS1616 = ycur;
-  else
-    XPOS1616 = xcur;
+  StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
 }
 
 static
@@ -2420,6 +2475,10 @@ DrawLRCel(void)
   int32_t ydown;
   int32_t hdx;
   int32_t hdy;
+  int32_t origin_x;
+  int32_t origin_y;
+  int32_t origin_vdx;
+  int32_t origin_vdy;
   uint16_t CURPIX;
   uint16_t LAMV;
   uint32_t bpp;
@@ -2436,8 +2495,16 @@ DrawLRCel(void)
   SPRWI = (1 + (PRE1 & PRE1_TLHPCNT_MASK));
   SPRHI = ((((PRE0 & PRE0_VCNT_MASK) >> PRE0_VCNT_SHIFT) << 1) + 2); /* doom fix */
 
+  origin_x   = XPOS1616;
+  origin_y   = YPOS1616;
+  origin_vdx = VDX1616;
+  origin_vdy = VDY1616;
+
   if(TestInitVisual(UNPACKED))
-    return;
+    {
+      StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
+      return;
+    }
 
   xvert = XPOS1616;
   yvert = YPOS1616;
@@ -2565,10 +2632,7 @@ DrawLRCel(void)
       break;
     }
 
-  if(flag_is_set(FIXMODE,FIX_BIT_GRAPHICS_STEP_Y))
-    YPOS1616 = ycur;
-  else
-    XPOS1616 = xcur;
+  StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
 }
 
 void
