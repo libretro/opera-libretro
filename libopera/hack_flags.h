@@ -6,7 +6,6 @@
 #define FIX_BIT_TIMING_3        (0x00000004)
 /* #define FIX_BIT_TIMING_4        (0x00000008) */
 #define FIX_BIT_TIMING_5        (0x00000010)
-#define FIX_BIT_TIMING_6        (0x00000020)
 /* #define FIX_BIT_TIMING_7        (0x00000040) */
 
 #endif /* LIBOPERA_HACK_FLAGS_H_INCLUDED */

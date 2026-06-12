@@ -2538,10 +2538,7 @@ DrawLRCel(void)
                   uint32_t pixel;
                   uint32_t framePixel;
 
-                  if(flag_is_set(FIXMODE,FIX_BIT_TIMING_6))
-                    framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,(ycur>>16)<<1,MADAM.rmod)));
-                  else
-                    framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,ycur>>16,MADAM.rmod)));
+                  framePixel = opera_mem_read16((REGCTL2+XY2OFF(xcur >> 16,ycur>>16,MADAM.rmod)));
 
                   pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(pixel,framePixel);
