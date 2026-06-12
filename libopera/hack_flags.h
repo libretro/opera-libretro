@@ -9,7 +9,4 @@
 #define FIX_BIT_TIMING_6        (0x00000020)
 /* #define FIX_BIT_TIMING_7        (0x00000040) */
 
-// Preserve Y coordinate rather than X between CELs.
-#define FIX_BIT_GRAPHICS_STEP_Y (0x00080000)
-
 #endif /* LIBOPERA_HACK_FLAGS_H_INCLUDED */

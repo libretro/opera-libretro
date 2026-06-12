@@ -355,20 +355,6 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "disabled"
     },
     {
-      "opera_hack_graphics_step_y",
-      "Graphics Step Y Hack (Samurai Showdown)",
-      NULL,
-      "This must be enabled for backgrounds to render correctly when running the game 'Samurai Showdown'.",
-      NULL,
-      "advanced",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
       "opera_kprint",
       "Debug Output",
       NULL,
@@ -645,17 +631,6 @@ static struct retro_core_option_definition option_defs_us[] =
       "opera_hack_timing_6",
       "Timing Hack 6 (Alone in the Dark)",
       "This must be enabled for correct operation of the game 'Alone in the Dark'.",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
-      "opera_hack_graphics_step_y",
-      "Graphics Step Y Hack (Samurai Showdown)",
-      "This must be enabled for backgrounds to render correctly when running the game 'Samurai Showdown'.",
       {
         { "disabled", NULL },
         { "enabled",  NULL },

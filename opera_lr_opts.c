@@ -675,7 +675,6 @@ opera_lr_opts_get_hacks(opera_lr_opts_t *opts_)
   rv = set_reset_bits("hack_timing_3",rv,FIX_BIT_TIMING_3);
   rv = set_reset_bits("hack_timing_5",rv,FIX_BIT_TIMING_5);
   rv = set_reset_bits("hack_timing_6",rv,FIX_BIT_TIMING_6);
-  rv = set_reset_bits("hack_graphics_step_y",rv,FIX_BIT_GRAPHICS_STEP_Y);
 
   opts_->hack_flags = rv;
 }
