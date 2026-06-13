@@ -713,6 +713,35 @@ PDV(const int32_t x_)
 
 static
 INLINE
+int32_t
+DecodeREGCTLMod(uint32_t val_)
+{
+  int32_t mod;
+
+  /* REGCTL MOD bits encode pixel-width groups; XY2OFF needs byte stride. */
+  mod = 0;
+  if(val_ & 0x01)
+    mod += (32 << 2);
+  if(val_ & 0x02)
+    mod += (512 << 2);
+  if(val_ & 0x04)
+    mod += (256 << 2);
+  if(val_ & 0x08)
+    mod += (1024 << 2);
+  if(val_ & 0x10)
+    mod += (64 << 2);
+  if(val_ & 0x20)
+    mod += (128 << 2);
+  if(val_ & 0x40)
+    mod += (256 << 2);
+  if(val_ & 0x80)
+    mod += (1024 << 2);
+
+  return mod;
+}
+
+static
+INLINE
 const
 int32_t
 XY2OFF(const int32_t x_,
@@ -958,13 +987,8 @@ opera_madam_poke(uint32_t addr_,
       /* REGCTL0 */
     case MADAM_REG_REGCTL0:
       REGCTL0 = val_;
-      MADAM.rmod = (((val_ & 0x01) << 7) +
-                    ((val_ & 0x0C) << 8) +
-                    ((val_ & 0x70) << 4));
-      val_ >>= 8;
-      MADAM.wmod = (((val_ & 0x01) << 7) +
-                    ((val_ & 0x0C) << 8) +
-                    ((val_ & 0x70) << 4));
+      MADAM.rmod = DecodeREGCTLMod(val_ & 0xFF);
+      MADAM.wmod = DecodeREGCTLMod((val_ >> 8) & 0xFF);
       break;
 
       /* REGCTL1 */
@@ -3083,14 +3107,6 @@ TexelDrawScale(uint16_t CURPIX_,
 {
   int32_t x;
   int32_t y;
-  uint32_t pixel;
-  uint32_t framePixel;
-
-  if(flag_is_set(FIXMODE,FIX_BIT_TIMING_3))
-    {
-      deltay_ *= 5;
-      ycur_   *= 5;
-    }
 
   if((HDX1616 < 0) && (deltax_ < 0) && (xcur_ < 0))
     return -1;
