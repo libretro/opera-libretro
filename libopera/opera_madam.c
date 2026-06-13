@@ -2061,12 +2061,7 @@ DrawPackedCel(void)
     case TEXEL_DRAW_FUNC_SCALE:
       {
         int row;
-        int drawHeight;
         uint32_t src_skip;
-
-        drawHeight = VDY1616;
-        if(flag_is_set(CCBFLAGS,CCB_MARIA) && (drawHeight > (1 << 16)))
-          drawHeight = (1 << 16);
 
         for(row = 0; row < SPRHI; row++)
           {
@@ -2119,7 +2114,7 @@ DrawPackedCel(void)
                                               xcur >> 16,
                                               ycur >> 16,
                                               ((xcur + (HDX1616 + VDX1616)) >> 16),
-                                              ((ycur + (HDY1616 + drawHeight)) >> 16)))
+                                              ((ycur + (HDY1616 + VDY1616)) >> 16)))
                               break;
                           }
 
@@ -2136,13 +2131,34 @@ DrawPackedCel(void)
                     CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
                     if(!pproj.Transparent)
                       {
-                        if(TexelDrawScale(CURPIX,
-                                          LAMV,
-                                          xcur >> 16,
-                                          ycur >> 16,
-                                          ((xcur + (HDX1616 * pixel_count) + VDX1616) >> 16),
-                                          ((ycur + (HDY1616 * pixel_count) + drawHeight) >> 16)))
-                          break;
+                        if(flag_is_set(CCBFLAGS,CCB_MARIA))
+                          {
+                            while(pixel_count)
+                              {
+                                if(TexelDrawScale(CURPIX,
+                                                  LAMV,
+                                                  xcur >> 16,
+                                                  ycur >> 16,
+                                                  ((xcur + HDX1616 + VDX1616) >> 16),
+                                                  ((ycur + HDY1616 + VDY1616) >> 16)))
+                                  break;
+
+                                pixel_count--;
+                                xcur += HDX1616;
+                                ycur += HDY1616;
+                              }
+                            break;
+                          }
+                        else
+                          {
+                            if(TexelDrawScale(CURPIX,
+                                              LAMV,
+                                              xcur >> 16,
+                                              ycur >> 16,
+                                              ((xcur + (HDX1616 * pixel_count) + VDX1616) >> 16),
+                                              ((ycur + (HDY1616 * pixel_count) + VDY1616) >> 16)))
+                              break;
+                          }
 
                       }
 
@@ -2384,15 +2400,10 @@ DrawLiteralCel(void)
       break;
     case TEXEL_DRAW_FUNC_SCALE:
       {
-        int32_t drawHeight;
         uint32_t i;
         uint32_t j;
 
         SPRWI -= PRE0_SKIPX(PRE0);
-
-        drawHeight = VDY1616;
-        if(flag_is_set(CCBFLAGS,CCB_MARIA) && (drawHeight > (1 << 16)))
-          drawHeight = (1 << 16);
 
         for(i = 0; i < SPRHI; i++)
           {
@@ -2414,7 +2425,7 @@ DrawLiteralCel(void)
                                       xcur >> 16,
                                       ycur >> 16,
                                       ((xcur + HDX1616 + VDX1616) >> 16),
-                                      ((ycur + HDY1616 + drawHeight) >> 16)))
+                                      ((ycur + HDY1616 + VDY1616) >> 16)))
                       break;
                   }
 
@@ -2577,12 +2588,6 @@ DrawLRCel(void)
       break;
     case TEXEL_DRAW_FUNC_SCALE:
       {
-        int32_t drawHeight;
-
-        drawHeight = VDY1616;
-        if(flag_is_set(CCBFLAGS,CCB_MARIA) && (drawHeight > (1 << 16)))
-          drawHeight = (1 << 16);
-
         for(i = 0; i < SPRHI; i++)
           {
             xcur   = xvert;
@@ -2601,7 +2606,7 @@ DrawLRCel(void)
                                       xcur >> 16,
                                       ycur >> 16,
                                       ((xcur+HDX1616+VDX1616)>>16),
-                                      ((ycur+HDY1616+drawHeight)>>16)))
+                                      ((ycur+HDY1616+VDY1616)>>16)))
                       break;
                   }
 
@@ -3127,6 +3132,8 @@ TexelDrawScale(uint16_t CURPIX_,
             continue;
 
           process_pixel(x,y,CURPIX_,LAMV_);
+          if(flag_is_set(CCBFLAGS,CCB_MARIA))
+            return 0;
         }
     }
 
@@ -3307,6 +3314,8 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                           pixel = PPROJ_OUTPUT(pixel,next);
                         }
                       writePIX(x,y,pixel);
+                      if(flag_is_set(CCBFLAGS,CCB_MARIA))
+                        return 0;
                     }
                 }
             }
@@ -3332,6 +3341,8 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                       pixel = PPROJ_OUTPUT(pixel,next);
                     }
                   writePIX(x,y,pixel);
+                  if(flag_is_set(CCBFLAGS,CCB_MARIA))
+                    return 0;
                 }
             }
         }
