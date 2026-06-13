@@ -313,20 +313,6 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "disabled"
     },
     {
-      "opera_hack_timing_3",
-      "Timing Hack 3 (Dinopark Tycoon)",
-      NULL,
-      "This must be enabled for correct operation of the game 'Dinopark Tycoon'.",
-      NULL,
-      "advanced",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
       "opera_hack_timing_5",
       "Timing Hack 5 (Microcosm)",
       NULL,
@@ -587,17 +573,6 @@ static struct retro_core_option_definition option_defs_us[] =
       {
         { "disabled", NULL },
         { "enabled", NULL },
-        { NULL, NULL },
-      },
-      "disabled"
-    },
-    {
-      "opera_hack_timing_3",
-      "Timing Hack 3 (Dinopark Tycoon)",
-      "This must be enabled for correct operation of the game 'Dinopark Tycoon'.",
-      {
-        { "disabled", NULL },
-        { "enabled",  NULL },
         { NULL, NULL },
       },
       "disabled"
