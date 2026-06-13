@@ -3215,7 +3215,7 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                   if(x < 0)
                     x = 0;
 
-                  maxx = xpoints[3];
+                  maxx = xpoints[3] + 1;
                   if(maxx > maxxt)
                     maxx = maxxt;
 
@@ -3240,7 +3240,7 @@ TexelDrawArbitrary(uint16_t CURPIX_,
               if(x < 0)
                 x = 0;
 
-              maxx = xpoints[1];
+              maxx = xpoints[1] + 1;
               if(maxx > maxxt)
                 maxx = maxxt;
 
