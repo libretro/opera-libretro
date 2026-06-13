@@ -1479,6 +1479,10 @@ PDEC(const uint32_t  pixel_,
   /* Saving bit 0 (blue lsb) and bit 15 (p-mode) */
   pdec.rawVHBits = (pres & 0x8001);
 
+  /* Transparency is determined before projector blue-LSB substitution. */
+  pproj.Transparent = (flag_is_clr(CCBFLAGS,CCB_BGND) &&
+                       IS_RGB15_BLACK(pres));
+
   if(flag_is_clr(CCBFLAGS,CCB_PACKED))
     pres = PDEC_SubstituteBlueLSB(pres,((PRE1 & PRE1_TLLSB_MASK) >> PRE1_TLLSB_SHIFT));
   else
@@ -1498,9 +1502,6 @@ PDEC(const uint32_t  pixel_,
 
     pres=(pres|pdec.pmodeORmask)&pdec.pmodeANDmask;
   */
-
-  pproj.Transparent = (flag_is_clr(CCBFLAGS,CCB_BGND) &&
-                       IS_RGB15_BLACK(pres));
 
   return pres;
 }
@@ -1722,9 +1723,10 @@ PPROC(uint32_t pixel_,
       color1.B = PSCALAR[pix1.r16b.b >> 2][pix1.r16b.b & 3][input1.r16b.b];
       break;
     case 3:
-      color1.R = PSCALAR[4][pixc.meaning.dv1][input1.r16b.r];
-      color1.G = PSCALAR[4][pixc.meaning.dv1][input1.r16b.g];
-      color1.B = PSCALAR[4][pixc.meaning.dv1][input1.r16b.b];
+      pix1.raw = pixel_;
+      color1.R = PSCALAR[pix1.r16b.r >> 2][pixc.meaning.dv1][input1.r16b.r];
+      color1.G = PSCALAR[pix1.r16b.g >> 2][pixc.meaning.dv1][input1.r16b.g];
+      color1.B = PSCALAR[pix1.r16b.b >> 2][pixc.meaning.dv1][input1.r16b.b];
       break;
     }
 
