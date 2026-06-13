@@ -34,9 +34,6 @@ typedef void* (*opera_ext_interface_t)(int, void*);
 
 EXTERN_C_BEGIN
 
-extern uint32_t FIXMODE;
-extern int      CNBFIX;
-
 EXTERN_C_END
 
 #endif

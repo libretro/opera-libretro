@@ -22,7 +22,6 @@
 #include "opera_lr_dsp.h"
 #include "lr_input.h"
 
-#include "libopera/hack_flags.h"
 #include "libopera/opera_arm.h"
 #include "libopera/opera_bios.h"
 #include "libopera/opera_cdrom.h"
@@ -654,38 +653,6 @@ opera_lr_opts_set_swi_hle(opera_lr_opts_t const *opts_)
   g_OPTS.swi_hle = opts_->swi_hle;
 }
 
-static
-uint32_t
-set_reset_bits(const char *key_,
-               uint32_t    input_,
-               uint32_t    bitmask_)
-{
-  return (getval_is_enabled(key_,false) ?
-          (input_ |  bitmask_) :
-          (input_ & ~bitmask_));
-}
-
-static
-void
-opera_lr_opts_get_hacks(opera_lr_opts_t *opts_)
-{
-  uint32_t rv;
-
-  rv = 0;
-  rv = set_reset_bits("hack_timing_5",rv,FIX_BIT_TIMING_5);
-
-  opts_->hack_flags = rv;
-}
-
-static
-void
-opera_lr_opts_set_hacks(opera_lr_opts_t const *opts_)
-{
-  FIXMODE           = opts_->hack_flags;
-  g_OPTS.hack_flags = opts_->hack_flags;
-}
-
-static
 void
 opera_lr_opts_get(opera_lr_opts_t *opts_)
 {
@@ -700,7 +667,6 @@ opera_lr_opts_get(opera_lr_opts_t *opts_)
   opera_lr_opts_get_cd_speed(opts_);
   opera_lr_opts_get_cpu_overclock(opts_);
   opera_lr_opts_get_dsp_threaded(opts_);
-  opera_lr_opts_get_hacks(opts_);
   opera_lr_opts_get_hide_lightgun_crosshairs(opts_);
   opera_lr_opts_get_high_resolution(opts_);
   opera_lr_opts_get_kprint(opts_);
@@ -728,7 +694,6 @@ opera_lr_opts_set(opera_lr_opts_t const *opts_)
   opera_lr_opts_set_cd_speed(opts_);
   opera_lr_opts_set_cpu_overclock(opts_);
   opera_lr_opts_set_dsp_threaded(opts_);
-  opera_lr_opts_set_hacks(opts_);
   opera_lr_opts_set_hide_lightgun_crosshairs(opts_);
   opera_lr_opts_set_high_resolution(opts_);
   opera_lr_opts_set_kprint(opts_);

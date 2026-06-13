@@ -31,7 +31,6 @@
 #include "boolean.h"
 #include "endianness.h"
 #include "flags.h"
-#include "hack_flags.h"
 #include "inline.h"
 #include "opera_arm.h"
 #include "opera_bitop.h"
