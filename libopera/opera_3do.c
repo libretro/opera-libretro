@@ -58,8 +58,6 @@ extern int flagtime;
 #define OPERA_3DO_CD_DIPIR_RESET 0x40
 #define OPERA_3DO_CLOCK_STEP     32
 
-uint32_t FIXMODE = 0;
-int      CNBFIX  = 0;
 static int field = 0;
 static int32_t g_FRAME_CYCLE_REMAINDER = 0;
 
@@ -72,7 +70,6 @@ static
 void
 opera_3do_reset_runtime_state(void)
 {
-  CNBFIX = 0;
   field = 0;
   g_FRAME_CYCLE_REMAINDER = 0;
 
@@ -256,8 +253,7 @@ static
 bool
 opera_3do_runtime_state_write_payload(opera_state_writer_t *writer_)
 {
-  return (opera_state_write_i32(writer_,CNBFIX) &&
-          opera_state_write_i32(writer_,field) &&
+  return (opera_state_write_i32(writer_,field) &&
           opera_state_write_i32(writer_,g_FRAME_CYCLE_REMAINDER));
 }
 
@@ -309,7 +305,6 @@ uint32_t
 opera_3do_runtime_state_load(void const     *data_,
                              uint32_t const  size_)
 {
-  int32_t cnbfix_state;
   int32_t field_state;
   int32_t remainder_state;
   opera_state_reader_t reader;
@@ -317,7 +312,6 @@ opera_3do_runtime_state_load(void const     *data_,
 
   opera_state_reader_init(&reader,data_,size_);
   if(!opera_state_read_chunk(&reader,"3DRT",&payload) ||
-     !opera_state_read_i32(&payload,&cnbfix_state) ||
      !opera_state_read_i32(&payload,&field_state) ||
      !opera_state_read_i32(&payload,&remainder_state) ||
      !opera_state_reader_finished(&payload))
@@ -326,7 +320,6 @@ opera_3do_runtime_state_load(void const     *data_,
   if((field_state != 0) && (field_state != 1))
     return 0;
 
-  CNBFIX = cnbfix_state;
   field = field_state;
   g_FRAME_CYCLE_REMAINDER = remainder_state;
 

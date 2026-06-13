@@ -38,7 +38,6 @@ struct opera_lr_opts_t
   bool kprint;
   bool dsp_threaded;
   bool swi_hle;
-  uint32_t hack_flags;
 };
 
 extern opera_lr_opts_t g_OPTS;

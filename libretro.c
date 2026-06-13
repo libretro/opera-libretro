@@ -13,7 +13,6 @@
 #include "opera_lr_opts.h"
 #include "retro_cdimage.h"
 
-#include "libopera/hack_flags.h"
 #include "libopera/opera_3do.h"
 #include "libopera/opera_arm.h"
 #include "libopera/opera_bios.h"

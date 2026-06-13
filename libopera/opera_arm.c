@@ -30,7 +30,6 @@
 
 #include "boolean.h"
 #include "endianness.h"
-#include "hack_flags.h"
 #include "inline.h"
 
 #include "opera_arm.h"
