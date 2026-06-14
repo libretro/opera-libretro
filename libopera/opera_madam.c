@@ -1530,6 +1530,45 @@ PDEC(const uint32_t  pixel_,
 }
 
 static
+INLINE
+uint8_t
+BitReaderBig_ReadLRByte(const struct BitReaderBig *bit_,
+                        const uint32_t             point_)
+{
+  return opera_mem_read8(bit_->buf + ((point_ & 1) + ((point_ >> 1) << 2)));
+}
+
+static
+uint32_t
+BitReaderBig_ReadLRForm(struct BitReaderBig *bit_,
+                        const uint8_t        bits_)
+{
+  uint32_t i;
+  uint32_t retval;
+
+  retval = 0;
+  BitReaderBig_SetBitRate(bit_,bits_);
+
+  if(!bit_->buf)
+    return retval;
+
+  for(i = 0; i < (uint32_t)bit_->bitset; i++)
+    {
+      retval <<= 1;
+      retval  |= ((BitReaderBig_ReadLRByte(bit_,bit_->point) >> (7 - bit_->bitpoint)) & 1);
+
+      bit_->bitpoint++;
+      if(bit_->bitpoint == 8)
+        {
+          bit_->bitpoint = 0;
+          bit_->point++;
+        }
+    }
+
+  return retval;
+}
+
+static
 uint32_t
 PPROJ_OUTPUT(uint32_t pproc_output_,
              uint32_t pframe_input_)
@@ -2328,18 +2367,28 @@ DrawLiteralCel(void)
   int32_t origin_vdy;
   uint16_t CURPIX;
   uint16_t LAMV;
+  bool     lrform;
   uint32_t bpp;
   uint32_t offset;
   uint32_t offsetl;
+  uint32_t row_bytes;
+  uint32_t source_base;
 
   bpp     = BPP[PRE0 & PRE0_BPP_MASK];
+  lrform  = flag_is_set(PRE1,PRE1_LRFORM);
   offsetl = ((bpp < 8) ? 1 : 2);
   offset  = ((offsetl == 1) ?
              ((PRE1 & PRE1_WOFFSET8_MASK) >> PRE1_WOFFSET8_SHIFT):
              ((PRE1 & PRE1_WOFFSET10_MASK) >> PRE1_WOFFSET10_SHIFT));
+  row_bytes = ((offset + 2) << 2);
+  source_base = PDATA;
 
   SPRWI = (1 + (PRE1 & PRE1_TLHPCNT_MASK));
   SPRHI = (1 + ((PRE0 & PRE0_VCNT_MASK) >> PRE0_VCNT_SHIFT));
+  /* LRFORM describes source row-pair layout, not just pixel depth. AITD2
+     uses a 1-bpp LRFORM CEL as a priority mask over LR-format bitmap data. */
+  if(lrform)
+    SPRHI <<= 1;
 
   origin_x   = XPOS1616;
   origin_y   = YPOS1616;
@@ -2364,7 +2413,6 @@ DrawLiteralCel(void)
         SPRWI -= PRE0_SKIPX(PRE0);
         xvert += (TEXTURE_HI_START * VDX1616);
         yvert += (TEXTURE_HI_START * VDY1616);
-        PDATA += (((offset + 2) << 2) * TEXTURE_HI_START);
 
         if(SPRWI > TEXTURE_WI_LIM)
           SPRWI = TEXTURE_WI_LIM;
@@ -2373,7 +2421,10 @@ DrawLiteralCel(void)
           {
             uint32_t j;
 
-            BitReaderBig_AttachBuffer(&bitoper,PDATA);
+            BitReaderBig_AttachBuffer(&bitoper,
+                                      source_base + (lrform ?
+                                                     XY2OFF(0,i,row_bytes) :
+                                                     (row_bytes * i)));
             xcur = (xvert + TEXTURE_WI_START * HDX1616);
             ycur = (yvert + TEXTURE_WI_START * HDY1616);
             BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
@@ -2385,7 +2436,9 @@ DrawLiteralCel(void)
 
             for(j = TEXTURE_WI_START; j < SPRWI; j++)
               {
-                CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
+                CURPIX = PDEC(lrform ?
+                              BitReaderBig_ReadLRForm(&bitoper,bpp) :
+                              BitReaderBig_Read(&bitoper,bpp),&LAMV);
 
                 if(!pproj.Transparent)
                   process_pixel(xcur >> 16,ycur >> 16,CURPIX,LAMV);
@@ -2393,8 +2446,6 @@ DrawLiteralCel(void)
                 xcur += HDX1616;
                 ycur += HDY1616;
               }
-
-            PDATA += ((offset+2) << 2);
           }
       }
       break;
@@ -2407,7 +2458,10 @@ DrawLiteralCel(void)
 
         for(i = 0; i < SPRHI; i++)
           {
-            BitReaderBig_AttachBuffer(&bitoper,PDATA);
+            BitReaderBig_AttachBuffer(&bitoper,
+                                      source_base + (lrform ?
+                                                     XY2OFF(0,i,row_bytes) :
+                                                     (row_bytes * i)));
             xcur   = xvert;
             ycur   = yvert;
             xvert += VDX1616;
@@ -2416,7 +2470,9 @@ DrawLiteralCel(void)
 
             for(j = 0; j < SPRWI; j++)
               {
-                CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
+                CURPIX = PDEC(lrform ?
+                              BitReaderBig_ReadLRForm(&bitoper,bpp) :
+                              BitReaderBig_Read(&bitoper,bpp),&LAMV);
 
                 if(!pproj.Transparent)
                   {
@@ -2432,8 +2488,6 @@ DrawLiteralCel(void)
                 xcur += HDX1616;
                 ycur += HDY1616;
               }
-
-            PDATA += ((offset + 2) << 2);
           }
       }
       break;
@@ -2446,7 +2500,10 @@ DrawLiteralCel(void)
         SPRWI -= PRE0_SKIPX(PRE0);
         for(i = 0; i < SPRHI; i++)
           {
-            BitReaderBig_AttachBuffer(&bitoper,PDATA);
+            BitReaderBig_AttachBuffer(&bitoper,
+                                      source_base + (lrform ?
+                                                     XY2OFF(0,i,row_bytes) :
+                                                     (row_bytes * i)));
 
             xcur = xvert;
             ycur = yvert;
@@ -2465,7 +2522,9 @@ DrawLiteralCel(void)
 
             for(j = 0; j < SPRWI; j++)
               {
-                CURPIX = PDEC(BitReaderBig_Read(&bitoper,bpp),&LAMV);
+                CURPIX = PDEC(lrform ?
+                              BitReaderBig_ReadLRForm(&bitoper,bpp) :
+                              BitReaderBig_Read(&bitoper,bpp),&LAMV);
 
                 if(!pproj.Transparent)
                   {
@@ -2487,8 +2546,6 @@ DrawLiteralCel(void)
                 xdown += HDX1616;
                 ydown += HDY1616;
               }
-
-            PDATA += (((offset + 2) << 2));
           }
       }
       break;
