@@ -245,7 +245,7 @@ static struct BitReaderBig bitoper;
 #define PPMPC_2D_1  0x00000000
 #define PPMPC_2D_2  0x00000001
 
-#define MASK_24BIT 0x00FFFFFF
+#define ALIGNED_24BIT_MASK (0x00FFFFFFu & ~3u)
 
 #pragma pack(push,1)
 
@@ -1076,7 +1076,7 @@ LoadPLUT(uint32_t pnt_,
 void
 opera_madam_cel_handle(void)
 {
-  CCBFLAGS  = 0;
+  CCBFLAGS = 0;
   set_flag(STATBITS,SPRON);
 
   /*
@@ -1099,7 +1099,7 @@ opera_madam_cel_handle(void)
         CURRENT SCOB register maintaining the address of each next
         word to load.
       */
-      CURRENTCCB = NEXTCCB;
+      CURRENTCCB = (NEXTCCB & ALIGNED_24BIT_MASK);
       if(CURRENTCCB >= RAM_SIZE)
         break;
 
@@ -1114,27 +1114,27 @@ opera_madam_cel_handle(void)
         The next SCoB word read, NEXTPTR, is written into the NEXT
         SCOB register in DMA stack 312.
       */
-      NEXTCCB = opera_mem_read32(CURRENTCCB) & MASK_24BIT;
-      if(NEXTCCB && flag_is_clr(CCBFLAGS,CCB_NPABS))
-        NEXTCCB += CURRENTCCB + 4;
+      NEXTCCB = (opera_mem_read32(CURRENTCCB) & ALIGNED_24BIT_MASK);
+      if(flag_is_clr(CCBFLAGS,CCB_NPABS))
+        NEXTCCB += (CURRENTCCB + 4);
       CURRENTCCB += 4;
 
       /*
         SOURCEPTR is written into the SPRYTE DATA ADDRESS register of
         DMA stack 312,
       */
-      PDATA = opera_mem_read32(CURRENTCCB) & MASK_24BIT;
+      PDATA = (opera_mem_read32(CURRENTCCB) & ALIGNED_24BIT_MASK);
       if(flag_is_clr(CCBFLAGS,CCB_SPABS))
-        PDATA += CURRENTCCB + 4;
+        PDATA += (CURRENTCCB + 4);
       CURRENTCCB += 4;
 
       /*
         and PIPPTR is written into the PIP ADDRESS register in DMA
         stack 312.
       */
-      PLUTDATA = opera_mem_read32(CURRENTCCB) & MASK_24BIT;
+      PLUTDATA = (opera_mem_read32(CURRENTCCB) & ALIGNED_24BIT_MASK);
       if(flag_is_clr(CCBFLAGS,CCB_PPABS))
-        PLUTDATA += CURRENTCCB + 4;
+        PLUTDATA += (CURRENTCCB + 4);
       CURRENTCCB += 4;
 
       /*
