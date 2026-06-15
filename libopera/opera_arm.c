@@ -73,6 +73,11 @@
 #define ARM_MSRF_MASK   0x0dbff000
 #define ARM_MSRF_SIGN   0x0128f000
 
+#define ARM_DP_IMM_MASK             0xFF
+#define ARM_DP_IMM_ROT_AMOUNT_SHIFT 7
+#define ARM_DP_IMM_ROT_AMOUNT_MASK  0x1E
+#define ARM_SHIFT_TYPE_ROR          3
+
 #define ARM_MODE_USER   0
 #define ARM_MODE_FIQ    1
 #define ARM_MODE_IRQ    2
@@ -1595,12 +1600,11 @@ opera_arm_execute(void)
                 CPU.USER[15] += 4;
                 if(cmd & (1 << 25))
                   {
-                    op2 = cmd & 0xFF;
-                    if(((cmd >> 7) & 0x1E))
-                      {
-                        op2 = ROTR(op2,((cmd >> 7) & 0x1E));
-                        //if((cmd&(1<<20))) SETC(((cmd&0xff)>>(((cmd>>7)&0x1e)-1))&1);
-                      }
+                    op2 = cmd & ARM_DP_IMM_MASK;
+                    op2 = ARM_SHIFT_NSC(op2,
+                                        ((cmd >> ARM_DP_IMM_ROT_AMOUNT_SHIFT) &
+                                         ARM_DP_IMM_ROT_AMOUNT_MASK),
+                                        ARM_SHIFT_TYPE_ROR);
                     op1 = CPU.USER[(cmd >> 16) & 0xF];
                   }
                 else
