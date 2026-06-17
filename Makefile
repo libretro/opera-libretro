@@ -643,10 +643,19 @@ endif
 %.o: %.c
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS)
 
-clean:
-	rm -f $(TARGET) $(OBJECTS)
+HARNESS_TARGET := test-harness
+HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(INCFLAGS)
+HARNESS_LIBS := -ldl
 
-.PHONY: clean
+harness: $(HARNESS_TARGET)
+
+$(HARNESS_TARGET): tools/test_harness.c
+	$(CC) -o $@ $< $(HARNESS_CFLAGS) $(HARNESS_LIBS)
+
+clean:
+	rm -f $(TARGET) $(OBJECTS) $(HARNESS_TARGET)
+
+.PHONY: clean harness
 endif
 
 print-%:
