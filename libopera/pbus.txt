@@ -169,21 +169,31 @@ y = ((10 * counter) / NTSC_DEFAULT_YSCANTIME);
 
 ### ORBATAK TRACKBALL
 
-Orbatak uses two different devices. The trackballs are just mice as
-described above. The buttons (coins, start, service) are managed via
-the "SILLY_CONTROL_PAD" as defined in the 3DO SDK (event.h) or in the
-least uses the same identifier.
+Orbatak uses two different devices per player. The trackballs are just
+mice as described above. The buttons (coins, start, service) use the
+SILLY_CONTROL_PAD (0xC0) identifier as defined in the 3DO SDK (event.h).
+The Portfolio OS EventBroker parses 0xC0 as a 24-bit (3 byte) device
+(EventBroker.c: inBits=24, outBits=8).
+
+The standard SILLY_CONTROL_PAD format (3 bytes, 24 bits):
 
 MSB -> LSB
-8bit: identifier (0xC0)
-8bit: 0x00
-3bit: unused
-1bit: coin (p1)
-1bit: coin (p2)
-1bit: start (p2)
-1bit: start (p1)
-1bit: service
-8bit: 0x00
+* 8bit: identifier (0xC0) in bits 7-5, standard control pad buttons
+        (down, up, right, left, A) in bits 4-0
+* 8bit: standard control pad buttons (B, C, Start, X, RT, LT) in
+        bits 7-2, unused in bits 1-0
+* 8bit: unused by the standard driver, available for custom devices
+
+Orbatak maps its arcade buttons in byte 2 (the third byte):
+
+MSB -> LSB
+2bit: unused          (bits 7,6)
+1bit: coin (p1)       (bit 5)
+1bit: coin (p2)       (bit 4)
+1bit: unused          (bit 3)
+1bit: start (p2)      (bit 2)
+1bit: start (p1)      (bit 1)
+1bit: service         (bit 0)
 
 
 ## Device Usage In Games

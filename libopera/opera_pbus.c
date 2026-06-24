@@ -283,7 +283,7 @@ opera_pbus_add_arcade_lightgun(const opera_pbus_arcade_lightgun_t *lg_)
 void
 opera_pbus_add_orbatak_trackball(const opera_pbus_orbatak_trackball_t *tb_)
 {
-  if(!pbus_reserve(8))
+  if(!pbus_reserve(4))
     return;
 
   PBUS.buf[PBUS.idx++] = PBUS_ORBATAK_TRACKBALL_ID;
@@ -291,15 +291,21 @@ opera_pbus_add_orbatak_trackball(const opera_pbus_orbatak_trackball_t *tb_)
   PBUS.buf[PBUS.idx++] = (((tb_->y & 0x03F) << 2) |
                           ((tb_->x & 0x300) >> 8));
   PBUS.buf[PBUS.idx++] = (tb_->x & 0xFF);
+}
+
+void
+opera_pbus_add_orbatak_buttons(const opera_pbus_orbatak_buttons_t *btn_)
+{
+  if(!pbus_reserve(3))
+    return;
 
   PBUS.buf[PBUS.idx++] = PBUS_ORBATAK_BUTTONS_ID;
   PBUS.buf[PBUS.idx++] = 0;
-  PBUS.buf[PBUS.idx++] = ((tb_->coin_p1  << PBUS_ORBATAK_SHIFT_COIN_P1)  |
-                          (tb_->coin_p2  << PBUS_ORBATAK_SHIFT_COIN_P2)  |
-                          (tb_->start_p1 << PBUS_ORBATAK_SHIFT_START_P1) |
-                          (tb_->start_p2 << PBUS_ORBATAK_SHIFT_START_P2) |
-                          (tb_->service  << PBUS_ORBATAK_SHIFT_SERVICE));
-  PBUS.buf[PBUS.idx++] = 0;
+  PBUS.buf[PBUS.idx++] = ((btn_->coin_p1  << PBUS_ORBATAK_SHIFT_COIN_P1)  |
+                          (btn_->coin_p2  << PBUS_ORBATAK_SHIFT_COIN_P2)  |
+                          (btn_->start_p1 << PBUS_ORBATAK_SHIFT_START_P1) |
+                          (btn_->start_p2 << PBUS_ORBATAK_SHIFT_START_P2) |
+                          (btn_->service  << PBUS_ORBATAK_SHIFT_SERVICE));
 }
 
 void*

@@ -7,6 +7,8 @@
 
 #include <libretro.h>
 
+#include <string.h>
+
 static uint32_t ACTIVE_DEVICES = 0;
 static unsigned PBUS_DEVICES[LR_INPUT_MAX_DEVICES] = {0};
 
@@ -149,7 +151,7 @@ lr_input_poll_lightgun(const int port_)
   lg.trigger = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
   lg.option  = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SELECT);
   lg.reload  = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_RELOAD);
-            
+
   if(poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
   {
     lg.trigger = 0;
@@ -174,7 +176,7 @@ lr_input_poll_arcade_lightgun(const int port_)
   lg.coins   = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_SELECT);
   lg.start   = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_START);
   lg.holster = poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_RELOAD);
-            
+
   if(poll_lightgun(port_,RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
   {
     lg.trigger = 0;
@@ -210,13 +212,19 @@ lr_input_poll_orbatak_trackball(const int port_)
         tb.y = 24;
     }
 
-  tb.start_p1 = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT);
-  tb.start_p2 = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_START);
-  tb.coin_p1  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L);
-  tb.coin_p2  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
-  tb.service  = poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R2);
-
   opera_pbus_add_orbatak_trackball(&tb);
+}
+
+static
+void
+lr_input_poll_orbatak_buttons(const int port_,
+                              opera_pbus_orbatak_buttons_t *btn_)
+{
+  btn_->start_p1 |= poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_SELECT);
+  btn_->start_p2 |= poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_START);
+  btn_->coin_p1  |= poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_L);
+  btn_->coin_p2  |= poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R);
+  btn_->service  |= poll_joypad(port_,RETRO_DEVICE_ID_JOYPAD_R2);
 }
 
 static
@@ -242,9 +250,6 @@ lr_input_poll(const int port_)
       break;
     case RETRO_DEVICE_ARCADE_LIGHTGUN:
       lr_input_poll_arcade_lightgun(port_);
-      break;
-    case RETRO_DEVICE_ORBATAK_TRACKBALL:
-      lr_input_poll_orbatak_trackball(port_);
       break;
     }
 }
@@ -293,6 +298,11 @@ lr_input_update(const uint32_t active_devices_)
 {
   int i;
   uint32_t active_devices;
+  int has_orbatak;
+  opera_pbus_orbatak_buttons_t orbatak_buttons;
+
+  has_orbatak = 0;
+  memset(&orbatak_buttons,0,sizeof(orbatak_buttons));
 
   opera_pbus_reset();
   retro_input_poll_cb();
@@ -302,6 +312,17 @@ lr_input_update(const uint32_t active_devices_)
     {
       if(PBUS_DEVICES[i] == RETRO_DEVICE_NONE)
         continue;
-      lr_input_poll(i);
+
+      if(PBUS_DEVICES[i] == RETRO_DEVICE_ORBATAK_TRACKBALL)
+        {
+          lr_input_poll_orbatak_trackball(i);
+          lr_input_poll_orbatak_buttons(i,&orbatak_buttons);
+          has_orbatak = 1;
+        }
+      else
+        lr_input_poll(i);
     }
+
+  if(has_orbatak)
+    opera_pbus_add_orbatak_buttons(&orbatak_buttons);
 }
