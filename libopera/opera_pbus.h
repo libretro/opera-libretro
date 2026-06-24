@@ -73,14 +73,17 @@ struct opera_pbus_arcade_lightgun_s
 
 struct opera_pbus_orbatak_trackball_s
 {
+  int16_t x;
+  int16_t y;
+};
+
+struct opera_pbus_orbatak_buttons_s
+{
   uint8_t start_p1;
   uint8_t start_p2;
   uint8_t coin_p1;
   uint8_t coin_p2;
   uint8_t service;
-
-  int16_t x;
-  int16_t y;
 };
 
 typedef struct opera_pbus_joypad_s opera_pbus_joypad_t;
@@ -89,6 +92,7 @@ typedef struct opera_pbus_mouse_s opera_pbus_mouse_t;
 typedef struct opera_pbus_lightgun_s opera_pbus_lightgun_t;
 typedef struct opera_pbus_arcade_lightgun_s opera_pbus_arcade_lightgun_t;
 typedef struct opera_pbus_orbatak_trackball_s opera_pbus_orbatak_trackball_t;
+typedef struct opera_pbus_orbatak_buttons_s  opera_pbus_orbatak_buttons_t;
 
 void*    opera_pbus_buf(void);
 uint32_t opera_pbus_size(void);
@@ -100,5 +104,6 @@ void     opera_pbus_add_mouse(const opera_pbus_mouse_t *mouse_);
 void     opera_pbus_add_lightgun(const opera_pbus_lightgun_t *lightgun_);
 void     opera_pbus_add_arcade_lightgun(const opera_pbus_arcade_lightgun_t *lightgun_);
 void     opera_pbus_add_orbatak_trackball(const opera_pbus_orbatak_trackball_t *tb_);
+void     opera_pbus_add_orbatak_buttons(const opera_pbus_orbatak_buttons_t *btn_);
 
 #endif /* LIBOPERA_PBUS_H_INCLUDED */
