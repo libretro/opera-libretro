@@ -645,11 +645,11 @@ endif
 
 HARNESS_TARGET := test-harness
 HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(INCFLAGS)
-HARNESS_LIBS := -ldl
+HARNESS_LIBS := -ldl -lm
 
 harness: $(HARNESS_TARGET)
 
-$(HARNESS_TARGET): tools/test_harness.c
+$(HARNESS_TARGET): tools/test_harness.c tools/stb_image_write.h
 	$(CC) -o $@ $< $(HARNESS_CFLAGS) $(HARNESS_LIBS)
 
 clean:
