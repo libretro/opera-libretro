@@ -644,13 +644,24 @@ endif
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS)
 
 HARNESS_TARGET := test-harness
-HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(INCFLAGS)
+HARNESS_ZLIB_DIR := $(DEPS_DIR)/zlib-1.3.1.2
+HARNESS_ZLIB_CFLAGS := -I$(HARNESS_ZLIB_DIR)
+HARNESS_ZLIB_SOURCES := \
+	$(HARNESS_ZLIB_DIR)/adler32.c \
+	$(HARNESS_ZLIB_DIR)/crc32.c \
+	$(HARNESS_ZLIB_DIR)/deflate.c \
+	$(HARNESS_ZLIB_DIR)/trees.c \
+	$(HARNESS_ZLIB_DIR)/zutil.c
+HARNESS_ZLIB_DEPS := $(HARNESS_ZLIB_SOURCES) \
+	$(wildcard $(HARNESS_ZLIB_DIR)/*.h)
+HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(HARNESS_ZLIB_CFLAGS) $(INCFLAGS)
 HARNESS_LIBS := -ldl -lm
 
 harness: $(HARNESS_TARGET)
 
-$(HARNESS_TARGET): tools/test_harness.c tools/stb_image_write.h
-	$(CC) -o $@ $< $(HARNESS_CFLAGS) $(HARNESS_LIBS)
+$(HARNESS_TARGET): tools/test_harness.c tools/stb_image_write.h $(HARNESS_ZLIB_DEPS)
+	$(CC) -o $@ tools/test_harness.c $(HARNESS_ZLIB_SOURCES) \
+		$(HARNESS_CFLAGS) $(HARNESS_LIBS)
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) $(HARNESS_TARGET)

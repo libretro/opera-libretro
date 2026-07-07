@@ -21,6 +21,7 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#include <zlib.h>
 
 #include <dirent.h>
 #include <dlfcn.h>
@@ -51,12 +52,37 @@
 #define HARNESS_TERMINAL_CELL_HALF_UPPER 2
 #define HARNESS_TERMINAL_CELL_ASCII 3
 
-#define HARNESS_TERMINAL_RENDER_HALF 0
-#define HARNESS_TERMINAL_RENDER_ASCII 1
+#define HARNESS_TERMINAL_RENDER_KITTY 0
+#define HARNESS_TERMINAL_RENDER_SIXEL 1
+#define HARNESS_TERMINAL_RENDER_HALF 2
+#define HARNESS_TERMINAL_RENDER_ASCII 3
+
+#define HARNESS_TERMINAL_IMAGE_FAILED 0
+#define HARNESS_TERMINAL_IMAGE_DRAWN 1
+#define HARNESS_TERMINAL_IMAGE_SKIPPED 2
 
 #define HARNESS_TERMINAL_COLOR_MONO 0
 #define HARNESS_TERMINAL_COLOR_256 1
 #define HARNESS_TERMINAL_COLOR_TRUE 2
+
+#define HARNESS_TERMINAL_KITTY_IMAGE_ID 0x4f504c52U
+#define HARNESS_TERMINAL_KITTY_PLACEMENT_ID 1U
+#define HARNESS_TERMINAL_KITTY_CHUNK_RAW 3072U
+#define HARNESS_TERMINAL_KITTY_ZLIB_LEVEL 3
+#define HARNESS_TERMINAL_KITTY_PROBE_TIMEOUT_MS 200
+#define HARNESS_TERMINAL_SIXEL_PROBE_TIMEOUT_MS 200
+#define HARNESS_TERMINAL_SIXEL_FALLBACK_CELL_W 6U
+#define HARNESS_TERMINAL_SIXEL_FALLBACK_CELL_H 12U
+#define HARNESS_TERMINAL_SIXEL_MAX_WIDTH 960U
+#define HARNESS_TERMINAL_SIXEL_MAX_HEIGHT 720U
+#define HARNESS_TERMINAL_KITTY_MAX_WIDTH 1920U
+#define HARNESS_TERMINAL_KITTY_MAX_HEIGHT 1080U
+#define HARNESS_TERMINAL_SIXEL_COLORS 256U
+#define HARNESS_TERMINAL_SIXEL_RGB565_LUT_SIZE 65536U
+#define HARNESS_TERMINAL_SIXEL_0RGB1555_LUT_SIZE 32768U
+#define HARNESS_TERMINAL_SIXEL_SPARSE_MIN_WIDTH 256U
+/* _terminal_rgb_to_256() emits xterm cube/gray indices 16 through 255. */
+#define HARNESS_TERMINAL_SIXEL_SPARSE_MIN_COLORS 240U
 
 typedef struct rom_entry_t rom_entry_t;
 struct rom_entry_t
@@ -79,6 +105,50 @@ struct path_list_t
 {
   char **items;
   size_t count;
+};
+
+typedef struct byte_buffer_t byte_buffer_t;
+struct byte_buffer_t
+{
+  uint8_t *data;
+  size_t   len;
+  size_t   cap;
+  bool     failed;
+};
+
+typedef struct terminal_image_cache_t terminal_image_cache_t;
+struct terminal_image_cache_t
+{
+  uint8_t *pixels;
+  size_t capacity;
+  size_t row_bytes;
+  size_t data_size;
+  bool valid;
+  int render_mode;
+  enum retro_pixel_format pixel_format;
+  unsigned src_width;
+  unsigned src_height;
+  unsigned row;
+  unsigned col;
+  unsigned cols;
+  unsigned rows;
+  unsigned image_width;
+  unsigned image_height;
+};
+
+typedef struct terminal_sixel_palette_t terminal_sixel_palette_t;
+struct terminal_sixel_palette_t
+{
+  uint8_t xterm_index[HARNESS_TERMINAL_SIXEL_COLORS];
+  unsigned count;
+};
+
+typedef struct terminal_sixel_event_t terminal_sixel_event_t;
+struct terminal_sixel_event_t
+{
+  unsigned x;
+  unsigned next;
+  uint8_t mask;
 };
 
 typedef struct input_event_t input_event_t;
@@ -254,6 +324,8 @@ struct harness_run_t
   int  tty_flags;
   int  terminal_width;
   int  terminal_height;
+  int  terminal_pixel_width;
+  int  terminal_pixel_height;
   bool terminal_resize_pending;
   int  terminal_escape;
   uint16_t terminal_button_mask;
@@ -274,10 +346,59 @@ struct harness_run_t
   unsigned terminal_map_render_mode;
   int terminal_render_mode;
   int terminal_color_mode;
+  bool terminal_kitty_probed;
+  bool terminal_kitty_supported;
+  const char *terminal_kitty_probe_result;
+  bool terminal_kitty_zlib_probed;
+  bool terminal_kitty_zlib_supported;
+  const char *terminal_kitty_zlib_probe_result;
+  bool terminal_sixel_probed;
+  bool terminal_sixel_supported;
+  const char *terminal_sixel_probe_result;
+  terminal_image_cache_t terminal_image_cache;
   terminal_read_pixel_fn terminal_read_pixel;
   uint64_t terminal_last_render_frame;
+  uint64_t terminal_render_calls;
+  uint64_t terminal_image_drawn_frames;
+  uint64_t terminal_image_skipped_frames;
+  uint64_t terminal_image_failed_frames;
+  uint64_t terminal_image_bytes;
+  uint64_t terminal_bytes_written;
+  uint64_t terminal_status_last_frame;
+  uint64_t terminal_status_frame_interval;
+  uint16_t terminal_status_last_button_mask;
+  bool terminal_status_last_quit_requested;
+  bool terminal_status_valid;
   double terminal_adaptive_fps;
   double terminal_render_seconds_ema;
+  double terminal_render_seconds_total;
+  double terminal_render_seconds_last;
+  double terminal_render_seconds_max;
+  double terminal_image_seconds_total;
+  double terminal_image_seconds_last;
+  double terminal_image_seconds_max;
+  uint8_t *terminal_rgb_buffer;
+  size_t terminal_rgb_buffer_size;
+  uint8_t *terminal_scaled_rgb_buffer;
+  size_t terminal_scaled_rgb_buffer_size;
+  z_stream terminal_kitty_zstream;
+  bool terminal_kitty_zstream_initialized;
+  byte_buffer_t terminal_kitty_zlib_buffer;
+  byte_buffer_t terminal_png_buffer;
+  unsigned *terminal_sixel_src_x;
+  unsigned *terminal_sixel_src_y;
+  unsigned terminal_sixel_map_src_width;
+  unsigned terminal_sixel_map_src_height;
+  unsigned terminal_sixel_map_out_width;
+  unsigned terminal_sixel_map_out_height;
+  uint8_t *terminal_sixel_source_indices;
+  size_t terminal_sixel_source_indices_size;
+  uint8_t *terminal_sixel_indices;
+  size_t terminal_sixel_indices_size;
+  uint8_t *terminal_sixel_masks;
+  size_t terminal_sixel_masks_size;
+  terminal_sixel_event_t *terminal_sixel_events;
+  size_t terminal_sixel_event_capacity;
   char *terminal_output;
   size_t terminal_output_len;
   size_t terminal_output_cap;
@@ -362,6 +483,19 @@ static volatile sig_atomic_t g_signal_exit_requested;
 static volatile sig_atomic_t g_signal_exit_number;
 static volatile sig_atomic_t g_signal_resize_requested;
 static bool g_terminal_force_output;
+static bool g_terminal_rgb256_tables_ready;
+static uint8_t g_terminal_rgb256_cube_component[256];
+static uint8_t g_terminal_rgb256_cube_value[256];
+static uint8_t g_terminal_rgb256_gray_low_value[256];
+static uint8_t g_terminal_rgb256_gray_low_index[256];
+static uint8_t g_terminal_rgb256_gray_high_value[256];
+static uint8_t g_terminal_rgb256_gray_high_index[256];
+static bool g_terminal_sixel_rgb565_lut_ready;
+static bool g_terminal_sixel_0rgb1555_lut_ready;
+static uint8_t
+g_terminal_sixel_rgb565_lut[HARNESS_TERMINAL_SIXEL_RGB565_LUT_SIZE];
+static uint8_t
+g_terminal_sixel_0rgb1555_lut[HARNESS_TERMINAL_SIXEL_0RGB1555_LUT_SIZE];
 
 RETRO_CALLCONV
 static
@@ -373,6 +507,15 @@ _harness_log(enum retro_log_level level_,
 static
 void
 _terminal_set_pixel_reader(enum retro_pixel_format fmt_);
+
+static
+void
+_terminal_render_status_line(unsigned image_rows_max_,
+                             unsigned display_cols_);
+
+static
+bool
+_terminal_should_render_status_line(int image_result_);
 
 static
 void
@@ -436,7 +579,8 @@ _print_usage(FILE *f_)
           "                           capability\n"
           "  --terminal-fps N         cap terminal redraw rate; 0 redraws every\n"
           "                           video frame (default adaptive up to 30)\n"
-          "  --terminal-render MODE   terminal render mode: auto, half, ascii\n"
+          "  --terminal-render MODE   terminal render mode: auto, kitty, sixel,\n"
+          "                           half, ascii\n"
           "  --terminal-color MODE    terminal color mode: auto, true, 256, mono\n"
           "  --terminal-button-hold N  keep terminal button pressed for N frames\n"
           "                           (default 6)\n"
@@ -1557,13 +1701,17 @@ _parse_terminal_render_mode(const char *arg_)
 {
   if(!strcasecmp(arg_, "auto"))
     return -1;
+  if(!strcasecmp(arg_, "kitty"))
+    return HARNESS_TERMINAL_RENDER_KITTY;
+  if(!strcasecmp(arg_, "sixel"))
+    return HARNESS_TERMINAL_RENDER_SIXEL;
   if(!strcasecmp(arg_, "half") || !strcasecmp(arg_, "unicode"))
     return HARNESS_TERMINAL_RENDER_HALF;
   if(!strcasecmp(arg_, "ascii"))
     return HARNESS_TERMINAL_RENDER_ASCII;
 
   fprintf(stderr,
-          "invalid --terminal-render value: %s; expected auto, half, or ascii\n",
+          "invalid --terminal-render value: %s; expected auto, kitty, sixel, half, or ascii\n",
           arg_);
   exit(1);
 }
@@ -1662,6 +1810,11 @@ _parse_args(int    argc_,
   g_run.tty_fd       = -1;
   g_run.tty_flags    = -1;
   g_run.pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
+  g_run.terminal_render_mode = -1;
+  g_run.terminal_color_mode = -1;
+  g_run.terminal_kitty_probe_result = "not_run";
+  g_run.terminal_kitty_zlib_probe_result = "not_run";
+  g_run.terminal_sixel_probe_result = "not_run";
   _terminal_set_pixel_reader(g_run.pixel_format);
   g_cfg.terminal_button_hold_frames = HARNESS_TERMINAL_HOLD_FRAMES_DEFAULT;
   g_cfg.terminal_fps = HARNESS_TERMINAL_FPS_DEFAULT;
@@ -2720,6 +2873,127 @@ _pixel_format_name(enum retro_pixel_format fmt_)
 
 
 static
+unsigned
+_pixel_size(enum retro_pixel_format fmt_);
+
+static
+bool
+_terminal_ensure_u8_buffer(uint8_t **buffer_,
+                           size_t   *size_,
+                           size_t    needed_);
+
+
+static
+bool
+_pack_frame_rgb_into(const void             *data_,
+                     unsigned                width_,
+                     unsigned                height_,
+                     size_t                  pitch_,
+                     enum retro_pixel_format fmt_,
+                     uint8_t                *packed_,
+                     size_t                  stride_)
+{
+  size_t row_stride;
+  unsigned y;
+
+  if((data_ == NULL) || (packed_ == NULL) || (width_ == 0) || (height_ == 0))
+    return false;
+
+  if(width_ > (UINT_MAX / 3U))
+    return false;
+  row_stride = (size_t)width_ * 3U;
+  if(stride_ < row_stride)
+    return false;
+
+  for(y = 0; y < height_; y++)
+    {
+      const uint8_t *row = (const uint8_t *)data_ + ((size_t)y * pitch_);
+      uint8_t *out = packed_ + (stride_ * y);
+      unsigned x;
+
+      switch(fmt_)
+        {
+        case RETRO_PIXEL_FORMAT_XRGB8888:
+          for(x = 0; x < width_; x++)
+            {
+              uint32_t p = ((const uint32_t *)row)[x];
+
+              out[x * 3U + 0U] = (uint8_t)((p >> 16U) & 0xffU);
+              out[x * 3U + 1U] = (uint8_t)((p >> 8U) & 0xffU);
+              out[x * 3U + 2U] = (uint8_t)(p & 0xffU);
+            }
+          break;
+        case RETRO_PIXEL_FORMAT_RGB565:
+          for(x = 0; x < width_; x++)
+            {
+              uint16_t p = ((const uint16_t *)row)[x];
+
+              out[x * 3U + 0U] = _scale_5_to_8((p >> 11U) & 0x1fU);
+              out[x * 3U + 1U] = _scale_6_to_8((p >> 5U) & 0x3fU);
+              out[x * 3U + 2U] = _scale_5_to_8(p & 0x1fU);
+            }
+          break;
+        case RETRO_PIXEL_FORMAT_0RGB1555:
+        default:
+          for(x = 0; x < width_; x++)
+            {
+              uint16_t p = ((const uint16_t *)row)[x];
+
+              out[x * 3U + 0U] = _scale_5_to_8((p >> 10U) & 0x1fU);
+              out[x * 3U + 1U] = _scale_5_to_8((p >> 5U) & 0x1fU);
+              out[x * 3U + 2U] = _scale_5_to_8(p & 0x1fU);
+            }
+          break;
+        }
+    }
+
+  return true;
+}
+
+
+static
+uint8_t *
+_pack_frame_rgb(const void             *data_,
+                unsigned                width_,
+                unsigned                height_,
+                size_t                  pitch_,
+                enum retro_pixel_format fmt_,
+                size_t                 *stride_out_)
+{
+  uint8_t *packed;
+  size_t stride;
+
+  if(stride_out_ != NULL)
+    *stride_out_ = 0;
+
+  if((data_ == NULL) || (width_ == 0) || (height_ == 0))
+    return NULL;
+
+  if(width_ > (UINT_MAX / 3U))
+    return NULL;
+  stride = (size_t)width_ * 3U;
+
+  if((stride > 0) && (height_ > (SIZE_MAX / stride)))
+    return NULL;
+
+  packed = (uint8_t *)malloc(stride * height_);
+  if(packed == NULL)
+    return NULL;
+
+  if(!_pack_frame_rgb_into(data_, width_, height_, pitch_, fmt_, packed, stride))
+    {
+      free(packed);
+      return NULL;
+    }
+
+  if(stride_out_ != NULL)
+    *stride_out_ = stride;
+
+  return packed;
+}
+
+
+static
 int
 _write_png(const char             *path_,
            const void             *data_,
@@ -2730,7 +3004,6 @@ _write_png(const char             *path_,
 {
   uint8_t *packed;
   size_t   stride;
-  unsigned y;
 
   if((data_ == NULL) || (width_ == 0) || (height_ == 0))
     return -1;
@@ -2738,48 +3011,9 @@ _write_png(const char             *path_,
   if(_mkdir_parent(path_) != 0)
     return -1;
 
-  if(width_ > (UINT_MAX / 3))
-    return -1;
-  stride = (size_t)width_ * 3;
-
-  if((stride > 0) && (height_ > (SIZE_MAX / stride)))
-    return -1;
-
-  packed = (uint8_t *)malloc(stride * height_);
+  packed = _pack_frame_rgb(data_, width_, height_, pitch_, fmt_, &stride);
   if(packed == NULL)
     return -1;
-
-  for(y = 0; y < height_; y++)
-    {
-      const uint8_t *row = (const uint8_t *)data_ + (pitch_ * y);
-      uint8_t       *out = packed + (stride * y);
-      unsigned x;
-
-      for(x = 0; x < width_; x++)
-        {
-          if(fmt_ == RETRO_PIXEL_FORMAT_XRGB8888)
-            {
-              uint32_t p = ((const uint32_t *)row)[x];
-              out[x * 3 + 0] = (uint8_t)((p >> 16) & 0xff);
-              out[x * 3 + 1] = (uint8_t)((p >> 8)  & 0xff);
-              out[x * 3 + 2] = (uint8_t)(p & 0xff);
-            }
-          else if(fmt_ == RETRO_PIXEL_FORMAT_RGB565)
-            {
-              uint16_t p = ((const uint16_t *)row)[x];
-              out[x * 3 + 0] = _scale_5_to_8((p >> 11) & 0x1f);
-              out[x * 3 + 1] = _scale_6_to_8((p >> 5)  & 0x3f);
-              out[x * 3 + 2] = _scale_5_to_8(p & 0x1f);
-            }
-          else
-            {
-              uint16_t p = ((const uint16_t *)row)[x];
-              out[x * 3 + 0] = _scale_5_to_8((p >> 10) & 0x1f);
-              out[x * 3 + 1] = _scale_5_to_8((p >> 5)  & 0x1f);
-              out[x * 3 + 2] = _scale_5_to_8(p & 0x1f);
-            }
-        }
-    }
 
   if(stbi_write_png(path_, (int)width_, (int)height_, 3,
                     packed, (int)stride) == 0)
@@ -2820,7 +3054,251 @@ _pixel_size(enum retro_pixel_format fmt_)
     case RETRO_PIXEL_FORMAT_RGB565:
     case RETRO_PIXEL_FORMAT_0RGB1555: return 2;
     default:                          return 0;
+  }
+}
+
+
+static
+bool
+_terminal_image_source_layout(const void             *data_,
+                              unsigned                width_,
+                              unsigned                height_,
+                              size_t                  pitch_,
+                              enum retro_pixel_format fmt_,
+                              size_t                 *row_bytes_out_,
+                              size_t                 *data_size_out_)
+{
+  unsigned psize;
+  size_t row_bytes;
+
+  if(row_bytes_out_ != NULL)
+    *row_bytes_out_ = 0;
+  if(data_size_out_ != NULL)
+    *data_size_out_ = 0;
+
+  psize = _pixel_size(fmt_);
+  if((data_ == NULL) || (width_ == 0U) || (height_ == 0U) ||
+     (psize == 0U) || (row_bytes_out_ == NULL) || (data_size_out_ == NULL))
+    return false;
+
+  if((size_t)width_ > (SIZE_MAX / (size_t)psize))
+    return false;
+  row_bytes = (size_t)width_ * (size_t)psize;
+  if(pitch_ < row_bytes)
+    return false;
+  if((size_t)height_ > (SIZE_MAX / row_bytes))
+    return false;
+  if((height_ > 1U) &&
+     ((size_t)(height_ - 1U) > ((SIZE_MAX - row_bytes) / pitch_)))
+    return false;
+
+  *row_bytes_out_ = row_bytes;
+  *data_size_out_ = row_bytes * (size_t)height_;
+  return true;
+}
+
+
+static
+void
+_terminal_invalidate_image_cache(void)
+{
+  g_run.terminal_image_cache.valid = false;
+}
+
+
+static
+bool
+_terminal_image_cache_matches(const void             *data_,
+                              size_t                  pitch_,
+                              int                     render_mode_,
+                              unsigned                src_width_,
+                              unsigned                src_height_,
+                              enum retro_pixel_format fmt_,
+                              unsigned                row_,
+                              unsigned                col_,
+                              unsigned                cols_,
+                              unsigned                rows_,
+                              unsigned                image_width_,
+                              unsigned                image_height_)
+{
+  terminal_image_cache_t *cache = &g_run.terminal_image_cache;
+  const uint8_t *source;
+  const uint8_t *cached;
+  size_t row_bytes;
+  size_t data_size;
+  unsigned y;
+
+  if(!cache->valid ||
+     (cache->render_mode != render_mode_) ||
+     (cache->src_width != src_width_) ||
+     (cache->src_height != src_height_) ||
+     (cache->pixel_format != fmt_) ||
+     (cache->row != row_) ||
+     (cache->col != col_) ||
+     (cache->cols != cols_) ||
+     (cache->rows != rows_) ||
+     (cache->image_width != image_width_) ||
+     (cache->image_height != image_height_))
+    return false;
+
+  if(!_terminal_image_source_layout(data_, src_width_, src_height_, pitch_, fmt_,
+                                    &row_bytes, &data_size) ||
+     (cache->pixels == NULL) || (cache->capacity < data_size) ||
+     (cache->row_bytes != row_bytes) || (cache->data_size != data_size))
+    return false;
+
+  if(pitch_ == row_bytes)
+    return memcmp(data_, cache->pixels, data_size) == 0;
+
+  source = (const uint8_t *)data_;
+  cached = cache->pixels;
+  for(y = 0; y < src_height_; y++)
+    {
+      if(memcmp(source, cached, row_bytes) != 0)
+        return false;
+      source += pitch_;
+      cached += row_bytes;
     }
+
+  return true;
+}
+
+
+static
+void
+_terminal_store_image_cache(const void             *data_,
+                            size_t                  pitch_,
+                            int                     render_mode_,
+                            unsigned                src_width_,
+                            unsigned                src_height_,
+                            enum retro_pixel_format fmt_,
+                            unsigned                row_,
+                            unsigned                col_,
+                            unsigned                cols_,
+                            unsigned                rows_,
+                            unsigned                image_width_,
+                            unsigned                image_height_)
+{
+  terminal_image_cache_t *cache = &g_run.terminal_image_cache;
+  const uint8_t *source;
+  uint8_t *cached;
+  size_t row_bytes;
+  size_t data_size;
+  unsigned y;
+
+  cache->valid = false;
+  if(!_terminal_image_source_layout(data_, src_width_, src_height_, pitch_, fmt_,
+                                    &row_bytes, &data_size) ||
+     !_terminal_ensure_u8_buffer(&cache->pixels, &cache->capacity, data_size))
+    return;
+
+  if(pitch_ == row_bytes)
+    memcpy(cache->pixels, data_, data_size);
+  else
+    {
+      source = (const uint8_t *)data_;
+      cached = cache->pixels;
+      for(y = 0; y < src_height_; y++)
+        {
+          memcpy(cached, source, row_bytes);
+          source += pitch_;
+          cached += row_bytes;
+        }
+    }
+
+  cache->row_bytes = row_bytes;
+  cache->data_size = data_size;
+  cache->render_mode = render_mode_;
+  cache->src_width = src_width_;
+  cache->src_height = src_height_;
+  cache->pixel_format = fmt_;
+  cache->row = row_;
+  cache->col = col_;
+  cache->cols = cols_;
+  cache->rows = rows_;
+  cache->image_width = image_width_;
+  cache->image_height = image_height_;
+  cache->valid = true;
+}
+
+
+static
+bool
+_terminal_ensure_u8_buffer(uint8_t **buffer_,
+                           size_t   *size_,
+                           size_t    needed_)
+{
+  uint8_t *next;
+  size_t next_size;
+
+  if((buffer_ == NULL) || (size_ == NULL))
+    return false;
+  if(needed_ == 0)
+    return true;
+  if(*size_ >= needed_)
+    return true;
+
+  next_size = (*size_ > 0) ? *size_ : 65536U;
+  while(next_size < needed_)
+    {
+      if(next_size > (SIZE_MAX / 2U))
+        {
+          next_size = needed_;
+          break;
+        }
+      next_size *= 2U;
+    }
+
+  next = (uint8_t *)realloc(*buffer_, next_size);
+  if(next == NULL)
+    return false;
+
+  *buffer_ = next;
+  *size_ = next_size;
+  return true;
+}
+
+
+static
+bool
+_terminal_pack_frame_rgb(const void             *data_,
+                         unsigned                width_,
+                         unsigned                height_,
+                         size_t                  pitch_,
+                         enum retro_pixel_format fmt_,
+                         uint8_t               **packed_out_,
+                         size_t                 *stride_out_)
+{
+  size_t stride;
+  size_t needed;
+
+  if(packed_out_ != NULL)
+    *packed_out_ = NULL;
+  if(stride_out_ != NULL)
+    *stride_out_ = 0;
+
+  if((data_ == NULL) || (width_ == 0U) || (height_ == 0U))
+    return false;
+  if(width_ > (UINT_MAX / 3U))
+    return false;
+  stride = (size_t)width_ * 3U;
+  if((stride > 0) && ((size_t)height_ > (SIZE_MAX / stride)))
+    return false;
+  needed = stride * (size_t)height_;
+
+  if(!_terminal_ensure_u8_buffer(&g_run.terminal_rgb_buffer,
+                                 &g_run.terminal_rgb_buffer_size,
+                                 needed))
+    return false;
+  if(!_pack_frame_rgb_into(data_, width_, height_, pitch_, fmt_,
+                           g_run.terminal_rgb_buffer, stride))
+    return false;
+
+  if(packed_out_ != NULL)
+    *packed_out_ = g_run.terminal_rgb_buffer;
+  if(stride_out_ != NULL)
+    *stride_out_ = stride;
+  return true;
 }
 
 
@@ -2983,6 +3461,18 @@ _store_last_frame(const void             *data_,
   if((data_ == NULL) || !_frame_copy_size(height_, pitch_, &size))
     return;
 
+  g_run.last_width        = width_;
+  g_run.last_height       = height_;
+  g_run.last_pitch        = pitch_;
+  g_run.last_pixel_format = fmt_;
+
+  /* The pixel buffer is only consumed by the final screenshot, which is
+     written solely when --screenshot is supplied. Skip the per-frame copy
+     otherwise: it is a full-framebuffer pass the common benchmark path does
+     not need. */
+  if(g_cfg.screenshot_path == NULL)
+    return;
+
   if(size > g_run.last_frame_size)
     {
       void *next = realloc(g_run.last_frame, size);
@@ -3131,6 +3621,555 @@ _ascii_contains_case(const char *haystack_,
 
 
 static
+const char *
+_terminal_render_mode_name(int mode_)
+{
+  switch(mode_)
+    {
+    case HARNESS_TERMINAL_RENDER_KITTY:
+      return "kitty";
+    case HARNESS_TERMINAL_RENDER_SIXEL:
+      return "sixel";
+    case HARNESS_TERMINAL_RENDER_HALF:
+      return "half";
+    case HARNESS_TERMINAL_RENDER_ASCII:
+      return "ascii";
+    default:
+      break;
+    }
+
+  return "none";
+}
+
+
+static
+const char *
+_terminal_render_override_name(int mode_)
+{
+  if(mode_ < 0)
+    return "auto";
+
+  return _terminal_render_mode_name(mode_);
+}
+
+
+static
+const char *
+_find_bytes(const char *haystack_,
+            size_t      haystack_len_,
+            const char *needle_,
+            size_t      needle_len_)
+{
+  size_t i;
+
+  if((haystack_ == NULL) || (needle_ == NULL) || (needle_len_ == 0) ||
+     (haystack_len_ < needle_len_))
+    return NULL;
+
+  for(i = 0; i <= haystack_len_ - needle_len_; i++)
+    {
+      if(memcmp(haystack_ + i, needle_, needle_len_) == 0)
+        return haystack_ + i;
+    }
+
+  return NULL;
+}
+
+
+static
+bool
+_terminal_probe_write_all(const void *data_,
+                          size_t      size_)
+{
+  while((data_ != NULL) && (size_ > 0))
+    {
+      ssize_t n;
+
+      n = write(g_run.tty_fd, data_, size_);
+      if(n < 0)
+        {
+          if(errno == EINTR)
+            continue;
+          if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+            {
+              struct pollfd pfd;
+              int rv;
+
+              pfd.fd = g_run.tty_fd;
+              pfd.events = POLLOUT;
+              pfd.revents = 0;
+              rv = poll(&pfd, 1, 50);
+              if(rv > 0)
+                continue;
+            }
+          return false;
+        }
+
+      if(n == 0)
+        return false;
+
+      data_ = (const char *)data_ + n;
+      size_ -= (size_t)n;
+    }
+
+  return true;
+}
+
+
+typedef int (*terminal_probe_parse_fn)(const char  *buffer_,
+                                       size_t       len_,
+                                       const char **result_,
+                                       void        *data_);
+
+typedef const char *(*terminal_probe_timeout_result_fn)(void *data_);
+
+
+static
+bool
+_terminal_probe_read_response(const void                       *query_,
+                              size_t                            query_len_,
+                              unsigned                          timeout_ms_,
+                              terminal_probe_parse_fn           parse_,
+                              void                             *parse_data_,
+                              terminal_probe_timeout_result_fn  timeout_result_,
+                              const char                      **result_)
+{
+  char buffer[1024];
+  size_t len = 0;
+  double deadline;
+  bool eof = false;
+
+  memset(buffer, 0, sizeof(buffer));
+
+  if(result_ != NULL)
+    *result_ = "timeout";
+
+  /* discard any pending input (e.g. user keystrokes) before probing so
+     it cannot be mistaken for a probe response */
+  if(g_run.tty_fd >= 0)
+    {
+      for(;;)
+        {
+          char tmp[256];
+          ssize_t n;
+
+          n = read(g_run.tty_fd, tmp, sizeof(tmp));
+          if(n <= 0)
+            break;
+        }
+    }
+
+  if(!_terminal_probe_write_all(query_, query_len_))
+    {
+      if(result_ != NULL)
+        *result_ = "write_failed";
+      return false;
+    }
+
+  deadline = _monotonic_seconds() + ((double)timeout_ms_ / 1000.0);
+
+  while(!eof && (_monotonic_seconds() < deadline))
+    {
+      struct pollfd pfd;
+      const char *parse_result = NULL;
+      double now;
+      int timeout_ms;
+      int status;
+      int rv;
+
+      if((len > 0) && (parse_ != NULL))
+        {
+          status = parse_(buffer, len, &parse_result, parse_data_);
+          if(status != 0)
+            {
+              if(result_ != NULL)
+                *result_ = (parse_result != NULL) ? parse_result :
+                  ((status > 0) ? "ok" : "unsupported");
+              return status > 0;
+            }
+        }
+
+      now = _monotonic_seconds();
+      timeout_ms = (int)ceil((deadline - now) * 1000.0);
+      if(timeout_ms < 1)
+        timeout_ms = 1;
+
+      pfd.fd = g_run.tty_fd;
+      pfd.events = POLLIN;
+      pfd.revents = 0;
+      rv = poll(&pfd, 1, timeout_ms);
+      if(rv < 0)
+        {
+          if(errno == EINTR)
+            continue;
+          if(result_ != NULL)
+            *result_ = "read_failed";
+          return false;
+        }
+      if(rv == 0)
+        break;
+
+      for(;;)
+        {
+          ssize_t n;
+
+          if(len >= sizeof(buffer))
+            {
+              if(result_ != NULL)
+                *result_ = "response_overflow";
+              return false;
+            }
+
+          n = read(g_run.tty_fd, buffer + len, sizeof(buffer) - len);
+          if(n > 0)
+            {
+              len += (size_t)n;
+              if(parse_ != NULL)
+                {
+                  parse_result = NULL;
+                  status = parse_(buffer, len, &parse_result, parse_data_);
+                  if(status != 0)
+                    {
+                      if(result_ != NULL)
+                        *result_ = (parse_result != NULL) ? parse_result :
+                          ((status > 0) ? "ok" : "unsupported");
+                      return status > 0;
+                    }
+                }
+              continue;
+            }
+
+          if(n == 0)
+            {
+              /* persistent EOF (e.g. pty hung up): stop probing rather
+                 than spinning until the deadline */
+              eof = true;
+              break;
+            }
+
+          if(errno == EINTR)
+            continue;
+          if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+            break;
+
+          if(result_ != NULL)
+            *result_ = "read_failed";
+          return false;
+        }
+    }
+
+  if((result_ != NULL) && (timeout_result_ != NULL))
+    {
+      const char *timeout_result = timeout_result_(parse_data_);
+
+      if(timeout_result != NULL)
+        *result_ = timeout_result;
+    }
+
+  return false;
+}
+
+
+static
+bool
+_terminal_buffer_has_da_response(const char *buffer_,
+                                 size_t      len_)
+{
+  size_t i;
+
+  if(buffer_ == NULL)
+    return false;
+
+  for(i = 0; i + 2U < len_; i++)
+    {
+      size_t j;
+
+      if((buffer_[i] != '\x1b') || (buffer_[i + 1U] != '['))
+        continue;
+
+      for(j = i + 2U; j < len_; j++)
+        {
+          unsigned char c = (unsigned char)buffer_[j];
+
+          if(c == 'c')
+            return true;
+          if((c < 0x30U) || (c > 0x7eU))
+            break;
+        }
+    }
+
+  return false;
+}
+
+
+static
+bool
+_terminal_probe_response_done(const char  *buffer_,
+                              size_t       len_,
+                              bool        *supported_,
+                              const char **result_)
+{
+  static const char marker[] = "\x1b_Gi=31;";
+  static const char st[] = "\x1b\\";
+  const char *p;
+  const char *status;
+  size_t status_off;
+
+  p = _find_bytes(buffer_, len_, marker, sizeof(marker) - 1U);
+  if(p == NULL)
+    return false;
+
+  status = p + sizeof(marker) - 1U;
+  status_off = (size_t)(status - buffer_);
+  if((len_ >= status_off + 2U) && (status[0] == 'O') && (status[1] == 'K'))
+    {
+      *supported_ = true;
+      *result_ = "ok";
+      return true;
+    }
+
+  if(_find_bytes(status, len_ - status_off, st, sizeof(st) - 1U) != NULL)
+    {
+      *supported_ = false;
+      *result_ = "rejected";
+      return true;
+    }
+
+  return false;
+}
+
+
+typedef struct terminal_kitty_probe_context_t terminal_kitty_probe_context_t;
+struct terminal_kitty_probe_context_t
+{
+  bool da_seen;
+};
+
+
+static
+int
+_terminal_parse_kitty_probe(const char  *buffer_,
+                            size_t       len_,
+                            const char **result_,
+                            void        *data_)
+{
+  terminal_kitty_probe_context_t *ctx =
+    (terminal_kitty_probe_context_t *)data_;
+  const char *result = NULL;
+  bool supported = false;
+
+  if(_terminal_probe_response_done(buffer_, len_, &supported, &result))
+    {
+      if(result_ != NULL)
+        *result_ = result;
+      return supported ? 1 : -1;
+    }
+
+  if(ctx != NULL)
+    ctx->da_seen = ctx->da_seen || _terminal_buffer_has_da_response(buffer_,
+                                                                    len_);
+  return 0;
+}
+
+
+static
+const char *
+_terminal_kitty_probe_timeout_result(void *data_)
+{
+  terminal_kitty_probe_context_t *ctx =
+    (terminal_kitty_probe_context_t *)data_;
+
+  return (ctx != NULL) && ctx->da_seen ? "no_graphics_response" : "timeout";
+}
+
+
+static
+bool
+_terminal_probe_kitty(void)
+{
+  static const char query[] =
+    "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[c";
+  static const char zlib_query[] =
+    "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24,o=z;"
+    "eF5jYGAAAAADAAE=\x1b\\\x1b[c";
+  terminal_kitty_probe_context_t ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+  g_run.terminal_kitty_probed = true;
+  g_run.terminal_kitty_supported = false;
+  g_run.terminal_kitty_probe_result = "timeout";
+  g_run.terminal_kitty_zlib_probed = false;
+  g_run.terminal_kitty_zlib_supported = false;
+  g_run.terminal_kitty_zlib_probe_result = "not_run";
+
+  g_run.terminal_kitty_supported =
+    _terminal_probe_read_response(query,
+                                  sizeof(query) - 1U,
+                                  HARNESS_TERMINAL_KITTY_PROBE_TIMEOUT_MS,
+                                  _terminal_parse_kitty_probe,
+                                  &ctx,
+                                  _terminal_kitty_probe_timeout_result,
+                                  &g_run.terminal_kitty_probe_result);
+  if(!g_run.terminal_kitty_supported)
+    return false;
+
+  memset(&ctx, 0, sizeof(ctx));
+  g_run.terminal_kitty_zlib_probed = true;
+  g_run.terminal_kitty_zlib_probe_result = "timeout";
+  g_run.terminal_kitty_zlib_supported =
+    _terminal_probe_read_response(zlib_query,
+                                  sizeof(zlib_query) - 1U,
+                                  HARNESS_TERMINAL_KITTY_PROBE_TIMEOUT_MS,
+                                  _terminal_parse_kitty_probe,
+                                  &ctx,
+                                  _terminal_kitty_probe_timeout_result,
+                                  &g_run.terminal_kitty_zlib_probe_result);
+  if(!g_run.terminal_kitty_zlib_supported)
+    _harness_log(RETRO_LOG_INFO,
+                 "[Harness]: Kitty zlib probe failed (%s); "
+                 "using PNG payloads\n",
+                 g_run.terminal_kitty_zlib_probe_result);
+
+  return true;
+}
+
+
+static
+int
+_terminal_sixel_da_status(const char *buffer_,
+                          size_t      len_)
+{
+  size_t i;
+  bool complete_da = false;
+
+  if(buffer_ == NULL)
+    return 0;
+
+  for(i = 0; i + 2U < len_; i++)
+    {
+      size_t j;
+      unsigned param = 0;
+      bool have_param = false;
+      bool private_da = false;
+
+      if((buffer_[i] != '\x1b') || (buffer_[i + 1U] != '['))
+        continue;
+
+      j = i + 2U;
+      if((j < len_) && (buffer_[j] == '?'))
+        {
+          private_da = true;
+          j++;
+        }
+
+      while(j < len_)
+        {
+          unsigned char c = (unsigned char)buffer_[j++];
+
+          if((c >= '0') && (c <= '9'))
+            {
+              if(param <= (UINT_MAX / 10U))
+                param = (param * 10U) + (unsigned)(c - '0');
+              have_param = true;
+              continue;
+            }
+
+          if((c == ';') || (c == ':'))
+            {
+              if(private_da && have_param && (param == 4U))
+                return 1;
+              param = 0;
+              have_param = false;
+              continue;
+            }
+
+          if(c == 'c')
+            {
+              if(private_da && have_param && (param == 4U))
+                return 1;
+              complete_da = true;
+            }
+
+          break;
+        }
+    }
+
+  return complete_da ? -1 : 0;
+}
+
+
+static
+int
+_terminal_parse_sixel_probe(const char  *buffer_,
+                            size_t       len_,
+                            const char **result_,
+                            void        *data_)
+{
+  int status;
+
+  (void)data_;
+
+  status = _terminal_sixel_da_status(buffer_, len_);
+  if(status > 0)
+    {
+      if(result_ != NULL)
+        *result_ = "ok";
+      return 1;
+    }
+  if(status < 0)
+    {
+      if(result_ != NULL)
+        *result_ = "not_advertised";
+      return -1;
+    }
+
+  return 0;
+}
+
+
+static
+bool
+_terminal_probe_sixel(void)
+{
+  static const char query[] = "\x1b[c";
+
+  g_run.terminal_sixel_probed = true;
+  g_run.terminal_sixel_supported = false;
+  g_run.terminal_sixel_probe_result = "timeout";
+
+  g_run.terminal_sixel_supported =
+    _terminal_probe_read_response(query,
+                                  sizeof(query) - 1U,
+                                  HARNESS_TERMINAL_SIXEL_PROBE_TIMEOUT_MS,
+                                  _terminal_parse_sixel_probe,
+                                  NULL,
+                                  NULL,
+                                  &g_run.terminal_sixel_probe_result);
+  return g_run.terminal_sixel_supported;
+}
+
+
+static
+bool
+_terminal_inside_tmux(void)
+{
+  const char *tmux = getenv("TMUX");
+
+  return ((tmux != NULL) && (tmux[0] != 0));
+}
+
+
+static
+void
+_terminal_disable_sixel_in_tmux(void)
+{
+  g_run.terminal_sixel_probed = false;
+  g_run.terminal_sixel_supported = false;
+  g_run.terminal_sixel_probe_result = "disabled_in_tmux";
+}
+
+
+static
 void
 _terminal_detect_capabilities(void)
 {
@@ -3140,8 +4179,19 @@ _terminal_detect_capabilities(void)
   bool utf8;
   bool truecolor;
   bool color256;
+  int fallback_render;
 
   (void)setlocale(LC_CTYPE, "");
+
+  g_run.terminal_kitty_probed = false;
+  g_run.terminal_kitty_supported = false;
+  g_run.terminal_kitty_probe_result = "not_requested";
+  g_run.terminal_kitty_zlib_probed = false;
+  g_run.terminal_kitty_zlib_supported = false;
+  g_run.terminal_kitty_zlib_probe_result = "not_requested";
+  g_run.terminal_sixel_probed = false;
+  g_run.terminal_sixel_supported = false;
+  g_run.terminal_sixel_probe_result = "not_requested";
 
   codeset = nl_langinfo(CODESET);
   term = getenv("TERM");
@@ -3174,12 +4224,61 @@ _terminal_detect_capabilities(void)
   else
     g_run.terminal_color_mode = HARNESS_TERMINAL_COLOR_MONO;
 
-  if(g_cfg.terminal_render_override >= 0)
+  fallback_render = (utf8 && (g_run.terminal_color_mode != HARNESS_TERMINAL_COLOR_MONO)) ?
+    HARNESS_TERMINAL_RENDER_HALF : HARNESS_TERMINAL_RENDER_ASCII;
+
+  if(g_cfg.terminal_render_override == HARNESS_TERMINAL_RENDER_KITTY)
+    {
+      if(_terminal_probe_kitty())
+        g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_KITTY;
+      else
+        {
+          g_run.terminal_render_mode = fallback_render;
+          _harness_log(RETRO_LOG_WARN,
+                       "[Harness]: Kitty graphics probe failed (%s); "
+                       "falling back to %s renderer\n",
+                       g_run.terminal_kitty_probe_result,
+                       _terminal_render_mode_name(g_run.terminal_render_mode));
+        }
+    }
+  else if(g_cfg.terminal_render_override == HARNESS_TERMINAL_RENDER_SIXEL)
+    {
+      if(_terminal_inside_tmux())
+        {
+          _terminal_disable_sixel_in_tmux();
+          g_run.terminal_render_mode = fallback_render;
+          _harness_log(RETRO_LOG_WARN,
+                       "[Harness]: Sixel graphics disabled inside tmux; "
+                       "falling back to %s renderer\n",
+                       _terminal_render_mode_name(g_run.terminal_render_mode));
+        }
+      else if(_terminal_probe_sixel())
+        g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_SIXEL;
+      else
+        {
+          g_run.terminal_render_mode = fallback_render;
+          _harness_log(RETRO_LOG_WARN,
+                       "[Harness]: Sixel graphics probe failed (%s); "
+                       "falling back to %s renderer\n",
+                       g_run.terminal_sixel_probe_result,
+                       _terminal_render_mode_name(g_run.terminal_render_mode));
+        }
+    }
+  else if(g_cfg.terminal_render_override >= 0)
     g_run.terminal_render_mode = g_cfg.terminal_render_override;
-  else if(utf8 && (g_run.terminal_color_mode != HARNESS_TERMINAL_COLOR_MONO))
-    g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_HALF;
+  else if(g_run.terminal_color_mode == HARNESS_TERMINAL_COLOR_MONO)
+    g_run.terminal_render_mode = fallback_render;
+  else if(_terminal_probe_kitty())
+    g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_KITTY;
+  else if(_terminal_inside_tmux())
+    {
+      _terminal_disable_sixel_in_tmux();
+      g_run.terminal_render_mode = fallback_render;
+    }
+  else if(_terminal_probe_sixel())
+    g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_SIXEL;
   else
-    g_run.terminal_render_mode = HARNESS_TERMINAL_RENDER_ASCII;
+    g_run.terminal_render_mode = fallback_render;
 }
 
 
@@ -3357,10 +4456,22 @@ _harness_video_refresh(const void *data_,
   if(_terminal_should_render())
     {
       double render_start = _monotonic_seconds();
+      double render_seconds;
+
+      g_run.terminal_render_calls++;
       _terminal_render_frame(data_, width_, height_, pitch_, g_run.pixel_format);
       g_run.terminal_last_render_frame = g_run.current_frame;
-      _terminal_update_adaptive_fps(_monotonic_seconds() - render_start);
+      render_seconds = _monotonic_seconds() - render_start;
+      if((render_seconds >= 0.0) && isfinite(render_seconds))
+        {
+          g_run.terminal_render_seconds_last = render_seconds;
+          g_run.terminal_render_seconds_total += render_seconds;
+          if(render_seconds > g_run.terminal_render_seconds_max)
+            g_run.terminal_render_seconds_max = render_seconds;
+        }
+      _terminal_update_adaptive_fps(render_seconds);
     }
+
 }
 
 
@@ -3542,6 +4653,63 @@ _terminal_u64_ceil_div(uint64_t value_,
 
 
 static
+bool
+_terminal_u64_mul_checked(uint64_t  a_,
+                          uint64_t  b_,
+                          uint64_t *out_)
+{
+  if((a_ != 0ULL) && (b_ > (UINT64_MAX / a_)))
+    return false;
+
+  *out_ = a_ * b_;
+  return true;
+}
+
+
+static
+bool
+_terminal_aspect_for_layout(unsigned  width_,
+                            unsigned  height_,
+                            unsigned  display_cols_,
+                            unsigned  display_rows_,
+                            uint64_t *n_,
+                            uint64_t *d_)
+{
+  uint64_t n;
+  uint64_t d;
+  uint64_t tmp;
+
+  if(((g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_KITTY) ||
+      (g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_SIXEL)) &&
+     (g_run.terminal_pixel_width > 0) &&
+     (g_run.terminal_pixel_height > 0))
+    {
+      if(!_terminal_u64_mul_checked((uint64_t)width_,
+                                    (uint64_t)g_run.terminal_pixel_height,
+                                    &tmp) ||
+         !_terminal_u64_mul_checked(tmp, (uint64_t)display_cols_, &n) ||
+         !_terminal_u64_mul_checked((uint64_t)height_,
+                                    (uint64_t)g_run.terminal_pixel_width,
+                                    &tmp) ||
+         !_terminal_u64_mul_checked(tmp, (uint64_t)display_rows_, &d) ||
+         (n == 0ULL) || (d == 0ULL))
+        return false;
+
+      *n_ = n;
+      *d_ = d;
+      return true;
+    }
+
+  if(width_ > (UINT_MAX / 2U))
+    return false;
+
+  *n_ = (uint64_t)width_ * 2ULL;
+  *d_ = (uint64_t)height_;
+  return true;
+}
+
+
+static
 char *
 _terminal_append_uint(char    *out_,
                       unsigned value_)
@@ -3581,6 +4749,61 @@ _terminal_append_literal(char       *out_,
 
 
 static
+void
+_terminal_rgb256_init_tables(void)
+{
+  unsigned i;
+
+  if(g_terminal_rgb256_tables_ready)
+    return;
+
+  for(i = 0; i < 256U; i++)
+    {
+      unsigned cube;
+      unsigned gray_low_step;
+      unsigned gray_high_step;
+
+      if(i <= 47U)
+        cube = 0U;
+      else if(i <= 115U)
+        cube = 1U;
+      else if(i <= 155U)
+        cube = 2U;
+      else if(i <= 195U)
+        cube = 3U;
+      else if(i <= 235U)
+        cube = 4U;
+      else
+        cube = 5U;
+
+      if(i <= 8U)
+        gray_low_step = gray_high_step = 0U;
+      else if(i >= 238U)
+        gray_low_step = gray_high_step = 23U;
+      else
+        {
+          gray_low_step = (i - 8U) / 10U;
+          gray_high_step = gray_low_step + 1U;
+        }
+
+      g_terminal_rgb256_cube_component[i] = (uint8_t)cube;
+      g_terminal_rgb256_cube_value[i] = (uint8_t)((cube == 0U) ? 0U :
+                                                  (55U + (cube * 40U)));
+      g_terminal_rgb256_gray_low_value[i] =
+        (uint8_t)(8U + (gray_low_step * 10U));
+      g_terminal_rgb256_gray_low_index[i] =
+        (uint8_t)(232U + gray_low_step);
+      g_terminal_rgb256_gray_high_value[i] =
+        (uint8_t)(8U + (gray_high_step * 10U));
+      g_terminal_rgb256_gray_high_index[i] =
+        (uint8_t)(232U + gray_high_step);
+    }
+
+  g_terminal_rgb256_tables_ready = true;
+}
+
+
+static
 uint8_t
 _terminal_rgb_to_256(uint32_t rgb_)
 {
@@ -3595,36 +4818,105 @@ _terminal_rgb_to_256(uint32_t rgb_)
   unsigned cube_g;
   unsigned cube_b;
   unsigned gray_v;
+  unsigned gray_high_v;
   unsigned cube_diff;
   unsigned gray_diff;
+  unsigned gray_high_diff;
+  uint8_t gray_index;
+  unsigned lo;
+  unsigned hi;
 
-  cr = (r * 5U + 127U) / 255U;
-  cg = (g * 5U + 127U) / 255U;
-  cb = (b * 5U + 127U) / 255U;
-  cube_r = (cr == 0U) ? 0U : (55U + (cr * 40U));
-  cube_g = (cg == 0U) ? 0U : (55U + (cg * 40U));
-  cube_b = (cb == 0U) ? 0U : (55U + (cb * 40U));
+  if(!g_terminal_rgb256_tables_ready)
+    _terminal_rgb256_init_tables();
+
+  cr = g_terminal_rgb256_cube_component[r];
+  cg = g_terminal_rgb256_cube_component[g];
+  cb = g_terminal_rgb256_cube_component[b];
+  cube_r = g_terminal_rgb256_cube_value[r];
+  cube_g = g_terminal_rgb256_cube_value[g];
+  cube_b = g_terminal_rgb256_cube_value[b];
   cube_diff = (r > cube_r ? r - cube_r : cube_r - r) +
     (g > cube_g ? g - cube_g : cube_g - g) +
     (b > cube_b ? b - cube_b : cube_b - b);
 
-  gray = (r * 299U + g * 587U + b * 114U) / 1000U;
-  gray_v = (gray <= 8U) ? 0U : ((gray >= 238U) ? 255U :
-                                (8U + (((gray - 8U + 5U) / 10U) * 10U)));
+  lo = r;
+  hi = r;
+  if(g < lo)
+    lo = g;
+  if(b < lo)
+    lo = b;
+  if(g > hi)
+    hi = g;
+  if(b > hi)
+    hi = b;
+  gray = r + g + b - lo - hi;
+  gray_v = g_terminal_rgb256_gray_low_value[gray];
   gray_diff = (r > gray_v ? r - gray_v : gray_v - r) +
     (g > gray_v ? g - gray_v : gray_v - g) +
     (b > gray_v ? b - gray_v : gray_v - b);
-
-  if(gray_diff < cube_diff)
+  gray_index = g_terminal_rgb256_gray_low_index[gray];
+  gray_high_v = g_terminal_rgb256_gray_high_value[gray];
+  gray_high_diff = (r > gray_high_v ? r - gray_high_v : gray_high_v - r) +
+    (g > gray_high_v ? g - gray_high_v : gray_high_v - g) +
+    (b > gray_high_v ? b - gray_high_v : gray_high_v - b);
+  if(gray_high_diff < gray_diff)
     {
-      unsigned idx = (gray <= 8U) ? 16U : ((gray >= 238U) ? 231U :
-                                           (232U + ((gray - 8U + 5U) / 10U)));
-      if(idx > 255U)
-        idx = 255U;
-      return (uint8_t)idx;
+      gray_diff = gray_high_diff;
+      gray_index = g_terminal_rgb256_gray_high_index[gray];
     }
 
+  if(gray_diff < cube_diff)
+    return gray_index;
+
   return (uint8_t)(16U + (36U * cr) + (6U * cg) + cb);
+}
+
+
+static
+void
+_terminal_sixel_init_rgb565_lut(void)
+{
+  unsigned p;
+
+  if(g_terminal_sixel_rgb565_lut_ready)
+    return;
+
+  _terminal_rgb256_init_tables();
+  for(p = 0; p < HARNESS_TERMINAL_SIXEL_RGB565_LUT_SIZE; p++)
+    {
+      uint32_t rgb =
+        ((uint32_t)_scale_5_to_8((p >> 11U) & 0x1fU) << 16U) |
+        ((uint32_t)_scale_6_to_8((p >> 5U) & 0x3fU) << 8U) |
+        _scale_5_to_8(p & 0x1fU);
+
+      g_terminal_sixel_rgb565_lut[p] = _terminal_rgb_to_256(rgb);
+    }
+
+  g_terminal_sixel_rgb565_lut_ready = true;
+}
+
+
+static
+void
+_terminal_sixel_init_0rgb1555_lut(void)
+{
+  unsigned p;
+
+  if(g_terminal_sixel_0rgb1555_lut_ready)
+    return;
+
+  _terminal_rgb256_init_tables();
+  for(p = 0; p < HARNESS_TERMINAL_SIXEL_0RGB1555_LUT_SIZE; p++)
+    {
+      uint32_t rgb =
+        ((uint32_t)_scale_5_to_8((p >> 10U) & 0x1fU) << 16U) |
+        ((uint32_t)_scale_5_to_8((p >> 5U) & 0x1fU) << 8U) |
+        _scale_5_to_8(p & 0x1fU);
+
+      g_terminal_sixel_0rgb1555_lut[p] = _terminal_rgb_to_256(rgb);
+    }
+
+  g_terminal_sixel_0rgb1555_lut_ready = true;
 }
 
 
@@ -3811,6 +5103,10 @@ _terminal_write_direct(const void *data_,
 
       data_  = (const char *)data_ + n;
       size_ -= (size_t)n;
+      if(g_run.terminal_bytes_written <= (UINT64_MAX - (uint64_t)n))
+        g_run.terminal_bytes_written += (uint64_t)n;
+      else
+        g_run.terminal_bytes_written = UINT64_MAX;
     }
 }
 
@@ -3924,6 +5220,1658 @@ _terminal_write_all(const void *data_,
 
 
 static
+bool
+_byte_buffer_reserve(byte_buffer_t *buffer_,
+                     size_t         add_)
+{
+  uint8_t *next;
+  size_t next_cap;
+
+  if((buffer_ == NULL) || buffer_->failed)
+    return false;
+  if(add_ == 0)
+    return true;
+  if(add_ > (SIZE_MAX - buffer_->len))
+    {
+      buffer_->failed = true;
+      return false;
+    }
+  if(buffer_->cap - buffer_->len >= add_)
+    return true;
+
+  next_cap = (buffer_->cap > 0) ? buffer_->cap : 65536U;
+  while(next_cap < (buffer_->len + add_))
+    {
+      if(next_cap > (SIZE_MAX / 2U))
+        {
+          next_cap = buffer_->len + add_;
+          break;
+        }
+      next_cap *= 2U;
+    }
+
+  next = (uint8_t *)realloc(buffer_->data, next_cap);
+  if(next == NULL)
+    {
+      buffer_->failed = true;
+      return false;
+    }
+
+  buffer_->data = next;
+  buffer_->cap = next_cap;
+  return true;
+}
+
+
+static
+void
+_byte_buffer_append(byte_buffer_t *buffer_,
+                    const void    *data_,
+                    size_t         size_)
+{
+  if((buffer_ == NULL) || (data_ == NULL) || (size_ == 0))
+    return;
+
+  if(!_byte_buffer_reserve(buffer_, size_))
+    return;
+
+  memcpy(buffer_->data + buffer_->len, data_, size_);
+  buffer_->len += size_;
+}
+
+
+static
+void
+_byte_buffer_reset(byte_buffer_t *buffer_)
+{
+  if(buffer_ == NULL)
+    return;
+
+  buffer_->len = 0;
+  buffer_->failed = false;
+}
+
+
+static
+void
+_byte_buffer_free(byte_buffer_t *buffer_)
+{
+  if(buffer_ == NULL)
+    return;
+
+  free(buffer_->data);
+  memset(buffer_, 0, sizeof(*buffer_));
+}
+
+
+static
+void
+_stbi_write_to_byte_buffer(void *context_,
+                           void *data_,
+                           int   size_)
+{
+  byte_buffer_t *buffer = (byte_buffer_t *)context_;
+
+  if(size_ <= 0)
+    return;
+
+  _byte_buffer_append(buffer, data_, (size_t)size_);
+}
+
+
+static
+size_t
+_base64_encode_chunk(const uint8_t *src_,
+                     size_t         len_,
+                     char          *dst_)
+{
+  static const char b64[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  size_t i = 0;
+  size_t o = 0;
+  size_t full = len_ - (len_ % 3U);
+
+  while(i < full)
+    {
+      unsigned a = src_[i++];
+      unsigned b = src_[i++];
+      unsigned c = src_[i++];
+      unsigned triple = (a << 16U) | (b << 8U) | c;
+
+      dst_[o++] = b64[(triple >> 18U) & 0x3fU];
+      dst_[o++] = b64[(triple >> 12U) & 0x3fU];
+      dst_[o++] = b64[(triple >> 6U) & 0x3fU];
+      dst_[o++] = b64[triple & 0x3fU];
+    }
+
+  if(i < len_)
+    {
+      unsigned a = src_[i++];
+      bool have_b = i < len_;
+      unsigned b = have_b ? src_[i++] : 0U;
+      unsigned triple = (a << 16U) | (b << 8U);
+
+      dst_[o++] = b64[(triple >> 18U) & 0x3fU];
+      dst_[o++] = b64[(triple >> 12U) & 0x3fU];
+      dst_[o++] = have_b ? b64[(triple >> 6U) & 0x3fU] : '=';
+      dst_[o++] = '=';
+    }
+
+  return o;
+}
+
+
+static
+void
+_terminal_record_image_seconds(double seconds_)
+{
+  if((seconds_ < 0.0) || !isfinite(seconds_))
+    return;
+
+  g_run.terminal_image_seconds_last = seconds_;
+  g_run.terminal_image_seconds_total += seconds_;
+  if(seconds_ > g_run.terminal_image_seconds_max)
+    g_run.terminal_image_seconds_max = seconds_;
+}
+
+
+static
+bool
+_terminal_kitty_target_size(unsigned  src_width_,
+                            unsigned  src_height_,
+                            unsigned  cols_,
+                            unsigned  rows_,
+                            unsigned *width_out_,
+                            unsigned *height_out_)
+{
+  uint64_t cell_w;
+  uint64_t cell_h;
+  uint64_t max_w;
+  uint64_t max_h;
+  uint64_t fit_h;
+  uint64_t fit_w;
+  uint64_t scaled;
+
+  *width_out_ = src_width_;
+  *height_out_ = src_height_;
+
+  if((src_width_ == 0U) || (src_height_ == 0U) ||
+     (cols_ == 0U) || (rows_ == 0U) ||
+     (g_run.terminal_pixel_width <= 0) ||
+     (g_run.terminal_pixel_height <= 0) ||
+     (g_run.terminal_width <= 0) ||
+     (g_run.terminal_height <= 0))
+    {
+      /* No cell metrics: cap to a sane upper bound so we never emit a
+         full native-resolution image when the terminal gives no sizing
+         hints. The terminal scales the image into the cell grid anyway. */
+      *width_out_ = src_width_;
+      *height_out_ = src_height_;
+      if(*width_out_ > HARNESS_TERMINAL_KITTY_MAX_WIDTH)
+        {
+          *height_out_ = (unsigned)((uint64_t)*height_out_ *
+                                    HARNESS_TERMINAL_KITTY_MAX_WIDTH /
+                                    *width_out_);
+          *width_out_ = HARNESS_TERMINAL_KITTY_MAX_WIDTH;
+        }
+      if(*height_out_ > HARNESS_TERMINAL_KITTY_MAX_HEIGHT)
+        {
+          *width_out_ = (unsigned)((uint64_t)*width_out_ *
+                                   HARNESS_TERMINAL_KITTY_MAX_HEIGHT /
+                                   *height_out_);
+          *height_out_ = HARNESS_TERMINAL_KITTY_MAX_HEIGHT;
+        }
+      if(*width_out_ == 0U)
+        *width_out_ = 1U;
+      if(*height_out_ == 0U)
+        *height_out_ = 1U;
+      return true;
+    }
+
+  cell_w = (uint64_t)g_run.terminal_pixel_width /
+    (uint64_t)g_run.terminal_width;
+  cell_h = (uint64_t)g_run.terminal_pixel_height /
+    (uint64_t)g_run.terminal_height;
+  if((cell_w == 0ULL) || (cell_h == 0ULL))
+    return true;
+
+  if(!_terminal_u64_mul_checked((uint64_t)cols_, cell_w, &max_w) ||
+     !_terminal_u64_mul_checked((uint64_t)rows_, cell_h, &max_h) ||
+     (max_w == 0ULL) || (max_h == 0ULL))
+    return false;
+
+  if(max_w > (uint64_t)src_width_)
+    max_w = (uint64_t)src_width_;
+  if(max_h > (uint64_t)src_height_)
+    max_h = (uint64_t)src_height_;
+  if((max_w == (uint64_t)src_width_) && (max_h == (uint64_t)src_height_))
+    return true;
+
+  if(!_terminal_u64_mul_checked((uint64_t)src_height_, max_w, &scaled))
+    return false;
+  fit_h = (scaled + ((uint64_t)src_width_ / 2ULL)) / (uint64_t)src_width_;
+  if((fit_h == 0ULL) || (fit_h > max_h))
+    {
+      fit_h = max_h;
+      if(!_terminal_u64_mul_checked((uint64_t)src_width_, fit_h, &scaled))
+        return false;
+      fit_w = (scaled + ((uint64_t)src_height_ / 2ULL)) /
+        (uint64_t)src_height_;
+      if(fit_w == 0ULL)
+        fit_w = 1ULL;
+    }
+  else
+    {
+      fit_w = max_w;
+    }
+
+  if((fit_w > UINT_MAX) || (fit_h > UINT_MAX))
+    return false;
+
+  *width_out_ = (unsigned)fit_w;
+  *height_out_ = (unsigned)fit_h;
+  return true;
+}
+
+
+static
+bool
+_terminal_resize_rgb_nearest(const uint8_t *src_,
+                             size_t         src_stride_,
+                             unsigned       src_width_,
+                             unsigned       src_height_,
+                             uint8_t       *dst_,
+                             size_t         dst_stride_,
+                             unsigned       dst_width_,
+                             unsigned       dst_height_)
+{
+  unsigned y;
+
+  if((src_ == NULL) || (dst_ == NULL) ||
+     (src_width_ == 0U) || (src_height_ == 0U) ||
+     (dst_width_ == 0U) || (dst_height_ == 0U) ||
+     (src_width_ > (UINT_MAX / 3U)) ||
+     (dst_width_ > (UINT_MAX / 3U)) ||
+     (src_stride_ < ((size_t)src_width_ * 3U)) ||
+     (dst_stride_ < ((size_t)dst_width_ * 3U)))
+    return false;
+
+  for(y = 0; y < dst_height_; y++)
+    {
+      uint64_t sample_y = (((uint64_t)y * (uint64_t)src_height_) +
+                           ((uint64_t)src_height_ / 2ULL)) /
+        (uint64_t)dst_height_;
+      const uint8_t *src_row;
+      uint8_t *dst_row = dst_ + ((size_t)y * dst_stride_);
+      unsigned x;
+
+      if(sample_y >= (uint64_t)src_height_)
+        sample_y = (uint64_t)src_height_ - 1ULL;
+      src_row = src_ + ((size_t)sample_y * src_stride_);
+
+      for(x = 0; x < dst_width_; x++)
+        {
+          uint64_t sample_x = (((uint64_t)x * (uint64_t)src_width_) +
+                               ((uint64_t)src_width_ / 2ULL)) /
+            (uint64_t)dst_width_;
+          const uint8_t *src;
+          uint8_t *dst;
+
+          if(sample_x >= (uint64_t)src_width_)
+            sample_x = (uint64_t)src_width_ - 1ULL;
+
+          src = src_row + ((size_t)sample_x * 3U);
+          dst = dst_row + ((size_t)x * 3U);
+          dst[0] = src[0];
+          dst[1] = src[1];
+          dst[2] = src[2];
+        }
+    }
+
+  return true;
+}
+
+
+static
+bool
+_terminal_compress_kitty_rgb(const uint8_t  *rgb_,
+                             size_t          rgb_len_,
+                             const uint8_t **compressed_out_,
+                             size_t         *compressed_len_out_)
+{
+  byte_buffer_t *compressed = &g_run.terminal_kitty_zlib_buffer;
+  z_stream *stream = &g_run.terminal_kitty_zstream;
+  uLong bound;
+  int status;
+
+  if(compressed_out_ != NULL)
+    *compressed_out_ = NULL;
+  if(compressed_len_out_ != NULL)
+    *compressed_len_out_ = 0;
+
+  if((rgb_ == NULL) || (rgb_len_ == 0U) || (rgb_len_ > UINT_MAX))
+    return false;
+
+  if(!g_run.terminal_kitty_zstream_initialized)
+    {
+      memset(stream, 0, sizeof(*stream));
+      status = deflateInit(stream, HARNESS_TERMINAL_KITTY_ZLIB_LEVEL);
+      if(status != Z_OK)
+        return false;
+      g_run.terminal_kitty_zstream_initialized = true;
+    }
+  else if(deflateReset(stream) != Z_OK)
+    {
+      return false;
+    }
+
+  bound = deflateBound(stream, (uLong)rgb_len_);
+  if((bound == 0UL) || (bound > UINT_MAX))
+    return false;
+
+  _byte_buffer_reset(compressed);
+  if(!_byte_buffer_reserve(compressed, (size_t)bound))
+    return false;
+
+  stream->next_in = (Bytef *)rgb_;
+  stream->avail_in = (uInt)rgb_len_;
+  stream->next_out = compressed->data;
+  stream->avail_out = (uInt)bound;
+  status = deflate(stream, Z_FINISH);
+  if((status != Z_STREAM_END) || (stream->avail_in != 0U))
+    return false;
+
+  compressed->len = (size_t)bound - (size_t)stream->avail_out;
+  if(compressed->len == 0U)
+    return false;
+
+  if(compressed_out_ != NULL)
+    *compressed_out_ = compressed->data;
+  if(compressed_len_out_ != NULL)
+    *compressed_len_out_ = compressed->len;
+  return true;
+}
+
+
+static
+void
+_terminal_write_kitty_image(const uint8_t *data_,
+                            size_t         data_len_,
+                            unsigned       image_width_,
+                            unsigned       image_height_,
+                            bool           zlib_rgb_,
+                            unsigned       cols_,
+                            unsigned       rows_)
+{
+  size_t off = 0;
+  bool first = true;
+
+  while(off < data_len_)
+    {
+      char payload[((HARNESS_TERMINAL_KITTY_CHUNK_RAW + 2U) / 3U) * 4U];
+      char header[192];
+      size_t raw_len = data_len_ - off;
+      size_t payload_len;
+      bool more;
+      int n;
+
+      if(raw_len > HARNESS_TERMINAL_KITTY_CHUNK_RAW)
+        raw_len = HARNESS_TERMINAL_KITTY_CHUNK_RAW;
+
+      payload_len = _base64_encode_chunk(data_ + off, raw_len, payload);
+      off += raw_len;
+      more = off < data_len_;
+
+      if(first)
+        {
+          if(zlib_rgb_)
+            n = snprintf(header,
+                         sizeof(header),
+                         "\x1b_Ga=T,t=d,f=24,s=%u,v=%u,o=z,i=%u,p=%u,"
+                         "q=2,c=%u,r=%u,C=1,m=%u;",
+                         image_width_,
+                         image_height_,
+                         HARNESS_TERMINAL_KITTY_IMAGE_ID,
+                         HARNESS_TERMINAL_KITTY_PLACEMENT_ID,
+                         cols_,
+                         rows_,
+                         more ? 1U : 0U);
+          else
+            n = snprintf(header,
+                         sizeof(header),
+                         "\x1b_Ga=T,t=d,f=100,i=%u,p=%u,q=2,c=%u,r=%u,"
+                         "C=1,m=%u;",
+                         HARNESS_TERMINAL_KITTY_IMAGE_ID,
+                         HARNESS_TERMINAL_KITTY_PLACEMENT_ID,
+                         cols_,
+                         rows_,
+                         more ? 1U : 0U);
+        }
+      else
+        n = snprintf(header,
+                     sizeof(header),
+                     "\x1b_Gq=2,m=%u;",
+                     more ? 1U : 0U);
+
+      if((n <= 0) || ((size_t)n >= sizeof(header)))
+        return;
+
+      _terminal_write_all(header, (size_t)n);
+      _terminal_write_all(payload, payload_len);
+      _terminal_write_all("\x1b\\", 2U);
+      first = false;
+    }
+}
+
+
+static
+int
+_terminal_render_kitty_image(const void             *data_,
+                             unsigned                width_,
+                             unsigned                height_,
+                             size_t                  pitch_,
+                             enum retro_pixel_format fmt_,
+                             unsigned                row_,
+                             unsigned                col_,
+                             unsigned                cols_,
+                             unsigned                rows_)
+{
+  byte_buffer_t *png;
+  const uint8_t *payload;
+  uint8_t *packed;
+  uint8_t *image_pixels;
+  size_t payload_len = 0;
+  size_t stride;
+  size_t image_stride;
+  size_t image_size;
+  unsigned image_width;
+  unsigned image_height;
+  double start;
+  bool ok = false;
+  bool zlib_rgb = false;
+
+  if((cols_ == 0U) || (rows_ == 0U) || (width_ > (unsigned)INT_MAX) ||
+     (height_ > (unsigned)INT_MAX))
+    return HARNESS_TERMINAL_IMAGE_FAILED;
+
+  if(!_terminal_kitty_target_size(width_, height_, cols_, rows_,
+                                  &image_width, &image_height))
+    return HARNESS_TERMINAL_IMAGE_FAILED;
+
+  if(_terminal_image_cache_matches(data_,
+                                   pitch_,
+                                   HARNESS_TERMINAL_RENDER_KITTY,
+                                   width_,
+                                   height_,
+                                   fmt_,
+                                   row_,
+                                   col_,
+                                   cols_,
+                                   rows_,
+                                   image_width,
+                                   image_height))
+    return HARNESS_TERMINAL_IMAGE_SKIPPED;
+
+  start = _monotonic_seconds();
+  if(!_terminal_pack_frame_rgb(data_, width_, height_, pitch_, fmt_,
+                               &packed, &stride))
+    {
+      _terminal_record_image_seconds(_monotonic_seconds() - start);
+      return HARNESS_TERMINAL_IMAGE_FAILED;
+    }
+
+  image_pixels = packed;
+  image_stride = stride;
+  if((image_width != width_) || (image_height != height_))
+    {
+      size_t needed;
+
+      if((image_width > (UINT_MAX / 3U)) ||
+         ((size_t)image_height > (SIZE_MAX / ((size_t)image_width * 3U))))
+        {
+          _terminal_record_image_seconds(_monotonic_seconds() - start);
+          return HARNESS_TERMINAL_IMAGE_FAILED;
+        }
+
+      image_stride = (size_t)image_width * 3U;
+      needed = image_stride * (size_t)image_height;
+      if(!_terminal_ensure_u8_buffer(&g_run.terminal_scaled_rgb_buffer,
+                                     &g_run.terminal_scaled_rgb_buffer_size,
+                                     needed) ||
+         !_terminal_resize_rgb_nearest(packed,
+                                       stride,
+                                       width_,
+                                       height_,
+                                       g_run.terminal_scaled_rgb_buffer,
+                                       image_stride,
+                                       image_width,
+                                       image_height))
+        {
+          _terminal_record_image_seconds(_monotonic_seconds() - start);
+          return HARNESS_TERMINAL_IMAGE_FAILED;
+        }
+      image_pixels = g_run.terminal_scaled_rgb_buffer;
+    }
+
+  if((image_stride > 0U) &&
+     ((size_t)image_height > (SIZE_MAX / image_stride)))
+    {
+      _terminal_record_image_seconds(_monotonic_seconds() - start);
+      return HARNESS_TERMINAL_IMAGE_FAILED;
+    }
+  image_size = image_stride * (size_t)image_height;
+
+  payload = NULL;
+  if(g_run.terminal_kitty_zlib_supported)
+    zlib_rgb = _terminal_compress_kitty_rgb(image_pixels,
+                                            image_size,
+                                            &payload,
+                                            &payload_len);
+
+  if(!zlib_rgb)
+    {
+      png = &g_run.terminal_png_buffer;
+      _byte_buffer_reset(png);
+      ok = (stbi_write_png_to_func(_stbi_write_to_byte_buffer,
+                                   png,
+                                   (int)image_width,
+                                   (int)image_height,
+                                   3,
+                                   image_pixels,
+                                   (int)image_stride) != 0) &&
+        !png->failed && (png->len > 0);
+
+      if(ok)
+        {
+          payload = png->data;
+          payload_len = png->len;
+        }
+    }
+  else
+    {
+      ok = true;
+    }
+
+  if(!ok)
+    {
+      _terminal_record_image_seconds(_monotonic_seconds() - start);
+      return HARNESS_TERMINAL_IMAGE_FAILED;
+    }
+
+  _terminal_move_cursor(row_, col_);
+  _terminal_write_kitty_image(payload,
+                              payload_len,
+                              image_width,
+                              image_height,
+                              zlib_rgb,
+                              cols_,
+                              rows_);
+  _terminal_store_image_cache(data_,
+                              pitch_,
+                              HARNESS_TERMINAL_RENDER_KITTY,
+                              width_,
+                              height_,
+                              fmt_,
+                              row_,
+                              col_,
+                              cols_,
+                              rows_,
+                              image_width,
+                              image_height);
+  _terminal_record_image_seconds(_monotonic_seconds() - start);
+  return HARNESS_TERMINAL_IMAGE_DRAWN;
+}
+
+
+static
+void
+_terminal_sixel_color_percent(uint8_t   index_,
+                              unsigned *r_,
+                              unsigned *g_,
+                              unsigned *b_)
+{
+  static const uint8_t basic[16][3] =
+    {
+      {   0,   0,   0 }, { 128,   0,   0 }, {   0, 128,   0 }, { 128, 128,   0 },
+      {   0,   0, 128 }, { 128,   0, 128 }, {   0, 128, 128 }, { 192, 192, 192 },
+      { 128, 128, 128 }, { 255,   0,   0 }, {   0, 255,   0 }, { 255, 255,   0 },
+      {   0,   0, 255 }, { 255,   0, 255 }, {   0, 255, 255 }, { 255, 255, 255 }
+    };
+  unsigned r;
+  unsigned g;
+  unsigned b;
+
+  if(index_ < 16U)
+    {
+      r = basic[index_][0];
+      g = basic[index_][1];
+      b = basic[index_][2];
+    }
+  else if(index_ < 232U)
+    {
+      unsigned v = (unsigned)index_ - 16U;
+      unsigned br = v % 6U;
+      unsigned bg = (v / 6U) % 6U;
+      unsigned bb = (v / 36U) % 6U;
+
+      r = (bb == 0U) ? 0U : (55U + (bb * 40U));
+      g = (bg == 0U) ? 0U : (55U + (bg * 40U));
+      b = (br == 0U) ? 0U : (55U + (br * 40U));
+    }
+  else
+    {
+      r = g = b = 8U + (((unsigned)index_ - 232U) * 10U);
+    }
+
+  *r_ = (r * 100U + 127U) / 255U;
+  *g_ = (g * 100U + 127U) / 255U;
+  *b_ = (b * 100U + 127U) / 255U;
+}
+
+
+static
+void
+_terminal_write_sixel_color_define(unsigned slot_,
+                                   uint8_t  xterm_index_)
+{
+  char seq[48];
+  unsigned r;
+  unsigned g;
+  unsigned b;
+  int n;
+
+  _terminal_sixel_color_percent(xterm_index_, &r, &g, &b);
+  n = snprintf(seq, sizeof(seq), "#%u;2;%u;%u;%u", slot_, r, g, b);
+  if((n > 0) && ((size_t)n < sizeof(seq)))
+    _terminal_write_all(seq, (size_t)n);
+}
+
+
+static
+void
+_terminal_write_sixel_color_select(unsigned index_)
+{
+  char seq[16];
+  int n;
+
+  n = snprintf(seq, sizeof(seq), "#%u", index_);
+  if((n > 0) && ((size_t)n < sizeof(seq)))
+    _terminal_write_all(seq, (size_t)n);
+}
+
+
+static
+void
+_terminal_write_sixel_run_char(char     ch_,
+                               unsigned count_)
+{
+  char seq[32];
+
+  if(count_ == 0U)
+    return;
+
+  if(count_ >= 4U)
+    {
+      int n = snprintf(seq, sizeof(seq), "!%u%c", count_, ch_);
+      if((n > 0) && ((size_t)n < sizeof(seq)))
+        _terminal_write_all(seq, (size_t)n);
+      return;
+    }
+
+  _terminal_write_repeat_char(ch_, count_);
+}
+
+
+static
+bool
+_terminal_sixel_ensure_event_capacity(size_t needed_)
+{
+  terminal_sixel_event_t *next;
+
+  if(g_run.terminal_sixel_event_capacity >= needed_)
+    return true;
+  if(needed_ > (SIZE_MAX / sizeof(*next)))
+    return false;
+
+  next = realloc(g_run.terminal_sixel_events, needed_ * sizeof(*next));
+  if(next == NULL)
+    return false;
+
+  g_run.terminal_sixel_events = next;
+  g_run.terminal_sixel_event_capacity = needed_;
+  return true;
+}
+
+
+static
+bool
+_terminal_sixel_accumulate_run(char      ch_,
+                               unsigned  count_,
+                               char     *pending_ch_,
+                               unsigned *pending_count_)
+{
+  if(count_ == 0U)
+    return true;
+
+  if(*pending_count_ == 0U)
+    {
+      *pending_ch_ = ch_;
+      *pending_count_ = count_;
+      return true;
+    }
+
+  if(*pending_ch_ == ch_)
+    {
+      if(count_ > (UINT_MAX - *pending_count_))
+        return false;
+      *pending_count_ += count_;
+      return true;
+    }
+
+  _terminal_write_sixel_run_char(*pending_ch_, *pending_count_);
+  *pending_ch_ = ch_;
+  *pending_count_ = count_;
+  return true;
+}
+
+
+static
+bool
+_terminal_sixel_target_size(unsigned  src_width_,
+                            unsigned  src_height_,
+                            unsigned  cols_,
+                            unsigned  rows_,
+                            unsigned *width_out_,
+                            unsigned *height_out_)
+{
+  uint64_t cell_w;
+  uint64_t cell_h;
+  uint64_t max_w;
+  uint64_t max_h;
+  uint64_t fit_w;
+  uint64_t fit_h;
+
+  if((src_width_ == 0U) || (src_height_ == 0U) ||
+     (cols_ == 0U) || (rows_ == 0U))
+    return false;
+
+  cell_w = HARNESS_TERMINAL_SIXEL_FALLBACK_CELL_W;
+  cell_h = HARNESS_TERMINAL_SIXEL_FALLBACK_CELL_H;
+
+  if((g_run.terminal_pixel_width > 0) && (g_run.terminal_width > 0))
+    {
+      uint64_t v = (uint64_t)g_run.terminal_pixel_width /
+        (uint64_t)g_run.terminal_width;
+      if(v > 0ULL)
+        cell_w = v;
+    }
+  if((g_run.terminal_pixel_height > 0) && (g_run.terminal_height > 0))
+    {
+      uint64_t v = (uint64_t)g_run.terminal_pixel_height /
+        (uint64_t)g_run.terminal_height;
+      if(v > 0ULL)
+        cell_h = v;
+    }
+
+  if(!_terminal_u64_mul_checked((uint64_t)cols_, cell_w, &max_w) ||
+     !_terminal_u64_mul_checked((uint64_t)rows_, cell_h, &max_h) ||
+     (max_w == 0ULL) || (max_h == 0ULL))
+    return false;
+
+  /* Sixel has no placement-time scaling, so emit the full cell-grid
+     raster reserved by the layout. */
+  fit_w = max_w;
+  fit_h = max_h;
+
+  if(fit_w > HARNESS_TERMINAL_SIXEL_MAX_WIDTH)
+    {
+      fit_h = (fit_h * HARNESS_TERMINAL_SIXEL_MAX_WIDTH + (fit_w / 2ULL)) /
+        fit_w;
+      fit_w = HARNESS_TERMINAL_SIXEL_MAX_WIDTH;
+      if(fit_h == 0ULL)
+        fit_h = 1ULL;
+    }
+  if(fit_h > HARNESS_TERMINAL_SIXEL_MAX_HEIGHT)
+    {
+      fit_w = (fit_w * HARNESS_TERMINAL_SIXEL_MAX_HEIGHT + (fit_h / 2ULL)) /
+        fit_h;
+      fit_h = HARNESS_TERMINAL_SIXEL_MAX_HEIGHT;
+      if(fit_w == 0ULL)
+        fit_w = 1ULL;
+    }
+
+  if((fit_w > UINT_MAX) || (fit_h > UINT_MAX))
+    return false;
+
+  *width_out_ = (unsigned)fit_w;
+  *height_out_ = (unsigned)fit_h;
+  return true;
+}
+
+
+static
+bool
+_terminal_sixel_ensure_coord_cache(unsigned src_width_,
+                                   unsigned src_height_,
+                                   unsigned out_width_,
+                                   unsigned out_height_)
+{
+  unsigned *src_x;
+  unsigned *src_y;
+  unsigned x;
+  unsigned y;
+
+  if((src_width_ == 0U) || (src_height_ == 0U) ||
+     (out_width_ == 0U) || (out_height_ == 0U))
+    return false;
+
+  if((g_run.terminal_sixel_src_x != NULL) &&
+     (g_run.terminal_sixel_src_y != NULL) &&
+     (g_run.terminal_sixel_map_src_width == src_width_) &&
+     (g_run.terminal_sixel_map_src_height == src_height_) &&
+     (g_run.terminal_sixel_map_out_width == out_width_) &&
+     (g_run.terminal_sixel_map_out_height == out_height_))
+    return true;
+
+  src_x = malloc((size_t)out_width_ * sizeof(*src_x));
+  src_y = malloc((size_t)out_height_ * sizeof(*src_y));
+  if((src_x == NULL) || (src_y == NULL))
+    {
+      free(src_x);
+      free(src_y);
+      return false;
+    }
+
+  for(x = 0; x < out_width_; x++)
+    {
+      uint64_t sample = (((uint64_t)x * (uint64_t)src_width_) +
+                         ((uint64_t)src_width_ / 2ULL)) /
+        (uint64_t)out_width_;
+
+      src_x[x] = (sample >= (uint64_t)src_width_)
+        ? (src_width_ - 1U)
+        : (unsigned)sample;
+    }
+
+  for(y = 0; y < out_height_; y++)
+    {
+      uint64_t sample = (((uint64_t)y * (uint64_t)src_height_) +
+                         ((uint64_t)src_height_ / 2ULL)) /
+        (uint64_t)out_height_;
+
+      src_y[y] = (sample >= (uint64_t)src_height_)
+        ? (src_height_ - 1U)
+        : (unsigned)sample;
+    }
+
+  free(g_run.terminal_sixel_src_x);
+  free(g_run.terminal_sixel_src_y);
+  g_run.terminal_sixel_src_x = src_x;
+  g_run.terminal_sixel_src_y = src_y;
+  g_run.terminal_sixel_map_src_width = src_width_;
+  g_run.terminal_sixel_map_src_height = src_height_;
+  g_run.terminal_sixel_map_out_width = out_width_;
+  g_run.terminal_sixel_map_out_height = out_height_;
+  return true;
+}
+
+
+static
+void
+_terminal_sixel_quantize_xrgb_source(const void *data_,
+                                     unsigned    src_width_,
+                                     unsigned    src_height_,
+                                     size_t      pitch_,
+                                     uint8_t    *indices_)
+{
+  unsigned y;
+
+  for(y = 0; y < src_height_; y++)
+    {
+      const uint8_t *src_row =
+        (const uint8_t *)data_ + (pitch_ * (size_t)y);
+      uint8_t *dst_row = indices_ + ((size_t)y * (size_t)src_width_);
+      unsigned x;
+
+      for(x = 0; x < src_width_; x++)
+        {
+          uint32_t rgb = ((const uint32_t *)src_row)[x] & 0x00ffffffU;
+
+          dst_row[x] = _terminal_rgb_to_256(rgb);
+        }
+    }
+}
+
+
+static
+void
+_terminal_sixel_scale_indices(const uint8_t *src_indices_,
+                              unsigned       src_width_,
+                              unsigned       out_width_,
+                              unsigned       out_height_,
+                              uint8_t       *indices_,
+                              bool           used_xterm_[HARNESS_TERMINAL_SIXEL_COLORS])
+{
+  unsigned y;
+
+  for(y = 0; y < out_height_; y++)
+    {
+      const uint8_t *src_row = src_indices_ +
+        ((size_t)g_run.terminal_sixel_src_y[y] * (size_t)src_width_);
+      uint8_t *dst_row = indices_ + ((size_t)y * (size_t)out_width_);
+      unsigned x;
+
+      for(x = 0; x < out_width_; x++)
+        {
+          uint8_t index = src_row[g_run.terminal_sixel_src_x[x]];
+
+          dst_row[x] = index;
+          used_xterm_[index] = true;
+        }
+    }
+}
+
+
+static
+void
+_terminal_sixel_quantize_mapped(const void *data_,
+                                unsigned    out_width_,
+                                unsigned    out_height_,
+                                size_t      pitch_,
+                                enum retro_pixel_format fmt_,
+                                uint8_t    *indices_,
+                                bool        used_xterm_[HARNESS_TERMINAL_SIXEL_COLORS])
+{
+  unsigned y;
+
+  switch(fmt_)
+    {
+    case RETRO_PIXEL_FORMAT_XRGB8888:
+      for(y = 0; y < out_height_; y++)
+        {
+          const uint8_t *src_row = (const uint8_t *)data_ +
+            (pitch_ * (size_t)g_run.terminal_sixel_src_y[y]);
+          uint8_t *dst_row = indices_ + ((size_t)y * (size_t)out_width_);
+          unsigned x;
+
+          for(x = 0; x < out_width_; x++)
+            {
+              uint32_t rgb;
+              uint8_t index;
+
+              rgb = ((const uint32_t *)src_row)
+                [g_run.terminal_sixel_src_x[x]] & 0x00ffffffU;
+              index = _terminal_rgb_to_256(rgb);
+              dst_row[x] = index;
+              used_xterm_[index] = true;
+            }
+        }
+      break;
+    case RETRO_PIXEL_FORMAT_RGB565:
+      _terminal_sixel_init_rgb565_lut();
+      for(y = 0; y < out_height_; y++)
+        {
+          const uint8_t *src_row = (const uint8_t *)data_ +
+            (pitch_ * (size_t)g_run.terminal_sixel_src_y[y]);
+          uint8_t *dst_row = indices_ + ((size_t)y * (size_t)out_width_);
+          unsigned x;
+
+          for(x = 0; x < out_width_; x++)
+            {
+              uint16_t p;
+              uint8_t index;
+
+              p = ((const uint16_t *)src_row)
+                [g_run.terminal_sixel_src_x[x]];
+              index = g_terminal_sixel_rgb565_lut[p];
+              dst_row[x] = index;
+              used_xterm_[index] = true;
+            }
+        }
+      break;
+    case RETRO_PIXEL_FORMAT_0RGB1555:
+    default:
+      _terminal_sixel_init_0rgb1555_lut();
+      for(y = 0; y < out_height_; y++)
+        {
+          const uint8_t *src_row = (const uint8_t *)data_ +
+            (pitch_ * (size_t)g_run.terminal_sixel_src_y[y]);
+          uint8_t *dst_row = indices_ + ((size_t)y * (size_t)out_width_);
+          unsigned x;
+
+          for(x = 0; x < out_width_; x++)
+            {
+              uint16_t p;
+              uint8_t index;
+
+              p = ((const uint16_t *)src_row)
+                [g_run.terminal_sixel_src_x[x]];
+              index = g_terminal_sixel_0rgb1555_lut[p & 0x7fffU];
+              dst_row[x] = index;
+              used_xterm_[index] = true;
+            }
+        }
+      break;
+    }
+}
+
+
+static
+bool
+_terminal_sixel_quantize_frame(const void *data_,
+                               unsigned    src_width_,
+                               unsigned    src_height_,
+                               size_t      pitch_,
+                               enum retro_pixel_format fmt_,
+                               unsigned    out_width_,
+                               unsigned    out_height_,
+                               uint8_t    *indices_,
+                               size_t      indices_size_,
+                               bool        used_xterm_[HARNESS_TERMINAL_SIXEL_COLORS])
+{
+  size_t out_count;
+  size_t src_count;
+
+  if((data_ == NULL) || (indices_ == NULL) ||
+     (src_width_ == 0U) || (src_height_ == 0U) ||
+     (out_width_ == 0U) || (out_height_ == 0U) ||
+     ((size_t)out_height_ > (SIZE_MAX / (size_t)out_width_)) ||
+     ((size_t)src_height_ > (SIZE_MAX / (size_t)src_width_)))
+    return false;
+
+  out_count = (size_t)out_width_ * (size_t)out_height_;
+  src_count = (size_t)src_width_ * (size_t)src_height_;
+  if((indices_size_ < out_count) ||
+     !_terminal_sixel_ensure_coord_cache(src_width_,
+                                         src_height_,
+                                         out_width_,
+                                         out_height_))
+    return false;
+
+  memset(used_xterm_, 0,
+         HARNESS_TERMINAL_SIXEL_COLORS * sizeof(used_xterm_[0]));
+
+  if((fmt_ == RETRO_PIXEL_FORMAT_XRGB8888) && (out_count > src_count))
+    {
+      if(!_terminal_ensure_u8_buffer(&g_run.terminal_sixel_source_indices,
+                                     &g_run.terminal_sixel_source_indices_size,
+                                     src_count))
+        return false;
+
+      _terminal_sixel_quantize_xrgb_source(
+        data_,
+        src_width_,
+        src_height_,
+        pitch_,
+        g_run.terminal_sixel_source_indices);
+      _terminal_sixel_scale_indices(g_run.terminal_sixel_source_indices,
+                                    src_width_,
+                                    out_width_,
+                                    out_height_,
+                                    indices_,
+                                    used_xterm_);
+      return true;
+    }
+
+  _terminal_sixel_quantize_mapped(data_,
+                                  out_width_,
+                                  out_height_,
+                                  pitch_,
+                                  fmt_,
+                                  indices_,
+                                  used_xterm_);
+
+  return true;
+}
+
+
+static
+void
+_terminal_sixel_compact_palette(uint8_t                  *indices_,
+                                size_t                    count_,
+                                const bool                used_xterm_[HARNESS_TERMINAL_SIXEL_COLORS],
+                                terminal_sixel_palette_t *palette_)
+{
+  uint8_t xterm_to_slot[HARNESS_TERMINAL_SIXEL_COLORS];
+  unsigned i;
+  size_t n;
+
+  memset(xterm_to_slot, 0, sizeof(xterm_to_slot));
+  memset(palette_, 0, sizeof(*palette_));
+
+  for(i = 0; i < HARNESS_TERMINAL_SIXEL_COLORS; i++)
+    {
+      if(!used_xterm_[i])
+        continue;
+
+      xterm_to_slot[i] = (uint8_t)palette_->count;
+      palette_->xterm_index[palette_->count] = (uint8_t)i;
+      palette_->count++;
+    }
+
+  for(n = 0; n < count_; n++)
+    indices_[n] = xterm_to_slot[indices_[n]];
+}
+
+
+static
+bool
+_terminal_sixel_build_band_events(
+  const uint8_t *indices_,
+  unsigned       width_,
+  unsigned       y_,
+  unsigned       band_rows_,
+  unsigned       palette_count_,
+  unsigned       band_colors_[HARNESS_TERMINAL_SIXEL_COLORS],
+  unsigned      *band_color_count_,
+  unsigned       heads_[HARNESS_TERMINAL_SIXEL_COLORS],
+  unsigned      *event_count_)
+{
+  const uint8_t *rows[6];
+  bool seen[HARNESS_TERMINAL_SIXEL_COLORS];
+  unsigned tails[HARNESS_TERMINAL_SIXEL_COLORS];
+  unsigned color;
+  unsigned sub_y;
+  unsigned x;
+
+  memset(seen, 0, sizeof(seen));
+  *band_color_count_ = 0;
+  *event_count_ = 0;
+
+  for(color = 0; color < HARNESS_TERMINAL_SIXEL_COLORS; color++)
+    heads_[color] = tails[color] = UINT_MAX;
+
+  for(sub_y = 0; sub_y < band_rows_; sub_y++)
+    rows[sub_y] = indices_ +
+      ((size_t)(y_ + sub_y) * (size_t)width_);
+
+  /* Keep the dense encoder's row-major first-use order so color planes and
+     the resulting DCS byte stream remain stable. */
+  for(sub_y = 0; sub_y < band_rows_; sub_y++)
+    for(x = 0; x < width_; x++)
+      {
+        uint8_t slot = rows[sub_y][x];
+
+        if(slot >= palette_count_)
+          return false;
+        if(!seen[slot])
+          {
+            seen[slot] = true;
+            band_colors_[(*band_color_count_)++] = slot;
+          }
+      }
+
+  /* Visit columns monotonically so each color's sparse events are already
+     ordered and its final event retains the full six-row band extent. */
+  for(x = 0; x < width_; x++)
+    {
+      uint8_t column_colors[6];
+      uint8_t column_masks[6];
+      unsigned column_count = 0;
+
+      for(sub_y = 0; sub_y < band_rows_; sub_y++)
+        {
+          uint8_t slot = rows[sub_y][x];
+          uint8_t bit = (uint8_t)(1U << sub_y);
+          unsigned column;
+
+          if(slot >= palette_count_)
+            return false;
+
+          for(column = 0; column < column_count; column++)
+            if(column_colors[column] == slot)
+              break;
+
+          if(column < column_count)
+            column_masks[column] |= bit;
+          else
+            {
+              column_colors[column_count] = slot;
+              column_masks[column_count] = bit;
+              column_count++;
+            }
+        }
+
+      for(color = 0; color < column_count; color++)
+        {
+          terminal_sixel_event_t *event;
+          unsigned slot = column_colors[color];
+
+          if((size_t)*event_count_ >=
+             g_run.terminal_sixel_event_capacity)
+            return false;
+
+          event = &g_run.terminal_sixel_events[*event_count_];
+          event->x = x;
+          event->next = UINT_MAX;
+          event->mask = column_masks[color];
+
+          if(heads_[slot] == UINT_MAX)
+            heads_[slot] = *event_count_;
+          else
+            {
+              if((tails[slot] == UINT_MAX) ||
+                 (tails[slot] >= *event_count_))
+                return false;
+              g_run.terminal_sixel_events[tails[slot]].next = *event_count_;
+            }
+
+          tails[slot] = *event_count_;
+          (*event_count_)++;
+        }
+    }
+
+  return true;
+}
+
+
+static
+bool
+_terminal_write_sixel_event_plane(unsigned head_,
+                                  unsigned event_count_,
+                                  unsigned width_)
+{
+  char pending_ch = 0;
+  unsigned pending_count = 0;
+  unsigned position = 0;
+  unsigned event_index = head_;
+
+  if(head_ == UINT_MAX)
+    return false;
+
+  while(event_index != UINT_MAX)
+    {
+      const terminal_sixel_event_t *event;
+      unsigned next;
+
+      if(event_index >= event_count_)
+        return false;
+      event = &g_run.terminal_sixel_events[event_index];
+      if((event->x < position) || (event->x >= width_) ||
+         (event->mask == 0U) || (event->mask > 63U))
+        return false;
+
+      if(!_terminal_sixel_accumulate_run('?',
+                                         event->x - position,
+                                         &pending_ch,
+                                         &pending_count) ||
+         !_terminal_sixel_accumulate_run((char)(63U + event->mask),
+                                         1U,
+                                         &pending_ch,
+                                         &pending_count))
+        return false;
+
+      position = event->x + 1U;
+      next = event->next;
+      if((next != UINT_MAX) &&
+         ((next <= event_index) || (next >= event_count_)))
+        return false;
+      event_index = next;
+    }
+
+  _terminal_write_sixel_run_char(pending_ch, pending_count);
+  return true;
+}
+
+
+static
+bool
+_terminal_write_sixel_dense_bands(const uint8_t *indices_,
+                                  unsigned       width_,
+                                  unsigned       height_)
+{
+  uint8_t *masks = g_run.terminal_sixel_masks;
+  unsigned color;
+  unsigned y;
+
+  for(y = 0; y < height_; y += 6U)
+    {
+      bool band_zeroed[HARNESS_TERMINAL_SIXEL_COLORS];
+      unsigned band_colors[HARNESS_TERMINAL_SIXEL_COLORS];
+      unsigned band_last[HARNESS_TERMINAL_SIXEL_COLORS];
+      unsigned band_color_count = 0;
+      bool first_color = true;
+      unsigned sub_y;
+
+      memset(band_zeroed, 0, sizeof(band_zeroed));
+
+      for(sub_y = 0; (sub_y < 6U) && ((y + sub_y) < height_); sub_y++)
+        {
+          const uint8_t *row = indices_ +
+            ((size_t)(y + sub_y) * (size_t)width_);
+          uint8_t bit = (uint8_t)(1U << sub_y);
+          unsigned x;
+
+          for(x = 0; x < width_; x++)
+            {
+              uint8_t slot = row[x];
+              uint8_t *color_masks;
+
+              color_masks = masks + ((size_t)slot * (size_t)width_);
+
+              if(!band_zeroed[slot])
+                {
+                  memset(color_masks, 0, width_);
+                  band_zeroed[slot] = true;
+                  band_last[slot] = 0;
+                  band_colors[band_color_count++] = slot;
+                }
+
+              color_masks[x] |= bit;
+              if(band_last[slot] < (x + 1U))
+                band_last[slot] = x + 1U;
+            }
+        }
+
+      for(color = 0; color < band_color_count; color++)
+        {
+          unsigned slot = band_colors[color];
+          const uint8_t *color_masks =
+            masks + ((size_t)slot * (size_t)width_);
+          unsigned last = band_last[slot];
+          unsigned x;
+
+          if(!first_color)
+            _terminal_write_all("$", 1U);
+          first_color = false;
+          _terminal_write_sixel_color_select(slot);
+
+          for(x = 0; x < last; )
+            {
+              char ch = (char)(63U + color_masks[x]);
+              unsigned start = x;
+
+              do
+                x++;
+              while((x < last) && (color_masks[x] == color_masks[start]));
+              _terminal_write_sixel_run_char(ch, x - start);
+            }
+        }
+
+      if((y + 6U) < height_)
+        _terminal_write_all("-", 1U);
+    }
+
+  return true;
+}
+
+
+static
+bool
+_terminal_write_sixel_indices(const uint8_t *indices_,
+                              unsigned       width_,
+                              unsigned       height_,
+                              const terminal_sixel_palette_t *palette_)
+{
+  uint64_t event_capacity_u64;
+  uint64_t mask_size_u64;
+  size_t event_capacity;
+  size_t mask_size;
+  unsigned max_band_rows;
+  unsigned color;
+  unsigned y;
+  bool use_sparse;
+  char raster[64];
+  int n;
+
+  if((indices_ == NULL) || (palette_ == NULL) || (palette_->count == 0U) ||
+     (palette_->count > HARNESS_TERMINAL_SIXEL_COLORS) ||
+     (width_ == 0U) || (height_ == 0U))
+    return false;
+
+  if(!_terminal_u64_mul_checked((uint64_t)width_,
+                                (uint64_t)palette_->count,
+                                &mask_size_u64) ||
+     (mask_size_u64 > (uint64_t)SIZE_MAX))
+    return false;
+
+  /* Dense planes remain faster for PO'ed's <=92-color frames. The sparse
+     crossover is consistent for full 256-color frames at tested widths. */
+  use_sparse = (width_ >= HARNESS_TERMINAL_SIXEL_SPARSE_MIN_WIDTH) &&
+    (palette_->count >= HARNESS_TERMINAL_SIXEL_SPARSE_MIN_COLORS);
+  if(use_sparse)
+    {
+      max_band_rows = (height_ < 6U) ? height_ : 6U;
+      if(!_terminal_u64_mul_checked((uint64_t)width_,
+                                    (uint64_t)max_band_rows,
+                                    &event_capacity_u64) ||
+         (event_capacity_u64 > (uint64_t)UINT_MAX) ||
+         (event_capacity_u64 >
+          ((uint64_t)SIZE_MAX / sizeof(terminal_sixel_event_t))))
+        return false;
+
+      event_capacity = (size_t)event_capacity_u64;
+      if(!_terminal_sixel_ensure_event_capacity(event_capacity))
+        return false;
+    }
+  else
+    {
+      mask_size = (size_t)mask_size_u64;
+      if(!_terminal_ensure_u8_buffer(&g_run.terminal_sixel_masks,
+                                     &g_run.terminal_sixel_masks_size,
+                                     mask_size))
+        return false;
+    }
+
+  _terminal_write_all("\x1bP0;0;0q", 8U);
+  n = snprintf(raster, sizeof(raster), "\"1;1;%u;%u", width_, height_);
+  if((n <= 0) || ((size_t)n >= sizeof(raster)))
+    {
+      _terminal_write_all("\x1b\\", 2U);
+      return false;
+    }
+  _terminal_write_all(raster, (size_t)n);
+
+  for(color = 0; color < palette_->count; color++)
+    _terminal_write_sixel_color_define(color, palette_->xterm_index[color]);
+
+  if(!use_sparse)
+    {
+      if(!_terminal_write_sixel_dense_bands(indices_,
+                                             width_,
+                                             height_))
+        goto sixel_fail;
+      _terminal_write_all("\x1b\\", 2U);
+      return true;
+    }
+
+  for(y = 0; y < height_; )
+    {
+      unsigned band_colors[HARNESS_TERMINAL_SIXEL_COLORS];
+      unsigned heads[HARNESS_TERMINAL_SIXEL_COLORS];
+      unsigned band_color_count;
+      unsigned event_count;
+      unsigned band_rows = height_ - y;
+      bool first_color = true;
+
+      if(band_rows > 6U)
+        band_rows = 6U;
+
+      if(!_terminal_sixel_build_band_events(indices_,
+                                             width_,
+                                             y,
+                                             band_rows,
+                                             palette_->count,
+                                             band_colors,
+                                             &band_color_count,
+                                             heads,
+                                             &event_count))
+        goto sixel_fail;
+
+      for(color = 0; color < band_color_count; color++)
+        {
+          unsigned slot = band_colors[color];
+
+          if(!first_color)
+            _terminal_write_all("$", 1U);
+          first_color = false;
+
+          _terminal_write_sixel_color_select(slot);
+
+          if(!_terminal_write_sixel_event_plane(heads[slot],
+                                                 event_count,
+                                                 width_))
+            goto sixel_fail;
+        }
+
+      y += band_rows;
+      if(y < height_)
+        _terminal_write_all("-", 1U);
+    }
+
+  _terminal_write_all("\x1b\\", 2U);
+  return true;
+
+sixel_fail:
+  _terminal_write_all("\x1b\\", 2U);
+  return false;
+}
+
+
+static
+void
+_terminal_clear_sixel_image(void);
+
+
+static
+int
+_terminal_render_sixel_image(const void             *data_,
+                             unsigned                width_,
+                             unsigned                height_,
+                             size_t                  pitch_,
+                             enum retro_pixel_format fmt_,
+                             unsigned                row_,
+                             unsigned                col_,
+                             unsigned                cols_,
+                             unsigned                rows_)
+{
+  bool used_xterm[HARNESS_TERMINAL_SIXEL_COLORS];
+  terminal_sixel_palette_t palette;
+  uint8_t *indices;
+  size_t index_count;
+  unsigned image_width;
+  unsigned image_height;
+  double start;
+  bool ok;
+
+  if(!_terminal_sixel_target_size(width_, height_, cols_, rows_,
+                                   &image_width, &image_height))
+    return HARNESS_TERMINAL_IMAGE_FAILED;
+
+  if(_terminal_image_cache_matches(data_,
+                                   pitch_,
+                                   HARNESS_TERMINAL_RENDER_SIXEL,
+                                   width_,
+                                   height_,
+                                   fmt_,
+                                   row_,
+                                   col_,
+                                   cols_,
+                                   rows_,
+                                   image_width,
+                                   image_height))
+    return HARNESS_TERMINAL_IMAGE_SKIPPED;
+
+  if((size_t)image_height > (SIZE_MAX / (size_t)image_width))
+    return HARNESS_TERMINAL_IMAGE_FAILED;
+  index_count = (size_t)image_width * (size_t)image_height;
+
+  start = _monotonic_seconds();
+  if(!_terminal_ensure_u8_buffer(&g_run.terminal_sixel_indices,
+                                 &g_run.terminal_sixel_indices_size,
+                                 index_count))
+    {
+      _terminal_record_image_seconds(_monotonic_seconds() - start);
+      return HARNESS_TERMINAL_IMAGE_FAILED;
+    }
+
+  indices = g_run.terminal_sixel_indices;
+  if(!_terminal_sixel_quantize_frame(data_,
+                                     width_,
+                                     height_,
+                                     pitch_,
+                                     fmt_,
+                                     image_width,
+                                     image_height,
+                                     indices,
+                                     index_count,
+                                     used_xterm))
+    {
+      _terminal_record_image_seconds(_monotonic_seconds() - start);
+      return HARNESS_TERMINAL_IMAGE_FAILED;
+    }
+
+  _terminal_sixel_compact_palette(indices,
+                                  index_count,
+                                  used_xterm,
+                                  &palette);
+  _terminal_move_cursor(row_, col_);
+  ok = _terminal_write_sixel_indices(indices, image_width, image_height,
+                                     &palette);
+  if(ok)
+    _terminal_store_image_cache(data_,
+                                pitch_,
+                                HARNESS_TERMINAL_RENDER_SIXEL,
+                                width_,
+                                height_,
+                                fmt_,
+                                row_,
+                                col_,
+                                cols_,
+                                rows_,
+                                image_width,
+                                image_height);
+  _terminal_record_image_seconds(_monotonic_seconds() - start);
+  return ok ? HARNESS_TERMINAL_IMAGE_DRAWN : HARNESS_TERMINAL_IMAGE_FAILED;
+}
+
+
+static
+void
+_terminal_delete_kitty_image(void)
+{
+  char seq[96];
+  int n;
+
+  n = snprintf(seq,
+               sizeof(seq),
+               "\x1b_Ga=d,d=I,i=%u\x1b\\",
+               HARNESS_TERMINAL_KITTY_IMAGE_ID);
+  if((n > 0) && ((size_t)n < sizeof(seq)))
+    _terminal_write_all(seq, (size_t)n);
+}
+
+
+static
+void
+_terminal_clear_sixel_image(void)
+{
+  /*
+   * Sixel has no portable image-id delete operation like Kitty graphics.
+   * Clear the alternate-screen buffer before geometry-driven redraws or
+   * restoring so terminals that keep sixel graphics in their display layer
+   * do not leave stale frame contents behind.
+   */
+  _terminal_write_all("\x1b[0m\x1b[H\x1b[2J",
+                      sizeof("\x1b[0m\x1b[H\x1b[2J") - 1);
+}
+
+
+static
+void
+_terminal_clear_restored_sixel_image(void)
+{
+  /*
+   * Some terminals restore or retain Sixel graphics after leaving the
+   * alternate screen. Clear once on the restored normal screen too so a
+   * clean exit does not leave the last frame visible.
+   */
+  _terminal_write_all("\x1b[0m\x1b[H\x1b[2J\x1b[3J",
+                      sizeof("\x1b[0m\x1b[H\x1b[2J\x1b[3J") - 1);
+}
+
+
+static
 void
 _terminal_update_size(void)
 {
@@ -3945,6 +6893,8 @@ _terminal_update_size(void)
     {
       g_run.terminal_width = 80;
       g_run.terminal_height = 24;
+      g_run.terminal_pixel_width = 0;
+      g_run.terminal_pixel_height = 0;
       return;
     }
 
@@ -3952,6 +6902,8 @@ _terminal_update_size(void)
     g_run.terminal_width = ws.ws_col;
   if(ws.ws_row > 0)
     g_run.terminal_height = ws.ws_row;
+  g_run.terminal_pixel_width = (ws.ws_xpixel > 0) ? ws.ws_xpixel : 0;
+  g_run.terminal_pixel_height = (ws.ws_ypixel > 0) ? ws.ws_ypixel : 0;
 }
 
 
@@ -3987,6 +6939,53 @@ _terminal_free_coord_cache(void)
   g_run.terminal_map_cols = 0;
   g_run.terminal_map_rows = 0;
   g_run.terminal_map_render_mode = 0;
+}
+
+
+static
+void
+_terminal_free_image_buffers(void)
+{
+  if(g_run.terminal_kitty_zstream_initialized)
+    {
+      (void)deflateEnd(&g_run.terminal_kitty_zstream);
+      memset(&g_run.terminal_kitty_zstream, 0,
+             sizeof(g_run.terminal_kitty_zstream));
+      g_run.terminal_kitty_zstream_initialized = false;
+    }
+
+  free(g_run.terminal_rgb_buffer);
+  free(g_run.terminal_scaled_rgb_buffer);
+  free(g_run.terminal_sixel_src_x);
+  free(g_run.terminal_sixel_src_y);
+  free(g_run.terminal_sixel_source_indices);
+  free(g_run.terminal_sixel_indices);
+  free(g_run.terminal_sixel_masks);
+  free(g_run.terminal_sixel_events);
+  free(g_run.terminal_image_cache.pixels);
+  _byte_buffer_free(&g_run.terminal_kitty_zlib_buffer);
+  _byte_buffer_free(&g_run.terminal_png_buffer);
+
+  g_run.terminal_rgb_buffer = NULL;
+  g_run.terminal_rgb_buffer_size = 0;
+  g_run.terminal_scaled_rgb_buffer = NULL;
+  g_run.terminal_scaled_rgb_buffer_size = 0;
+  g_run.terminal_sixel_src_x = NULL;
+  g_run.terminal_sixel_src_y = NULL;
+  g_run.terminal_sixel_map_src_width = 0;
+  g_run.terminal_sixel_map_src_height = 0;
+  g_run.terminal_sixel_map_out_width = 0;
+  g_run.terminal_sixel_map_out_height = 0;
+  g_run.terminal_sixel_source_indices = NULL;
+  g_run.terminal_sixel_source_indices_size = 0;
+  g_run.terminal_sixel_indices = NULL;
+  g_run.terminal_sixel_indices_size = 0;
+  g_run.terminal_sixel_masks = NULL;
+  g_run.terminal_sixel_masks_size = 0;
+  g_run.terminal_sixel_events = NULL;
+  g_run.terminal_sixel_event_capacity = 0;
+  memset(&g_run.terminal_image_cache, 0,
+         sizeof(g_run.terminal_image_cache));
 }
 
 
@@ -4536,7 +7535,6 @@ _terminal_open(void)
   g_run.terminal_last_render_frame = 0;
   g_run.terminal_adaptive_fps = g_cfg.terminal_fps;
   g_run.terminal_render_seconds_ema = 0.0;
-  _terminal_detect_capabilities();
 
   g_run.tty_flags = fcntl(g_run.tty_fd, F_GETFL, 0);
   if(g_run.tty_flags < 0)
@@ -4568,11 +7566,17 @@ _terminal_open(void)
   if(g_run.tty_flags >= 0)
     (void)fcntl(g_run.tty_fd, F_SETFL, g_run.tty_flags | O_NONBLOCK);
 
+  /* enter the alternate screen before capability probing so any
+     keystrokes typed during the probe window land in the (hidden,
+     cleared) alternate buffer rather than the user's shell */
+  _terminal_write_all("\x1b[?1049h\x1b[?25l",
+                      sizeof("\x1b[?1049h\x1b[?25l") - 1);
+
   _terminal_update_size();
+  _terminal_detect_capabilities();
   g_run.terminal_active = true;
 
-  _terminal_write_all("\x1b[?1049h\x1b[?25l\x1b[2J",
-                      sizeof("\x1b[?1049h\x1b[?25l\x1b[2J") - 1);
+  _terminal_write_all("\x1b[2J", sizeof("\x1b[2J") - 1);
 
   return 0;
 }
@@ -4582,13 +7586,21 @@ static
 void
 _terminal_close(void)
 {
+  const bool sixel = (g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_SIXEL);
+
   if(g_run.tty_fd < 0)
     return;
 
   g_terminal_force_output = true;
   _terminal_output_flush();
+  if(g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_KITTY)
+    _terminal_delete_kitty_image();
+  else if(sixel)
+    _terminal_clear_sixel_image();
   _terminal_write_all("\x1b[0m\x1b[?25h\x1b[?1049l",
                       sizeof("\x1b[0m\x1b[?25h\x1b[?1049l") - 1);
+  if(sixel)
+    _terminal_clear_restored_sixel_image();
   g_terminal_force_output = false;
 
   if((g_run.tty_flags >= 0))
@@ -4601,7 +7613,88 @@ _terminal_close(void)
   g_run.terminal_active = false;
   _terminal_free_cell_cache();
   _terminal_free_coord_cache();
+  _terminal_free_image_buffers();
   _terminal_free_output_buffer();
+}
+
+
+static
+bool
+_terminal_should_render_status_line(int image_result_)
+{
+  double step_d;
+
+  if(image_result_ != HARNESS_TERMINAL_IMAGE_SKIPPED)
+    return true;
+  if(!g_run.terminal_status_valid)
+    return true;
+  if((g_run.terminal_status_last_button_mask != g_run.terminal_button_mask) ||
+     (g_run.terminal_status_last_quit_requested !=
+      g_run.terminal_quit_requested))
+    return true;
+
+  if(g_run.core_fps <= 0.0)
+    return false;
+
+  if(g_run.terminal_status_frame_interval == 0)
+    {
+      step_d = ceil(g_run.core_fps);
+      if(!isfinite(step_d) || (step_d <= 0.0))
+        return false;
+      g_run.terminal_status_frame_interval =
+        (step_d >= (double)UINT64_MAX) ? UINT64_MAX : (uint64_t)step_d;
+    }
+
+  return (g_run.current_frame - g_run.terminal_status_last_frame) >=
+    g_run.terminal_status_frame_interval;
+}
+
+
+static
+void
+_terminal_note_status_line_rendered(void)
+{
+  g_run.terminal_status_valid = true;
+  g_run.terminal_status_last_frame = g_run.current_frame;
+  g_run.terminal_status_last_button_mask = g_run.terminal_button_mask;
+  g_run.terminal_status_last_quit_requested =
+    g_run.terminal_quit_requested;
+}
+
+
+static
+void
+_terminal_render_status_line(unsigned image_rows_max_,
+                             unsigned display_cols_)
+{
+  char status[256];
+  size_t status_len;
+  int n;
+
+  if(display_cols_ == 0U)
+    return;
+
+  n = snprintf(status,
+               sizeof(status),
+               "frame=%" PRIu64 " input_mask=0x%04x %s",
+               g_run.current_frame,
+               g_run.terminal_button_mask,
+               g_run.terminal_quit_requested ? "(quit requested)" :
+               "(WASD/Arrows=UDLR, J=A, K=B, L=C, '=X, "
+               "U=LT, I=RT, Enter=Play, Esc Esc=Quit)");
+  if(n <= 0)
+    return;
+
+  status_len = (size_t)n;
+  if(status_len > display_cols_)
+    status_len = display_cols_;
+
+  _terminal_move_cursor(image_rows_max_ + 1U, 1U);
+  _terminal_write_all("\x1b[0m", sizeof("\x1b[0m") - 1);
+  _terminal_write_all(status, status_len);
+  if(status_len < display_cols_)
+    _terminal_write_spaces(display_cols_ - status_len);
+  _terminal_note_status_line_rendered();
 }
 
 
@@ -4616,6 +7709,15 @@ _terminal_render_frame(const void             *data_,
   unsigned y;
   static int last_display_cols;
   static int last_display_rows;
+  static int last_terminal_pixel_width;
+  static int last_terminal_pixel_height;
+  static int last_display_render_mode = -1;
+  static unsigned last_image_src_width;
+  static unsigned last_image_src_height;
+  static unsigned last_image_pad_left;
+  static unsigned last_image_pad_top;
+  static unsigned last_image_target_cols;
+  static unsigned last_image_target_rows;
   unsigned display_cols;
   unsigned image_rows_max;
   unsigned display_rows;
@@ -4627,6 +7729,7 @@ _terminal_render_frame(const void             *data_,
   unsigned pad_top;
   uint64_t src_aspect_ratio_n;
   uint64_t src_aspect_ratio_d;
+  uint64_t layout_value;
   terminal_cell_t *row_cells;
   size_t cell_size;
   terminal_read_pixel_fn read_pixel;
@@ -4647,14 +7750,21 @@ _terminal_render_frame(const void             *data_,
 
   image_rows_max = (display_rows > 1U) ? (display_rows - 1U) : 1U;
 
-  src_aspect_ratio_n = (uint64_t)width_ * 2ULL;
-  src_aspect_ratio_d = (uint64_t)height_;
+  if(!_terminal_aspect_for_layout(width_, height_, display_cols, display_rows,
+                                  &src_aspect_ratio_n, &src_aspect_ratio_d))
+    return;
 
-  full_rows_for_full_width = _terminal_u64_ceil_div((uint64_t)height_ *
-                                                    (uint64_t)display_cols,
+  if(!_terminal_u64_mul_checked(src_aspect_ratio_d,
+                                (uint64_t)display_cols,
+                                &layout_value))
+    return;
+  full_rows_for_full_width = _terminal_u64_ceil_div(layout_value,
                                                     src_aspect_ratio_n);
-  full_cols_for_full_rows = _terminal_u64_ceil_div(src_aspect_ratio_n *
-                                                   (uint64_t)image_rows_max,
+  if(!_terminal_u64_mul_checked(src_aspect_ratio_n,
+                                (uint64_t)image_rows_max,
+                                &layout_value))
+    return;
+  full_cols_for_full_rows = _terminal_u64_ceil_div(layout_value,
                                                    src_aspect_ratio_d);
 
   if((full_rows_for_full_width == 0U) || (full_cols_for_full_rows == 0U))
@@ -4679,6 +7789,111 @@ _terminal_render_frame(const void             *data_,
   if((target_cols == 0U) || (target_rows == 0U))
     return;
 
+  pad_left = (display_cols > target_cols)
+    ? ((display_cols - target_cols) / 2U)
+    : 0U;
+  pad_top = (image_rows_max > target_rows)
+    ? ((image_rows_max - target_rows) / 2U)
+    : 0U;
+
+  if((g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_KITTY) ||
+     (g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_SIXEL))
+    {
+      int image_result;
+      size_t image_output_start;
+      size_t image_output_end;
+      bool display_layout_changed;
+      bool image_layout_changed;
+      bool reset_image_output;
+
+      _terminal_output_begin();
+
+      display_layout_changed =
+        (display_cols != (unsigned)last_display_cols) ||
+        (display_rows != (unsigned)last_display_rows) ||
+        (last_display_render_mode != g_run.terminal_render_mode);
+      image_layout_changed =
+        (width_ != last_image_src_width) ||
+        (height_ != last_image_src_height) ||
+        (pad_left != last_image_pad_left) ||
+        (pad_top != last_image_pad_top) ||
+        (target_cols != last_image_target_cols) ||
+        (target_rows != last_image_target_rows) ||
+        (g_run.terminal_pixel_width != last_terminal_pixel_width) ||
+        (g_run.terminal_pixel_height != last_terminal_pixel_height);
+      reset_image_output =
+        display_layout_changed ||
+        ((g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_SIXEL) &&
+         image_layout_changed);
+
+      if(reset_image_output)
+        {
+          if(g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_SIXEL)
+            _terminal_clear_sixel_image();
+          else
+            _terminal_write_all("\x1b[2J\x1b[H", 7);
+          _terminal_invalidate_image_cache();
+          last_display_cols = (int)display_cols;
+          last_display_rows = (int)display_rows;
+          last_terminal_pixel_width = g_run.terminal_pixel_width;
+          last_terminal_pixel_height = g_run.terminal_pixel_height;
+          last_display_render_mode = g_run.terminal_render_mode;
+          last_image_src_width = width_;
+          last_image_src_height = height_;
+          last_image_pad_left = pad_left;
+          last_image_pad_top = pad_top;
+          last_image_target_cols = target_cols;
+          last_image_target_rows = target_rows;
+        }
+
+      image_output_start = g_run.terminal_output_len;
+      if(g_run.terminal_render_mode == HARNESS_TERMINAL_RENDER_KITTY)
+        image_result = _terminal_render_kitty_image(data_,
+                                                    width_,
+                                                    height_,
+                                                    pitch_,
+                                                    fmt_,
+                                                    pad_top + 1U,
+                                                    pad_left + 1U,
+                                                    target_cols,
+                                                    target_rows);
+      else
+        image_result = _terminal_render_sixel_image(data_,
+                                                    width_,
+                                                    height_,
+                                                    pitch_,
+                                                    fmt_,
+                                                    pad_top + 1U,
+                                                    pad_left + 1U,
+                                                    target_cols,
+                                                    target_rows);
+      image_output_end = g_run.terminal_output_len;
+      if(image_output_end >= image_output_start)
+        {
+          size_t image_bytes = image_output_end - image_output_start;
+
+          if((uint64_t)image_bytes <=
+             (UINT64_MAX - g_run.terminal_image_bytes))
+            g_run.terminal_image_bytes += (uint64_t)image_bytes;
+          else
+            g_run.terminal_image_bytes = UINT64_MAX;
+        }
+
+      if(image_result == HARNESS_TERMINAL_IMAGE_DRAWN)
+        g_run.terminal_image_drawn_frames++;
+      else if(image_result == HARNESS_TERMINAL_IMAGE_SKIPPED)
+        g_run.terminal_image_skipped_frames++;
+      else
+        g_run.terminal_image_failed_frames++;
+
+      if((display_rows > 1U) &&
+         _terminal_should_render_status_line(image_result))
+        _terminal_render_status_line(image_rows_max, display_cols);
+
+      _terminal_output_flush();
+      return;
+    }
+
   if(!_terminal_ensure_coord_cache(width_, height_, target_cols, target_rows,
                                    (unsigned)g_run.terminal_render_mode))
     return;
@@ -4696,7 +7911,8 @@ _terminal_render_frame(const void             *data_,
   _terminal_output_begin();
 
   if((display_cols != (unsigned)last_display_cols) ||
-     (display_rows != (unsigned)last_display_rows))
+     (display_rows != (unsigned)last_display_rows) ||
+     (last_display_render_mode != g_run.terminal_render_mode))
     {
       size_t cache_count = (size_t)image_rows_max * (size_t)display_cols;
 
@@ -4706,14 +7922,8 @@ _terminal_render_frame(const void             *data_,
         g_run.terminal_row_hashes[y] = UINT64_MAX;
       last_display_cols = (int)display_cols;
       last_display_rows = (int)display_rows;
+      last_display_render_mode = g_run.terminal_render_mode;
     }
-
-  pad_left = (display_cols > target_cols)
-    ? ((display_cols - target_cols) / 2U)
-    : 0U;
-  pad_top = (image_rows_max > target_rows)
-    ? ((image_rows_max - target_rows) / 2U)
-    : 0U;
 
   for(y = 0; y < image_rows_max; y++)
     {
@@ -4788,30 +7998,7 @@ _terminal_render_frame(const void             *data_,
     }
 
   if(display_rows > 1U)
-    {
-      char status[256];
-      size_t status_len;
-      int n = snprintf(status,
-                       sizeof(status),
-                       "frame=%" PRIu64 " input_mask=0x%04x %s",
-                       g_run.current_frame,
-                       g_run.terminal_button_mask,
-                       g_run.terminal_quit_requested ? "(quit requested)" :
-                       "(WASD/Arrows=UDLR, J=A, K=B, L=C, '=X, "
-                       "U=LT, I=RT, Enter=Play, Esc Esc=Quit)");
-      if(n > 0)
-        {
-          status_len = (size_t)n;
-          if(status_len > display_cols)
-            status_len = display_cols;
-
-          _terminal_move_cursor(image_rows_max + 1U, 1U);
-          _terminal_write_all("\x1b[0m", sizeof("\x1b[0m") - 1);
-          _terminal_write_all(status, status_len);
-          if(status_len < display_cols)
-            _terminal_write_spaces(display_cols - status_len);
-        }
-    }
+    _terminal_render_status_line(image_rows_max, display_cols);
 
   _terminal_output_flush();
 }
@@ -5354,6 +8541,64 @@ _write_metrics(const char *status_,
     fputs("null", f);
   fprintf(f, ",\n  \"cpu_affinity_applied\": %s",
           g_run.cpu_affinity_applied ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_mode\": %s",
+          g_cfg.terminal_mode ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_render_requested\": ");
+  _json_string(f, _terminal_render_override_name(g_cfg.terminal_render_override));
+  fprintf(f, ",\n  \"terminal_renderer\": ");
+  if(g_run.terminal_render_mode >= 0)
+    _json_string(f, _terminal_render_mode_name(g_run.terminal_render_mode));
+  else
+    fputs("null", f);
+  fprintf(f, ",\n  \"terminal_kitty_probed\": %s",
+          g_run.terminal_kitty_probed ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_kitty_supported\": %s",
+          g_run.terminal_kitty_supported ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_kitty_probe_result\": ");
+  _json_string(f, g_run.terminal_kitty_probe_result ?
+               g_run.terminal_kitty_probe_result : "not_run");
+  fprintf(f, ",\n  \"terminal_kitty_zlib_probed\": %s",
+          g_run.terminal_kitty_zlib_probed ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_kitty_zlib_supported\": %s",
+          g_run.terminal_kitty_zlib_supported ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_kitty_zlib_probe_result\": ");
+  _json_string(f, g_run.terminal_kitty_zlib_probe_result ?
+               g_run.terminal_kitty_zlib_probe_result : "not_run");
+  fprintf(f, ",\n  \"terminal_sixel_probed\": %s",
+          g_run.terminal_sixel_probed ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_sixel_supported\": %s",
+          g_run.terminal_sixel_supported ? "true" : "false");
+  fprintf(f, ",\n  \"terminal_sixel_probe_result\": ");
+  _json_string(f, g_run.terminal_sixel_probe_result ?
+               g_run.terminal_sixel_probe_result : "not_run");
+  fprintf(f, ",\n  \"terminal_render_calls\": %" PRIu64,
+          g_run.terminal_render_calls);
+  fprintf(f, ",\n  \"terminal_render_seconds\": %.9f",
+          g_run.terminal_render_seconds_total);
+  fprintf(f, ",\n  \"terminal_render_last_seconds\": %.9f",
+          g_run.terminal_render_seconds_last);
+  fprintf(f, ",\n  \"terminal_render_max_seconds\": %.9f",
+          g_run.terminal_render_seconds_max);
+  fprintf(f, ",\n  \"terminal_render_seconds_ema\": %.9f",
+          g_run.terminal_render_seconds_ema);
+  fprintf(f, ",\n  \"terminal_adaptive_fps\": %.9f",
+          g_run.terminal_adaptive_fps);
+  fprintf(f, ",\n  \"terminal_image_drawn_frames\": %" PRIu64,
+          g_run.terminal_image_drawn_frames);
+  fprintf(f, ",\n  \"terminal_image_skipped_frames\": %" PRIu64,
+          g_run.terminal_image_skipped_frames);
+  fprintf(f, ",\n  \"terminal_image_failed_frames\": %" PRIu64,
+          g_run.terminal_image_failed_frames);
+  fprintf(f, ",\n  \"terminal_image_bytes\": %" PRIu64,
+          g_run.terminal_image_bytes);
+  fprintf(f, ",\n  \"terminal_image_seconds\": %.9f",
+          g_run.terminal_image_seconds_total);
+  fprintf(f, ",\n  \"terminal_image_last_seconds\": %.9f",
+          g_run.terminal_image_seconds_last);
+  fprintf(f, ",\n  \"terminal_image_max_seconds\": %.9f",
+          g_run.terminal_image_seconds_max);
+  fprintf(f, ",\n  \"terminal_bytes_written\": %" PRIu64,
+          g_run.terminal_bytes_written);
   fprintf(f, ",\n");
   _write_core_options_json(f);
   fprintf(f, "  \"target_frames\": %" PRIu64 ",\n", g_run.target_frames);
