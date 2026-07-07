@@ -29,8 +29,9 @@ From the repo root:
 make harness    # builds ./test-harness
 ```
 
-`test-harness` depends on `tools/stb_image_write.h` and links `-ldl
--lm`.
+The harness always compiles the vendored zlib encoder used by Kitty
+graphics. It also depends on `tools/stb_image_write.h` and links
+`-ldl -lm`.
 
 ## BIOS
 
@@ -120,8 +121,10 @@ Examples:
   controls.
 - `--terminal-fps N` — cap terminal redraw rate; `0` redraws every
   video frame.  Default is adaptive up to 30 FPS.
-- `--terminal-render auto|half|ascii` — override render mode. Default
-  is capability-detected.
+- `--terminal-render auto|kitty|sixel|half|ascii` — override render
+  mode. Default is capability-detected; `auto` probes Kitty graphics,
+  then Sixel graphics, then falls back to half-block/ascii when
+  unsupported.
 - `--terminal-color auto|true|256|mono` — override color mode. Default
   is capability-detected.
 - `--terminal-button-hold N` — keep terminal button presses active for
@@ -143,11 +146,29 @@ Terminal controls:
 Terminal implementation notes:
 - Terminal mode opens `/dev/tty`, uses raw mode, alternate screen, and
   cursor hide/show sequences.
-- Rendering uses half-block Unicode `▀` when supported and ASCII
-  fallback when needed.
-- The renderer uses cached source-coordinate maps, row hashes, row
-  diffing, changed-span emission, batched writes, and run-length glyph
-  output.
+- Rendering uses Kitty graphics when probed and supported, then Sixel
+  graphics when supported, half-block Unicode `▀` when supported, and
+  ASCII fallback when needed. Forced image renderers warn and fall back
+  if their probe fails. Auto rendering uses ASCII without image probes
+  when terminal color mode is mono or `NO_COLOR` is set.
+- Kitty performs a second capability probe for zlib-compressed raw RGB.
+  Supported terminals receive `f=24,o=z` payloads; if that probe or a
+  frame compression fails, rendering falls back to PNG payloads.
+- Native Sixel is disabled inside tmux because tmux can leave the final
+  image in the outer terminal after the pane restores. Run outside tmux
+  for Sixel, or use the half/ascii fallback inside tmux.
+- On exit, Kitty images are deleted by image id. Sixel output clears the
+  alternate screen before restore, then clears the restored normal screen
+  for terminals that keep Sixel graphics outside the alternate buffer.
+- Image renderers track emitted image bytes, render timings, and
+  skipped unchanged frames in `metrics.json`. Kitty compression support
+  is reported as `terminal_kitty_zlib_probed`,
+  `terminal_kitty_zlib_supported`, and
+  `terminal_kitty_zlib_probe_result`.
+- Image renderers use an exact active-row frame cache to skip duplicates;
+  Sixel also caches scale maps and palette lookup tables. Text renderers
+  use row hashes, row diffing, changed-span emission, batched writes, and
+  run-length glyph output.
 - `SIGWINCH` marks terminal size dirty; size is refreshed on
   open/resize rather than every rendered frame.
 - Termination signals exit through normal cleanup so raw mode and
