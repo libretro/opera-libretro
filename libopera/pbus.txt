@@ -127,11 +127,12 @@ MSB -> LSB
 20bit: scan counter
 5bit: line pulse / hit count
 
+Forced retail reload packets use a zero scan counter and a zero hit count.
+Some software checks the counter directly instead of the hit count to detect
+an off-screen shot.
+
 Unlike the mouse, when placed twice in a buffer it doesn't get picked up
 as 1p and 2p. One instance shows up as player 2.
-
-To reload in Mad Dog II (retail) requires "shooting off screen" which
-appears to be represented as y = 0 and x = ~20 - ~640.
 
 According to the 3DO SDK's lightgun.c:
 
