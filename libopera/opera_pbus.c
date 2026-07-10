@@ -215,8 +215,8 @@ opera_pbus_add_lightgun(const opera_pbus_lightgun_t *lg_)
   trigger = lg_->trigger;
   if(lg_->reload)
     {
-      x = 0;
-      y = 0;
+      /* Some software uses a zero counter as the no-hit sentinel. */
+      counter = 0;
       trigger = 1;
       hit_count = 0;
     }
@@ -226,10 +226,9 @@ opera_pbus_add_lightgun(const opera_pbus_lightgun_t *lg_)
       y = (lg_->y + (32*1024));
       x = (x / (65535.0 / 320.0));
       y = (y / (65535.0 / 240.0));
+      counter = pbus_lightgun_counter(x,y);
       hit_count = PBUS_LG_HIT_COUNT;
     }
-
-  counter = pbus_lightgun_counter(x,y);
 
   PBUS.buf[PBUS.idx++] = PBUS_LIGHTGUN_ID;
   PBUS.buf[PBUS.idx++] = ((trigger      << PBUS_LG_SHIFT_TRIGGER) |
