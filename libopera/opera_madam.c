@@ -2410,7 +2410,6 @@ DrawLiteralCel(void)
       {
         uint32_t i;
 
-        SPRWI -= PRE0_SKIPX(PRE0);
         xvert += (TEXTURE_HI_START * VDX1616);
         yvert += (TEXTURE_HI_START * VDY1616);
 
@@ -2454,8 +2453,6 @@ DrawLiteralCel(void)
         uint32_t i;
         uint32_t j;
 
-        SPRWI -= PRE0_SKIPX(PRE0);
-
         for(i = 0; i < SPRHI; i++)
           {
             BitReaderBig_AttachBuffer(&bitoper,
@@ -2497,7 +2494,6 @@ DrawLiteralCel(void)
         uint32_t i;
         uint32_t j;
 
-        SPRWI -= PRE0_SKIPX(PRE0);
         for(i = 0; i < SPRHI; i++)
           {
             BitReaderBig_AttachBuffer(&bitoper,
