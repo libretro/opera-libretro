@@ -8724,6 +8724,7 @@ main(int    argc_,
   double start;
   double end;
   double benchmark_start = 0.0;
+  double average_fps;
   uint64_t frame;
 
   memset(&api, 0, sizeof(api));
@@ -8949,20 +8950,29 @@ main(int    argc_,
 
   _restore_logging();
 
+  average_fps = (g_run.wall_seconds > 0.0) ?
+    ((double)g_run.frames_run / g_run.wall_seconds) : 0.0;
+
   if(exit_code == 0)
     {
       fprintf(stderr,
-              "test-harness: ok, frames=%" PRIu64 ", log=%s, metrics=%s\n",
+              "test-harness: ok, frames=%" PRIu64
+              ", elapsed=%.3fs, fps=%.2f, log=%s, metrics=%s\n",
               g_run.frames_run,
+              g_run.wall_seconds,
+              average_fps,
               g_cfg.log_path,
               g_cfg.metrics_path);
     }
   else
     {
       fprintf(stderr,
-              "test-harness: %s, frames=%" PRIu64 ", log=%s, metrics=%s\n",
+              "test-harness: %s, frames=%" PRIu64
+              ", elapsed=%.3fs, fps=%.2f, log=%s, metrics=%s\n",
               status,
               g_run.frames_run,
+              g_run.wall_seconds,
+              average_fps,
               g_cfg.log_path ? g_cfg.log_path : "(none)",
               g_cfg.metrics_path ? g_cfg.metrics_path : "(none)");
     }
