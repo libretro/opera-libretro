@@ -2719,6 +2719,25 @@ _harness_environment(unsigned cmd_,
     case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
       _add_core_option_definition_defaults((const struct retro_core_option_definition *)data_);
       return true;
+    case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+      return true;
+    case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+      {
+        struct retro_vfs_interface_info *vfs_info =
+          (struct retro_vfs_interface_info *)data_;
+
+        if(vfs_info == NULL)
+          return false;
+
+        if(vfs_info->required_interface_version == 0)
+          return false;
+
+        vfs_info->iface = NULL;
+        return true;
+      }
+    case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS:
+      *(unsigned *)data_ = 1;
+      return true;
     case RETRO_ENVIRONMENT_SET_VARIABLES:
       _add_variable_defaults((const struct retro_variable *)data_);
       return true;
