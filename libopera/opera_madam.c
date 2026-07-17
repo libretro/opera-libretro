@@ -2372,7 +2372,9 @@ DrawLiteralCel(void)
   uint32_t offset;
   uint32_t offsetl;
   uint32_t row_bytes;
+  uint32_t skipx;
   uint32_t source_base;
+  uint32_t source_width;
 
   bpp     = BPP[PRE0 & PRE0_BPP_MASK];
   lrform  = flag_is_set(PRE1,PRE1_LRFORM);
@@ -2381,9 +2383,10 @@ DrawLiteralCel(void)
              ((PRE1 & PRE1_WOFFSET8_MASK) >> PRE1_WOFFSET8_SHIFT):
              ((PRE1 & PRE1_WOFFSET10_MASK) >> PRE1_WOFFSET10_SHIFT));
   row_bytes = ((offset + 2) << 2);
-  source_base = PDATA;
+  skipx        = PRE0_SKIPX(PRE0);
+  source_base  = PDATA;
+  source_width = (1 + (PRE1 & PRE1_TLHPCNT_MASK));
 
-  SPRWI = (1 + (PRE1 & PRE1_TLHPCNT_MASK));
   SPRHI = (1 + ((PRE0 & PRE0_VCNT_MASK) >> PRE0_VCNT_SHIFT));
   /* LRFORM describes source row-pair layout, not just pixel depth. AITD2
      uses a 1-bpp LRFORM CEL as a priority mask over LR-format bitmap data. */
@@ -2394,6 +2397,21 @@ DrawLiteralCel(void)
   origin_y   = YPOS1616;
   origin_vdx = VDX1616;
   origin_vdy = VDY1616;
+
+  /* TLHPCNT includes SKIPX.  The first unskipped source pixel maps to
+     the original destination edge, and exhausted spans draw nothing. */
+  if(skipx >= source_width)
+    {
+      SPRWI = 0;
+      HDX1616 = (int32_t)((uint32_t)HDX1616 +
+                          ((uint32_t)HDDX1616 * (uint32_t)SPRHI));
+      HDY1616 = (int32_t)((uint32_t)HDY1616 +
+                          ((uint32_t)HDDY1616 * (uint32_t)SPRHI));
+      StoreXYPosFromDrawHeight(origin_x,origin_y,origin_vdx,origin_vdy,SPRHI);
+      return;
+    }
+
+  SPRWI = (int32_t)(source_width - skipx);
 
   if(TestInitVisual(UNPACKED))
     {
@@ -2426,7 +2444,7 @@ DrawLiteralCel(void)
                                                      (row_bytes * i)));
             xcur = (xvert + TEXTURE_WI_START * HDX1616);
             ycur = (yvert + TEXTURE_WI_START * HDY1616);
-            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
+            BitReaderBig_Skip(&bitoper,(bpp * skipx));
             if(TEXTURE_WI_START)
               BitReaderBig_Skip(&bitoper,(bpp * TEXTURE_WI_START));
 
@@ -2463,7 +2481,7 @@ DrawLiteralCel(void)
             ycur   = yvert;
             xvert += VDX1616;
             yvert += VDY1616;
-            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
+            BitReaderBig_Skip(&bitoper,(bpp * skipx));
 
             for(j = 0; j < SPRWI; j++)
               {
@@ -2511,7 +2529,7 @@ DrawLiteralCel(void)
             HDX1616 += HDDX1616;
             HDY1616 += HDDY1616;
 
-            BitReaderBig_Skip(&bitoper,(bpp * PRE0_SKIPX(PRE0)));
+            BitReaderBig_Skip(&bitoper,(bpp * skipx));
 
             xdown = xvert;
             ydown = yvert;
