@@ -7,7 +7,8 @@
 
 #define OPERA_STATE_VERSION_V1      0x01
 #define OPERA_STATE_VERSION_V2      0x02
-#define OPERA_STATE_VERSION_CURRENT OPERA_STATE_VERSION_V2
+#define OPERA_STATE_VERSION_V3      0x03
+#define OPERA_STATE_VERSION_CURRENT OPERA_STATE_VERSION_V3
 
 typedef struct opera_state_data_t opera_state_data_t;
 struct opera_state_data_t

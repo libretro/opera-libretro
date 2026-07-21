@@ -25,6 +25,18 @@ prng32_seed(uint32_t const seed_)
 }
 
 uint32_t
+prng32_state_get(void)
+{
+  return g_PRNG32_STATE;
+}
+
+void
+prng32_state_set(uint32_t const state_)
+{
+  g_PRNG32_STATE = state_;
+}
+
+uint32_t
 prng32(void)
 {
   return splitmix32(&g_PRNG32_STATE);

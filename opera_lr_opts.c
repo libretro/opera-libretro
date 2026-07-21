@@ -36,6 +36,8 @@
 #include "retro_miscellaneous.h"
 #include "streams/file_stream.h"
 
+#include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,6 +121,48 @@ getval_is_enabled(const char *key_,
                   const bool  default_)
 {
   return getval_is_str(key_,"enabled",default_);
+}
+
+bool
+opera_lr_opts_get_random_seed(uint32_t *seed_)
+{
+  int base;
+  char *end;
+  const char *val;
+  unsigned long parsed;
+
+  if(seed_ == NULL)
+    return false;
+
+  val = getval("random_seed");
+  if((val == NULL) || !strcmp(val,"random"))
+    return false;
+
+  base = 10;
+  if((val[0] == '0') && ((val[1] == 'x') || (val[1] == 'X')))
+    {
+      base = 16;
+      if(!isxdigit((unsigned char)val[2]))
+        goto invalid;
+    }
+  else if(!isdigit((unsigned char)val[0]))
+    goto invalid;
+
+  errno = 0;
+  end = NULL;
+  parsed = strtoul(val,&end,base);
+  if((errno != 0) || (end == val) || (*end != '\0') ||
+     (parsed > UINT32_MAX))
+    goto invalid;
+
+  *seed_ = (uint32_t)parsed;
+  return true;
+
+invalid:
+  retro_log_printf_cb(RETRO_LOG_WARN,
+                      "[Opera]: invalid random seed '%s'; using time-based seed\n",
+                      val);
+  return false;
 }
 
 static

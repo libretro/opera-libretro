@@ -116,6 +116,30 @@ Examples:
  opera_high_resolution=enabled`.  Keys are normalized
  (case-insensitive, `_`/`-` interchange).
 
+### Deterministic PRNG configuration
+
+- `--option opera_random_seed=VALUE` selects the initial seed for both
+  emulated random-number generators.  Use a fixed value when reproducing a
+  run; the default `random` instead uses the current time during core
+  initialization.
+- Accepted fixed presets are `0x00000000`, `0x00000001`, `0xdeadbeef`,
+  `0xcafebabe`, `0xfeedface`, `0xbaadf00d`, `0x8badf00d`, `0xdeadc0de`,
+  `0xc001d00d`, `0x0badf00d`, `0x74726170`, and `0x65786974`.  The core also
+  accepts a decimal or `0x`-prefixed hexadecimal unsigned 32-bit value from
+  a frontend that exposes custom option values.
+- The option is read only when the core initializes.  Fully reinitialize the
+  core after changing it; do not expect `retro_reset` alone to reseed a run.
+- Savestates version 3 and newer contain a `PRNG` chunk with both generator
+  states, so loading a state resumes its random sequence independently of
+  the seed option currently selected.
+
+Example:
+```sh
+./test-harness --core ./opera_libretro.so --bios panafz1.bin \
+  --title /path/to/game.cue --frames 600 --wall-timeout 30 \
+  --option opera_random_seed=0xdeadbeef
+```
+
 ### Terminal mode
 - `--terminal` — opt-in live terminal framebuffer and keyboard
   controls.

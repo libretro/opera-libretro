@@ -605,7 +605,9 @@ retro_get_memory_size(unsigned id_)
 void
 retro_init(void)
 {
+  bool fixed_random_seed;
   struct retro_log_callback log;
+  uint32_t random_seed;
   unsigned level;
   uint64_t serialization_quirks;
 
@@ -628,9 +630,17 @@ retro_init(void)
                             cdimage_get_toc);
   opera_cdrom_ode_set_launch_callback(cdimage_ode_launch);
 
-  srand(time(NULL));
-  prng16_seed(time(NULL));
-  prng32_seed(time(NULL));
+  fixed_random_seed = opera_lr_opts_get_random_seed(&random_seed);
+  if(!fixed_random_seed)
+    random_seed = (uint32_t)time(NULL);
+
+  prng16_seed(random_seed);
+  prng32_seed(random_seed);
+
+  retro_log_printf_cb(RETRO_LOG_INFO,
+                      "[Opera]: random seed 0x%08X (%s)\n",
+                      (unsigned)random_seed,
+                      fixed_random_seed ? "fixed" : "time-based");
 }
 
 void
