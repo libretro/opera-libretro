@@ -116,6 +116,33 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "21"
     },
     {
+      "opera_random_seed",
+      "Random Number Generator Seed",
+      NULL,
+      "Select the initial seed for the emulated 3DO random number generators."
+      " Fixed seeds provide repeatable behavior for testing."
+      " Changes take effect after fully reinitializing the core.",
+      NULL,
+      "advanced",
+      {
+        { "random",    "Random (time-based)" },
+        { "0x00000000", NULL },
+        { "0x00000001", NULL },
+        { "0xdeadbeef", NULL },
+        { "0xcafebabe", NULL },
+        { "0xfeedface", NULL },
+        { "0xbaadf00d", NULL },
+        { "0x8badf00d", NULL },
+        { "0xdeadc0de", NULL },
+        { "0xc001d00d", NULL },
+        { "0x0badf00d", NULL },
+        { "0x74726170", NULL },
+        { "0x65786974", NULL },
+        { NULL, NULL },
+      },
+      "random"
+    },
+    {
       "opera_cd_speed",
       "CD Speed",
       NULL,
@@ -401,6 +428,30 @@ static struct retro_core_option_definition option_defs_us[] =
         { NULL, NULL },
       },
       "21"
+    },
+    {
+      "opera_random_seed",
+      "Random Number Generator Seed",
+      "Select the initial seed for the emulated 3DO random number generators."
+      " Fixed seeds provide repeatable behavior for testing."
+      " Changes take effect after fully reinitializing the core.",
+      {
+        { "random",     "Random (time-based)" },
+        { "0x00000000", NULL },
+        { "0x00000001", NULL },
+        { "0xdeadbeef", NULL },
+        { "0xcafebabe", NULL },
+        { "0xfeedface", NULL },
+        { "0xbaadf00d", NULL },
+        { "0x8badf00d", NULL },
+        { "0xdeadc0de", NULL },
+        { "0xc001d00d", NULL },
+        { "0x0badf00d", NULL },
+        { "0x74726170", NULL },
+        { "0x65786974", NULL },
+        { NULL, NULL },
+      },
+      "random"
     },
     {
       "opera_cd_speed",
@@ -832,7 +883,7 @@ libretro_set_core_options(void)
           core_options_intl.local = NULL;
 
           if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LANGUAGE, &language) &&
-              (language < RETRO_LANGUAGE_LAST) && (language != RETRO_LANGUAGE_ENGLISH))
+             (language < RETRO_LANGUAGE_LAST) && (language != RETRO_LANGUAGE_ENGLISH))
             core_options_intl.local = option_defs_intl_v2[language];
 
           retro_environment_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL, &core_options_intl);
@@ -847,7 +898,7 @@ libretro_set_core_options(void)
           core_options_intl.local = NULL;
 
           if(retro_environment_cb(RETRO_ENVIRONMENT_GET_LANGUAGE, &language) &&
-              (language < RETRO_LANGUAGE_LAST) && (language != RETRO_LANGUAGE_ENGLISH))
+             (language < RETRO_LANGUAGE_LAST) && (language != RETRO_LANGUAGE_ENGLISH))
             core_options_intl.local = option_defs_intl[language];
 
           retro_environment_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL, &core_options_intl);

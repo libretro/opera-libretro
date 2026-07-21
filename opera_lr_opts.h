@@ -42,6 +42,7 @@ struct opera_lr_opts_t
 
 extern opera_lr_opts_t g_OPTS;
 
+bool opera_lr_opts_get_random_seed(uint32_t *seed);
 uint32_t opera_lr_opts_process();
 void opera_lr_opts_reset();
 void opera_lr_opts_destroy();

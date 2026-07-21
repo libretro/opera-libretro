@@ -45,6 +45,8 @@
 #include "opera_vdlp.h"
 #include "opera_xbus.h"
 #include "opera_xbus_cdrom_plugin.h"
+#include "prng16.h"
+#include "prng32.h"
 #include "inline.h"
 
 #include <stdint.h>
@@ -244,7 +246,7 @@ typedef uint32_t (*opera_3do_state_load_cb_t)(const void *data_, uint32_t size_)
 
 static
 uint32_t
-opera_3do_state_header_size_v2(void)
+opera_3do_state_header_size_v3(void)
 {
   return opera_state_chunk_size(sizeof(uint32_t) * 2);
 }
@@ -327,8 +329,59 @@ opera_3do_runtime_state_load(void const     *data_,
 }
 
 static
+bool
+opera_3do_prng_state_write_payload(opera_state_writer_t *writer_)
+{
+  return (opera_state_write_u32(writer_,prng16_state_get()) &&
+          opera_state_write_u32(writer_,prng32_state_get()));
+}
+
+static
 uint32_t
-opera_3do_state_size_v2(void)
+opera_3do_prng_state_size(void)
+{
+  return opera_state_chunk_size(sizeof(uint32_t) * 2);
+}
+
+static
+uint32_t
+opera_3do_prng_state_save(void *data_)
+{
+  opera_state_writer_t writer;
+
+  opera_state_writer_init(&writer,data_,opera_3do_prng_state_size());
+  opera_state_write_chunk_header(&writer,"PRNG",sizeof(uint32_t) * 2);
+  opera_3do_prng_state_write_payload(&writer);
+
+  return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
+}
+
+static
+uint32_t
+opera_3do_prng_state_load(void const     *data_,
+                          uint32_t const  size_)
+{
+  uint32_t prng16_state;
+  uint32_t prng32_state;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,data_,size_);
+  if(!opera_state_read_chunk(&reader,"PRNG",&payload) ||
+     !opera_state_read_u32(&payload,&prng16_state) ||
+     !opera_state_read_u32(&payload,&prng32_state) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  prng16_state_set(prng16_state);
+  prng32_state_set(prng32_state);
+
+  return opera_state_reader_used(&reader);
+}
+
+static
+uint32_t
+opera_3do_state_size_v3(void)
 {
   uint32_t part;
   uint32_t size;
@@ -345,8 +398,9 @@ opera_3do_state_size_v2(void)
     }                                   \
   while(0)
 
-  OPERA_3DO_ADD_STATE_SIZE(opera_3do_state_header_size_v2());
+  OPERA_3DO_ADD_STATE_SIZE(opera_3do_state_header_size_v3());
   OPERA_3DO_ADD_STATE_SIZE(opera_3do_runtime_state_size());
+  OPERA_3DO_ADD_STATE_SIZE(opera_3do_prng_state_size());
   OPERA_3DO_ADD_STATE_SIZE(opera_arm_state_size());
   OPERA_3DO_ADD_STATE_SIZE(opera_clio_state_size());
   OPERA_3DO_ADD_STATE_SIZE(opera_dsp_state_size());
@@ -365,12 +419,12 @@ opera_3do_state_size_v2(void)
 uint32_t
 opera_3do_state_size(void)
 {
-  return opera_3do_state_size_v2();
+  return opera_3do_state_size_v3();
 }
 
 static
 uint32_t
-opera_3do_state_save_v2(void         *data_,
+opera_3do_state_save_v3(void         *data_,
                         size_t const  size_)
 {
   uint8_t *start = (uint8_t*)data_;
@@ -378,11 +432,11 @@ opera_3do_state_save_v2(void         *data_,
   opera_state_writer_t writer;
   uint32_t expected_size;
 
-  expected_size = opera_3do_state_size_v2();
+  expected_size = opera_3do_state_size_v3();
   if((expected_size == 0) || (size_ < expected_size))
     return 0;
 
-  opera_state_writer_init(&writer,data,opera_3do_state_header_size_v2());
+  opera_state_writer_init(&writer,data,opera_3do_state_header_size_v3());
   opera_state_write_chunk_header(&writer,"3DO",sizeof(uint32_t) * 2);
   opera_state_write_u32(&writer,OPERA_STATE_VERSION_CURRENT);
   opera_state_write_u32(&writer,0);
@@ -390,6 +444,7 @@ opera_3do_state_save_v2(void         *data_,
     return 0;
   data += opera_state_writer_used(&writer);
   data += opera_3do_runtime_state_save(data);
+  data += opera_3do_prng_state_save(data);
   data += opera_arm_state_save(data);
   data += opera_clio_state_save(data);
   data += opera_dsp_state_save(data);
@@ -407,7 +462,7 @@ uint32_t
 opera_3do_state_save(void         *data_,
                      size_t const  size_)
 {
-  return opera_3do_state_save_v2(data_,size_);
+  return opera_3do_state_save_v3(data_,size_);
 }
 
 static
@@ -515,8 +570,10 @@ opera_3do_state_load_v1(const void   *data_,
 
 static
 uint32_t
-opera_3do_state_load_v2(const void   *data_,
-                        size_t const  size_)
+opera_3do_state_load_chunked(const void     *data_,
+                             size_t const    size_,
+                             uint32_t const  expected_version_,
+                             bool const      load_prng_)
 {
   uint8_t const *start = (uint8_t const*)data_;
   uint8_t const *data  = (uint8_t const*)data_;
@@ -535,13 +592,19 @@ opera_3do_state_load_v2(const void   *data_,
   if(!opera_state_read_chunk(&reader,"3DO",&payload) ||
      !opera_state_read_u32(&payload,&version) ||
      !opera_state_read_u32(&payload,&flags) ||
-     (version != OPERA_STATE_VERSION_V2) ||
+     (version != expected_version_) ||
      (flags != 0) ||
      !opera_state_reader_finished(&payload))
     return 0;
   data += opera_state_reader_used(&reader);
 
   if(!opera_3do_state_load_step(opera_3do_runtime_state_load,
+                                0,
+                                &data,
+                                end))
+    return 0;
+  if(load_prng_ &&
+     !opera_3do_state_load_step(opera_3do_prng_state_load,
                                 0,
                                 &data,
                                 end))
@@ -603,6 +666,28 @@ opera_3do_state_load_v2(const void   *data_,
   return (uint32_t)(data - start);
 }
 
+static
+uint32_t
+opera_3do_state_load_v2(const void   *data_,
+                        size_t const  size_)
+{
+  return opera_3do_state_load_chunked(data_,
+                                      size_,
+                                      OPERA_STATE_VERSION_V2,
+                                      false);
+}
+
+static
+uint32_t
+opera_3do_state_load_v3(const void   *data_,
+                        size_t const  size_)
+{
+  return opera_3do_state_load_chunked(data_,
+                                      size_,
+                                      OPERA_STATE_VERSION_V3,
+                                      true);
+}
+
 uint32_t
 opera_3do_state_load(void const *data_,
                      size_t      size_)
@@ -619,6 +704,8 @@ opera_3do_state_load(void const *data_,
       return opera_3do_state_load_v1(data_,size_);
     case OPERA_STATE_VERSION_V2:
       return opera_3do_state_load_v2(data_,size_);
+    case OPERA_STATE_VERSION_V3:
+      return opera_3do_state_load_v3(data_,size_);
     default:
       opera_log_printf(OPERA_LOG_ERROR,
                        "[Opera]: unable to load state - unknown state version %x\n",
