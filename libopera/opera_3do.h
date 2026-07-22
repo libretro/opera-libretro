@@ -17,4 +17,10 @@ void     opera_3do_destroy(void);
 void     opera_3do_soft_reset(void);
 void     opera_3do_process_frame(void);
 
+#ifdef __IMGUI_DEBUGGER__
+EXTERN_C_BEGIN
+void     opera_3do_set_debug_callback(bool (*func)(void));
+EXTERN_C_END
+#endif
+
 #endif /* LIBOPERA_3DO_H_INCLUDED */

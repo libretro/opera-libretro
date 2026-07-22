@@ -671,3 +671,31 @@ endif
 
 print-%:
 	@echo '$*=$($*)'
+
+
+# ImGUI Debugger standalone build
+IMGUI_TARGET := imgui-debugger
+
+imgui-flags:
+   CFLAGS += -D__IMGUI_DEBUGGER__ -O0 -g3 -Wall -Wextra -I/usr/include/SDL2 -include/usr/include/SDL2/SDL.h -I./deps/imgui -I./libopera $(INCFLAGS)
+   IMGUI_LDFLAGS := -ldl -lstdc++ -lm -lSDL2 -lSDL2main -lGL -lGLU -L/usr/include/SDL2 -L/usr/include/GL -L/home/m3/Projetos/opera-libretro/libopera
+
+   IMGUI_SRC := \
+	$(DEPS_DIR)/imgui/imgui_stdlib.cpp \
+	$(DEPS_DIR)/imgui/imgui_tables.cpp \
+	$(DEPS_DIR)/imgui/imgui_draw.cpp \
+	$(DEPS_DIR)/imgui/imgui_widgets.cpp \
+	$(DEPS_DIR)/imgui/imgui_impl_sdl2.cpp \
+	$(DEPS_DIR)/imgui/imgui_impl_opengl2.cpp \
+	$(DEPS_DIR)/imgui/imgui.cpp \
+	./tools/imgui_debug_main.cpp
+
+   OBJECTS += $(IMGUI_SRC:.cpp=.o)
+
+imgui: imgui-flags $(IMGUI_TARGET)
+
+$(IMGUI_TARGET): $(OBJECTS)
+	$(CC) -o $(IMGUI_TARGET) $(OBJECTS) $(CFLAGS) $(IMGUI_LDFLAGS)
+
+%.o: %.cpp
+	$(CC) -c $< -o $@ $(CFLAGS)

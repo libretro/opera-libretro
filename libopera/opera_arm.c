@@ -2087,3 +2087,7 @@ opera_io_write(uint32_t const addr_,
 {
   mwritew(addr_,val_);
 }
+
+uint32_t opera_arm_get_pc() {
+  return CPU.USER[15];
+}

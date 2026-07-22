@@ -53,6 +53,10 @@
 
 static opera_ext_interface_t io_interface;
 
+#ifdef __IMGUI_DEBUGGER__
+bool (*_dbg_callback)();
+#endif
+
 extern int flagtime;
 
 #define OPERA_3DO_CD_DIPIR_RESET 0x40
@@ -222,6 +226,13 @@ opera_3do_process_frame(void)
           opera_madam_cel_handle();
           opera_madam_fsm_set(FSM_IDLE);
         }
+
+#ifdef __IMGUI_DEBUGGER__
+        // ask interface if we should stop for a breakpoint
+        if (_dbg_callback()) {
+          return;
+        }
+#endif
 
       cnt += opera_arm_execute();
       if(opera_cdrom_ode_restart_requested())
@@ -626,3 +637,9 @@ opera_3do_state_load(void const *data_,
       return 0;
     }
 }
+
+#ifdef __IMGUI_DEBUGGER__
+void opera_3do_set_debug_callback(bool (*func)(void)) {
+  _dbg_callback = func;
+}
+#endif

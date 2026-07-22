@@ -53,6 +53,8 @@ uint32_t opera_arm_state_load_v1(void const *buf_, uint32_t size_);
 void     opera_arm_swi_hle_set(const int hle);
 int      opera_arm_swi_hle_get(void);
 
+uint32_t opera_arm_get_pc(void);
+
 EXTERN_C_END
 
 #endif /* LIBOPERA_ARM_H_INCLUDED */
