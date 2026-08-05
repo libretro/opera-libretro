@@ -1,6 +1,6 @@
 ---
 name: opera-test-harness
-description: Use when running, automating, or debugging the 3DO libretro "opera" core with the test-harness binary, including terminal mode, controls, BIOS/core defaults, screenshots, ROMs, scripted input, and benchmarks.
+description: Use when running, automating, or debugging the 3DO libretro "opera" core with the opera-test-harness binary, including terminal mode, controls, BIOS/core defaults, screenshots, ROMs, scripted input, and benchmarks.
 ---
 
 # opera-test-harness
@@ -16,7 +16,7 @@ Trigger when:
 
 - User asks to "run the core", "test the core", "boot a 3DO disc",
   "capture a screenshot" of a 3DO game, or "benchmark" the core.
-- User mentions `test-harness`, `test_harness.c`, "test harness" or
+- User mentions `opera-test-harness`, `test_harness.c`, "test harness" or
   headless core testing.
 - User asks to script button presses or compare runs against a
   baseline.
@@ -26,7 +26,7 @@ Trigger when:
 From the repo root:
 
 ```sh
-make harness    # builds ./test-harness
+make harness    # builds ./opera-test-harness
 ```
 
 The harness always compiles the vendored zlib encoder used by Kitty
@@ -36,20 +36,20 @@ graphics. It also depends on `tools/stb_image_write.h` and links
 ## BIOS
 
 If `--core` is omitted, the harness looks for `opera_libretro.so`
-beside the `test-harness` executable. If `--bios` is omitted, it
-prefers `panafz1.bin` beside `test-harness`, then falls back to
+beside the `opera-test-harness` executable. If `--bios` is omitted, it
+prefers `panafz1.bin` beside `opera-test-harness`, then falls back to
 filename search.
 
 `--bios` accepts either a real path or a bare filename listed in
 `BIOS_ROMS[]` (`tools/test_harness.c`). Bare filenames are searched
-beside `test-harness`, then in RetroArch system dirs
+beside `opera-test-harness`, then in RetroArch system dirs
 (`RETROARCH_ROM_DIRS[]`). Use `--list-bios` to print recognized BIOS
 ROMs and any resolved local paths.
 
 ## Canonical invocation
 
 ```sh
-./test-harness \
+./opera-test-harness \
   --core ./opera_libretro.so \
   --bios /path/to/panafz1.bin \
   --title "/path/to/Game (USA).bin" \
@@ -62,7 +62,7 @@ ROMs and any resolved local paths.
 ```
 
 `--core` and `--bios` are optional when the defaults are available
-beside `test-harness` or in the configured BIOS search
+beside `opera-test-harness` or in the configured BIOS search
 paths. Everything else is optional.
 
 ## Key flags
@@ -135,7 +135,7 @@ Examples:
 
 Example:
 ```sh
-./test-harness --core ./opera_libretro.so --bios panafz1.bin \
+./opera-test-harness --core ./opera_libretro.so --bios panafz1.bin \
   --title /path/to/game.cue --frames 600 --wall-timeout 30 \
   --option opera_random_seed=0xdeadbeef
 ```
@@ -207,7 +207,7 @@ Terminal implementation notes:
 - `124` — `timeout`: `--wall-timeout` fired.
 - `128+signal` — terminated by a handled process signal after cleanup.
 
-The terse stderr line is `test-harness: <status>, frames=N, log=...,
+The terse stderr line is `opera-test-harness: <status>, frames=N, log=...,
 metrics=...`.  Full detail lives in `metrics.json` under `status`,
 `exit_code`, `frames_run`, `average_fps`, `speed_multiplier`,
 `input_events[]`, `log_counts`, etc.
@@ -216,7 +216,7 @@ metrics=...`.  Full detail lives in `metrics.json` under `status`,
 
 ### Boot-to-title screenshot
 ```sh
-./test-harness --core ./opera_libretro.so --bios panafz1.bin \
+./opera-test-harness --core ./opera_libretro.so --bios panafz1.bin \
   --title "/path/to/Game.cue" --seconds 10 \
   --screenshot /tmp/title.png --wall-timeout 30
 ```
@@ -234,14 +234,14 @@ Write a `inputs.txt` with one event per line and comments:
 ```
 Then:
 ```sh
-./test-harness --core ... --bios ... --title ... \
+./opera-test-harness --core ... --bios ... --title ... \
   --frames 2400 --input-file inputs.txt \
   --screenshot-every 300=/tmp/frames --wall-timeout 60
 ```
 
 ### Multiple capture points plus contact sheet
 ```sh
-./test-harness --core ... --bios ... --title ... \
+./opera-test-harness --core ... --bios ... --title ... \
   --frames 600 \
   --screenshot-at 60=/tmp/01.png \
   --screenshot-at 600=/tmp/end.png \
@@ -251,7 +251,7 @@ Then:
 ### Regression / benchmarking
 Pin a stable frame window so rebuilds can be compared apples-to-apples:
 ```sh
-./test-harness --core ... --bios ... --title ... \
+./opera-test-harness --core ... --bios ... --title ... \
   --frames 1800 \
   --benchmark-start-frame 600 --benchmark-end-frame 1800 \
   --cpu 2 --wall-timeout 120 \
@@ -286,6 +286,6 @@ the stable comparison numbers.
 - **GPU threads are pinned with `--cpu`,** which also sets affinity
  for any threads the core spawns.
 - **Run artifacts go under `--output-dir`** (default
- `./test-harness-runs/<YYYYMMDD-HHMMSS-pid>/`); the temp `work/`
+ `./opera-test-harness-runs/<YYYYMMDD-HHMMSS-pid>/`); the temp `work/`
  subdir (system + save) is removed unless `--keep-work-dir` or
  `--work-dir` is set.

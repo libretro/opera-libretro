@@ -643,7 +643,7 @@ endif
 %.o: %.c
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS)
 
-HARNESS_TARGET := test-harness
+HARNESS_TARGET := opera-test-harness
 HARNESS_ZLIB_DIR := $(DEPS_DIR)/zlib-1.3.1.2
 HARNESS_ZLIB_CFLAGS := -I$(HARNESS_ZLIB_DIR)
 HARNESS_ZLIB_SOURCES := \

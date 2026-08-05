@@ -556,13 +556,13 @@ void
 _print_usage(FILE *f_)
 {
   fprintf(f_,
-          "Usage: test-harness [--core ./opera_libretro.so] [--bios /path/to/bios.bin] [options]\n"
+          "Usage: opera-test-harness [--core ./opera_libretro.so] [--bios /path/to/bios.bin] [options]\n"
           "\n"
           "Core and BIOS:\n"
           "  --core PATH              libretro core shared object to load; default\n"
-          "                           opera_libretro.so beside test-harness\n"
+          "                           opera_libretro.so beside opera-test-harness\n"
           "  --bios PATH              recognized 3DO BIOS ROM; default panafz1.bin\n"
-          "                           beside test-harness, then filename search\n"
+          "                           beside opera-test-harness, then filename search\n"
           "\n"
           "Content and duration:\n"
           "  --title PATH             optional iso/bin/chd/cue title path\n"
@@ -586,7 +586,7 @@ _print_usage(FILE *f_)
           "                           (default 6)\n"
           "\n"
           "Artifacts:\n"
-          "  --output-dir DIR         default ./test-harness-runs/<timestamp-pid>\n"
+          "  --output-dir DIR         default ./opera-test-harness-runs/<timestamp-pid>\n"
           "  --log PATH               default <output-dir>/run.log\n"
           "  --metrics PATH           default <output-dir>/metrics.json\n"
           "  --audio PATH             write stereo s16le WAV\n"
@@ -2045,13 +2045,13 @@ _default_output_dir(void)
   strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &tm_now);
   snprintf(leaf, sizeof(leaf), "%s-%ld", stamp, (long)getpid());
 
-  if(_mkdir_p("test-harness-runs") != 0)
+  if(_mkdir_p("opera-test-harness-runs") != 0)
     {
-      perror("mkdir test-harness-runs");
+      perror("mkdir opera-test-harness-runs");
       exit(1);
     }
 
-  return _xasprintf2("test-harness-runs", leaf);
+  return _xasprintf2("opera-test-harness-runs", leaf);
 }
 
 
@@ -2093,7 +2093,7 @@ _prepare_paths(void)
         fprintf(stderr, "unable to resolve BIOS path: %s\n", g_cfg.bios_path);
       else
         fprintf(stderr,
-                "unable to find BIOS file %s beside test-harness, "
+                "unable to find BIOS file %s beside opera-test-harness, "
                 "in the current directory, or common RetroArch "
                 "system directories\n",
                 g_cfg.bios_path);
@@ -8975,7 +8975,7 @@ main(int    argc_,
   if(exit_code == 0)
     {
       fprintf(stderr,
-              "test-harness: ok, frames=%" PRIu64
+              "opera-test-harness: ok, frames=%" PRIu64
               ", elapsed=%.3fs, fps=%.2f, log=%s, metrics=%s\n",
               g_run.frames_run,
               g_run.wall_seconds,
@@ -8986,7 +8986,7 @@ main(int    argc_,
   else
     {
       fprintf(stderr,
-              "test-harness: %s, frames=%" PRIu64
+              "opera-test-harness: %s, frames=%" PRIu64
               ", elapsed=%.3fs, fps=%.2f, log=%s, metrics=%s\n",
               status,
               g_run.frames_run,
