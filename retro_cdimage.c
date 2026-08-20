@@ -5,13 +5,10 @@
 #include "retro_miscellaneous.h"
 
 #include "file/file_path.h"
-#include "streams/interface_stream.h"
-
 #ifdef HAVE_CHD
-#include "streams/chd_stream.h"
-
-#include "deps/libchdr/include/libchdr/chd.h"
+#include "formats/rchd.h"
 #endif
+#include "streams/interface_stream.h"
 
 #include "endianness.h"
 
@@ -20,24 +17,168 @@
 #include <string.h>
 
 #ifdef HAVE_CHD
-static
-bool
-cdimage_chd_pregap_in_track(const chdstream_cdrom_metadata_t *metadata_)
+#define CDIMAGE_CHD_REQUEST_BUFFER_SIZE 65536U
+
+typedef struct cdimage_chd_track_map_t
 {
-  return metadata_->pgtype[0] == 'V';
+  uint64_t source_offset;
+  uint32_t span_start_lba;
+  uint32_t span_end_lba;
+} cdimage_chd_track_map_t;
+
+typedef struct cdimage_chd_state_t
+{
+  intfstream_t *source;
+  rchd_t       *decoder;
+  uint8_t      *request_buffer;
+  cdimage_chd_track_map_t tracks[CDIMAGE_MAX_TRACKS];
+} cdimage_chd_state_t;
+
+static
+ssize_t
+cdimage_chd_read_sector(cdimage_t *cdimage_,
+                        size_t     sector_,
+                        void      *buf_,
+                        size_t     bufsize_);
+
+static
+void
+cdimage_chd_state_free(cdimage_chd_state_t *state_)
+{
+  if(state_ == NULL)
+    return;
+
+  if(state_->source != NULL)
+    {
+      intfstream_close(state_->source);
+      free(state_->source);
+    }
+
+  rchd_free(state_->decoder);
+  free(state_->request_buffer);
+  free(state_);
 }
 
+
 static
-uint32_t
-cdimage_chd_data_frames(const chdstream_cdrom_metadata_t *metadata_)
+bool
+cdimage_chd_feed_request(cdimage_chd_state_t  *state_,
+                         const rchd_request_t *request_)
 {
-  if(!cdimage_chd_pregap_in_track(metadata_))
-    return metadata_->frames;
+  int64_t bytes_read;
+  size_t read_size;
 
-  if(metadata_->frames <= metadata_->pregap)
-    return 0;
+  if((state_ == NULL) ||
+     (state_->source == NULL) ||
+     (state_->decoder == NULL) ||
+     (state_->request_buffer == NULL) ||
+     (request_ == NULL) ||
+     (request_->source != RCHD_SOURCE_SELF) ||
+     (request_->offset > INT64_MAX))
+    return false;
 
-  return metadata_->frames - metadata_->pregap;
+  read_size = MIN((size_t)request_->length,
+                  (size_t)CDIMAGE_CHD_REQUEST_BUFFER_SIZE);
+  if(intfstream_seek(state_->source,
+                     (int64_t)request_->offset,
+                     RETRO_VFS_SEEK_POSITION_START) == -1)
+    return false;
+
+  bytes_read = intfstream_read(state_->source,
+                               state_->request_buffer,
+                               read_size);
+  if(bytes_read <= 0)
+    return false;
+
+  return (rchd_feed(state_->decoder,
+                    state_->request_buffer,
+                    (size_t)bytes_read) == RCHD_OK);
+}
+
+
+static
+bool
+cdimage_chd_open_decoder(cdimage_chd_state_t *state_)
+{
+  rchd_request_t request;
+  int status;
+
+  for(;;)
+    {
+      status = rchd_open_step(state_->decoder,&request);
+      if(status == RCHD_OK)
+        return true;
+      if(status != RCHD_PENDING)
+        return false;
+      if(!cdimage_chd_feed_request(state_,&request))
+        return false;
+    }
+
+  return false;
+}
+
+
+static
+ssize_t
+cdimage_chd_read_bytes(cdimage_chd_state_t *state_,
+                       uint64_t             offset_,
+                       void                *buf_,
+                       size_t               len_)
+{
+  rchd_request_t request;
+  int status;
+
+  status = rchd_read_begin(state_->decoder,offset_,buf_,len_);
+  if(status != RCHD_OK)
+    return -1;
+
+  for(;;)
+    {
+      status = rchd_read_step(state_->decoder,&request);
+      if(status == RCHD_OK)
+        return (ssize_t)len_;
+      if(status != RCHD_PENDING)
+        return -1;
+      if(!cdimage_chd_feed_request(state_,&request))
+        return -1;
+    }
+}
+
+
+static
+bool
+cdimage_chd_configure_track(cdimage_track_t     *track_,
+                            const rchd_track_t   *rchd_track_)
+{
+  if(rchd_track_->data_size == 0)
+    return false;
+
+  track_->track_num  = (uint8_t)rchd_track_->track;
+  track_->type       = ((rchd_track_->type == RCHD_TRACK_AUDIO) ?
+                        CDIMAGE_TRACK_AUDIO : CDIMAGE_TRACK_DATA);
+  track_->file_index = 0;
+  track_->file_offset = 0;
+
+  if(rchd_track_->type == RCHD_TRACK_MODE1_RAW)
+    {
+      track_->mode   = 2352;
+      track_->offset = 16;
+      return true;
+    }
+
+  if(rchd_track_->type == RCHD_TRACK_MODE2_RAW)
+    {
+      track_->mode   = 2352;
+      track_->offset = 24;
+      return true;
+    }
+
+  if(rchd_track_->data_size > UINT16_MAX)
+    return false;
+
+  track_->mode   = (uint16_t)rchd_track_->data_size;
+  track_->offset = 0;
+  return true;
 }
 #endif
 
@@ -47,11 +188,11 @@ cdimage_set_size_and_offset(cdimage_t *cd_,
                             const int  size_,
                             const int  offset_)
 {
-  cd_->sector_size   = size_;
-  cd_->sector_offset = offset_;
+  cd_->sector_size    = size_;
+  cd_->sector_offset  = offset_;
   cd_->logical_blocks = 0;
-  cd_->num_tracks    = 0;
-  cd_->swap_audio    = false;
+  cd_->num_tracks     = 0;
+  cd_->swap_audio     = false;
   memset(cd_->tracks,0,sizeof(cd_->tracks));
 }
 
@@ -67,12 +208,17 @@ cdimage_get_stream_size(intfstream_t *fp_)
     return -1;
 
   current_pos = intfstream_tell(fp_);
-  rv = intfstream_seek(fp_,0,RETRO_VFS_SEEK_POSITION_END);
+
+  rv = intfstream_seek(fp_,
+                       0,
+                       RETRO_VFS_SEEK_POSITION_END);
   if(rv == -1)
     return -1;
 
   size = intfstream_tell(fp_);
-  rv = intfstream_seek(fp_,current_pos,RETRO_VFS_SEEK_POSITION_START);
+  rv = intfstream_seek(fp_,
+                       current_pos,
+                       RETRO_VFS_SEEK_POSITION_START);
   if(rv == -1)
     return -1;
 
@@ -167,18 +313,21 @@ cdimage_raw_2352_stream_is_data(intfstream_t *fp_,
         }
     }
 
-  intfstream_seek(fp_,current_pos,RETRO_VFS_SEEK_POSITION_START);
+  intfstream_seek(fp_,
+                  current_pos,
+                  RETRO_VFS_SEEK_POSITION_START);
+
   return rv;
 }
 
 static
-int
+bool
 cdimage_file_extension_supported(const char *path_)
 {
   const char *ext = path_get_extension(path_);
 
   if(ext == NULL)
-    return 0;
+    return false;
 
   return (!strcasecmp(ext,"iso") ||
           !strcasecmp(ext,"bin") ||
@@ -210,6 +359,7 @@ cdimage_open_cue_file(cdimage_t  *cdimage_,
   if(size <= 0)
     {
       intfstream_close(fp);
+      free(fp);
       return -1;
     }
 
@@ -226,27 +376,107 @@ retro_cdimage_open_chd(const char *path_,
                        cdimage_t  *cdimage_)
 {
 #ifdef HAVE_CHD
+  static const uint8_t pattern[8] =
+    { 0x01, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x01, 0x00 };
+  const rchd_info_t *info;
+  cdimage_chd_state_t *state;
   uint8_t buf[8];
-  uint8_t pattern[8] = { 0x01, 0x5a, 0x5a, 0x5a, 0x5a, 0x5a, 0x01, 0x00 };
-  chd_file *chd;
-  chd_error err;
-  int i;
-  uint32_t lba;
-  size_t file_offset;
+  uint64_t current_lba;
+  uint32_t track_count;
+  uint32_t i;
 
-  cdimage_->fp = intfstream_open_chd_track(path_,
-                                           RETRO_VFS_FILE_ACCESS_READ,
-                                           RETRO_VFS_FILE_ACCESS_HINT_NONE,
-                                           CHDSTREAM_TRACK_FULL_DISC);
-  if(cdimage_->fp == NULL)
+  state = (cdimage_chd_state_t*)calloc(1,sizeof(*state));
+  if(state == NULL)
     return -1;
 
-  cdimage_->num_files = 0;
-  memset(cdimage_->files,0,sizeof(cdimage_->files));
+  state->source = intfstream_open_file(path_,
+                                       RETRO_VFS_FILE_ACCESS_READ,
+                                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  state->decoder = rchd_new();
+  state->request_buffer = (uint8_t*)malloc(CDIMAGE_CHD_REQUEST_BUFFER_SIZE);
+  if((state->source == NULL) ||
+     (state->decoder == NULL) ||
+     (state->request_buffer == NULL) ||
+     !cdimage_chd_open_decoder(state))
+    goto error;
 
-  intfstream_seek(cdimage_->fp,0,RETRO_VFS_SEEK_POSITION_START);
-  intfstream_read(cdimage_->fp,buf,8);
-  intfstream_seek(cdimage_->fp,0,RETRO_VFS_SEEK_POSITION_START);
+  info = rchd_info(state->decoder);
+  track_count = rchd_track_count(state->decoder);
+  if((info == NULL) ||
+     (info->unit_bytes == 0) ||
+     (track_count == 0) ||
+     (track_count > CDIMAGE_MAX_TRACKS))
+    goto error;
+
+  memset(cdimage_->files,0,sizeof(cdimage_->files));
+  memset(cdimage_->tracks,0,sizeof(cdimage_->tracks));
+  current_lba = 0;
+
+  for(i = 0; i < track_count; i++)
+    {
+      const rchd_track_t *source_track;
+      cdimage_track_t *track;
+      cdimage_chd_track_map_t *track_map;
+      uint64_t data_frames;
+      uint64_t skipped_source_frames;
+      uint64_t skipped_source_bytes;
+      uint64_t source_offset;
+      uint64_t source_bytes;
+      uint64_t span_end_lba;
+
+      source_track = rchd_track(state->decoder,i);
+      track = &cdimage_->tracks[i];
+      track_map = &state->tracks[i];
+      if((source_track == NULL) ||
+         !cdimage_chd_configure_track(track,source_track))
+        goto error;
+
+      skipped_source_frames = (source_track->pregap_stored == 0) ?
+        source_track->pregap : 0;
+      data_frames = source_track->frames;
+      if(source_track->pregap_stored == 0)
+        {
+          if(data_frames > source_track->pregap)
+            data_frames = (data_frames - source_track->pregap);
+          else
+            data_frames = 0;
+        }
+
+      skipped_source_bytes = (skipped_source_frames * info->unit_bytes);
+      if(source_track->logical_offset > (UINT64_MAX - skipped_source_bytes))
+        goto error;
+      source_offset = (source_track->logical_offset + skipped_source_bytes);
+
+      span_end_lba = (((current_lba + source_track->pregap) +
+                       data_frames) +
+                      source_track->postgap);
+      if(span_end_lba > UINT32_MAX)
+        goto error;
+
+      if(source_offset > info->logical_bytes)
+        goto error;
+      source_bytes = (data_frames * info->unit_bytes);
+      if(source_bytes > (info->logical_bytes - source_offset))
+        goto error;
+
+      track->start_lba = (uint32_t)(current_lba + source_track->pregap);
+      track->frames = (uint32_t)data_frames;
+      track_map->source_offset = source_offset;
+      track_map->span_start_lba = (uint32_t)current_lba;
+      track_map->span_end_lba = (uint32_t)span_end_lba;
+
+      current_lba = span_end_lba;
+    }
+
+  cdimage_->fp = NULL;
+  cdimage_->chd_state = state;
+  cdimage_->logical_blocks = (size_t)current_lba;
+  cdimage_->num_files = 0;
+  cdimage_->num_tracks = (int)track_count;
+  cdimage_->swap_audio = false;
+
+  if(cdimage_chd_read_sector(cdimage_,0,buf,sizeof(buf)) != sizeof(buf))
+    goto error;
 
   /*
    * Heuristic: check the first sector header for a 3DO MODE1 disc.
@@ -257,71 +487,32 @@ retro_cdimage_open_chd(const char *path_,
    * pattern found in 3DO full-disc CHD dumps.
    */
   if(!memcmp(buf,pattern,sizeof(pattern)))
-    cdimage_set_size_and_offset(cdimage_,2448,0);
-  else
-    cdimage_set_size_and_offset(cdimage_,2352,16);
-  cdimage_->swap_audio = false;
-
-  /* Enumerate tracks from CHD metadata */
-  err = chd_open(path_, CHD_OPEN_READ, NULL, &chd);
-  if(err == CHDERR_NONE)
     {
-      const chd_header *hd = chd_get_header(chd);
-      lba = 0;
-      file_offset = 0;
-      for(i = 0; i < CDIMAGE_MAX_TRACKS; i++)
-        {
-          chdstream_cdrom_metadata_t metadata;
-          uint32_t data_frames;
-
-          if(!chdstream_get_cdrom_metadata(chd,i,&metadata))
-            break;
-
-          data_frames = cdimage_chd_data_frames(&metadata);
-
-          cdimage_->tracks[i].track_num  = (uint8_t)metadata.track;
-          cdimage_->tracks[i].type       = (!strcmp(metadata.type, "AUDIO") ?
-                                            CDIMAGE_TRACK_AUDIO : CDIMAGE_TRACK_DATA);
-          cdimage_->tracks[i].frames     = data_frames;
-          cdimage_->tracks[i].file_index = 0;
-          if(!strcmp(metadata.type, "AUDIO"))
-            {
-              cdimage_->tracks[i].mode   = 2352;
-              cdimage_->tracks[i].offset = 0;
-            }
-          else if(!strcmp(metadata.type, "MODE1_RAW"))
-            {
-              cdimage_->tracks[i].mode   = 2352;
-              cdimage_->tracks[i].offset = 16;
-            }
-          else if(!strcmp(metadata.type, "MODE2_RAW"))
-            {
-              cdimage_->tracks[i].mode   = 2352;
-              cdimage_->tracks[i].offset = 24;
-            }
-          else
-            {
-              cdimage_->tracks[i].mode   = hd ? hd->unitbytes : cdimage_->sector_size;
-              cdimage_->tracks[i].offset = 0;
-            }
-
-          cdimage_->tracks[i].start_lba = lba + metadata.pregap;
-          cdimage_->tracks[i].file_offset = file_offset +
-            ((size_t)metadata.pregap * cdimage_->tracks[i].mode);
-
-          lba += metadata.pregap + data_frames + metadata.postgap;
-          file_offset += ((size_t)metadata.pregap +
-                          data_frames +
-                          metadata.postgap) * cdimage_->tracks[i].mode;
-
-          cdimage_->num_tracks++;
-        }
-      if(cdimage_->num_tracks > 0)
-        cdimage_->logical_blocks = lba;
-      chd_close(chd);
+      cdimage_->sector_size   = 2448;
+      cdimage_->sector_offset = 0;
+    }
+  else
+    {
+      cdimage_->sector_size   = 2352;
+      cdimage_->sector_offset = 16;
     }
 
   return 0;
+
+  // One state object owns every resource acquired during CHD opening.
+ error:
+  cdimage_->fp             = NULL;
+  cdimage_->chd_state      = NULL;
+  cdimage_->sector_size    = 0;
+  cdimage_->sector_offset  = 0;
+  cdimage_->logical_blocks = 0;
+  cdimage_->num_files      = 0;
+  cdimage_->num_tracks     = 0;
+  cdimage_->swap_audio     = false;
+  memset(cdimage_->files,0,sizeof(cdimage_->files));
+  memset(cdimage_->tracks,0,sizeof(cdimage_->tracks));
+  cdimage_chd_state_free(state);
+  return -1;
 #else
   (void)path_;
   (void)cdimage_;
@@ -364,16 +555,18 @@ retro_cdimage_open_iso(const char *path_,
     cdimage_set_size_and_offset(cdimage_,2048,0);
 
   /* Without CUE metadata, a 2352-byte BIN may be a single-track audio disc. */
-  cdimage_->num_tracks    = 1;
-  cdimage_->tracks[0].track_num = 1;
-  cdimage_->tracks[0].file_index = 0;
-  cdimage_->tracks[0].start_lba = 0;
-  cdimage_->tracks[0].type      = raw_audio ? CDIMAGE_TRACK_AUDIO : CDIMAGE_TRACK_DATA;
+  cdimage_->num_tracks            = 1;
+  cdimage_->tracks[0].track_num   = 1;
+  cdimage_->tracks[0].file_index  = 0;
+  cdimage_->tracks[0].start_lba   = 0;
+  cdimage_->tracks[0].type        = (raw_audio ?
+                                     CDIMAGE_TRACK_AUDIO :
+                                     CDIMAGE_TRACK_DATA);
   cdimage_->tracks[0].file_offset = 0;
-  cdimage_->tracks[0].mode      = cdimage_->sector_size;
-  cdimage_->tracks[0].offset    = cdimage_->sector_offset;
-  cdimage_->tracks[0].frames    = size / cdimage_->sector_size;
-  cdimage_->logical_blocks      = cdimage_->tracks[0].frames;
+  cdimage_->tracks[0].mode        = cdimage_->sector_size;
+  cdimage_->tracks[0].offset      = cdimage_->sector_offset;
+  cdimage_->tracks[0].frames      = (size / cdimage_->sector_size);
+  cdimage_->logical_blocks        = cdimage_->tracks[0].frames;
 
   return 0;
 }
@@ -578,6 +771,11 @@ retro_cdimage_close(cdimage_t *cdimage_)
   int rv;
   int i;
 
+#ifdef HAVE_CHD
+  cdimage_chd_state_free(cdimage_->chd_state);
+#endif
+  cdimage_->chd_state = NULL;
+
   rv = 0;
   if(cdimage_->num_files > 0)
     {
@@ -588,12 +786,15 @@ retro_cdimage_close(cdimage_t *cdimage_)
               int close_rv = intfstream_close(cdimage_->files[i].fp);
               if(close_rv != 0)
                 rv = close_rv;
+              free(cdimage_->files[i].fp);
+              cdimage_->files[i].fp = NULL;
             }
         }
     }
   else if(cdimage_->fp)
     {
       rv = intfstream_close(cdimage_->fp);
+      free(cdimage_->fp);
     }
 
   cdimage_->fp             = NULL;
@@ -695,6 +896,20 @@ retro_cdimage_get_track_for_sector(cdimage_t *cdimage_,
 {
   int i;
 
+  if(cdimage_->chd_state != NULL)
+    {
+      for(i = 0; i < cdimage_->num_tracks; i++)
+        {
+          const cdimage_track_t *track = &cdimage_->tracks[i];
+
+          if((sector_ >= track->start_lba) &&
+             ((sector_ - track->start_lba) < track->frames))
+            return i;
+        }
+
+      return -1;
+    }
+
   for(i = 0; i < cdimage_->num_tracks; i++)
     {
       if(sector_ < cdimage_->tracks[i].start_lba)
@@ -748,6 +963,81 @@ cdimage_needs_audio_swap(const cdimage_t       *cdimage_,
           (track_->type == CDIMAGE_TRACK_AUDIO));
 }
 
+#ifdef HAVE_CHD
+static
+int
+cdimage_chd_find_span(const cdimage_t *cdimage_,
+                      size_t           sector_)
+{
+  int i;
+
+  for(i = 0; i < cdimage_->num_tracks; i++)
+    {
+      const cdimage_chd_track_map_t *track_map;
+
+      track_map = &cdimage_->chd_state->tracks[i];
+      if((sector_ >= track_map->span_start_lba) &&
+         (sector_ < track_map->span_end_lba))
+        return i;
+    }
+
+  return -1;
+}
+
+
+static
+ssize_t
+cdimage_chd_read_sector(cdimage_t *cdimage_,
+                        size_t     sector_,
+                        void      *buf_,
+                        size_t     bufsize_)
+{
+  const rchd_info_t *info;
+  const cdimage_chd_track_map_t *track_map;
+  cdimage_track_t *track;
+  ssize_t bytes_read;
+  size_t read_size;
+  uint64_t data_index;
+  uint64_t source_offset;
+  int track_index;
+
+  if((cdimage_->chd_state == NULL) ||
+     (sector_ >= cdimage_->logical_blocks))
+    return -1;
+
+  track_index = cdimage_chd_find_span(cdimage_,sector_);
+  if(track_index < 0)
+    return -1;
+
+  track = &cdimage_->tracks[track_index];
+  track_map = &cdimage_->chd_state->tracks[track_index];
+  read_size = MIN(bufsize_,(size_t)track->mode);
+  if((sector_ < track->start_lba) ||
+     ((sector_ - track->start_lba) >= track->frames))
+    {
+      memset(buf_,0,read_size);
+      return (ssize_t)read_size;
+    }
+
+  info = rchd_info(cdimage_->chd_state->decoder);
+  if(info == NULL)
+    return -1;
+
+  data_index = (sector_ - track->start_lba);
+  source_offset = (track_map->source_offset +
+                   (data_index * info->unit_bytes));
+  if(bufsize_ < track->mode)
+    source_offset = (source_offset + track->offset);
+
+  bytes_read = cdimage_chd_read_bytes(cdimage_->chd_state,
+                                      source_offset,
+                                      buf_,
+                                      read_size);
+
+  return bytes_read;
+}
+#endif
+
 ssize_t
 retro_cdimage_read(cdimage_t *cdimage_,
                    size_t     sector_,
@@ -758,6 +1048,11 @@ retro_cdimage_read(cdimage_t *cdimage_,
   int rv;
   size_t pos;
   size_t offset;
+
+#ifdef HAVE_CHD
+  if(cdimage_->chd_state != NULL)
+    return cdimage_chd_read_sector(cdimage_,sector_,buf_,bufsize_);
+#endif
 
   fp = cdimage_->fp;
   if((cdimage_->num_files > 0) && cdimage_->files[0].fp)
@@ -790,6 +1085,11 @@ retro_cdimage_read_sector(cdimage_t *cdimage_,
   size_t pos;
   size_t offset;
 
+#ifdef HAVE_CHD
+  if(cdimage_->chd_state != NULL)
+    return cdimage_chd_read_sector(cdimage_,sector_,buf_,bufsize_);
+#endif
+
   track = retro_cdimage_get_track_for_sector(cdimage_,sector_);
   if(track < 0)
     {
@@ -818,8 +1118,7 @@ retro_cdimage_read_sector(cdimage_t *cdimage_,
 
   /*
    * Raw BIN/CUE CD-DA sectors need native-order samples for the 3DO READ_DATA
-   * audio path. CHD audio is already decoded by libchdr in that order, so CHD
-   * images leave swap_audio clear.
+   * audio path. RCHD already returns decoded audio in that order.
    */
   if((rv > 0) && cdimage_needs_audio_swap(cdimage_,track_info))
     cdimage_swap_audio_byte_pairs(buf_,rv);

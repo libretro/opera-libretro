@@ -13,20 +13,18 @@
 #define CDIMAGE_MAX_FILES  CDIMAGE_MAX_TRACKS
 
 typedef enum cdimage_track_type_e
-{
-  CDIMAGE_TRACK_DATA  = 0,
-  CDIMAGE_TRACK_AUDIO = 1
-} cdimage_track_type_t;
+  {
+    CDIMAGE_TRACK_DATA  = 0,
+    CDIMAGE_TRACK_AUDIO = 1
+  } cdimage_track_type_t;
 
-struct cdimage_file_s
+typedef struct cdimage_file_t
 {
   intfstream_t *fp;
   size_t        size;
-};
+} cdimage_file_t;
 
-typedef struct cdimage_file_s cdimage_file_t;
-
-struct cdimage_track_s
+typedef struct cdimage_track_t
 {
   uint8_t  track_num;
   cdimage_track_type_t type;
@@ -36,24 +34,23 @@ struct cdimage_track_s
   size_t   file_offset;
   uint16_t mode;        /* sector size: 2048, 2352, 2448 */
   uint8_t  offset;      /* data offset within sector */
-};
+} cdimage_track_t;
 
-typedef struct cdimage_track_s cdimage_track_t;
+typedef struct cdimage_chd_state_t cdimage_chd_state_t;
 
-struct cdimage_s
+typedef struct cdimage_t
 {
-  intfstream_t *fp;
-  int           sector_size;
-  int           sector_offset;
-  size_t        logical_blocks;
-  int           num_files;
-  cdimage_file_t files[CDIMAGE_MAX_FILES];
-  int           num_tracks;
-  bool          swap_audio;
-  cdimage_track_t tracks[CDIMAGE_MAX_TRACKS];
-};
-
-typedef struct cdimage_s cdimage_t;
+  intfstream_t        *fp;
+  cdimage_chd_state_t *chd_state;
+  int                  sector_size;
+  int                  sector_offset;
+  size_t               logical_blocks;
+  int                  num_files;
+  cdimage_file_t       files[CDIMAGE_MAX_FILES];
+  int                  num_tracks;
+  bool                 swap_audio;
+  cdimage_track_t      tracks[CDIMAGE_MAX_TRACKS];
+} cdimage_t;
 
 int
 retro_cdimage_open_chd(const char *path_,
@@ -76,13 +73,13 @@ retro_cdimage_close(cdimage_t *cdimage_);
 
 int
 retro_cdimage_get_track_for_sector(cdimage_t *cdimage_,
-                                    size_t     sector_);
+                                   size_t     sector_);
 
 ssize_t
 retro_cdimage_read(cdimage_t *cdimage_,
-                    size_t     sector_,
-                    void      *buf_,
-                    size_t     bufsize_);
+                   size_t     sector_,
+                   void      *buf_,
+                   size_t     bufsize_);
 
 ssize_t
 retro_cdimage_read_sector(cdimage_t *cdimage_,
@@ -94,11 +91,11 @@ ssize_t
 retro_cdimage_get_number_of_logical_blocks(cdimage_t *cdimage_);
 
 void
-retro_cdimage_get_toc(cdimage_t      *cdimage_,
-                      uint8_t        *track_first_,
-                      uint8_t        *track_last_,
-                      uint8_t        *disc_id_,
-                      void           *disc_toc_,
-                      uint32_t        disc_toc_size_);
+retro_cdimage_get_toc(cdimage_t *cdimage_,
+                      uint8_t   *track_first_,
+                      uint8_t   *track_last_,
+                      uint8_t   *disc_id_,
+                      void      *disc_toc_,
+                      uint32_t   disc_toc_size_);
 
 #endif

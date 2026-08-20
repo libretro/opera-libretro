@@ -1,0 +1,74 @@
+/* Copyright  (C) 2010-2020 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rjpeg.h).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#ifndef __LIBRETRO_SDK_FORMAT_RJPEG_H__
+#define __LIBRETRO_SDK_FORMAT_RJPEG_H__
+
+#include <stdint.h>
+#include <stddef.h>
+
+#include <retro_common_api.h>
+
+#include <boolean.h>
+
+RETRO_BEGIN_DECLS
+
+typedef struct rjpeg rjpeg_t;
+
+bool rjpeg_start(rjpeg_t *rjpeg);
+
+bool rjpeg_iterate_image(rjpeg_t *rjpeg);
+
+bool rjpeg_is_valid(rjpeg_t *rjpeg);
+
+int rjpeg_process_image(rjpeg_t *rjpeg, void **buf,
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba);
+
+bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data, size_t len);
+
+/* Optional: declare the output byte order (supports_rgba) before
+ * iteration, so the fused iterate+resample can emit final pixels in
+ * the caller's order.  Without it the fusion emits BGRA and
+ * rjpeg_process_image repairs the order afterwards if needed. */
+void rjpeg_set_out_rgba(rjpeg_t *rjpeg, bool rgba);
+
+/* Prefix decoding support (mirrors rpng): rjpeg_set_avail declares how
+ * many bytes from the buffer start are resident (monotonic, clamped to
+ * the full length).  While the frontier is below the full length the
+ * baseline entropy row driver yields at the frontier with
+ * rjpeg_need_more() true instead of decoding past it, so a caller
+ * feeding a growing read can raise avail and iterate again.
+ * rjpeg_header_ready reports whether the resident bytes already contain
+ * the full JPEG header (SOI..SOS), i.e. whether decode can start.
+ * Never calling rjpeg_set_avail leaves the whole buffer resident. */
+void rjpeg_set_avail(rjpeg_t *rjpeg, size_t avail);
+bool rjpeg_need_more(const rjpeg_t *rjpeg);
+bool rjpeg_header_ready(const uint8_t *data, size_t len);
+
+void rjpeg_free(rjpeg_t *rjpeg);
+
+rjpeg_t *rjpeg_alloc(void);
+
+RETRO_END_DECLS
+
+#endif
