@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_environment.h).
@@ -32,9 +32,6 @@ need to be full of platform-specific workarounds.
 */
 
 #if defined (__cplusplus)
-#if 0
-printf("This is C++, version %d.\n", __cplusplus);
-#endif
 /* The expected values would be
  *   199711L, for ISO/IEC 14882:1998 or 14882:2003
  */

@@ -1,6 +1,7 @@
 #include "file/file_path.h"
 #include "libretro.h"
 #include "libretro_core_options.h"
+#include "retro_dirent.h"
 #include "retro_miscellaneous.h"
 #include "streams/file_stream.h"
 
@@ -92,10 +93,23 @@ retro_vfs_initialize(void)
 {
   struct retro_vfs_interface_info vfs_info;
 
-  vfs_info.required_interface_version = 1;
+  vfs_info.required_interface_version = 3;
   vfs_info.iface                      = NULL;
 
-  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info))
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info) &&
+     (vfs_info.iface != NULL))
+    {
+      filestream_vfs_init(&vfs_info);
+      path_vfs_init(&vfs_info);
+      dirent_vfs_init(&vfs_info);
+      return;
+    }
+
+  vfs_info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+  vfs_info.iface                      = NULL;
+
+  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info) &&
+     (vfs_info.iface != NULL))
     filestream_vfs_init(&vfs_info);
 }
 

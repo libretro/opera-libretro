@@ -1457,7 +1457,7 @@ ode_go_parent(void)
     return;
 
   ode_str_copy(parent,g_CDROM_STATE.ode.current,sizeof(parent));
-  path_parent_dir(parent);
+  path_parent_dir(parent,strlen(parent));
   if(!ode_path_is_under_root(parent))
     ode_str_copy(parent,g_CDROM_STATE.ode.root,sizeof(parent));
 
@@ -1592,7 +1592,7 @@ ode_find_toc_path(uint32_t  toc_id_,
   if(target == ODE_TOC_ENTRY_MASK)
     {
       ode_str_copy(path_,g_CDROM_STATE.ode.current,path_size_);
-      path_parent_dir(path_);
+      path_parent_dir(path_,strlen(path_));
       if(!ode_path_is_under_root(path_))
         ode_str_copy(path_,g_CDROM_STATE.ode.root,path_size_);
       if(is_dir_ != NULL)

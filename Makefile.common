@@ -25,7 +25,7 @@ SOURCES_C := \
         $(CORE_DIR)/lr_input.c \
         $(CORE_DIR)/lr_input_crosshair.c \
         $(CORE_DIR)/lr_input_descs.c \
-        $(CORE_DIR)/retro_cdimage.c \
+        $(CORE_DIR)/retro_cdimage.c
 
 SOURCES_C += \
         $(OPERA_DIR)/prng16.c \
@@ -64,6 +64,8 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
@@ -73,10 +75,12 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
-	$(LIBRETRO_COMM_DIR)/memmap/memalign.c
+	$(LIBRETRO_COMM_DIR)/memmap/memalign.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 ifeq ($(HAVE_CDROM), 1)
 	FLAGS += -DHAVE_CDROM
@@ -112,32 +116,28 @@ endif
 ifeq ($(HAVE_CHD), 1)
 FLAGS += \
 	-DHAVE_CHD \
-	-D_7ZIP_ST \
-	-DDR_FLAC_NO_STDIO
+	-DHAVE_RCHD \
+	-DHAVE_RCHD_DEFLATE \
+	-DHAVE_RCHD_LZMA \
+	-DHAVE_RCHD_FLAC \
+	-DHAVE_RFLAC
 
 INCFLAGS += \
-	-I$(DEPS_DIR)/lzma-19.00/include \
-	-I$(DEPS_DIR)/libchdr/include \
 	-I$(DEPS_DIR)/zlib-1.3.1.2
 
 SOURCES_C += \
         $(LIBRETRO_COMM_DIR)/streams/chd_stream.c \
-        $(DEPS_DIR)/lzma-19.00/src/Alloc.c \
-        $(DEPS_DIR)/lzma-19.00/src/Bra86.c \
-        $(DEPS_DIR)/lzma-19.00/src/BraIA64.c \
-        $(DEPS_DIR)/lzma-19.00/src/CpuArch.c \
-        $(DEPS_DIR)/lzma-19.00/src/Delta.c \
-        $(DEPS_DIR)/lzma-19.00/src/LzFind.c \
-        $(DEPS_DIR)/lzma-19.00/src/Lzma86Dec.c \
-        $(DEPS_DIR)/lzma-19.00/src/Lzma86Enc.c \
-        $(DEPS_DIR)/lzma-19.00/src/LzmaDec.c \
-        $(DEPS_DIR)/lzma-19.00/src/LzmaEnc.c \
-        $(DEPS_DIR)/lzma-19.00/src/Sort.c \
-        $(DEPS_DIR)/libchdr/src/libchdr_bitstream.c \
-        $(DEPS_DIR)/libchdr/src/libchdr_cdrom.c \
-        $(DEPS_DIR)/libchdr/src/libchdr_chd.c \
-        $(DEPS_DIR)/libchdr/src/libchdr_flac.c \
-        $(DEPS_DIR)/libchdr/src/libchdr_huffman.c
+        $(LIBRETRO_COMM_DIR)/formats/chd/rchd.c \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.c \
+        $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
+        $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
+
+ifeq ($(STATIC_LINKING), 1)
+SOURCES_C += \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+        $(LIBRETRO_COMM_DIR)/features/features_cpu.c
+endif
 endif
 
 ZLIB_INCFLAGS  = -I$(DEPS_DIR)/zlib-1.3.1.2

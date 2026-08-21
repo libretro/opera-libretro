@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.c).
@@ -26,60 +26,31 @@
 
 #include <streams/memory_stream.h>
 
-static uint8_t* g_buffer      = NULL;
-static uint64_t g_size         = 0;
-static uint64_t last_file_size = 0;
-
 struct memstream
 {
-   uint8_t *buf;
    uint64_t size;
    uint64_t ptr;
    uint64_t max_ptr;
+   uint8_t *buf;
    unsigned writing;
 };
 
-static void memstream_update_pos(memstream_t *stream)
-{
-   if (stream && stream->ptr > stream->max_ptr)
-      stream->max_ptr = stream->ptr;
-}
 
-void memstream_set_buffer(uint8_t *buffer, uint64_t size)
+memstream_t *memstream_open(uint8_t *buf, uint64_t size, unsigned writing)
 {
-   g_buffer = buffer;
-   g_size = size;
-}
+   memstream_t *stream;
 
-uint64_t memstream_get_last_size(void)
-{
-   return last_file_size;
-}
+   stream = (memstream_t*)malloc(sizeof(*stream));
 
-static void memstream_init(memstream_t *stream,
-      uint8_t *buffer, uint64_t max_size, unsigned writing)
-{
    if (!stream)
-      return;
-
-   stream->buf     = buffer;
-   stream->size    = max_size;
-   stream->ptr     = 0;
-   stream->max_ptr = 0;
-   stream->writing = writing;
-}
-
-memstream_t *memstream_open(unsigned writing)
-{
-	memstream_t *stream;
-   if (!g_buffer || !g_size)
       return NULL;
 
-   stream = (memstream_t*)calloc(1, sizeof(*stream));
-   memstream_init(stream, g_buffer, g_size, writing);
+   stream->ptr       = 0;
+   stream->max_ptr   = 0;
+   stream->writing   = writing;
+   stream->buf       = buf;
+   stream->size      = size;
 
-   g_buffer = NULL;
-   g_size = 0;
    return stream;
 }
 
@@ -88,8 +59,17 @@ void memstream_close(memstream_t *stream)
    if (!stream)
       return;
 
-   last_file_size = stream->writing ? stream->max_ptr : stream->size;
    free(stream);
+}
+
+uint64_t memstream_get_ptr(memstream_t *stream)
+{
+   return stream->ptr;
+}
+
+uint64_t memstream_get_size(memstream_t *stream)
+{
+   return stream->size;
 }
 
 uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
@@ -99,17 +79,19 @@ uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
    if (!stream)
       return 0;
 
-   avail = stream->size - stream->ptr;
+   avail               = stream->size - stream->ptr;
    if (bytes > avail)
-      bytes = avail;
+      bytes            = avail;
 
    memcpy(data, stream->buf + stream->ptr, (size_t)bytes);
-   stream->ptr += bytes;
-   memstream_update_pos(stream);
+   stream->ptr        += bytes;
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr  = stream->ptr;
    return bytes;
 }
 
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
+uint64_t memstream_write(memstream_t *stream,
+      const void *data, uint64_t bytes)
 {
    uint64_t avail = 0;
 
@@ -122,7 +104,8 @@ uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
 
    memcpy(stream->buf + stream->ptr, data, (size_t)bytes);
    stream->ptr += bytes;
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
    return bytes;
 }
 
@@ -159,15 +142,8 @@ void memstream_rewind(memstream_t *stream)
    memstream_seek(stream, 0L, SEEK_SET);
 }
 
-uint64_t memstream_pos(memstream_t *stream)
-{
-   return stream->ptr;
-}
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len)
-{
-   return NULL;
-}
+uint64_t memstream_pos(memstream_t *stream) { return stream->ptr; }
+char *memstream_gets(memstream_t *stream, char *s, size_t len) { return NULL; }
 
 int memstream_getc(memstream_t *stream)
 {
@@ -176,7 +152,8 @@ int memstream_getc(memstream_t *stream)
       return EOF;
    ret = stream->buf[stream->ptr++];
 
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
 
    return ret;
 }
@@ -186,5 +163,6 @@ void memstream_putc(memstream_t *stream, int c)
    if (stream->ptr < stream->size)
       stream->buf[stream->ptr++] = c;
 
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
 }
