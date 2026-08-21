@@ -258,6 +258,10 @@ else ifeq ($(platform), ctr)
    FLAGS += -Wall -mword-relocations
    FLAGS += -fomit-frame-pointer -ffast-math
    FLAGS += -DARM11 -D_3DS
+   ifeq ($(strip $(CTRULIB)),)
+      CTRULIB := $(DEVKITPRO)/libctru
+   endif
+   INCFLAGS_PLATFORM = -I$(CTRULIB)/include
    STATIC_LINKING = 1
 
 # Nintendo Switch (libtransistor)
