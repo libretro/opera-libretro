@@ -50,14 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
-  HACK
-  This is not accurate. Real ARM60 would start at 0x00000000. The
-  ROM is mapped to the bottom of the address space till any write
-  happens and then it is swapped out for the DRAM. Instead of having
-  that overhead ever memory access we just start in ROM.
-*/
-#define ARM_INITIAL_PC  0x03000000
+#define ARM_INITIAL_PC  0x00000000
 #define ARM_ARRAY_COUNT(A_) ((uint32_t)(sizeof(A_) / sizeof((A_)[0])))
 
 #define ARM_MUL_MASK    0x0fc000f0
@@ -77,6 +70,11 @@
 #define ARM_DP_IMM_ROT_AMOUNT_SHIFT 7
 #define ARM_DP_IMM_ROT_AMOUNT_MASK  0x1E
 #define ARM_SHIFT_TYPE_ROR          3
+
+#define ARM_CPSR_MODE_MASK   0x1F
+#define ARM_CPSR_MODE_SVC    0x13
+#define ARM_CPSR_IRQ_DISABLE 0x80
+#define ARM_CPSR_FIQ_DISABLE 0x40
 
 #define ARM_MODE_USER   0
 #define ARM_MODE_FIQ    1
@@ -140,6 +138,10 @@ static int        g_SWI_HLE;
 static arm_core_t CPU;
 static int        CYCLES;	//cycle counter
 static bool       g_SOFT_RESET_PENDING = false;
+static bool       g_ROM_OVERLAY = false;
+static uint32_t   g_CPU_DIRECT_RAM_LIMIT = 0;
+static uint32_t   g_ROM_OVERLAY_READ_LIMIT = 0;
+static uint32_t   g_ROM_OVERLAY_CLEAR_LIMIT = 0;
 static uint32_t   carry_out = 0;
 
 static uint32_t readusr(uint32_t const rn);
@@ -148,6 +150,58 @@ static uint32_t mreadb(uint32_t const addr);
 static void     mwriteb(uint32_t const addr, uint8_t const val);
 static uint32_t mreadw(uint32_t const addr);
 static void     mwritew(uint32_t const addr,uint32_t const val);
+static void     mwritew_internal(uint32_t const addr,
+                                 uint32_t const val);
+
+#define ROM_OVERLAY_READ_LIMIT  0x03000000
+
+/*
+  Encode the overlay state in the limits used by the hot memory paths.  While
+  enabled, low reads select ROM and low DRAM writes clear the overlay.  Once
+  disabled, zero makes the unsigned address comparisons consistently false
+  until a reset restores the overlay.  This avoids a separate overlay-state
+  branch on every fetch/access and gives the branch predictor a stable path.
+*/
+static
+void
+set_rom_overlay(bool const enabled_)
+{
+  g_ROM_OVERLAY = enabled_;
+  g_CPU_DIRECT_RAM_LIMIT = enabled_ ? 0 : RAM_SIZE;
+  g_ROM_OVERLAY_READ_LIMIT = enabled_ ? ROM_OVERLAY_READ_LIMIT : 0;
+  g_ROM_OVERLAY_CLEAR_LIMIT = enabled_ ? DRAM_SIZE : 0;
+}
+
+void
+opera_arm_sync_memory_map(void)
+{
+  set_rom_overlay(g_ROM_OVERLAY);
+}
+
+static
+OPERA_FORCEINLINE
+uint32_t
+mfetchw(uint32_t const addr_)
+{
+  uint32_t index;
+  uint32_t const addr = (addr_ & ~3);
+
+  if(addr < g_CPU_DIRECT_RAM_LIMIT)
+    return opera_mem_read32(addr);
+
+  if(addr < g_ROM_OVERLAY_READ_LIMIT)
+    return *(uint32_t*)&ROM[addr & ROM1_SIZE_MASK];
+
+  index = (addr ^ 0x03000000);
+  if(!(index & ~ROM1_SIZE_MASK))
+    return *(uint32_t*)&ROM[index];
+
+  index = (addr ^ 0x06000000);
+  if(!(index & ~ROM1_SIZE_MASK))
+    return *(uint32_t*)&ROM[index];
+
+  return mreadw(addr);
+}
 
 static
 bool
@@ -156,10 +210,11 @@ clio_xbus_access_aborts(uint32_t const index_)
   if((index_ < 0x540) || (index_ >= 0x600))
     return false;
 
-  if(!opera_xbus_selected_device_absent())
-    return false;
+  if(opera_clio_xbus_access_aborts(opera_xbus_selected_device_address(),
+                                   index_))
+    return true;
 
-  return true;
+  return opera_xbus_selected_device_absent();
 }
 
 uint32_t
@@ -184,7 +239,8 @@ opera_arm_state_write_payload(opera_state_writer_t *writer_,
           opera_state_write_u32(writer_,state_->CPSR) &&
           opera_state_write_u8(writer_,state_->nFIQ) &&
           opera_state_write_u8(writer_,state_->MAS_Access_Exept) &&
-          opera_state_write_u8(writer_,g_SOFT_RESET_PENDING));
+          opera_state_write_u8(writer_,g_SOFT_RESET_PENDING) &&
+          opera_state_write_u8(writer_,g_ROM_OVERLAY));
 }
 
 static
@@ -227,7 +283,10 @@ opera_arm_state_load_v1(void const     *data_,
 
   rv = opera_state_load_sized(&CPU,"ARM",data_,size_,sizeof(CPU));
   if(rv != 0)
-    g_SOFT_RESET_PENDING = false;
+    {
+      g_SOFT_RESET_PENDING = false;
+      set_rom_overlay(false);
+    }
 
   return rv;
 }
@@ -236,25 +295,37 @@ static
 bool
 opera_arm_state_read_payload(opera_state_reader_t *reader_,
                              arm_core_t           *state_,
-                             bool                 *soft_reset_pending_)
+                             bool                 *soft_reset_pending_,
+                             bool                 *rom_overlay_)
 {
   uint8_t soft_reset_pending;
+  uint8_t rom_overlay;
 
   soft_reset_pending = false;
+  rom_overlay = false;
 
-  return (opera_state_read_u32_array(reader_,state_->USER,ARM_ARRAY_COUNT(state_->USER)) &&
-          opera_state_read_u32_array(reader_,state_->CASH,ARM_ARRAY_COUNT(state_->CASH)) &&
-          opera_state_read_u32_array(reader_,state_->SVC,ARM_ARRAY_COUNT(state_->SVC)) &&
-          opera_state_read_u32_array(reader_,state_->ABT,ARM_ARRAY_COUNT(state_->ABT)) &&
-          opera_state_read_u32_array(reader_,state_->FIQ,ARM_ARRAY_COUNT(state_->FIQ)) &&
-          opera_state_read_u32_array(reader_,state_->IRQ,ARM_ARRAY_COUNT(state_->IRQ)) &&
-          opera_state_read_u32_array(reader_,state_->UND,ARM_ARRAY_COUNT(state_->UND)) &&
-          opera_state_read_u32_array(reader_,state_->SPSR,ARM_ARRAY_COUNT(state_->SPSR)) &&
-          opera_state_read_u32(reader_,&state_->CPSR) &&
-          opera_state_read_u8(reader_,&state_->nFIQ) &&
-          opera_state_read_u8(reader_,&state_->MAS_Access_Exept) &&
-          opera_state_read_u8(reader_,&soft_reset_pending) &&
-          ((*soft_reset_pending_ = (soft_reset_pending != 0)), true));
+  if(!opera_state_read_u32_array(reader_,state_->USER,ARM_ARRAY_COUNT(state_->USER)) ||
+     !opera_state_read_u32_array(reader_,state_->CASH,ARM_ARRAY_COUNT(state_->CASH)) ||
+     !opera_state_read_u32_array(reader_,state_->SVC,ARM_ARRAY_COUNT(state_->SVC)) ||
+     !opera_state_read_u32_array(reader_,state_->ABT,ARM_ARRAY_COUNT(state_->ABT)) ||
+     !opera_state_read_u32_array(reader_,state_->FIQ,ARM_ARRAY_COUNT(state_->FIQ)) ||
+     !opera_state_read_u32_array(reader_,state_->IRQ,ARM_ARRAY_COUNT(state_->IRQ)) ||
+     !opera_state_read_u32_array(reader_,state_->UND,ARM_ARRAY_COUNT(state_->UND)) ||
+     !opera_state_read_u32_array(reader_,state_->SPSR,ARM_ARRAY_COUNT(state_->SPSR)) ||
+     !opera_state_read_u32(reader_,&state_->CPSR) ||
+     !opera_state_read_u8(reader_,&state_->nFIQ) ||
+     !opera_state_read_u8(reader_,&state_->MAS_Access_Exept) ||
+     !opera_state_read_u8(reader_,&soft_reset_pending))
+    return false;
+
+  /* The overlay byte was added after the first chunked ARM save format. */
+  if(opera_state_reader_remaining(reader_) &&
+     !opera_state_read_u8(reader_,&rom_overlay))
+    return false;
+
+  *soft_reset_pending_ = (soft_reset_pending != 0);
+  *rom_overlay_ = (rom_overlay != 0);
+  return true;
 }
 
 uint32_t
@@ -263,17 +334,22 @@ opera_arm_state_load(void const     *data_,
 {
   arm_core_t state;
   bool soft_reset_pending;
+  bool rom_overlay;
   opera_state_reader_t reader;
   opera_state_reader_t payload;
 
   opera_state_reader_init(&reader,data_,size_);
   if(!opera_state_read_chunk(&reader,"ARM",&payload) ||
-     !opera_arm_state_read_payload(&payload,&state,&soft_reset_pending) ||
+     !opera_arm_state_read_payload(&payload,
+                                   &state,
+                                   &soft_reset_pending,
+                                   &rom_overlay) ||
      !opera_state_reader_finished(&payload))
     return 0;
 
   CPU = state;
   g_SOFT_RESET_PENDING = soft_reset_pending;
+  set_rom_overlay(rom_overlay);
 
   return opera_state_reader_used(&reader);
 }
@@ -654,6 +730,8 @@ opera_arm_init(void)
   int i;
 
   g_SWI_HLE = 0;
+  g_SOFT_RESET_PENDING = false;
+  set_rom_overlay(true);
   carry_out = 0;
 
   CYCLES = 0;
@@ -671,13 +749,12 @@ opera_arm_init(void)
   for(i = 0;i < 7; i++)
     CPU.CASH[i] = CPU.FIQ[i] = 0;
 
-  opera_mem_seed_low_boot_word();
-
   CPU.nFIQ = false;
   CPU.MAS_Access_Exept = false;
 
   CPU.USER[15] = ARM_INITIAL_PC;
-  arm_cpsr_set(0x13);
+  arm_cpsr_set(((ARM_CPSR_MODE_SVC | ARM_CPSR_IRQ_DISABLE) |
+                ARM_CPSR_FIQ_DISABLE));
 }
 
 void
@@ -687,36 +764,30 @@ opera_arm_destroy(void)
 }
 
 void
-opera_arm_reset(void)
+opera_arm_soft_reset(void)
 {
-  int i;
+  uint32_t const return_cpsr = CPU.CPSR;
+  uint32_t const return_pc   = CPU.USER[15];
 
   CYCLES = 0;
   g_SOFT_RESET_PENDING = false;
-  opera_mem_rom_select(ROM1);
-  opera_mem_seed_low_boot_word();
+  set_rom_overlay(true);
 
-  for(i = 0; i < 16; i++)
-    CPU.USER[i] = 0;
-
-  for(i = 0; i < 2; i++)
-    {
-      CPU.SVC[i] = 0;
-      CPU.ABT[i] = 0;
-      CPU.IRQ[i] = 0;
-      CPU.UND[i] = 0;
-    }
-
-  for(i = 0; i < 7; i++)
-    CPU.CASH[i] = CPU.FIQ[i] = 0;
+  /*
+    A CLIO soft reset asserts the ARM reset input without making it a cold CPU
+    reset.  Portfolio's DIPIR path relies on the interrupted CPSR and next PC
+    being visible as SPSR_svc and R14_svc when it chooses to return.
+  */
+  CPU.SPSR[ARM_MODE_SVC] = return_cpsr;
+  arm_cpsr_set((((return_cpsr & ~ARM_CPSR_MODE_MASK) |
+                 ARM_CPSR_MODE_SVC) |
+                ARM_CPSR_IRQ_DISABLE) |
+               ARM_CPSR_FIQ_DISABLE);
+  CPU.USER[14] = return_pc;
+  CPU.USER[15] = ARM_INITIAL_PC;
 
   CPU.MAS_Access_Exept = false;
-
   CPU.nFIQ = false;
-
-  CPU.USER[15] = ARM_INITIAL_PC;
-  arm_cpsr_set(0x13);
-
 }
 
 void
@@ -1425,31 +1496,37 @@ ARM_SWAP(uint32_t cmd_)
 {
   uint32_t tmp;
   uint32_t addr;
+  uint32_t value;
 
   CPU.USER[15] += 4;
   addr          = CPU.USER[(cmd_ >> 16) & 0xF];
   CPU.USER[15] += 4;
+  value         = CPU.USER[cmd_ & 0xF];
+  // Preserve PC operands, but expose the execution PC to memory-triggered resets.
+  CPU.USER[15] -= 8;
 
   if(cmd_ & (1 << 22))
     {
       tmp = mreadb(addr);
-      //	if(MAS_Access_Exept)return true;
-      mwriteb(addr,CPU.USER[cmd_ & 0xF]);
+      if(CPU.MAS_Access_Exept)
+        return;
+      mwriteb(addr,value);
       if(g_SOFT_RESET_PENDING)
         return;
-      CPU.USER[15] -= 8;
-      //	if(MAS_Access_Exept)return true;
+      if(CPU.MAS_Access_Exept)
+        return;
       CPU.USER[(cmd_ >> 12) & 0xF] = tmp;
     }
   else
     {
       tmp = mreadw(addr);
-      //if(MAS_Access_Exept)return true;
-      mwritew(addr,CPU.USER[cmd_ & 0xF]);
+      if(CPU.MAS_Access_Exept)
+        return;
+      mwritew(addr,value);
       if(g_SOFT_RESET_PENDING)
         return;
-      CPU.USER[15] -= 8;
-      //if(MAS_Access_Exept)return true;
+      if(CPU.MAS_Access_Exept)
+        return;
       if(addr & 3)
         tmp = ((tmp >> ((addr & 3) << 3)) | (tmp << (32 - ((addr & 3) << 3))));
       CPU.USER[(cmd_ >> 12) & 0xF] = tmp;
@@ -1527,7 +1604,7 @@ opera_arm_execute(void)
   int isexeption;
 
   isexeption = false;
-  cmd = mreadw(CPU.USER[15]);
+  cmd = mfetchw(CPU.USER[15]);
   CPU.USER[15] += 4;
 
   CYCLES = -SCYCLE;
@@ -1586,8 +1663,11 @@ opera_arm_execute(void)
           if((cmd & ARM_SDS_MASK) == ARM_SDS_SIGN)
             {
               ARM_SWAP(cmd);
-              //if(MAS_Access_Exept)
-              CYCLES -= (2 * NCYCLE + ICYCLE);
+              CYCLES -= ((2 * NCYCLE) + ICYCLE);
+              if(g_SOFT_RESET_PENDING)
+                break;
+              if(CPU.MAS_Access_Exept)
+                arm_data_abort();
               break;
             }
         case 0x2:               //ALU
@@ -1857,6 +1937,19 @@ void
 mwritew(uint32_t const addr_,
         uint32_t const val_)
 {
+  uint32_t const addr = (addr_ & ~3);
+
+  if(addr < g_ROM_OVERLAY_CLEAR_LIMIT)
+    set_rom_overlay(false);
+
+  mwritew_internal(addr,val_);
+}
+
+static
+void
+mwritew_internal(uint32_t const addr_,
+                 uint32_t const val_)
+{
    uint32_t index;
    uint32_t const addr = (addr_ & ~3);
 
@@ -1876,15 +1969,21 @@ mwritew(uint32_t const addr_,
    index = (addr ^ 0x03400000);
    if(!(index & ~0xFFFF))
    {
+      int reset_kind;
+
       if(clio_xbus_access_aborts(index))
         {
           CPU.MAS_Access_Exept = true;
           return;
         }
 
-      if(opera_clio_poke(index,val_))
+      reset_kind = opera_clio_poke(index,val_);
+      if(reset_kind)
         {
-          opera_3do_soft_reset();
+          if(reset_kind & OPERA_CLIO_RESET_CLEAR_DIPIR)
+            opera_3do_dipir_reset();
+          else
+            opera_3do_soft_reset();
           g_SOFT_RESET_PENDING = true;
         }
       return;
@@ -1914,8 +2013,11 @@ mreadw(uint32_t const addr_)
   int32_t index;
   uint32_t const addr = (addr_ & ~3);
 
-  if(addr < RAM_SIZE)
+  if(addr < g_CPU_DIRECT_RAM_LIMIT)
     return opera_mem_read32(addr);
+
+  if(addr < g_ROM_OVERLAY_READ_LIMIT)
+    return *(uint32_t*)&ROM[addr & ROM1_SIZE_MASK];
 
   index = (addr ^ 0x03300000);
   if(!(index & ~0xFFFFF))
@@ -1972,6 +2074,9 @@ mwriteb(uint32_t const addr_,
 {
   int32_t index;
 
+  if(addr_ < g_ROM_OVERLAY_CLEAR_LIMIT)
+    set_rom_overlay(false);
+
   if(addr_ < RAM_SIZE)
   {
     opera_mem_write8(addr_,val_);
@@ -1995,8 +2100,17 @@ mreadb(uint32_t const addr_)
 {
   int32_t index;
 
-  if(addr_ < RAM_SIZE)
+  if(addr_ < g_CPU_DIRECT_RAM_LIMIT)
     return opera_mem_read8(addr_);
+
+  if(addr_ < g_ROM_OVERLAY_READ_LIMIT)
+    {
+#if IS_BIG_ENDIAN
+      return ROM[addr_ & ROM1_SIZE_MASK];
+#else
+      return ROM[(addr_ ^ 3) & ROM1_SIZE_MASK];
+#endif
+    }
 
   /* Standard ROM */
   index = (addr_ ^ 0x03000003);
@@ -2085,5 +2199,10 @@ void
 opera_io_write(uint32_t const addr_,
                uint32_t const val_)
 {
-  mwritew(addr_,val_);
+  /*
+    External (non-ARM) writers bypass the ROM overlay handling: the overlay
+    is unmapped by CPU writes only, and external writers are expected to
+    target registers or DRAM beneath the overlay.
+  */
+  mwritew_internal(addr_,val_);
 }

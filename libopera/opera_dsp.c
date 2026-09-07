@@ -1007,6 +1007,14 @@ opera_dsp_reset(void)
   DSP.flags.nOP_MASK = ~0;
 }
 
+void
+opera_dsp_soft_reset(void)
+{
+  opera_dsp_reset();
+  DSP.flags.Running = false;
+  DSP.flags.GenFIQ = false;
+}
+
 uint32_t
 opera_dsp_loop(void)
 {

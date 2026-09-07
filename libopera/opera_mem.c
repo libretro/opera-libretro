@@ -30,8 +30,6 @@ uint8_t  *ROM2                 = NULL;
 
 static opera_mem_cfg_t g_MEM_CFG = DRAM_VRAM_UNSET;
 
-#define LOW_BOOT_ROM_WORD_SIZE sizeof(uint32_t)
-
 typedef struct opera_mem_state_t opera_mem_state_t;
 struct opera_mem_state_t
 {
@@ -210,24 +208,6 @@ opera_mem_rom1_byteswap32_if_le()
   size = (ROM1_SIZE / sizeof(uint32_t));
 
   swap32_array_if_little_endian(mem,size);
-}
-
-void
-opera_mem_seed_low_boot_word()
-{
-  /*
-    HACK
-    Preserve the BIOS reset vector word in DRAM[0] for software that
-    later consults the boot handoff area after execution has started
-    from the high ROM mapping. It's not yet clear how this works on
-    real hardware where the ROM is mapped to 0x00000000 at startup and
-    any write to the DRAM range swaps out ROM for DRAM. What is
-    unclear is how this value is set on real hardware or why
-    overwriting more of DRAM with ROM causes some things to stop
-    booting.
-  */
-  if(DRAM && ROM)
-    memcpy(DRAM,ROM,LOW_BOOT_ROM_WORD_SIZE);
 }
 
 void

@@ -206,7 +206,6 @@ typedef struct cdrom_ode_runtime_state_s
   opera_cdrom_ode_launch_cb_t launch;
   bool     restart_armed;
   bool     restart_requested;
-  bool     media_access_after_reset;
   char     file_path[PATH_MAX_LENGTH];
   int      file_mode;
   bool     savestate_blocked;
@@ -317,6 +316,11 @@ static void cdrom_data_clear_transfer(cdrom_device_t *cd_);
 static void ode_file_buffer_write_reset(void);
 static void ode_complete_restart_if_armed(cdrom_device_t *cd_);
 static bool cdrom_persona_is_portfolio_native_mei(void);
+
+// Discard command/transfer state without changing logical media presence.
+static
+void
+cdrom_device_local_reset(cdrom_device_t *cd_);
 
 static
 uint32_t
@@ -1088,6 +1092,9 @@ cdrom_data_load_next_if_ready(cdrom_device_t *cd_)
   uint32_t read_size;
   uint32_t wire_size;
 
+  if(cd_->poll & POLREMASK)
+    return;
+
   if((cd_->data_len > 0) || (cd_->blocks_requested == 0))
     return;
 
@@ -1240,7 +1247,6 @@ ode_reset_session(void)
   ode_file_buffer_write_reset();
   g_CDROM_STATE.ode.restart_armed = false;
   g_CDROM_STATE.ode.restart_requested = false;
-  g_CDROM_STATE.ode.media_access_after_reset = false;
 }
 
 void
@@ -1270,6 +1276,24 @@ void
 cdrom_media_access_latch(cdrom_device_t *cd_)
 {
   cd_->poll |= POLRE;
+}
+
+static
+bool
+cdrom_media_present(const cdrom_device_t *cd_)
+{
+  return ((cd_->callbacks.get_size != NULL) &&
+          (cd_->callbacks.get_size() != 0));
+}
+
+static
+void
+cdrom_media_status_refresh(cdrom_device_t *cd_)
+{
+  cd_->xbus_status = (CDROM_STATUS_READY | CDROM_STATUS_DOOR);
+  if(cdrom_media_present(cd_))
+    cd_->xbus_status |= (CDROM_STATUS_DISC_IN | CDROM_STATUS_SPIN_UP);
+  cdrom_mode_apply_drive_speed(cd_);
 }
 
 static
@@ -1307,7 +1331,6 @@ opera_cdrom_ode_consume_restart_request(void)
      (g_CDROM_STATE.ode.launch != NULL) &&
      (g_CDROM_STATE.ode.launch(g_CDROM_STATE.ode.pending_launch_path) == 0))
     {
-      g_CDROM_STATE.ode.media_access_after_reset = true;
       requested = true;
     }
 
@@ -2497,6 +2520,8 @@ opera_cdrom_state_load_v1(cdrom_device_t *cd_,
 
   cdrom_runtime_state_reset_v1();
   opera_cdrom_restore_callbacks(cd_);
+  if(cd_->poll & POLREMASK)
+    cdrom_device_local_reset(cd_);
 
   return rv;
 }
@@ -2521,6 +2546,9 @@ opera_cdrom_state_load_v1_legacy(cdrom_device_t *cd_,
   cdrom_runtime_state_reset_v1();
   if(!cdrom_state_v1_legacy_device_load(cd_,&state))
     return 0;
+
+  if(cd_->poll & POLREMASK)
+    cdrom_device_local_reset(cd_);
 
   return rv;
 }
@@ -2569,6 +2597,8 @@ opera_cdrom_state_load_v2(cdrom_device_t *cd_,
   cdrom_state_v2_data_load(&data_state);
 
   opera_cdrom_restore_callbacks(cd_);
+  if(cd_->poll & POLREMASK)
+    cdrom_device_local_reset(cd_);
 
   return rv;
 }
@@ -2619,12 +2649,10 @@ opera_cdrom_init(cdrom_device_t *cd_)
 {
   char pending_launch_path[PATH_MAX_LENGTH];
   bool preserve_pending_launch;
-  bool media_access_after_reset;
 
   pending_launch_path[0] = 0;
   preserve_pending_launch = ((g_CDROM_STATE.ode.restart_armed || g_CDROM_STATE.ode.restart_requested) &&
                              (g_CDROM_STATE.ode.pending_launch_path[0] != 0));
-  media_access_after_reset = g_CDROM_STATE.ode.media_access_after_reset;
   if(preserve_pending_launch)
     ode_str_copy(pending_launch_path,
                  g_CDROM_STATE.ode.pending_launch_path,
@@ -2639,14 +2667,11 @@ opera_cdrom_init(cdrom_device_t *cd_)
   cd_->current_sector = 0;
   opera_cdrom_restore_callbacks(cd_);
 
-  cd_->xbus_status  = 0;
-  cd_->poll         = CDROM_POLL_INTEN_MASK;
-  cd_->xbus_status |= (CDROM_STATUS_READY |
-                       CDROM_STATUS_DOOR |
-                       CDROM_STATUS_DISC_IN |
-                       CDROM_STATUS_SPIN_UP);
+  /* Expansion-interface reset clears controls and sets Media Access. */
+  cd_->poll = POLRE;
 
   cdrom_mode_reset(cd_);
+  cdrom_media_status_refresh(cd_);
   cd_->MEI_status = MEI_CDROM_no_error;
 
   opera_cdrom_update_disc_layout(cd_);
@@ -2658,10 +2683,58 @@ opera_cdrom_init(cdrom_device_t *cd_)
                    sizeof(g_CDROM_STATE.ode.pending_launch_path));
       g_CDROM_STATE.ode.restart_requested = true;
     }
-  if(media_access_after_reset)
-    cdrom_media_access_latch(cd_);
   cdrom_data_reset_readahead_state();
 
+  cd_->STATCYC = STATDELAY;
+}
+
+void
+opera_cdrom_media_load(cdrom_device_t *cd_)
+{
+  cdrom_fifo_reset(cd_);
+  cd_->current_sector = 0;
+  cd_->MEI_status = MEI_CDROM_no_error;
+  cdrom_media_status_refresh(cd_);
+  opera_cdrom_update_disc_layout(cd_);
+  ode_reset_session();
+  if(cd_->callbacks.set_sector != NULL)
+    cd_->callbacks.set_sector(0);
+  cdrom_media_access_latch(cd_);
+  cd_->STATCYC = STATDELAY;
+}
+
+void
+opera_cdrom_media_eject(cdrom_device_t *cd_)
+{
+  cdrom_fifo_reset(cd_);
+  cd_->current_sector = 0;
+  cd_->MEI_status = MEI_CDROM_no_error;
+  cd_->xbus_status = CDROM_STATUS_READY;
+  memset(&cd_->disc,0,sizeof(cd_->disc));
+  ode_reset_session();
+  if(cd_->callbacks.set_sector != NULL)
+    cd_->callbacks.set_sector(0);
+  cd_->STATCYC = STATDELAY;
+}
+
+static
+void
+cdrom_device_local_reset(cdrom_device_t *cd_)
+{
+  cdrom_fifo_reset(cd_);
+  cd_->current_sector = 0;
+  cd_->MEI_status = MEI_CDROM_no_error;
+  cd_->xbus_status |= CDROM_STATUS_READY;
+  cd_->xbus_status &= ~CDROM_STATUS_ERROR;
+  // The backing image may still be open after a guest eject or spin-down.
+  cdrom_mode_reset(cd_);
+  LBA2MSF(0,&cd_->disc.msf_current);
+  // A discarded launch response must not complete on a later status drain.
+  g_CDROM_STATE.ode.restart_armed = false;
+  if(!g_CDROM_STATE.ode.restart_requested)
+    g_CDROM_STATE.ode.pending_launch_path[0] = 0;
+  if(cd_->callbacks.set_sector != NULL)
+    cd_->callbacks.set_sector(0);
   cd_->STATCYC = STATDELAY;
 }
 
@@ -2669,6 +2742,9 @@ uint8_t
 opera_cdrom_fifo_get_status(cdrom_device_t *cd_)
 {
   uint8_t rv;
+
+  if(cd_->poll & POLREMASK)
+    return 0;
 
   cdrom_data_load_next_if_ready(cd_);
 
@@ -2972,13 +3048,16 @@ ode_launch_playlist(cdrom_device_t *cd_)
 
   if((g_CDROM_STATE.ode.playlist_count > 0) && (g_CDROM_STATE.ode.launch != NULL))
     {
-      /* Simulate disc eject before the 0xC5 response. */
+      /*
+        Report the eject in the 0xC5 response, but defer Media Access until
+        that response drains. Once CLIO latches DIPIR for this unit, further
+        status FIFO reads are protected and the response could not complete.
+      */
       cd_->xbus_status &= ~CDROM_STATUS_DOOR;
       cd_->xbus_status &= ~CDROM_STATUS_DISC_IN;
       cd_->xbus_status &= ~CDROM_STATUS_SPIN_UP;
       cd_->xbus_status &= ~CDROM_STATUS_DOUBLE_SPEED;
       cd_->xbus_status &= ~CDROM_STATUS_ERROR;
-      cdrom_media_access_latch(cd_);
       ode_str_copy(g_CDROM_STATE.ode.pending_launch_path,
                    g_CDROM_STATE.ode.playlist[0],
                    sizeof(g_CDROM_STATE.ode.pending_launch_path));
@@ -3987,6 +4066,9 @@ cdrom_cmd_unhandled(cdrom_device_t *cd_)
 void
 opera_cdrom_do_cmd(cdrom_device_t *cd_)
 {
+  if(cd_->poll & POLREMASK)
+    return;
+
   cd_->status_len = 0;
 
   cd_->poll        &= ~POLST;
@@ -4175,6 +4257,9 @@ opera_cdrom_send_cmd(cdrom_device_t *cd_,
   uint8_t cmd_len;
   uint8_t cmd[7];
 
+  if(cd_->poll & POLREMASK)
+    return;
+
   if(cd_->cmd_idx == 0)
     {
       ode_file_buffer_write_reset();
@@ -4210,25 +4295,32 @@ void
 opera_cdrom_set_poll(cdrom_device_t *cd_,
                      uint32_t        val_)
 {
-  uint8_t enable_bits;
+  uint8_t control_bits;
+  bool reset_was_asserted;
 
-  enable_bits = ((uint8_t)val_ & CDROM_POLL_INTEN_MASK);
+  control_bits = ((uint8_t)val_ &
+                  (CDROM_POLL_INTEN_MASK | POLREMASK));
+  reset_was_asserted = ((cd_->poll & POLREMASK) != 0);
 
-  if(val_ & POLREMASK)
-    cdrom_fifo_reset(cd_);
+  if(!reset_was_asserted && (control_bits & POLREMASK))
+    cdrom_device_local_reset(cd_);
 
   if(val_ & POLRE)
     cd_->poll &= ~POLRE;
 
-  cd_->poll = ((cd_->poll & 0xF0) | enable_bits);
+  cd_->poll = ((cd_->poll & 0xF0) | control_bits);
 
+  /* Release from local reset is itself a media-change notification. */
+  if(reset_was_asserted && !(control_bits & POLREMASK))
+    cdrom_media_access_latch(cd_);
 }
 
 void
 opera_cdrom_fifo_set_data(cdrom_device_t *cd_,
                           uint8_t         val_)
 {
-  (void)cd_;
+  if(cd_->poll & POLREMASK)
+    return;
 
   /* ODE 0xE8 fast-buffer input uses the normal CDROM data FIFO. */
   if(g_CDROM_STATE.ode.file_buffer_write_idx < REQSIZE)
@@ -4244,6 +4336,9 @@ uint8_t
 opera_cdrom_fifo_get_data(cdrom_device_t *cd_)
 {
   uint8_t rv;
+
+  if(cd_->poll & POLREMASK)
+    return 0;
 
   cdrom_data_load_next_if_ready(cd_);
 

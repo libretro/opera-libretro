@@ -46,6 +46,7 @@ EXTERN_C_BEGIN
 
 void      opera_madam_init();
 void      opera_madam_reset(void);
+void      opera_madam_soft_reset(void);
 
 uint32_t  opera_madam_fsm_get(void);
 void      opera_madam_fsm_set(uint32_t val_);

@@ -22,6 +22,14 @@ xbus_cdrom_plugin(int   proc_,
     case XBP_RESET:
       opera_cdrom_init(&g_CDROM_DEVICE);
       break;
+    case XBP_MEDIA_LOAD:
+      opera_cdrom_media_load(&g_CDROM_DEVICE);
+      break;
+    case XBP_MEDIA_EJECT:
+      opera_cdrom_media_eject(&g_CDROM_DEVICE);
+      break;
+    case XBP_GET_MEDIA_ACCESS:
+      return (void*)(uintptr_t)(g_CDROM_DEVICE.poll & POLRE);
     case XBP_SET_COMMAND:
       opera_cdrom_send_cmd(&g_CDROM_DEVICE,(uint8_t)(uintptr_t)data_);
       break;

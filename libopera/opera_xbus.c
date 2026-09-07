@@ -73,6 +73,8 @@ static
 opera_xbus_device
 xbus_selected_device(void)
 {
+  // Attached devices share the bus and decode the low four address bits.
+  // Bit 7 selects timing, not presence; no expansion buffers are modeled.
   return xdev[XBUS.xb_sel_l];
 }
 
@@ -103,6 +105,22 @@ xbus_clear_fifos_f(void)
   XBUS.poldevf &= ~POL_VALID_MASK;
 }
 
+static
+void
+xbus_controller_reset_f(void)
+{
+  memset(&XBUS,0,sizeof(XBUS));
+}
+
+static
+void
+xbus_latch_media_access_f(opera_xbus_device dev_)
+{
+  /* Media Access drives RDY during WR_COM/WR_POL, before WR_POL can clear it. */
+  if(dev_ && dev_(XBP_GET_MEDIA_ACCESS,NULL))
+    opera_clio_xbus_media_access(opera_xbus_selected_device_address());
+}
+
 int
 opera_xbus_selected_device_absent(void)
 {
@@ -113,6 +131,12 @@ opera_xbus_selected_device_absent(void)
     return 0;
 
   return (xbus_selected_device() == NULL);
+}
+
+uint32_t
+opera_xbus_selected_device_address(void)
+{
+  return ((XBUS.xb_sel_h & 0x80) | XBUS.xb_sel_l);
 }
 
 void
@@ -159,6 +183,8 @@ opera_xbus_fifo_set_cmd(const uint32_t val_)
   dev = xbus_selected_device();
   if(dev)
     {
+      /* WR_COM latches the selected device's pre-write media-access state. */
+      xbus_latch_media_access_f(dev);
       dev(XBP_SET_COMMAND,(void*)(uintptr_t)val_);
       if(dev(XBP_FIQ,NULL))
         opera_clio_fiq_generate(4,0);
@@ -208,6 +234,8 @@ opera_xbus_tick(void)
     opera_clio_fiq_generate(4,0);
   else if((XBUS.xb_sel_l == 0x0F) && xbus_poll_fiq_pending(xbus_poll_f()))
     opera_clio_fiq_generate(4,0);
+
+  opera_clio_xbus_dma_execute();
 }
 
 uint32_t
@@ -223,9 +251,6 @@ opera_xbus_get_poll(void)
     res = (uintptr_t)dev(XBP_GET_POLL,NULL);
   else if(g_XBUS_LEGACY_NO_DEVICE_ABORT)
     res = 0x30;
-
-  if(XBUS.xb_sel_h & 0x80)
-    res &= 0x0F;
 
   return res;
 }
@@ -306,6 +331,8 @@ opera_xbus_set_poll(const uint32_t val_)
 
   if(dev)
     {
+      /* WR_POL latches media access before its write-one-to-clear update. */
+      xbus_latch_media_access_f(dev);
       dev(XBP_SET_POLL,(void*)(uintptr_t)val_);
       if(dev(XBP_FIQ,NULL))
         opera_clio_fiq_generate(4,0);
@@ -321,10 +348,9 @@ void opera_xbus_set_sel(const uint32_t val_)
 void
 opera_xbus_init(opera_xbus_device zero_dev_)
 {
-  memset(&XBUS,0,sizeof(XBUS));
   memset(xdev,0,sizeof(xdev));
   g_XBUS_LEGACY_NO_DEVICE_ABORT = 0;
-  XBUS.polf = POL_INTEN_MASK;
+  xbus_controller_reset_f();
 
   opera_xbus_attach(zero_dev_);
 }
@@ -336,9 +362,8 @@ opera_xbus_reset(void)
   unsigned          i;
 
   memcpy(dev,xdev,sizeof(dev));
-  memset(&XBUS,0,sizeof(XBUS));
+  xbus_controller_reset_f();
   g_XBUS_LEGACY_NO_DEVICE_ABORT = 0;
-  XBUS.polf = POL_INTEN_MASK;
 
   for(i = 0; i < 16; i++)
     {
@@ -347,6 +372,13 @@ opera_xbus_reset(void)
     }
 
   memcpy(xdev,dev,sizeof(xdev));
+}
+
+void
+opera_xbus_dipir_reset(void)
+{
+  /* CLIO resets its XBus controller, not the external devices on the bus. */
+  xbus_controller_reset_f();
 }
 
 int
@@ -373,12 +405,12 @@ void
 opera_xbus_device_load(int   dev_,
                        const char *name_)
 {
-  xdev[dev_](XBP_RESET,(void*)name_);
+  xdev[dev_](XBP_MEDIA_LOAD,(void*)name_);
 }
 
 void opera_xbus_device_eject(int dev_)
 {
-  xdev[dev_](XBP_RESET,NULL);
+  xdev[dev_](XBP_MEDIA_EJECT,NULL);
 }
 
 void

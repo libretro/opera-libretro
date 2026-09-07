@@ -309,7 +309,6 @@ opera_lr_opts_set_bios(opera_lr_opts_t const *opts_)
                       opts_->bios->filename);
 
   opera_mem_rom1_byteswap32_if_le();
-  opera_mem_seed_low_boot_word();
 
   g_OPTS.bios = opts_->bios;
 }
