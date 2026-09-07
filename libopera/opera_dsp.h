@@ -51,6 +51,7 @@ uint32_t opera_dsp_arm_semaphore_read(void);
 
 void     opera_dsp_init(void);
 void     opera_dsp_reset(void);
+void     opera_dsp_soft_reset(void);
 
 uint32_t opera_dsp_state_size(void);
 uint32_t opera_dsp_state_size_v1(void);

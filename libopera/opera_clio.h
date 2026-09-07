@@ -38,10 +38,20 @@
 #define ADBIO_OTHERROM    0x04
 #define ADBIO_OTHERROM_EN (ADBIO_OTHERROM << 4)
 
+#define OPERA_CLIO_RESET_SOFT        0x10
+#define OPERA_CLIO_RESET_CLEAR_DIPIR 0x20
+
 EXTERN_C_BEGIN
 
 void     opera_clio_init(int reason_);
 void     opera_clio_reset(void);
+void     opera_clio_soft_reset(int clear_dipir);
+void     opera_clio_xbus_media_access(uint32_t unit);
+int      opera_clio_xbus_access_aborts(uint32_t unit, uint32_t addr);
+
+// Retry enabled XBUS DMA; DIPIR protection leaves the transfer pending.
+void
+opera_clio_xbus_dma_execute(void);
 
 uint32_t opera_clio_line_vint0(void);
 uint32_t opera_clio_line_vint1(void);

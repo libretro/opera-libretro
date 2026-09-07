@@ -167,6 +167,9 @@ vdlp_process_vdl_entry(void)
   uint32_t next_entry;
   clut_dma_ctrl_word_s *cdcw = &g_VDLP.clut_ctrl.cdcw;
 
+  if(!g_VDLP.curr_vdl)
+    return;
+
   entry = vram_read32(g_VDLP.curr_vdl);
   if(!entry)
     return;
@@ -876,32 +879,17 @@ opera_vdlp_process_line(int line_)
 void
 opera_vdlp_init()
 {
-  uint32_t i;
   void *buf;
   vdlp_renderer_t renderer;
   uint32_t flags;
   vdlp_pixel_format_e pixel_format;
-  static const uint32_t StartupVDL[]=
-    { /* Startup VDL at address 0x2B0000 */
-      0x00004410, 0x002C0000, 0x002C0000, 0x002B0098,
-      0x00000000, 0x01080808, 0x02101010, 0x03191919,
-      0x04212121, 0x05292929, 0x06313131, 0x073A3A3A,
-      0x08424242, 0x094A4A4A, 0x0A525252, 0x0B5A5A5A,
-      0x0C636363, 0x0D6B6B6B, 0x0E737373, 0x0F7B7B7B,
-      0x10848484, 0x118C8C8C, 0x12949494, 0x139C9C9C,
-      0x14A5A5A5, 0x15ADADAD, 0x16B5B5B5, 0x17BDBDBD,
-      0x18C5C5C5, 0x19CECECE, 0x1AD6D6D6, 0x1BDEDEDE,
-      0x1CE6E6E6, 0x1DEFEFEF, 0x1EF8F8F8, 0x1FFFFFFF,
-      0xE0010101, 0xC001002C, 0x002180EF, 0x002C0000,
-      0x002C0000, 0x002B00A8, 0x00000000, 0x002C0000,
-      0x002C0000, 0x002B0000
-    };
 
   buf          = g_BUF;
   renderer     = g_RENDERER;
   flags        = g_FLAGS;
   pixel_format = g_PIXEL_FORMAT;
 
+  /* The boot ROM installs the power-on VDL through MADAM CLUTMID. */
   memset(&g_VDLP,0,sizeof(g_VDLP));
   g_BUF          = buf;
   g_CURBUF       = buf;
@@ -909,12 +897,8 @@ opera_vdlp_init()
   g_FLAGS        = flags;
   g_PIXEL_FORMAT = pixel_format;
 
-  g_VDLP.head_vdl = 0xB0000;
   if(g_RENDERER == NULL)
     g_RENDERER = vdlp_render_line_RGB565;
-
-  for(i = 0; i < (sizeof(StartupVDL)/sizeof(uint32_t)); i++)
-    vram_write32((0xB0000 + (i * sizeof(uint32_t))),StartupVDL[i]);
 }
 
 void

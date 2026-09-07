@@ -57,7 +57,7 @@ static opera_ext_interface_t io_interface;
 
 extern int flagtime;
 
-#define OPERA_3DO_CD_DIPIR_RESET 0x40
+#define OPERA_3DO_POWER_ON_RESET 0x01
 #define OPERA_3DO_CLOCK_STEP     32
 
 static int field = 0;
@@ -98,17 +98,12 @@ opera_3do_init(opera_ext_interface_t callback_)
 
   opera_3do_reset_runtime_state();
   opera_arm_init();
-
   opera_vdlp_init();
   opera_madam_init();
   opera_xbus_init(xbus_cdrom_plugin);
 
-  /*
-    0x40 for start from 3D0-CD
-    0x01/0x02 from PhotoCD ??
-    (NO use 0x40/0x02 for BIOS test)
-  */
-  opera_clio_init(OPERA_3DO_CD_DIPIR_RESET);
+  /* The launch ROM owns power-on display and device initialization. */
+  opera_clio_init(OPERA_3DO_POWER_ON_RESET);
   opera_dsp_init();
   /* select test, use -1 -- if don't need tests */
   opera_diag_port_init(-1);
@@ -140,8 +135,6 @@ opera_3do_init(opera_ext_interface_t callback_)
     F1	REVISION TEST
     FF	TEST END (halt)
   */
-  opera_xbus_device_load(0,NULL);
-
   return 0;
 }
 
@@ -155,16 +148,26 @@ opera_3do_destroy()
 void
 opera_3do_soft_reset(void)
 {
-  opera_3do_reset_runtime_state();
-  opera_arm_reset();
+  opera_arm_soft_reset();
 
-  opera_vdlp_init();
-  opera_madam_init();
-  opera_xbus_reset();
+  /*
+    Software reset preserves hardware registers by default, including the
+    CLIO DIPIR latches.  It stops the on-chip execution engines while RAM,
+    VRAM, VDLP, and the clock continue.
+  */
+  opera_madam_soft_reset();
+  opera_dsp_soft_reset();
+}
 
-  opera_clio_init(OPERA_3DO_CD_DIPIR_RESET);
-  opera_dsp_init();
-  opera_diag_port_init(-1);
+void
+opera_3do_dipir_reset(void)
+{
+  opera_arm_soft_reset();
+
+  opera_madam_soft_reset();
+  opera_xbus_dipir_reset();
+  opera_clio_soft_reset(1);
+  opera_dsp_soft_reset();
 }
 
 static
@@ -545,6 +548,7 @@ opera_3do_state_load_v1(const void   *data_,
                                 &data,
                                 end))
     return 0;
+  opera_arm_sync_memory_map();
   if(!opera_3do_state_load_step(opera_sport_state_load_v1,
                                 opera_sport_state_size_v1(),
                                 &data,
@@ -637,6 +641,7 @@ opera_3do_state_load_chunked(const void     *data_,
                                 &data,
                                 end))
     return 0;
+  opera_arm_sync_memory_map();
   if(!opera_3do_state_load_step(opera_sport_state_load,
                                 0,
                                 &data,

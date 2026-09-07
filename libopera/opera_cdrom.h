@@ -299,6 +299,8 @@ struct cdrom_device_s
 typedef struct cdrom_device_s cdrom_device_t;
 
 void    opera_cdrom_init(cdrom_device_t *cd_);
+void    opera_cdrom_media_load(cdrom_device_t *cd_);
+void    opera_cdrom_media_eject(cdrom_device_t *cd_);
 void    opera_cdrom_restore_callbacks(cdrom_device_t *cd_);
 uint32_t opera_cdrom_state_size(void);
 uint32_t opera_cdrom_state_save(cdrom_device_t *cd_, void *data_);

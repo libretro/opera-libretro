@@ -39,8 +39,9 @@ EXTERN_C_BEGIN
 
 int32_t  opera_arm_execute(void);
 void     opera_arm_init(void);
-void     opera_arm_reset(void);
+void     opera_arm_soft_reset(void);
 void     opera_arm_destroy(void);
+void     opera_arm_sync_memory_map(void);
 
 void     opera_io_write(const uint32_t addr_, const uint32_t val_);
 

@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 #define XBP_INIT	 0	//plugin init, returns plugin version
-#define XBP_RESET	 1	//plugin reset with parameter(image path)
+#define XBP_RESET	 1	//device and expansion-interface reset
 #define XBP_SET_COMMAND  2	//XBUS
 #define XBP_FIQ		 3	//check interrupt form device
 #define XBP_SET_DATA     4	//XBUS
@@ -47,6 +47,9 @@
 #define XBP_SELECT	 9      //selects device by Opera
 #define XBP_RESERV	 10     //reserved reading from device
 #define XBP_DESTROY	 11     //plugin destroy
+#define XBP_MEDIA_LOAD   12     //physical media became available
+#define XBP_MEDIA_EJECT  13     //physical media was removed
+#define XBP_GET_MEDIA_ACCESS 14 //media-access signal state
 #define XBP_GET_SAVESIZE 19	//save support from emulator side
 #define XBP_GET_SAVEDATA 20
 #define XBP_SET_SAVEDATA 21
@@ -63,6 +66,7 @@ typedef struct opera_xbus_savedata_s
 
 void     opera_xbus_init(opera_xbus_device zero_dev_);
 void     opera_xbus_reset(void);
+void     opera_xbus_dipir_reset(void);
 void     opera_xbus_destroy(void);
 
 int      opera_xbus_attach(opera_xbus_device dev);
@@ -74,6 +78,7 @@ void     opera_xbus_tick(void);
 void     opera_xbus_set_sel(const uint32_t val_);
 uint32_t opera_xbus_get_res(void);
 int      opera_xbus_selected_device_absent(void);
+uint32_t opera_xbus_selected_device_address(void);
 void     opera_xbus_set_legacy_no_device_abort(int enabled);
 int      opera_xbus_legacy_no_device_abort(void);
 

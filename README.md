@@ -1,9 +1,14 @@
 opera-libretro
 ============
 
-Opera is a fork of 4DO, originally a port of 4DO, itself a fork of FreeDO, to libretro. The fork/rename occurred due to the original 4DO project being dormant and to differenciate the project due to new development and focus.
+Opera is a fork of 4DO, originally a port of 4DO, itself a fork of
+FreeDO, to libretro. The fork/rename occurred due to the original 4DO
+project being dormant and to differenciate the project due to new
+development and focus.
 
-One of several BIOS ROMs must be placed into your RetroArch / libretro "System Directory" folder. "norsa" versions have the RSA encryption check disabled which should allow unsigned software to run.
+One of several BIOS ROMs must be placed into your RetroArch / libretro
+"System Directory" folder. "norsa" versions have the RSA encryption
+check disabled which should allow unsigned software to run.
 
 | Filename                  | Hash                                 |
 | ------------------------- | ------------------------------------ |
@@ -25,7 +30,3 @@ For certain Japanese games a second "Kanji" ROM is necessary.
 | panafz1-kanji.bin          | md5:b8dc97f778a6245c58e064b0312e8281 |
 | panafz1j-kanji.bin         | md5:c23fb5d5e6bb1c240d02cf968972be37 |
 | panafz10ja-anvil-kanji.bin | md5:428577250f43edc902ea239c50d2240d |
-
-Compatibility lists:
-* [fourdo.com](http://wiki.fourdo.com/index.php?title=Compatibility_List)
-* [3dodev.com](https://3dodev.com/doku.php?id=software:emulation:compatibility:opera)

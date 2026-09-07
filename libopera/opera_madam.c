@@ -2740,6 +2740,14 @@ opera_madam_reset(void)
   memset(&bitoper,0,sizeof(bitoper));
 }
 
+void
+opera_madam_soft_reset(void)
+{
+  /* Soft reset stops the CEL and clears its documented status bits. */
+  MADAM.mregs[MADAM_REG_STATBITS] &= ~0xF1;
+  MADAM.FSM = FSM_IDLE;
+}
+
 static
 INLINE
 uint32_t

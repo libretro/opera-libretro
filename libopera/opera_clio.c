@@ -53,9 +53,21 @@
 #define VCNT_MASK    0x7FF
 #define VCNT_FIELD   0x800
 
-#define CSTAT_SOFT_RESET  0x10
-#define CSTAT_CLEAR_DIPIR 0x20
+#define CSTAT_PON         0x01
+#define CSTAT_ROLLOVER    0x02
+#define CSTAT_WDOG_MASK   0x0C
 #define CSTAT_DIPIR_RESET 0x40
+#define CSTAT_CLEAR_ON_ZERO_MASK \
+  (CSTAT_PON | CSTAT_ROLLOVER | CSTAT_DIPIR_RESET)
+
+#define XBUS_DIPIR1_ADDR        0x410
+#define XBUS_DIPIR2_ADDR        0x414
+#define XBUS_DIPIR_DEVICE_MASK  0x00FF
+#define XBUS_DIPIR_BEFORE_RESET 0x4000
+#define XBUS_DIPIR_CURRENT      0x8000
+#define XBUS_DMA_ENABLE_MASK    0x00100000
+#define CLIO_INT0_SECONDARY     0x80000000
+#define CLIO_INT1_DIPIR         0x00000002
 
 #define WDOG_RESTART      0x0B
 
@@ -328,7 +340,9 @@ opera_clio_line_vint1(void)
 int
 opera_clio_fiq_needed(void)
 {
-  return ((CLIO.regs[0x40] & CLIO.regs[0x48]) ||
+  /* Green CLIO's INT0 summary reflects enabled sources in INT1. */
+  return (((CLIO.regs[0x40] & CLIO.regs[0x48]) &
+           ~CLIO_INT0_SECONDARY) ||
           (CLIO.regs[0x60] & CLIO.regs[0x68]));
 }
 
@@ -336,11 +350,8 @@ void
 opera_clio_fiq_generate(uint32_t reason1_,
                         uint32_t reason2_)
 {
-  CLIO.regs[0x40] |= reason1_;
+  CLIO.regs[0x40] |= (reason1_ & ~CLIO_INT0_SECONDARY);
   CLIO.regs[0x60] |= reason2_;
-  /* irq31 if exist irq32 and high */
-  if(CLIO.regs[0x60])
-    CLIO.regs[0x40] |= 0x80000000;
 }
 
 /*
@@ -371,15 +382,20 @@ clio_handle_dma(uint32_t val_)
 {
   CLIO.regs[0x304] |= val_;
 
-  if(val_ & 0x00100000)
+  if(val_ & XBUS_DMA_ENABLE_MASK)
     {
       int len;
       unsigned trg;
       uint8_t b0,b1,b2,b3;
 
+      /* A DIPIR-protected XBus DMA remains enabled but makes no progress. */
+      if(opera_clio_xbus_access_aborts(opera_xbus_selected_device_address(),
+                                       0x5C0))
+        return;
+
       trg = opera_madam_peek(0x540);
       len = opera_madam_peek(0x544);
-      CLIO.regs[0x304] &= ~0x00100000;
+      CLIO.regs[0x304] &= ~XBUS_DMA_ENABLE_MASK;
       CLIO.regs[0x400] &= ~0x80;
 
       if(CLIO.regs[0x404] & 0x200)
@@ -428,6 +444,17 @@ clio_handle_dma(uint32_t val_)
     }
 }
 
+
+void
+opera_clio_xbus_dma_execute(void)
+{
+  if((CLIO.regs[0x304] & XBUS_DMA_ENABLE_MASK) == 0)
+    return;
+
+  clio_handle_dma(XBUS_DMA_ENABLE_MASK);
+}
+
+
 static
 void
 adbio_set(uint32_t *output_,
@@ -459,9 +486,7 @@ opera_clio_poke(uint32_t addr_,
     {
       if(addr_ == 0x40)
         {
-          CLIO.regs[0x40] |= val_;
-          if(CLIO.regs[0x60])
-            CLIO.regs[0x40] |= 0x80000000;
+          CLIO.regs[0x40] |= (val_ & ~CLIO_INT0_SECONDARY);
           /*
             if(CLIO.regs[0x40]&CLIO.regs[0x48])
             _arm_SetFIQ();
@@ -471,13 +496,11 @@ opera_clio_poke(uint32_t addr_,
       else if(addr_ == 0x44)
         {
           CLIO.regs[0x40] &= ~val_;
-          if(!CLIO.regs[0x60])
-            CLIO.regs[0x40] &= ~0x80000000;
           return 0;
         }
       else if(addr_ == 0x48)
         {
-          CLIO.regs[0x48] |= val_;
+          CLIO.regs[0x48] |= (val_ & ~CLIO_INT0_SECONDARY);
           /*
             if(CLIO.regs[0x40] & CLIO.regs[0x48])
             _arm_SetFIQ();
@@ -486,9 +509,8 @@ opera_clio_poke(uint32_t addr_,
         }
       else if(addr_ == 0x4C)
         {
-          /* always one for irq31 */
           CLIO.regs[0x48] &= ~val_;
-          CLIO.regs[0x48] |= 0x80000000;
+          CLIO.regs[0x48] &= ~CLIO_INT0_SECONDARY;
           return 0;
         }
 #if 0
@@ -506,8 +528,6 @@ opera_clio_poke(uint32_t addr_,
       else if(addr_ == 0x60)
         {
           CLIO.regs[0x60] |= val_;
-          if(CLIO.regs[0x60])
-            CLIO.regs[0x40] |= 0x80000000;
           /*
             if(CLIO.regs[0x60] & CLIO.regs[0x68])
             _arm_SetFIQ();
@@ -517,8 +537,6 @@ opera_clio_poke(uint32_t addr_,
       else if(addr_ == 0x64)
         {
           CLIO.regs[0x60] &= ~val_;
-          if(!CLIO.regs[0x60])
-            CLIO.regs[0x40] &= ~0x80000000;
           return 0;
         }
       else if(addr_ == 0x68)
@@ -619,6 +637,11 @@ opera_clio_poke(uint32_t addr_,
       CLIO.regs[0x400] = val_;
       return 0;
     }
+  else if((addr_ == XBUS_DIPIR1_ADDR) || (addr_ == XBUS_DIPIR2_ADDR))
+    {
+      // DIPIR status is read-only; media access and reset own these latches.
+      return 0;
+    }
   else if((addr_ >= 0x500) && (addr_ < 0x540))
     {
       opera_xbus_set_sel(val_);
@@ -643,10 +666,25 @@ opera_clio_poke(uint32_t addr_,
     }
   else if(addr_ == 0x28)
     {
-      CLIO.regs[addr_] = (val_ & ~(CSTAT_SOFT_RESET | CSTAT_CLEAR_DIPIR));
-      if(val_ & CSTAT_CLEAR_DIPIR)
-        CLIO.regs[addr_] &= ~CSTAT_DIPIR_RESET;
-      return (val_ & CSTAT_SOFT_RESET);
+      uint32_t cstat;
+
+      cstat = (val_ & ~(OPERA_CLIO_RESET_SOFT |
+                        OPERA_CLIO_RESET_CLEAR_DIPIR |
+                        CSTAT_CLEAR_ON_ZERO_MASK |
+                        CSTAT_WDOG_MASK));
+      cstat |= (CLIO.regs[addr_] & CSTAT_WDOG_MASK);
+      cstat |= (CLIO.regs[addr_] & val_ & CSTAT_CLEAR_ON_ZERO_MASK);
+
+      if((val_ & (OPERA_CLIO_RESET_SOFT |
+                  OPERA_CLIO_RESET_CLEAR_DIPIR)) ==
+         (OPERA_CLIO_RESET_SOFT | OPERA_CLIO_RESET_CLEAR_DIPIR))
+        cstat |= CSTAT_DIPIR_RESET;
+
+      CLIO.regs[addr_] = cstat;
+      if(val_ & OPERA_CLIO_RESET_SOFT)
+        return (val_ & (OPERA_CLIO_RESET_SOFT |
+                        OPERA_CLIO_RESET_CLEAR_DIPIR));
+      return 0;
     }
   else if(addr_ == 0x2C)
     {
@@ -771,9 +809,11 @@ opera_clio_peek(uint32_t addr_)
       /* By read 40 and 44, 48 and 4c, 60 and 64, 68 and 6c same */
       addr_ &= ~4;
       if(addr_ == 0x40)
-        return CLIO.regs[0x40];
+        return ((CLIO.regs[0x40] & ~CLIO_INT0_SECONDARY) |
+                ((CLIO.regs[0x60] & CLIO.regs[0x68]) ?
+                 CLIO_INT0_SECONDARY : 0));
       else if(addr_ == 0x48)
-        return (CLIO.regs[0x48] | 0x80000000);
+        return (CLIO.regs[0x48] | CLIO_INT0_SECONDARY);
       else if(addr_ == 0x60)
         return CLIO.regs[0x60];
       else if(addr_ == 0x68)
@@ -790,8 +830,6 @@ opera_clio_peek(uint32_t addr_)
     return CLIO.regs[0x208];
   else if(addr_ == 0x308) /* Using the enable DMA register to store state */
     return CLIO.regs[0x304];
-  else if (addr_ == 0x414)
-    return 0x4000; /* TO CHECK!!! requested by CDROMDIPIR */
   else if((addr_ >= 0x500) && (addr_ < 0x540))
     return opera_xbus_get_res();
   else if((addr_ >= 0x540) && (addr_ < 0x580))
@@ -923,6 +961,112 @@ void opera_clio_init(int reason_)
   TIMER_VAL  = 0;
   flagtime   = 0;
   TIMER_CARRY = 0;
+}
+
+static
+uint32_t
+clio_dipir_latch_after_reset(uint32_t latch_)
+{
+  uint32_t rv;
+  uint32_t field;
+  uint32_t shift;
+
+  rv = 0;
+  for(shift = 0; shift <= 16; shift += 16)
+    {
+      field = ((latch_ >> shift) & 0xFFFF);
+      if(field & XBUS_DIPIR_CURRENT)
+        rv |= ((XBUS_DIPIR_BEFORE_RESET |
+                (field & XBUS_DIPIR_DEVICE_MASK)) << shift);
+    }
+
+  return rv;
+}
+
+void
+opera_clio_soft_reset(int clear_dipir_)
+{
+  uint32_t dipir1;
+  uint32_t dipir2;
+
+  if(!clear_dipir_)
+    return;
+
+  dipir1 = CLIO.regs[XBUS_DIPIR1_ADDR];
+  dipir2 = CLIO.regs[XBUS_DIPIR2_ADDR];
+  CLIO.regs[XBUS_DIPIR1_ADDR] = clio_dipir_latch_after_reset(dipir1);
+  CLIO.regs[XBUS_DIPIR2_ADDR] = clio_dipir_latch_after_reset(dipir2);
+}
+
+void
+opera_clio_xbus_media_access(uint32_t unit_)
+{
+  uint32_t dipir1;
+  uint32_t dipir2;
+  uint32_t latch;
+
+  latch = (XBUS_DIPIR_CURRENT | (unit_ & XBUS_DIPIR_DEVICE_MASK));
+  dipir1 = CLIO.regs[XBUS_DIPIR1_ADDR];
+  dipir2 = CLIO.regs[XBUS_DIPIR2_ADDR];
+
+  if(((dipir1 & XBUS_DIPIR_CURRENT) &&
+      ((dipir1 & XBUS_DIPIR_DEVICE_MASK) ==
+       (latch & XBUS_DIPIR_DEVICE_MASK))) ||
+     ((dipir2 & XBUS_DIPIR_CURRENT) &&
+      ((dipir2 & XBUS_DIPIR_DEVICE_MASK) ==
+       (latch & XBUS_DIPIR_DEVICE_MASK))))
+    return;
+
+  /* Green CLIO records the first two distinct devices in separate latches. */
+  if(!(dipir1 & XBUS_DIPIR_CURRENT))
+    {
+      CLIO.regs[XBUS_DIPIR1_ADDR] = latch;
+      opera_clio_fiq_generate(0,CLIO_INT1_DIPIR);
+    }
+  else if(!(dipir2 & XBUS_DIPIR_CURRENT))
+    CLIO.regs[XBUS_DIPIR2_ADDR] = latch;
+  else
+    return;
+}
+
+int
+opera_clio_xbus_access_aborts(uint32_t unit_,
+                              uint32_t addr_)
+{
+  uint32_t current1;
+  uint32_t current2;
+  bool is_poll;
+
+  current1 = CLIO.regs[XBUS_DIPIR1_ADDR];
+  current2 = CLIO.regs[XBUS_DIPIR2_ADDR];
+  if(!(current1 & XBUS_DIPIR_CURRENT) &&
+     !(current2 & XBUS_DIPIR_CURRENT))
+    return 0;
+
+  is_poll = ((addr_ >= 0x540) && (addr_ < 0x580));
+  unit_ &= XBUS_DIPIR_DEVICE_MASK;
+
+  if((current1 & XBUS_DIPIR_CURRENT) &&
+     !(current2 & XBUS_DIPIR_CURRENT))
+    {
+      if(is_poll)
+        return 0;
+      return ((current1 & XBUS_DIPIR_DEVICE_MASK) == unit_);
+    }
+
+  if((current2 & XBUS_DIPIR_CURRENT) &&
+     !(current1 & XBUS_DIPIR_CURRENT))
+    {
+      if(is_poll)
+        return 0;
+      return ((current2 & XBUS_DIPIR_DEVICE_MASK) == unit_);
+    }
+
+  if(!is_poll)
+    return 1;
+
+  return (((current1 & XBUS_DIPIR_DEVICE_MASK) != unit_) &&
+          ((current2 & XBUS_DIPIR_DEVICE_MASK) != unit_));
 }
 
 void
