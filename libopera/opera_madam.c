@@ -35,6 +35,7 @@
 #include "opera_arm.h"
 #include "opera_bitop.h"
 #include "opera_clio.h"
+#include "opera_clock.h"
 #include "opera_core.h"
 #include "opera_madam.h"
 #include "opera_mem.h"
@@ -484,6 +485,67 @@ static madam_t MADAM;
 static int KPRINT  = 0;
 static int ME_MODE = ME_MODE_HARDWARE;
 
+/*
+  The CEL engine renders about 9 million pixels per second ("The actual
+  limit is based on the number of rendered pixels and is approximately
+  9 million rendered pixels per second", Opera Specification, CEL engine
+  chapter): the engine pixel slots are what the CPU sees as rendering
+  time.
+
+  A surface mapped (arbitrary quad) cel walks its source one texel at a
+  time, evaluating and clipping each texel's quad, so those cels cost
+  per source texel rather than per written pixel. AutoBahn Tokio's
+  attract demo draws about 430k such texels per list (only about 150k of
+  them land on screen): texel counting paces its ten phases over the
+  demo's attract window (635 phase frames in about 24 seconds, ~24 fps),
+  where written-pixel counting finishes them in about 10 seconds and
+  leaves a still end card for the rest of the demo.
+
+  Fetching and decoding each SCoB adds a small fixed cost on top.
+*/
+#define MADAM_CEL_PIXELS_PER_SECOND 9000000ULL
+#define MADAM_CEL_SETUP_CYCLES      64ULL
+
+static uint64_t g_CEL_PIXELS_DRAWN  = 0;
+static uint64_t g_CEL_TEXELS_WALKED = 0;
+static uint64_t g_CEL_LIST_CELS     = 0;
+static uint64_t g_CEL_BUSY_UNTIL    = 0;
+static bool     g_CEL_DRAW_PENDING  = false;
+
+static
+void
+madam_cel_busy_start(void)
+{
+  uint64_t work;
+
+  work = (g_CEL_TEXELS_WALKED > g_CEL_PIXELS_DRAWN) ?
+         g_CEL_TEXELS_WALKED : g_CEL_PIXELS_DRAWN;
+
+  g_CEL_BUSY_UNTIL = opera_clock_cpu_get_cycles() +
+    ((work * (uint64_t)opera_clock_cpu_get_freq()) /
+     MADAM_CEL_PIXELS_PER_SECOND) +
+    (g_CEL_LIST_CELS * MADAM_CEL_SETUP_CYCLES);
+
+  g_CEL_DRAW_PENDING = false;
+}
+
+void
+opera_madam_cel_tick(void)
+{
+  // This runs before every ARM instruction; keep the state check local.
+  if(MADAM.FSM != FSM_INPROCESS)
+    return;
+
+  if(g_CEL_DRAW_PENDING)
+    {
+      opera_madam_cel_handle();
+      return;
+    }
+
+  if(opera_clock_cpu_get_cycles() >= g_CEL_BUSY_UNTIL)
+    MADAM.FSM = FSM_IDLE;
+}
+
 void
 opera_madam_kprint_enable(void)
 {
@@ -543,7 +605,9 @@ madam_state_write_payload(opera_state_writer_t *writer_,
           opera_state_write_i32(writer_,state_->wmod) &&
           opera_state_write_i32(writer_,state_->clipx) &&
           opera_state_write_i32(writer_,state_->clipy) &&
-          opera_state_write_u32(writer_,state_->FSM));
+          opera_state_write_u32(writer_,state_->FSM) &&
+          opera_state_write_u32(writer_,g_CEL_DRAW_PENDING) &&
+          opera_state_write_u64(writer_,g_CEL_BUSY_UNTIL));
 }
 
 static
@@ -582,7 +646,16 @@ uint32_t
 opera_madam_state_load_v1(const void     *buf_,
                           uint32_t const  size_)
 {
-  return opera_state_load_sized(&MADAM,"MDAM",buf_,size_,sizeof(MADAM));
+  uint32_t used;
+
+  used = opera_state_load_sized(&MADAM,"MDAM",buf_,size_,sizeof(MADAM));
+  if(used == 0)
+    return 0;
+
+  g_CEL_DRAW_PENDING = ((MADAM.FSM == FSM_INPROCESS) ||
+                        (MADAM.FSM == FSM_SUSPENDED));
+  g_CEL_BUSY_UNTIL = 0;
+  return used;
 }
 
 static
@@ -604,16 +677,34 @@ opera_madam_state_load(const void     *buf_,
                        uint32_t const  size_)
 {
   madam_t state;
+  uint32_t pending;
+  uint64_t busy_until;
   opera_state_reader_t reader;
   opera_state_reader_t payload;
 
   opera_state_reader_init(&reader,buf_,size_);
   if(!opera_state_read_chunk(&reader,"MDAM",&payload) ||
-     !madam_state_read_payload(&payload,&state) ||
-     !opera_state_reader_finished(&payload))
+     !madam_state_read_payload(&payload,&state))
+    return 0;
+
+  // Chunks without timing fields use the legacy pending-list convention.
+  pending = ((state.FSM == FSM_INPROCESS) || (state.FSM == FSM_SUSPENDED));
+  busy_until = 0;
+  if(opera_state_reader_remaining(&payload) != 0)
+    {
+      if(!opera_state_read_u32(&payload,&pending) ||
+         !opera_state_read_u64(&payload,&busy_until) ||
+         (pending > 1))
+        return 0;
+    }
+
+  if(!opera_state_reader_finished(&payload))
     return 0;
 
   MADAM = state;
+  g_CEL_DRAW_PENDING = (pending != 0);
+  // The clock chunk restores the same absolute CPU-cycle timebase.
+  g_CEL_BUSY_UNTIL = busy_until;
 
   return opera_state_reader_used(&reader);
 }
@@ -946,12 +1037,21 @@ opera_madam_poke(uint32_t addr_,
       opera_vdlp_set_vdl_head(val_);
       return;
     case MADAM_REG_SPRSTRT:
+      /*
+        A start while the engine is still rendering (and the list has
+        already been drawn) replaces the pending busy period: software
+        that does not poll STATBITS keeps its old, unthrottled cadence
+        while software that does poll waits for the current list like it
+        would on hardware.
+      */
       if(MADAM.FSM == FSM_IDLE)
         MADAM.FSM = FSM_INPROCESS;
+      g_CEL_DRAW_PENDING = true;
       return;
     case MADAM_REG_SPRSTOP:
       MADAM.FSM = FSM_IDLE;
       NEXTCCB = 0;
+      g_CEL_DRAW_PENDING = false;
       return;
     case MADAM_REG_SPRCNTU:
       if(MADAM.FSM == FSM_SUSPENDED)
@@ -1079,6 +1179,10 @@ opera_madam_cel_handle(void)
   CCBFLAGS = 0;
   set_flag(STATBITS,SPRON);
 
+  g_CEL_PIXELS_DRAWN  = 0;
+  g_CEL_TEXELS_WALKED = 0;
+  g_CEL_LIST_CELS     = 0;
+
   /*
     When the CPU writes to the SPRSTRT address, after
     the spryte engine gains control of the system data bus
@@ -1089,6 +1193,7 @@ opera_madam_cel_handle(void)
   */
   while(NEXTCCB && flag_is_clr(CCBFLAGS,CCB_LAST))
     {
+      g_CEL_LIST_CELS++;
       /*
         To accomplish this, the address of the first word to load is
         read out of the NEXT SCOB register and provided to the memory
@@ -1291,7 +1396,13 @@ opera_madam_cel_handle(void)
     }
 
   clr_flag(STATBITS,SPRON);
-  MADAM.FSM = FSM_IDLE;
+
+  /*
+    The list is done, but the engine stays busy (and SPRON stays set)
+    while it renders, so the CPU that polls STATBITS is paced like the
+    hardware instead of racing ahead.
+  */
+  madam_cel_busy_start();
 }
 
 static
@@ -1868,6 +1979,7 @@ process_pixel(int32_t x_,
   p  = PPROC(curpix_,fp,lawv_);
   p  = PPROJ_OUTPUT(p,fp);
   opera_mem_write16(REGCTL3 + XY2OFF(x_,y_,MADAM.wmod),p);
+  g_CEL_PIXELS_DRAWN++;
 }
 
 uint32_t*
@@ -2650,6 +2762,7 @@ DrawLRCel(void)
                   pixel = PPROC(CURPIX,framePixel,LAMV);
                   pixel = PPROJ_OUTPUT(pixel,framePixel);
                   opera_mem_write16((REGCTL3+XY2OFF(xcur >> 16,ycur >> 16,MADAM.wmod)),pixel);
+                  g_CEL_PIXELS_DRAWN++;
                 }
 
               xcur += HDX1616;
@@ -2738,6 +2851,9 @@ opera_madam_reset(void)
 {
   memset(&MADAM,0,sizeof(MADAM));
   memset(&bitoper,0,sizeof(bitoper));
+
+  g_CEL_BUSY_UNTIL   = 0;
+  g_CEL_DRAW_PENDING = false;
 }
 
 void
@@ -3119,6 +3235,7 @@ TexelDrawLine(uint16_t CURPIX_,
   xcur_ >>= 16;
   ycur_ >>= 16;
   curr = 0xFFFFFFFF;
+  g_CEL_PIXELS_DRAWN += (cnt_ > 0) ? (uint64_t)cnt_ : 0;
 
   for(i = 0; i < cnt_; i++, xcur_ += (HDX1616 >> 16), ycur_ += (HDY1616 >> 16))
     {
@@ -3221,16 +3338,18 @@ TexelDrawScale(uint16_t CURPIX_,
 
 static
 int32_t
-TexelDrawArbitrary(uint16_t CURPIX_,
-                   uint16_t LAMV_,
-                   int32_t  xA_,
-                   int32_t  yA_,
-                   int32_t  xB_,
-                   int32_t  yB_,
-                   int32_t  xC_,
-                   int32_t  yC_,
-                   int32_t  xD_,
-                   int32_t  yD_)
+_rasterize_arbitrary(uint16_t curpix_,
+                     uint16_t lamv_,
+                     int32_t  xA_,
+                     int32_t  yA_,
+                     int32_t  xB_,
+                     int32_t  yB_,
+                     int32_t  xC_,
+                     int32_t  yC_,
+                     int32_t  xD_,
+                     int32_t  yD_,
+                     bool     hires_,
+                     bool     draw_)
 {
   int32_t x;
   int32_t y;
@@ -3247,20 +3366,20 @@ TexelDrawArbitrary(uint16_t CURPIX_,
   int32_t updowns[4];
 
   curr = -1;
-  xA_ >>= (16 - HIRESMODE);
-  xB_ >>= (16 - HIRESMODE);
-  xC_ >>= (16 - HIRESMODE);
-  xD_ >>= (16 - HIRESMODE);
-  yA_ >>= (16 - HIRESMODE);
-  yB_ >>= (16 - HIRESMODE);
-  yC_ >>= (16 - HIRESMODE);
-  yD_ >>= (16 - HIRESMODE);
+  xA_ >>= (16 - hires_);
+  xB_ >>= (16 - hires_);
+  xC_ >>= (16 - hires_);
+  xD_ >>= (16 - hires_);
+  yA_ >>= (16 - hires_);
+  yB_ >>= (16 - hires_);
+  yC_ >>= (16 - hires_);
+  yD_ >>= (16 - hires_);
 
   if((xA_ == xB_) && (xB_ == xC_) && (xC_ == xD_))
     return 0;
 
-  maxxt = ((MADAM.clipx + 1) << HIRESMODE);
-  maxyt = ((MADAM.clipy + 1) << HIRESMODE);
+  maxxt = ((MADAM.clipx + 1) << hires_);
+  maxyt = ((MADAM.clipy + 1) << hires_);
 
   if((HDX1616 < 0) && (HDDX1616 < 0))
     {
@@ -3383,13 +3502,24 @@ TexelDrawArbitrary(uint16_t CURPIX_,
                   if(maxx > maxxt)
                     maxx = maxxt;
 
+                  if((x < maxx) && !hires_)
+                    g_CEL_PIXELS_DRAWN += flag_is_set(CCBFLAGS,CCB_MARIA) ?
+                      1 : (uint64_t)(maxx - x);
+
+                  if(!draw_)
+                    {
+                      if((x < maxx) && flag_is_set(CCBFLAGS,CCB_MARIA))
+                        return 0;
+                      x = maxx;
+                    }
+
                   for(; x < maxx; x++)
                     {
                       next = readPIX(x,y);
                       if(next != curr)
                         {
                           curr  = next;
-                          pixel = PPROC(CURPIX_,next,LAMV_);
+                          pixel = PPROC(curpix_,next,lamv_);
                           pixel = PPROJ_OUTPUT(pixel,next);
                         }
                       writePIX(x,y,pixel);
@@ -3410,13 +3540,24 @@ TexelDrawArbitrary(uint16_t CURPIX_,
               if(maxx > maxxt)
                 maxx = maxxt;
 
+              if((x < maxx) && !hires_)
+                g_CEL_PIXELS_DRAWN += flag_is_set(CCBFLAGS,CCB_MARIA) ?
+                  1 : (uint64_t)(maxx - x);
+
+              if(!draw_)
+                {
+                  if((x < maxx) && flag_is_set(CCBFLAGS,CCB_MARIA))
+                    return 0;
+                  x = maxx;
+                }
+
               for(; x < maxx; x++)
                 {
                   next = readPIX(x,y);
                   if(next != curr)
                     {
                       curr  = next;
-                      pixel = PPROC(CURPIX_,next,LAMV_);
+                      pixel = PPROC(curpix_,next,lamv_);
                       pixel = PPROJ_OUTPUT(pixel,next);
                     }
                   writePIX(x,y,pixel);
@@ -3428,4 +3569,52 @@ TexelDrawArbitrary(uint16_t CURPIX_,
     }
 
   return 0;
+}
+
+
+static
+int32_t
+TexelDrawArbitrary(uint16_t curpix_,
+                   uint16_t lamv_,
+                   int32_t  xA_,
+                   int32_t  yA_,
+                   int32_t  xB_,
+                   int32_t  yB_,
+                   int32_t  xC_,
+                   int32_t  yC_,
+                   int32_t  xD_,
+                   int32_t  yD_)
+{
+  int32_t result;
+
+  g_CEL_TEXELS_WALKED++;
+  // Share scan conversion so rounding, clipping and MARIA match native drawing.
+  // The timing-only pass counts spans without touching framebuffer pixels.
+  result = _rasterize_arbitrary(curpix_,
+                               lamv_,
+                               xA_,
+                               yA_,
+                               xB_,
+                               yB_,
+                               xC_,
+                               yC_,
+                               xD_,
+                               yD_,
+                               false,
+                               !HIRESMODE);
+  if(HIRESMODE)
+    _rasterize_arbitrary(curpix_,
+                         lamv_,
+                         xA_,
+                         yA_,
+                         xB_,
+                         yB_,
+                         xC_,
+                         yC_,
+                         xD_,
+                         yD_,
+                         true,
+                         true);
+
+  return result;
 }

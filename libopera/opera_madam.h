@@ -53,6 +53,7 @@ void      opera_madam_fsm_set(uint32_t val_);
 uint32_t  opera_madam_mctl(void);
 
 void      opera_madam_cel_handle(void);
+void      opera_madam_cel_tick(void);
 
 uint32_t *opera_madam_registers(void);
 
