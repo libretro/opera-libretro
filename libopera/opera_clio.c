@@ -40,6 +40,7 @@
 #include "boolean.h"
 #include "prng32.h"
 
+#include <assert.h>
 #include <string.h>
 
 #define DECREMENT    0x1
@@ -1098,49 +1099,48 @@ dma_channel_enabled(uint32_t const channel_)
   return (CLIO.regs[0x304] & (1 << channel_));
 }
 
+static
+void
+_clio_fifo_ei_complete(uint16_t channel_)
+{
+  clio_fifo_t *fifo = &CLIO.fifo_i[channel_];
+
+  assert(fifo->idx >= fifo->start.len);
+  fifo->idx = 0;
+  opera_clio_fiq_generate((1U << (channel_ + 16)),0);
+  // Reload is enabled by the channel request bit (WO1994010641A1, p. 49).
+  if((fifo->next.addr != 0) && dma_channel_enabled(channel_))
+    fifo->start = fifo->next;
+  else
+    fifo->start.addr = 0;
+}
+
+
 uint16_t
 opera_clio_fifo_ei(uint16_t channel_)
 {
-  uint16_t val_;
+  uint16_t val;
+  clio_fifo_t *fifo;
 
-  if(CLIO.fifo_i[channel_].start.addr == 0)
+  assert(channel_ < (sizeof(CLIO.fifo_i) / sizeof(CLIO.fifo_i[0])));
+  fifo = &CLIO.fifo_i[channel_];
+  // A restored state can still have completion waiting on the next DSP read.
+  if((fifo->start.addr != 0) && (fifo->idx >= fifo->start.len))
+    _clio_fifo_ei_complete(channel_);
+
+  if(fifo->start.addr == 0)
     return 0;
 
-  if((CLIO.fifo_i[channel_].start.len - CLIO.fifo_i[channel_].idx) > 0)
-    {
-      val_ = opera_clio_fifo_ei_read(channel_);
-      CLIO.fifo_i[channel_].idx += sizeof(uint16_t);
-    }
-  else
-    {
-      CLIO.fifo_i[channel_].idx = 0;
-      opera_clio_fiq_generate(1<<(channel_+16),0);
+  val = opera_clio_fifo_ei_read(channel_);
+  fifo->idx += sizeof(uint16_t);
 
-      /* reload enabled see patent WO09410641A1, 49.16 */
-      if((CLIO.fifo_i[channel_].next.addr != 0) && dma_channel_enabled(channel_))
-        {
-          CLIO.fifo_i[channel_].start.addr = CLIO.fifo_i[channel_].next.addr;
-          CLIO.fifo_i[channel_].start.len  = CLIO.fifo_i[channel_].next.len;
+  // Complete before the CPU can observe the end address and detach the sample.
+  if(fifo->idx >= fifo->start.len)
+    _clio_fifo_ei_complete(channel_);
 
-          val_ = opera_clio_fifo_ei_read(channel_);
-          CLIO.fifo_i[channel_].idx += sizeof(uint16_t);
-        }
-      else
-        {
-          CLIO.fifo_i[channel_].start.addr = 0;
-          val_ = 0;
-        }
-    }
-
-  return val_;
-
-
-  // JMK SEZ: What is this? It was commented out along with this whole "else"
-  //          block, but I had to bring this else block back from the dead
-  //          in order to initialize val appropriately.
-
-  // opera_clio_fiq_generate(1<<(channel_+16),0);
+  return val;
 }
+
 
 void
 opera_clio_fifo_eo(uint16_t channel_,
