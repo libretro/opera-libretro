@@ -493,7 +493,13 @@ opera_lr_opts_get_cd_speed(opera_lr_opts_t *opts_)
 {
   const char *val = getval("cd_speed");
 
-  if((val == NULL) || !strcmp(val,"unbounded"))
+  if(val == NULL)
+    {
+      opts_->cd_speed = 2;
+      return;
+    }
+
+  if(!strcmp(val,"unbounded"))
     {
       opts_->cd_speed = 0;
       return;

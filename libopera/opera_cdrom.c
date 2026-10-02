@@ -859,8 +859,10 @@ static
 void
 cdrom_data_publish_read_status_if_ready(cdrom_device_t *cd_)
 {
-  /* MEI DIPIR consumes read data only when data is ready with the status. */
-  if(!g_CDROM_STATE.data.read_status_pending || (cd_->data_len == 0))
+  // Portfolio keeps read-ahead active until the transfer, not a sector, completes.
+  if(!g_CDROM_STATE.data.read_status_pending ||
+     (cd_->blocks_requested != 0) ||
+     (cd_->data_len != 0))
     return;
 
   g_CDROM_STATE.data.read_status_pending = false;
@@ -1150,7 +1152,6 @@ cdrom_data_load_next_if_ready(cdrom_device_t *cd_)
   cd_->blocks_requested--;
   cd_->poll |= POLDT;
   g_CDROM_STATE.data.sectors_queued++;
-  cdrom_data_publish_read_status_if_ready(cd_);
 
   if(audio_burst)
     g_CDROM_STATE.data.next_ready_cycle = cycles;
@@ -4363,6 +4364,7 @@ opera_cdrom_fifo_get_data(cdrom_device_t *cd_)
               cd_->blocks_requested  = 0;
               cd_->data_len          = 0;
               cd_->data_idx          = 0;
+              cdrom_data_publish_read_status_if_ready(cd_);
             }
         }
     }
