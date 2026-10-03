@@ -120,6 +120,7 @@ FLAGS += \
 	-DHAVE_RCHD_DEFLATE \
 	-DHAVE_RCHD_LZMA \
 	-DHAVE_RCHD_FLAC \
+	-DHAVE_RCHD_ZSTD \
 	-DHAVE_RFLAC
 
 INCFLAGS += \
@@ -130,6 +131,7 @@ SOURCES_C += \
         $(LIBRETRO_COMM_DIR)/formats/chd/rchd.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.c \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
         $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
         $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
 
