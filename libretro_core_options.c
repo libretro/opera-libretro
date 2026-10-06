@@ -97,8 +97,8 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "Memory Capacity",
       NULL,
       "Select the amount of DRAM and VRAM the system has."
-      " Only useful for homebrew and non-stock values may cause issues with some official software."
-      " Changes take affect at core start/restart."
+      " Intended for compatible homebrew; non-stock capacities require compatible BIOS and software."
+      " Changes take effect at core start/restart."
       " !EXPERIMENTAL!",
       NULL,
       "advanced",
@@ -413,8 +413,8 @@ static struct retro_core_option_definition option_defs_us[] =
       "opera_mem_capacity",
       "Memory Capacity",
       "Select the amount of DRAM and VRAM the system has."
-      " Only useful for homebrew and non-stock values may cause issues with some official software."
-      " Changes take affect at core start/restart."
+      " Intended for compatible homebrew; non-stock capacities require compatible BIOS and software."
+      " Changes take effect at core start/restart."
       " !EXPERIMENTAL!",
       {
         { "21", "2MB DRAM; 1MB VRAM (stock)" },

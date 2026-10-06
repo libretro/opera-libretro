@@ -87,7 +87,10 @@ opera_3do_init(opera_ext_interface_t callback_)
   int i;
 
   if(opera_mem_cfg() == DRAM_VRAM_UNSET)
-    opera_mem_init(DRAM_VRAM_STOCK);
+    {
+      if(opera_mem_init(DRAM_VRAM_STOCK) != 0)
+        return -1;
+    }
   else
     opera_mem_rom_select(ROM1);
 
@@ -388,14 +391,14 @@ opera_3do_state_size_v3(void)
 
   size  = 0;
 
-#define OPERA_3DO_ADD_STATE_SIZE(SIZE_) \
-  do                                    \
-    {                                   \
-      part = (SIZE_);                   \
-      if(part == 0)                     \
-        return 0;                       \
-      size += part;                     \
-    }                                   \
+#define OPERA_3DO_ADD_STATE_SIZE(SIZE_)         \
+  do                                            \
+    {                                           \
+      part = (SIZE_);                           \
+      if(part == 0)                             \
+        return 0;                               \
+      size += part;                             \
+    }                                           \
   while(0)
 
   OPERA_3DO_ADD_STATE_SIZE(opera_3do_state_header_size_v3());
