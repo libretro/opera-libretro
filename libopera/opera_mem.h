@@ -14,10 +14,12 @@
 #define DEFAULT_HIRES_VRAM_SIZE (DEFAULT_VRAM_SIZE * 4)
 #define DEFAULT_RAM_SIZE        (DEFAULT_DRAM_SIZE + DEFAULT_VRAM_SIZE)
 #define DEFAULT_HIRES_RAM_SIZE  (DEFAULT_DRAM_SIZE + DEFAULT_HIRES_VRAM_SIZE)
-#define MAX_DRAM_SIZE           (ONE_MB * 14)
+#define MAX_DRAM_SIZE           (ONE_MB * 15)
 #define MAX_VRAM_SIZE           (ONE_MB * 2)
+#define MAX_RAM_SIZE            (ONE_MB * 16)
 #define MAX_HIRES_VRAM_SIZE     (MAX_VRAM_SIZE * 4)
-#define MAX_HIRES_RAM_SIZE      (MAX_DRAM_SIZE + MAX_HIRES_VRAM_SIZE)
+// The largest backing layout is 14 MB DRAM plus four 2 MB VRAM planes.
+#define MAX_HIRES_RAM_SIZE      ((MAX_RAM_SIZE - MAX_VRAM_SIZE) + MAX_HIRES_VRAM_SIZE)
 
 extern uint32_t RAM_SIZE;
 extern uint32_t HIRES_RAM_SIZE;
@@ -30,7 +32,6 @@ extern uint8_t *VRAM;
 extern uint32_t VRAM_SIZE;
 extern uint32_t VRAM_SIZE_MASK;
 extern uint32_t HIRES_VRAM_SIZE;
-extern uint32_t HIRES_VRAM_SIZE_MASK;
 
 extern uint8_t *NVRAM;
 #define NVRAM_SIZE      (ONE_KB * 32)
@@ -48,24 +49,27 @@ extern uint8_t *ROM2;
 
 
 enum opera_mem_cfg_t
-  {
-    DRAM_VRAM_UNSET    = 0x00,
-    DRAM_VRAM_STOCK    = 0x21,
-    DRAM_2MB_VRAM_1MB  = 0x21,
-    DRAM_2MB_VRAM_2MB  = 0x22,
-    DRAM_4MB_VRAM_1MB  = 0x41,
-    DRAM_4MB_VRAM_2MB  = 0x42,
-    DRAM_8MB_VRAM_1MB  = 0x81,
-    DRAM_8MB_VRAM_2MB  = 0x82,
-    DRAM_14MB_VRAM_2MB = 0xE2,
-    DRAM_15MB_VRAM_1MB = 0xF1
-  };
+{
+  DRAM_VRAM_UNSET    = 0x00,
+  DRAM_VRAM_STOCK    = 0x21,
+  DRAM_2MB_VRAM_1MB  = 0x21,
+  DRAM_2MB_VRAM_2MB  = 0x22,
+  DRAM_4MB_VRAM_1MB  = 0x41,
+  DRAM_4MB_VRAM_2MB  = 0x42,
+  DRAM_8MB_VRAM_1MB  = 0x81,
+  DRAM_8MB_VRAM_2MB  = 0x82,
+  DRAM_14MB_VRAM_2MB = 0xE2,
+  DRAM_15MB_VRAM_1MB = 0xF1
+};
 typedef enum opera_mem_cfg_t opera_mem_cfg_t;
 
 int  opera_mem_init(opera_mem_cfg_t);
 void opera_mem_destroy();
 
 opera_mem_cfg_t opera_mem_cfg();
+
+// Only configured layouts are valid; initialization also accepts UNSET as stock.
+bool opera_mem_is_valid_cfg(opera_mem_cfg_t cfg_);
 
 uint32_t opera_mem_madam_red_sysbits(uint32_t const);
 

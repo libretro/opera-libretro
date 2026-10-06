@@ -39,10 +39,10 @@
 #define CDIMAGE_SECTOR_SIZE 2048
 
 typedef enum retro_reset_flags_t
-  {
-    RETRO_RESET_FLAG_NONE       = 0,
-    RETRO_RESET_FLAG_SAVE_NVRAM = (1 << 0)
-  } retro_reset_flags_t;
+{
+  RETRO_RESET_FLAG_NONE       = 0,
+  RETRO_RESET_FLAG_SAVE_NVRAM = (1 << 0)
+} retro_reset_flags_t;
 
 static cdimage_t  CDIMAGE;
 static uint32_t   CDIMAGE_SECTOR;
@@ -63,25 +63,25 @@ retro_environment_set_controller_info(void)
 {
   static const struct retro_controller_description port[] =
     {
-     { "3DO Joypad",        RETRO_DEVICE_JOYPAD },
-     { "3DO Flightstick",   RETRO_DEVICE_FLIGHTSTICK },
-     { "3DO Mouse",         RETRO_DEVICE_MOUSE  },
-     { "3DO Lightgun",      RETRO_DEVICE_LIGHTGUN },
-     { "Arcade Lightgun",   RETRO_DEVICE_ARCADE_LIGHTGUN },
-     { "Orbatak Trackball", RETRO_DEVICE_ORBATAK_TRACKBALL },
+      { "3DO Joypad",        RETRO_DEVICE_JOYPAD },
+      { "3DO Flightstick",   RETRO_DEVICE_FLIGHTSTICK },
+      { "3DO Mouse",         RETRO_DEVICE_MOUSE  },
+      { "3DO Lightgun",      RETRO_DEVICE_LIGHTGUN },
+      { "Arcade Lightgun",   RETRO_DEVICE_ARCADE_LIGHTGUN },
+      { "Orbatak Trackball", RETRO_DEVICE_ORBATAK_TRACKBALL },
     };
 
   static const struct retro_controller_info ports[LR_INPUT_MAX_DEVICES+1] =
     {
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {port, 6},
-     {NULL, 0}
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {port, 6},
+      {NULL, 0}
     };
 
   retro_environment_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,(void*)ports);
@@ -461,6 +461,23 @@ ode_root_set_for_content(const struct retro_game_info *info_)
   opera_cdrom_ode_set_root(root);
 }
 
+static
+bool
+_init_core(void)
+{
+  if((opera_lr_opts_process() & OPERA_LR_OPTS_CHANGE_ERROR) == 0)
+    {
+      if(opera_3do_init(libopera_callback) == 0)
+        return true;
+
+      retro_log_printf_cb(RETRO_LOG_ERROR,"[Opera]: unable to initialize core\n");
+    }
+
+  opera_lr_opts_reset();
+  return false;
+}
+
+
 bool
 retro_load_game(const struct retro_game_info *info_)
 {
@@ -474,8 +491,14 @@ retro_load_game(const struct retro_game_info *info_)
     return false;
 
   ode_root_set_for_content(info_);
-  opera_lr_opts_process();
-  opera_3do_init(libopera_callback);
+  if(!_init_core())
+    {
+      content_runtime_reset();
+      retro_cdimage_close(&CDIMAGE);
+      game_info_path_free();
+      return false;
+    }
+
   cdimage_set_sector(0);
 
   rv = set_pixel_format();
@@ -675,8 +698,12 @@ retro_reset_core(retro_reset_flags_t flags_)
   opera_3do_destroy();
   opera_lr_opts_reset();
 
-  opera_lr_opts_process();
-  opera_3do_init(libopera_callback);
+  if(!_init_core())
+    {
+      retro_environment_cb(RETRO_ENVIRONMENT_SHUTDOWN,NULL);
+      return;
+    }
+
   cdimage_set_sector(0);
 
   opera_lr_nvram_load(game_info_path_get(),
@@ -726,6 +753,8 @@ process_opts_if_updated()
     return;
 
   changes = opera_lr_opts_process();
+  if(changes & OPERA_LR_OPTS_CHANGE_ERROR)
+    return;
 
   if(changes & OPERA_LR_OPTS_CHANGE_TIMING)
     set_system_av_info();
@@ -748,6 +777,9 @@ draw_crosshairs_if_enabled()
 void
 retro_run(void)
 {
+  if(!g_OPTS.initialized_opera)
+    return;
+
   if(ode_reset_if_requested())
     return;
 

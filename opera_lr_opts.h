@@ -12,6 +12,7 @@ typedef struct opera_lr_opts_t opera_lr_opts_t;
 #define OPERA_LR_OPTS_CHANGE_REGION   0x00000001
 #define OPERA_LR_OPTS_CHANGE_TIMING   0x00000002
 #define OPERA_LR_OPTS_CHANGE_GEOMETRY 0x00000004
+#define OPERA_LR_OPTS_CHANGE_ERROR    0x80000000
 
 struct opera_lr_opts_t
 {

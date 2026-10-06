@@ -26,7 +26,7 @@
   *  Allen Wright
   *  John Sammons
   *  Felix Lazarev
-*/
+  */
 
 #include "inline.h"
 #include "opera_core.h"
@@ -36,11 +36,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SPORT_IDX_MASK   0x7FF
 #define SPORT_IDX_SHIFT  9
 #define SPORT_ELEM_COUNT 512
+#define SPORT_VRAM_PLANES 4U
 #define SPORT_BUFSIZE    (SPORT_ELEM_COUNT * sizeof(uint32_t))
-#define SPORT_PAGE_TO_BYTE_OFFSET(IDX) (((IDX) & SPORT_IDX_MASK) << SPORT_IDX_SHIFT)
+#define SPORT_PAGE_TO_BYTE_OFFSET(IDX) (((IDX) << SPORT_IDX_SHIFT) & VRAM_SIZE_MASK)
 
 struct sport_s
 {
@@ -87,7 +87,7 @@ sport_set_color_with_mask(const uint32_t idx_,
   uint32_t * const vram = (uint32_t * const)&VRAM[idx_];
 
   for(i = 0; i < SPORT_ELEM_COUNT; i++)
-    vram[i] = (((vram[i] ^ SPORT.color) & mask_) ^ SPORT.color);
+    vram[i] = ((vram[i] & ~mask_) | (SPORT.color & mask_));
 }
 
 static
@@ -117,6 +117,7 @@ sport_flash_write(const uint32_t rawidx_,
                   const uint32_t mask_)
 {
   uint32_t idx;
+  uint32_t plane;
 
   idx = SPORT_PAGE_TO_BYTE_OFFSET(rawidx_);
   if(mask_ == 0xFFFFFFFF)
@@ -127,7 +128,14 @@ sport_flash_write(const uint32_t rawidx_,
   if(!HIRESMODE)
     return;
 
-  sport_memcpy_highres(idx,idx);
+  if(mask_ == 0xFFFFFFFF)
+    {
+      sport_memcpy_highres(idx,idx);
+      return;
+    }
+
+  for(plane = 1; plane < SPORT_VRAM_PLANES; plane++)
+    sport_set_color_with_mask((idx + (plane * VRAM_SIZE)),mask_);
 }
 
 static
@@ -149,16 +157,17 @@ void
 sport_copy_page_color_with_mask(const uint32_t mask_)
 {
   int i;
-  uint32_t const * const svram = (uint32_t const * const)&VRAM[SPORT.source];
-  uint32_t * const       dvram = (uint32_t * const)&VRAM[SPORT.destination];
+  uint32_t plane;
+  uint32_t *dvram;
+  uint32_t const *svram;
 
-  for(i = 0; i < SPORT_ELEM_COUNT; i++)
-    dvram[i] = (((dvram[i] ^ svram[i]) & mask_) ^ svram[i]);
-
-  if(!HIRESMODE)
-    return;
-
-  sport_memcpy_highres(SPORT.destination,SPORT.destination);
+  svram = (uint32_t const *)&VRAM[SPORT.source];
+  for(plane = 0; plane < (HIRESMODE ? SPORT_VRAM_PLANES : 1U); plane++)
+    {
+      dvram = (uint32_t *)&VRAM[(SPORT.destination + (plane * VRAM_SIZE))];
+      for(i = 0; i < SPORT_ELEM_COUNT; i++)
+        dvram[i] = ((dvram[i] & ~mask_) | (svram[i] & mask_));
+    }
 }
 
 static
@@ -176,7 +185,7 @@ sport_copy_page(const uint32_t rawidx_,
 
 void
 opera_sport_write_access(const uint32_t idx_,
-                          const uint32_t mask_)
+                         const uint32_t mask_)
 {
   switch(idx_ & 0x0000E000)
     {

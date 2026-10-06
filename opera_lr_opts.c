@@ -158,7 +158,7 @@ opera_lr_opts_get_random_seed(uint32_t *seed_)
   *seed_ = (uint32_t)parsed;
   return true;
 
-invalid:
+ invalid:
   retro_log_printf_cb(RETRO_LOG_WARN,
                       "[Opera]: invalid random seed '%s'; using time-based seed\n",
                       val);
@@ -169,7 +169,6 @@ static
 void
 opera_lr_opts_get_mem_cfg(opera_lr_opts_t *opts_)
 {
-  unsigned x;
   const char *val;
 
   opts_->mem_cfg = DRAM_VRAM_STOCK;
@@ -178,22 +177,40 @@ opera_lr_opts_get_mem_cfg(opera_lr_opts_t *opts_)
   if(val == NULL)
     return;
 
-  x = 0;
-  sscanf(val,"%x",&x);
+  if((strlen(val) == 2) &&
+     (isxdigit((unsigned char)val[0]) != 0) &&
+     (isxdigit((unsigned char)val[1]) != 0))
+    {
+      opera_mem_cfg_t cfg;
 
-  opts_->mem_cfg = (opera_mem_cfg_t)x;
+      cfg = (opera_mem_cfg_t)strtoul(val,NULL,16);
+      if(opera_mem_is_valid_cfg(cfg))
+        {
+          opts_->mem_cfg = cfg;
+          return;
+        }
+    }
+
+  retro_log_printf_cb(RETRO_LOG_WARN,
+                      "[Opera]: invalid memory capacity '%s'; using stock memory\n",
+                      val);
 }
 
 static
-void
+bool
 opera_lr_opts_set_mem_cfg(opera_lr_opts_t const *opts_)
 {
   if(g_OPTS.initialized_opera)
-    return;
+    return true;
 
-  opera_mem_init(opts_->mem_cfg);
+  if(opera_mem_init(opts_->mem_cfg) != 0)
+    {
+      retro_log_printf_cb(RETRO_LOG_ERROR,"[Opera]: unable to initialize memory\n");
+      return false;
+    }
 
   g_OPTS.mem_cfg = opts_->mem_cfg;
+  return true;
 }
 
 static
@@ -287,8 +304,6 @@ opera_lr_opts_set_bios(opera_lr_opts_t const *opts_)
   if(g_OPTS.initialized_opera)
     return;
 
-  opera_lr_opts_set_mem_cfg(opts_);
-
   if(opts_->bios == NULL)
     {
       retro_log_printf_cb(RETRO_LOG_ERROR,"[Opera]: no BIOS ROM found\n");
@@ -345,8 +360,6 @@ opera_lr_opts_set_font(opera_lr_opts_t const *opts_)
 
   if(g_OPTS.initialized_opera)
     return;
-
-  opera_lr_opts_set_mem_cfg(opts_);
 
   if(opts_->font == NULL)
     {
@@ -722,11 +735,13 @@ opera_lr_opts_get(opera_lr_opts_t *opts_)
 }
 
 static
-void
+bool
 opera_lr_opts_set(opera_lr_opts_t const *opts_)
 {
   // Can only be set at start/restart
-  opera_lr_opts_set_mem_cfg(opts_);
+  if(!opera_lr_opts_set_mem_cfg(opts_))
+    return false;
+
   opera_lr_opts_set_video_buffer(opts_);
   opera_lr_opts_set_vdlp_pixel_format(opts_);
   opera_lr_opts_set_bios(opts_);
@@ -749,6 +764,7 @@ opera_lr_opts_set(opera_lr_opts_t const *opts_)
 
   g_OPTS.initialized_libretro = true;
   g_OPTS.initialized_opera    = true;
+  return true;
 }
 
 static
@@ -783,7 +799,8 @@ opera_lr_opts_process()
   old_opts = g_OPTS;
 
   opera_lr_opts_get(&opts);
-  opera_lr_opts_set(&opts);
+  if(!opera_lr_opts_set(&opts))
+    return OPERA_LR_OPTS_CHANGE_ERROR;
 
   changes = opera_lr_opts_changes(&old_opts);
 

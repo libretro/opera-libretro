@@ -9,24 +9,24 @@
 #include "endianness.h"
 #include "opera_state.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-uint32_t  RAM_SIZE             = (DEFAULT_RAM_SIZE);
-uint32_t  HIRES_RAM_SIZE       = (DEFAULT_HIRES_RAM_SIZE);
-bool      HIRESMODE            = false;
-uint8_t  *DRAM                 = NULL;
-uint32_t  DRAM_SIZE            = (DEFAULT_DRAM_SIZE);
-uint8_t  *VRAM                 = NULL;
-uint32_t  VRAM_SIZE            = (DEFAULT_VRAM_SIZE);
-uint32_t  VRAM_SIZE_MASK       = (DEFAULT_VRAM_SIZE - 1);
-uint32_t  HIRES_VRAM_SIZE      = (DEFAULT_HIRES_VRAM_SIZE);
-uint32_t  HIRES_VRAM_SIZE_MASK = (DEFAULT_HIRES_VRAM_SIZE - 1);
-uint8_t  *NVRAM                = NULL;
-uint8_t  *ROM                  = NULL;
-uint8_t  *ROM1                 = NULL;
-uint8_t  *ROM2                 = NULL;
+uint32_t  RAM_SIZE        = (DEFAULT_RAM_SIZE);
+uint32_t  HIRES_RAM_SIZE  = (DEFAULT_HIRES_RAM_SIZE);
+bool      HIRESMODE       = false;
+uint8_t  *DRAM            = NULL;
+uint32_t  DRAM_SIZE       = (DEFAULT_DRAM_SIZE);
+uint8_t  *VRAM            = NULL;
+uint32_t  VRAM_SIZE       = (DEFAULT_VRAM_SIZE);
+uint32_t  VRAM_SIZE_MASK  = (DEFAULT_VRAM_SIZE - 1);
+uint32_t  HIRES_VRAM_SIZE = (DEFAULT_HIRES_VRAM_SIZE);
+uint8_t  *NVRAM           = NULL;
+uint8_t  *ROM             = NULL;
+uint8_t  *ROM1            = NULL;
+uint8_t  *ROM2            = NULL;
 
 static opera_mem_cfg_t g_MEM_CFG = DRAM_VRAM_UNSET;
 
@@ -42,6 +42,26 @@ opera_mem_cfg_t
 opera_mem_cfg()
 {
   return g_MEM_CFG;
+}
+
+
+bool
+opera_mem_is_valid_cfg(opera_mem_cfg_t cfg_)
+{
+  switch(cfg_)
+    {
+    case DRAM_2MB_VRAM_1MB:
+    case DRAM_2MB_VRAM_2MB:
+    case DRAM_4MB_VRAM_1MB:
+    case DRAM_4MB_VRAM_2MB:
+    case DRAM_8MB_VRAM_1MB:
+    case DRAM_8MB_VRAM_2MB:
+    case DRAM_14MB_VRAM_2MB:
+    case DRAM_15MB_VRAM_1MB:
+      return true;
+    default:
+      return false;
+    }
 }
 
 uint32_t
@@ -60,13 +80,18 @@ static
 void
 _setup_dram_vram(opera_mem_cfg_t const cfg_)
 {
-  DRAM_SIZE            = opera_mem_dram_size(cfg_);
-  VRAM_SIZE            = opera_mem_vram_size(cfg_);
-  VRAM_SIZE_MASK       = (VRAM_SIZE - 1);
-  HIRES_VRAM_SIZE      = (VRAM_SIZE * 4);
-  HIRES_VRAM_SIZE_MASK = (HIRES_RAM_SIZE - 1);
-  RAM_SIZE             = (DRAM_SIZE + VRAM_SIZE);
-  HIRES_RAM_SIZE       = (DRAM_SIZE + HIRES_VRAM_SIZE);
+  assert(DRAM != NULL);
+  assert(opera_mem_is_valid_cfg(cfg_));
+
+  DRAM_SIZE       = opera_mem_dram_size(cfg_);
+  VRAM_SIZE       = opera_mem_vram_size(cfg_);
+  VRAM_SIZE_MASK  = (VRAM_SIZE - 1);
+  HIRES_VRAM_SIZE = (VRAM_SIZE * 4);
+  RAM_SIZE        = (DRAM_SIZE + VRAM_SIZE);
+  HIRES_RAM_SIZE  = (DRAM_SIZE + HIRES_VRAM_SIZE);
+
+  assert(RAM_SIZE <= MAX_RAM_SIZE);
+  assert(HIRES_RAM_SIZE <= MAX_HIRES_RAM_SIZE);
 
   /* VRAM is always at the top of DRAM */
   VRAM = &DRAM[DRAM_SIZE];
@@ -146,6 +171,9 @@ opera_mem_init(opera_mem_cfg_t const cfg_)
   cfg = cfg_;
   if(cfg == DRAM_VRAM_UNSET)
     cfg = DRAM_VRAM_STOCK;
+
+  if(!opera_mem_is_valid_cfg(cfg))
+    return -1;
 
   /*
     Allocate max possible RAM to make things easier
@@ -318,11 +346,9 @@ opera_mem_state_load_v1(void const     *data_,
   uint32_t rv;
 
   rv = opera_state_load_sized(&memstate,"MCFG",data,(uint32_t)(end - data),sizeof(memstate));
-  if(rv == 0)
+  if((rv == 0) || !opera_mem_is_valid_cfg((opera_mem_cfg_t)memstate.mem_cfg))
     return 0;
   data += rv;
-  _setup_dram_vram(memstate.mem_cfg);
-  g_MEM_CFG = memstate.mem_cfg;
   rv = opera_state_load_sized(DRAM,"RAM",data,(uint32_t)(end - data),MAX_HIRES_RAM_SIZE);
   if(rv == 0)
     return 0;
@@ -340,6 +366,9 @@ opera_mem_state_load_v1(void const     *data_,
     return 0;
   data += rv;
 
+  _setup_dram_vram((opera_mem_cfg_t)memstate.mem_cfg);
+  g_MEM_CFG = (opera_mem_cfg_t)memstate.mem_cfg;
+
   return (data - start);
 }
 
@@ -355,13 +384,12 @@ opera_mem_state_load(void const     *data_,
 
   if(!opera_state_read_chunk(&reader,"MEM",&payload) ||
      !opera_state_read_u8(&payload,&mem_cfg) ||
+     !opera_mem_is_valid_cfg((opera_mem_cfg_t)mem_cfg) ||
      (opera_state_reader_remaining(&payload) != (MAX_HIRES_RAM_SIZE +
                                                  ROM1_SIZE +
                                                  ROM2_SIZE +
                                                  NVRAM_SIZE)))
     return 0;
-  _setup_dram_vram(mem_cfg);
-  g_MEM_CFG = (opera_mem_cfg_t)mem_cfg;
 
   if(!opera_state_read_bytes(&payload,DRAM,MAX_HIRES_RAM_SIZE) ||
      !opera_state_read_bytes(&payload,ROM1,ROM1_SIZE) ||
@@ -369,6 +397,9 @@ opera_mem_state_load(void const     *data_,
      !opera_state_read_bytes(&payload,NVRAM,NVRAM_SIZE) ||
      !opera_state_reader_finished(&payload))
     return 0;
+
+  _setup_dram_vram((opera_mem_cfg_t)mem_cfg);
+  g_MEM_CFG = (opera_mem_cfg_t)mem_cfg;
 
   return opera_state_reader_used(&reader);
 }
