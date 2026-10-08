@@ -48,7 +48,8 @@ SRC="tools/chd/cdimage_chd_test.c retro_cdimage.c cuefile.c
      $L/cdrom/cdrom.c $L/compat/compat_strcasestr.c
      $L/compat/compat_posix_string.c $L/compat/compat_strl.c
      $L/compat/compat_snprintf.c $L/compat/fopen_utf8.c
-     $L/memmap/memmap.c $L/string/stdstring.c $L/file/file_path.c
+     $L/memmap/memmap.c $L/string/stdstring.c $L/string/rstrtod.c
+     $L/file/file_path.c
      $L/file/file_path_io.c $L/file/retro_dirent.c $L/lists/dir_list.c
      $L/lists/string_list.c $L/memmap/memalign.c $L/time/rtime.c
      $L/rthreads/rthreads.c"

@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -38,15 +40,16 @@
 #include <retro_dirent.h>
 
 #include <retro_miscellaneous.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
-static int qstrcmp_plain(const void *a_, const void *b_)
+/* Case-insensitive compare of at most n characters. Kept local rather
+ * than calling strcasecmp/strncasecmp, which strict feature profiles
+ * on older libcs and MSVC do not declare. */
+static int dir_list_casecmp(const char *s1, const char *s2, size_t n)
 {
-   const struct string_list_elem *a = (const struct string_list_elem*)a_;
-   const struct string_list_elem *b = (const struct string_list_elem*)b_;
-   const char *s1 = a->data;
-   const char *s2 = b->data;
-
-   for (;;)
+   for (; n; n--)
    {
       int c1 = tolower((unsigned char)*s1);
       int c2 = tolower((unsigned char)*s2);
@@ -57,6 +60,14 @@ static int qstrcmp_plain(const void *a_, const void *b_)
       s1++;
       s2++;
    }
+   return 0;
+}
+
+static int qstrcmp_plain(const void *a_, const void *b_)
+{
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   return dir_list_casecmp(a->data, b->data, (size_t)-1);
 }
 
 /**
@@ -96,7 +107,7 @@ static int qstrcmp_plain_noext(const void *a_, const void *b_)
    size_t la      = (size_t)(ea - a->data);
    size_t lb      = (size_t)(eb - b->data);
    size_t len     = la < lb ? la : lb;
-   int rv         = strncasecmp(a->data, b->data, len);
+   int rv         = dir_list_casecmp(a->data, b->data, len);
    if (rv != 0)
       return rv;
    if (la != lb)
@@ -114,7 +125,7 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    /* Sort directories before files. */
    if (a_type != b_type)
       return b_type - a_type;
-   return strcasecmp(a->data, b->data);
+   return qstrcmp_plain(a, b);
 }
 
 static int qstrcmp_dir_noext(const void *a_, const void *b_)
@@ -270,7 +281,7 @@ static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
          if (!ctx->include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 
-#if defined(IOS) || defined(OSX)
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
          {
             size_t name_len = strlen(name);
             if (name_len >= 10
@@ -535,7 +546,7 @@ int dir_list_iter_step(dir_list_iter_t *iter,
          if (!iter->include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 
-#if defined(IOS) || defined(OSX)
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
          {
             size_t name_len = strlen(name);
             if (name_len >= 10

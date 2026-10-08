@@ -5,85 +5,151 @@
 
 #include "boolean.h"
 
+#include <retro_atomic.h>
+#include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 
 #include <stdint.h>
+#include <string.h>
 
 /* FORWARD DECLARATIONS */
 static void dsp_process(void);
-static void dsp_upload_unlocked(void);
+static void dsp_upload(void);
 
 /* MACROS */
 #define DSP_BUF_SIZE      (1 << 12)
 #define DSP_BUF_SIZE_MASK (DSP_BUF_SIZE - 1)
+#define DSP_FRAME_BYTES   (sizeof(int32_t))
+#ifndef DSP_WAKE_BATCH
+#define DSP_WAKE_BATCH    32
+#endif
 
 /* GLOBAL VARIABLES */
 static bool g_DSP_THREADED = false;
 
-static uint32_t g_DSP_BUF_IDX     = 0;
-static uint32_t g_DSP_BUF_PENDING = 0;
+static uint32_t g_DSP_BUF_IDX = 0;
 static int32_t  g_DSP_BUF[DSP_BUF_SIZE];
 
-static scond_t *g_DSP_COND         = NULL;
-static sthread_t *g_DSP_THREAD     = NULL;
-static bool g_DSP_THREAD_RUNNING   = false;
-static slock_t *g_DSP_THREAD_MUTEX = NULL;
+/* Threaded mode, all lock-free:
+ * - g_DSP_TICKS: monotonic count of DSP ticks posted. Written only by
+ *   the emulation thread, read by the DSP thread.
+ * - g_DSP_RING:  SPSC sample ring, DSP thread -> emulation thread.
+ * - g_DSP_EC:    eventcount the DSP thread parks on when idle. */
+static sthread_t           *g_DSP_THREAD = NULL;
+static retro_spsc_t         g_DSP_RING;
+static retro_eventcount_t   g_DSP_EC;
+static retro_atomic_size_t  g_DSP_TICKS;
+static retro_atomic_int_t   g_DSP_RUNNING;
+static size_t               g_DSP_TICKS_POSTED = 0;
+static size_t               g_DSP_TICKS_WOKEN  = 0;
 
-static void (*g_DSP_UPLOAD)(void)  = dsp_upload_unlocked;
+static void (*g_DSP_UPLOAD)(void)  = dsp_upload;
 static void (*g_DSP_PROCESS)(void) = dsp_process;
 
 /* PRIVATE FUNCTIONS */
 
+/* Runs 'count_' DSP ticks, publishing samples to the ring. Samples
+ * that do not fit are dropped; the ticks still run so the DSP keeps
+ * time with the CPU. */
 static
 void
-dsp_thread_loop(void *handle_)
+dsp_thread_run_ticks(size_t count_)
 {
-  int32_t sample;
-  uint32_t pending;
-  bool running = true;
+  size_t i;
+  size_t n;
+  size_t span;
+  int32_t *dst;
+  void *ptr;
 
-  while(running)
+  while(count_ > 0)
     {
-      slock_lock(g_DSP_THREAD_MUTEX);
-      while(g_DSP_THREAD_RUNNING && (g_DSP_BUF_PENDING == 0))
-        scond_wait(g_DSP_COND,g_DSP_THREAD_MUTEX);
-
-      running = g_DSP_THREAD_RUNNING;
-      pending = g_DSP_BUF_PENDING;
-      g_DSP_BUF_PENDING = 0;
-      slock_unlock(g_DSP_THREAD_MUTEX);
-
-      while (pending > 0)
+      span = retro_spsc_write_begin(&g_DSP_RING,&ptr) / DSP_FRAME_BYTES;
+      if(span == 0)
         {
-          sample = opera_dsp_loop();
-          pending--;
-
-          slock_lock(g_DSP_THREAD_MUTEX);
-          g_DSP_BUF[g_DSP_BUF_IDX++]  = sample;
-          g_DSP_BUF_IDX              &= DSP_BUF_SIZE_MASK;
-          running                     = g_DSP_THREAD_RUNNING;
-          pending                    += g_DSP_BUF_PENDING;
-          g_DSP_BUF_PENDING           = 0;
-          slock_unlock(g_DSP_THREAD_MUTEX);
+          opera_dsp_loop();
+          count_--;
+          continue;
         }
+
+      n   = ((span < count_) ? span : count_);
+      dst = (int32_t*)ptr;
+      for(i = 0; i < n; i++)
+        dst[i] = opera_dsp_loop();
+
+      retro_spsc_write_end(&g_DSP_RING,n * DSP_FRAME_BYTES);
+      count_ -= n;
     }
 }
 
 static
 void
-dsp_upload_unlocked(void)
+dsp_thread_loop(void *handle_)
+{
+  int key;
+  size_t posted;
+  size_t done = 0;
+
+  (void)handle_;
+
+  for(;;)
+    {
+      posted = retro_atomic_load_acquire_size(&g_DSP_TICKS);
+      if(posted != done)
+        {
+          dsp_thread_run_ticks(posted - done);
+          done = posted;
+          continue;
+        }
+
+      /* Stop only once every posted tick has run. */
+      if(!retro_atomic_load_acquire_int(&g_DSP_RUNNING))
+        break;
+
+      key = retro_eventcount_prepare_wait(&g_DSP_EC);
+      if((retro_atomic_load_acquire_size(&g_DSP_TICKS) != done) ||
+         !retro_atomic_load_acquire_int(&g_DSP_RUNNING))
+        {
+          retro_eventcount_cancel_wait(&g_DSP_EC);
+          continue;
+        }
+
+      retro_eventcount_commit_wait(&g_DSP_EC,key);
+    }
+}
+
+static
+void
+dsp_upload(void)
 {
   retro_audio_sample_batch_cb((int16_t*)g_DSP_BUF,g_DSP_BUF_IDX);
   g_DSP_BUF_IDX = 0;
 }
 
+/* Hands the ring's contents straight to the frontend, no copy. */
 static
 void
-dsp_upload_locked(void)
+dsp_upload_threaded(void)
 {
-  slock_lock(g_DSP_THREAD_MUTEX);
-  dsp_upload_unlocked();
-  slock_unlock(g_DSP_THREAD_MUTEX);
+  size_t span;
+  const void *ptr;
+
+  /* Wake the DSP thread for this frame's last partial batch. */
+  if(g_DSP_TICKS_WOKEN != g_DSP_TICKS_POSTED)
+    {
+      g_DSP_TICKS_WOKEN = g_DSP_TICKS_POSTED;
+      retro_eventcount_notify(&g_DSP_EC);
+    }
+
+  /* Samples made before switching to threaded mode go out first. */
+  if(g_DSP_BUF_IDX)
+    dsp_upload();
+
+  while((span = retro_spsc_read_begin(&g_DSP_RING,&ptr)) != 0)
+    {
+      retro_audio_sample_batch_cb((const int16_t*)ptr,span / DSP_FRAME_BYTES);
+      retro_spsc_read_end(&g_DSP_RING,span);
+    }
 }
 
 static
@@ -98,11 +164,43 @@ static
 void
 dsp_process_threaded(void)
 {
-  slock_lock(g_DSP_THREAD_MUTEX);
-  g_DSP_BUF_PENDING++;
-  slock_unlock(g_DSP_THREAD_MUTEX);
+  retro_atomic_store_release_size(&g_DSP_TICKS,++g_DSP_TICKS_POSTED);
 
-  scond_signal(g_DSP_COND);
+  /* Wake per batch, not per tick: a tick is far cheaper than a wake. */
+  if((g_DSP_TICKS_POSTED - g_DSP_TICKS_WOKEN) >= DSP_WAKE_BATCH)
+    {
+      g_DSP_TICKS_WOKEN = g_DSP_TICKS_POSTED;
+      retro_eventcount_notify(&g_DSP_EC);
+    }
+}
+
+static
+bool
+dsp_thread_start(void)
+{
+  if(!retro_spsc_init(&g_DSP_RING,DSP_BUF_SIZE * DSP_FRAME_BYTES))
+    return false;
+
+  if(!retro_eventcount_init(&g_DSP_EC))
+    {
+      retro_spsc_free(&g_DSP_RING);
+      return false;
+    }
+
+  g_DSP_TICKS_POSTED = 0;
+  g_DSP_TICKS_WOKEN  = 0;
+  retro_atomic_size_init(&g_DSP_TICKS,0);
+  retro_atomic_int_init(&g_DSP_RUNNING,1);
+
+  g_DSP_THREAD = sthread_create(dsp_thread_loop,NULL);
+  if(!g_DSP_THREAD)
+    {
+      retro_eventcount_free(&g_DSP_EC);
+      retro_spsc_free(&g_DSP_RING);
+      return false;
+    }
+
+  return true;
 }
 
 
@@ -123,25 +221,40 @@ opera_lr_dsp_upload(void)
 void
 opera_lr_dsp_destroy(void)
 {
-  if(g_DSP_THREADED)
+  size_t room;
+  size_t span;
+  const void *ptr;
+
+  if(!g_DSP_THREADED)
+    return;
+
+  retro_atomic_store_release_int(&g_DSP_RUNNING,0);
+  retro_eventcount_notify(&g_DSP_EC);
+  sthread_join(g_DSP_THREAD);
+  g_DSP_THREAD = NULL;
+
+  /* Carry samples not yet uploaded over to the unthreaded buffer,
+   * leaving it room for the next frame. */
+  while((span = retro_spsc_read_begin(&g_DSP_RING,&ptr)) != 0)
     {
-      slock_lock(g_DSP_THREAD_MUTEX);
-      g_DSP_THREAD_RUNNING = false;
-      g_DSP_BUF_PENDING    = 0;
-      g_DSP_BUF_IDX        = 0;
-      slock_unlock(g_DSP_THREAD_MUTEX);
-
-      scond_signal(g_DSP_COND);
-      sthread_join(g_DSP_THREAD);
-
-      scond_free(g_DSP_COND);
-      slock_free(g_DSP_THREAD_MUTEX);
-
-      g_DSP_THREAD       = NULL;
-      g_DSP_COND         = NULL;
-      g_DSP_THREAD_MUTEX = NULL;
-      g_DSP_THREADED     = false;
+      room  = ((g_DSP_BUF_IDX < (DSP_BUF_SIZE / 2)) ?
+               ((DSP_BUF_SIZE / 2) - g_DSP_BUF_IDX) : 0);
+      span /= DSP_FRAME_BYTES;
+      if(span > room)
+        span = room;
+      if(span == 0)
+        break;
+      memcpy(&g_DSP_BUF[g_DSP_BUF_IDX],ptr,span * DSP_FRAME_BYTES);
+      g_DSP_BUF_IDX += (uint32_t)span;
+      retro_spsc_read_end(&g_DSP_RING,span * DSP_FRAME_BYTES);
     }
+
+  retro_eventcount_free(&g_DSP_EC);
+  retro_spsc_free(&g_DSP_RING);
+
+  g_DSP_UPLOAD   = dsp_upload;
+  g_DSP_PROCESS  = dsp_process;
+  g_DSP_THREADED = false;
 }
 
 void
@@ -152,22 +265,10 @@ opera_lr_dsp_init(const bool threaded_)
 
   opera_lr_dsp_destroy();
 
-  g_DSP_BUF_IDX = 0;
-
-  g_DSP_THREADED = threaded_;
-  if(g_DSP_THREADED)
+  if(threaded_ && dsp_thread_start())
     {
-      g_DSP_COND           = scond_new();
-      g_DSP_THREAD_MUTEX   = slock_new();
-      g_DSP_THREAD_RUNNING = true;
-      g_DSP_THREAD         = sthread_create(dsp_thread_loop, NULL);
-
-      g_DSP_UPLOAD         = dsp_upload_locked;
-      g_DSP_PROCESS        = dsp_process_threaded;
-    }
-  else
-    {
-      g_DSP_UPLOAD  = dsp_upload_unlocked;
-      g_DSP_PROCESS = dsp_process;
+      g_DSP_THREADED = true;
+      g_DSP_UPLOAD   = dsp_upload_threaded;
+      g_DSP_PROCESS  = dsp_process_threaded;
     }
 }

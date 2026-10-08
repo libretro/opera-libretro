@@ -250,7 +250,7 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       },
       "disabled"
     },
-#if THREADED_DSP
+#if defined(THREADED_DSP) && defined(HAVE_THREADS)
     {
       "opera_dsp_threaded",
       "Threaded DSP",
@@ -540,7 +540,7 @@ static struct retro_core_option_definition option_defs_us[] =
       },
       "disabled"
     },
-#if THREADED_DSP
+#if defined(THREADED_DSP) && defined(HAVE_THREADS)
     {
       "opera_dsp_threaded",
       "Threaded DSP",
