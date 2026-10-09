@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <libretro.h>
+#include <compat/strl.h>
 #include <streams/file_stream.h>
 
 #include "cuefile.h"
@@ -21,7 +22,7 @@ cue_get_file_for_image(const char *path)
   char *exts[]   = {".cue", ".CUE"};
   char *last_dot = NULL;
 
-  strcpy(cue_path_base, path);
+  strlcpy(cue_path_base, path, sizeof(cue_path_base));
 
   last_dot = strrchr(cue_path_base, '.');
   if(last_dot == NULL)
@@ -34,8 +35,8 @@ cue_get_file_for_image(const char *path)
     {
       RFILE *cue_file = NULL;
 
-      strcpy(cue_path, cue_path_base);
-      strcat(cue_path, exts[i]);
+      strlcpy(cue_path, cue_path_base, sizeof(cue_path));
+      strlcat(cue_path, exts[i], sizeof(cue_path));
 
       cue_file = filestream_open(cue_path, RETRO_VFS_FILE_ACCESS_READ, 0);
       if(cue_file)
@@ -76,7 +77,7 @@ extract_file_name(const char *path,
       return NULL;
     }
 
-  strcpy(file, ++file_name_start);
+  strlcpy(file, ++file_name_start, sizeof(file));
   file_name_end = strstr(file, "\"");
 
   if(!file_name_end)
@@ -88,16 +89,16 @@ extract_file_name(const char *path,
 
   *file_name_end = '\0';
 
-  strcpy(base_path, path);
+  strlcpy(base_path, path, sizeof(base_path));
 
   last_separator  = strrchr(base_path, slash);
   if(last_separator)
     {
       *last_separator = '\0';
-      sprintf(cd_image, "%s%c%s", base_path, slash, file);
+      snprintf(cd_image, sizeof(cd_image), "%s%c%s", base_path, slash, file);
     }
   else
-    strcpy(cd_image, file);
+    strlcpy(cd_image, file, sizeof(cd_image));
 
   return strdup(cd_image);
 }
