@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <libretro.h>
+#include <compat/msvc.h>
 #include <compat/strl.h>
 #include <streams/file_stream.h>
 
