@@ -644,6 +644,9 @@ else
 	$(LD) $(fpic) $(LINKOUT) $@ $^ $(LDFLAGS) $(LIBS)
 endif
 
+$(CORE_DIR)/libopera/opera_bios.o: $(CORE_DIR)/libopera/opera_bios.h \
+	$(CORE_DIR)/opera_boot.h
+
 %.o: %.c
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS)
 

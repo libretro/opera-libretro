@@ -1,7 +1,35 @@
+// Owns the BIOS registry and direct decompression of embedded Opera Boot.
+
 #include "opera_bios.h"
+
+#include <zlib.h>
+
+#include "opera_boot.h"
 
 static const opera_bios_t BIOSES[] =
   {
+    {
+      NULL,
+      "Opera Boot (Built-in)",
+      OPERA_BOOT_ROM_BYTES,
+      'X',
+      NULL,
+      NULL,
+      {0},
+      {0},
+      {0}
+    },
+    {
+      "opera-boot.bin",
+      "Opera Boot (System)",
+      OPERA_BOOT_ROM_BYTES,
+      'X',
+      NULL,
+      NULL,
+      {0},
+      {0},
+      {0}
+    },
     {
       "panafz1.bin",
       "Panasonic FZ-1 (U)",
@@ -193,6 +221,51 @@ opera_bios_end(void)
 {
   return &BIOSES[sizeof(BIOSES) / sizeof(BIOSES[0]) - 1];
 }
+
+
+const
+opera_bios_t *
+opera_bios_builtin(void)
+{
+  return &BIOSES[0];
+}
+
+
+int
+opera_bios_load_builtin(uint8_t *data_,
+                        size_t   capacity_)
+{
+  int rv;
+  int end_rv;
+  z_stream stream = {0};
+
+  if((data_ == NULL) || (capacity_ < OPERA_BOOT_ROM_BYTES))
+    return -1;
+
+  // zlib's input type is mutable for compatibility; inflate does not write it.
+  stream.next_in = (Bytef *)OPERA_BOOT_ZLIB;
+  stream.avail_in = sizeof(OPERA_BOOT_ZLIB);
+  stream.next_out = data_;
+  stream.avail_out = OPERA_BOOT_ROM_BYTES;
+  rv = inflateInit(&stream);
+  if(rv != Z_OK)
+    return -1;
+
+  rv = inflate(&stream,Z_FINISH);
+  if((rv != Z_STREAM_END) ||
+     (stream.total_in != sizeof(OPERA_BOOT_ZLIB)) ||
+     (stream.total_out != OPERA_BOOT_ROM_BYTES))
+    rv = -1;
+  else
+    rv = OPERA_BOOT_ROM_BYTES;
+
+  end_rv = inflateEnd(&stream);
+  if(end_rv != Z_OK)
+    return -1;
+
+  return rv;
+}
+
 
 const
 opera_bios_t*
