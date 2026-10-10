@@ -430,6 +430,8 @@ struct core_api_t
 
 static const rom_entry_t BIOS_ROMS[] =
   {
+    // Opera Boot is build-dependent: zero CRC permits only a basename+size match.
+    { "opera-boot.bin",           "Opera Boot (System)",              131072, 0 },
     { "panafz1.bin",               "Panasonic FZ-1 (U)",              1048576, 0xc8c8ff89 },
     { "panafz1j.bin",              "Panasonic FZ-1 (J)",              1048576, 0xd9493adc },
     { "panafz1j-norsa.bin",        "Panasonic FZ-1 (J) [No RSA]",     1048576, 0x82ce67c6 },
@@ -1181,6 +1183,8 @@ _print_bios_list(FILE *f_)
               BIOS_ROMS[i].size,
               BIOS_ROMS[i].crc32,
               BIOS_ROMS[i].name);
+      if(BIOS_ROMS[i].crc32 == 0)
+        fprintf(f_, "    build-dependent CRC; requires this filename and size\n");
 
       resolved = _resolve_rom_request(BIOS_ROMS[i].filename);
       if(resolved != NULL)
@@ -2358,7 +2362,9 @@ _find_rom_by_hash(const rom_entry_t *entries_,
 {
   while(entries_->filename != NULL)
     {
-      if((entries_->size == size_) && (entries_->crc32 == crc_))
+      if((entries_->crc32 != 0) &&
+         (entries_->size == size_) &&
+         (entries_->crc32 == crc_))
         return entries_;
       entries_++;
     }
@@ -2405,6 +2411,8 @@ _stage_rom(const char        *source_path_,
 
   by_base = _find_rom_by_basename(entries_, source_path_);
   by_hash = _find_rom_by_hash(entries_, size, crc);
+  if((by_base != NULL) && (by_base->crc32 == 0) && (by_base->size == size))
+    by_hash = by_base;
 
   if((by_base != NULL) && (by_hash != by_base))
     {
@@ -2446,8 +2454,8 @@ _stage_rom(const char        *source_path_,
       uint64_t target_size;
 
       if((_file_crc32_and_size(target, &target_crc, &target_size) != 0) ||
-         (target_size != entry->size) ||
-         (target_crc != entry->crc32))
+         (target_size != size) ||
+         (target_crc != crc))
         {
           _report_error("staged %s ROM already exists with different content: %s\n",
                         kind_, target);

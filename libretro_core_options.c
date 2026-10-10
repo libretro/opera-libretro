@@ -41,9 +41,10 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
       "opera_bios",
       "BIOS (rom1)",
       NULL,
-      "Select system BIOS."
-      " Only ROMS present in the system directory are listed."
-      " Changes take affect at core start/restart.",
+      "Select system BIOS. Embedded Opera Boot is always available and is the default."
+      " Opera Boot in the system directory is available as a separate file-backed option."
+      " Other ROMs are listed only when present in the system directory and load from those files."
+      " Changes take effect at core start/restart.",
       NULL,
       "system",
       {
@@ -366,9 +367,10 @@ static struct retro_core_option_definition option_defs_us[] =
     {
       "opera_bios",
       "BIOS (rom1)",
-      "Select system BIOS."
-      " Only ROMS present in the system directory are listed."
-      " Changes take affect at core start/restart.",
+      "Select system BIOS. Embedded Opera Boot is always available and is the default."
+      " Opera Boot in the system directory is available as a separate file-backed option."
+      " Other ROMs are listed only when present in the system directory and load from those files."
+      " Changes take effect at core start/restart.",
       {
         { NULL, NULL }, /* This is set dynamically */
       },
@@ -745,43 +747,38 @@ file_exists_in_system_directory(const char *filename)
 }
 
 static
-const char *
-set_bios_values(struct retro_core_option_value *values)
+const
+char *
+set_bios_values(struct retro_core_option_value *values_)
 {
-  size_t i                  = 0;
-  const opera_bios_t *bios = NULL;
+  size_t i = 1;
+  const opera_bios_t *bios;
 
-  if(!values)
+  if(values_ == NULL)
     return NULL;
 
-  /* Loop through all recognised bios files */
+  bios = opera_bios_builtin();
+  values_[0].value = OPERA_BIOS_BUILTIN_ID;
+  values_[0].label = bios->name;
+
   for(bios = opera_bios_begin(); bios != opera_bios_end(); bios++)
     {
-      /* Sanity check */
-      if(i >= RETRO_NUM_CORE_OPTION_VALUES_MAX - 1)
+      if(bios == opera_bios_builtin())
+        continue;
+      if(i >= (RETRO_NUM_CORE_OPTION_VALUES_MAX - 1))
         break;
+      if(!file_exists_in_system_directory(bios->filename))
+        continue;
 
-      if(file_exists_in_system_directory(bios->filename))
-        {
-          values[i].value = bios->filename;
-          values[i].label = bios->name;
-          i++;
-        }
-    }
-
-  /* Handle 'no files found' condition */
-  if(i == 0)
-    {
-      values[i].value = bios_disabled_str;
-      values[i].label = NULL;
+      values_[i].value = bios->filename;
+      values_[i].label = bios->name;
       i++;
     }
 
-  /* Add proper null termination */
-  values[i].value = NULL;
-  values[i].label = NULL;
+  values_[i].value = NULL;
+  values_[i].label = NULL;
 
-  return values[0].value;
+  return values_[0].value;
 }
 
 static

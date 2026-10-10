@@ -36,6 +36,7 @@
 #include "retro_miscellaneous.h"
 #include "streams/file_stream.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdint.h>
@@ -279,14 +280,19 @@ opera_lr_opts_get_bios(opera_lr_opts_t *opts_)
   const char *val;
   const opera_bios_t *bios;
 
-  opts_->bios = NULL;
+  opts_->bios = opera_bios_builtin();
 
   val = getval("bios");
   if(val == NULL)
     return;
 
+  if(strcmp(val,OPERA_BIOS_BUILTIN_ID) == 0)
+    return;
+
   for(bios = opera_bios_begin(); bios != opera_bios_end(); bios++)
     {
+      if(bios == opera_bios_builtin())
+        continue;
       if(strcmp(bios->filename,val))
         continue;
 
@@ -295,37 +301,61 @@ opera_lr_opts_get_bios(opera_lr_opts_t *opts_)
     }
 }
 
+
+static
+int64_t
+_load_bios_rom(const opera_bios_t *bios_)
+{
+  int64_t rv;
+
+  assert(bios_ != NULL);
+
+  if(bios_ == opera_bios_builtin())
+    {
+      // Memory initialization provides fresh zeroed ROM1, including its unused tail.
+      rv = opera_bios_load_builtin(ROM1,ROM1_SIZE);
+      if(rv < 0)
+        retro_log_printf_cb(RETRO_LOG_ERROR,
+                            "[Opera]: unable to decompress built-in BIOS ROM - %s\n",
+                            bios_->name);
+      else
+        retro_log_printf_cb(RETRO_LOG_INFO,
+                            "[Opera]: loaded built-in BIOS ROM - %s\n",
+                            bios_->name);
+
+      return rv;
+    }
+
+  rv = read_file_from_system_directory(bios_->filename,ROM1,ROM1_SIZE);
+  if(rv < 0)
+    retro_log_printf_cb(RETRO_LOG_ERROR,
+                        "[Opera]: unable to find or load BIOS ROM - %s\n",
+                        bios_->filename);
+  else
+    retro_log_printf_cb(RETRO_LOG_INFO,
+                        "[Opera]: loaded BIOS ROM - %s\n",
+                        bios_->filename);
+
+  return rv;
+}
+
+
 static
 void
 opera_lr_opts_set_bios(opera_lr_opts_t const *opts_)
 {
-  int64_t rv;
+  const opera_bios_t *bios;
 
   if(g_OPTS.initialized_opera)
     return;
 
-  if(opts_->bios == NULL)
-    {
-      retro_log_printf_cb(RETRO_LOG_ERROR,"[Opera]: no BIOS ROM found\n");
-      return;
-    }
-
-  rv = read_file_from_system_directory(opts_->bios->filename,ROM1,ROM1_SIZE);
-  if(rv < 0)
-    {
-      retro_log_printf_cb(RETRO_LOG_ERROR,
-                          "[Opera]: unable to find or load BIOS ROM - %s\n",
-                          opts_->bios->filename);
-      return;
-    }
-
-  retro_log_printf_cb(RETRO_LOG_INFO,
-                      "[Opera]: loaded BIOS ROM - %s\n",
-                      opts_->bios->filename);
+  bios = (opts_->bios == NULL) ? opera_bios_builtin() : opts_->bios;
+  if(_load_bios_rom(bios) < 0)
+    return;
 
   opera_mem_rom1_byteswap32_if_le();
 
-  g_OPTS.bios = opts_->bios;
+  g_OPTS.bios = bios;
 }
 
 static

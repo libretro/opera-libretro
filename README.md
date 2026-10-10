@@ -6,12 +6,11 @@ FreeDO, to libretro. The fork/rename occurred due to the original 4DO
 project being dormant and to differenciate the project due to new
 development and focus.
 
-One of several BIOS ROMs must be placed into your RetroArch / libretro
-"System Directory" folder. "norsa" versions have the RSA encryption
-check disabled which should allow unsigned software to run.
+## ROMS
 
 | Filename                  | Hash                                 |
 | ------------------------- | ------------------------------------ |
+| opera-boot.bin            | Build-dependent (external ROM)       |
 | panafz1.bin               | md5:f47264dd47fe30f73ab3c010015c155b |
 | panafz1j.bin              | md5:a496cfdded3da562759be3561317b605 |
 | panafz1j-norsa.bin        | md5:f6c71de7470d16abe4f71b1444883dc8 |
@@ -30,3 +29,19 @@ For certain Japanese games a second "Kanji" ROM is necessary.
 | panafz1-kanji.bin          | md5:b8dc97f778a6245c58e064b0312e8281 |
 | panafz1j-kanji.bin         | md5:c23fb5d5e6bb1c240d02cf968972be37 |
 | panafz10ja-anvil-kanji.bin | md5:428577250f43edc902ea239c50d2240d |
+
+
+### opera-boot.bin
+
+Opera includes **Opera Boot (Built-in)** as its first BIOS setting and default
+(`opera-boot-internal`). Its compressed ROM is embedded in the core, so no
+external BIOS file is required.
+
+Supported BIOS ROMs placed in the RetroArch / libretro **System Directory**
+appear after the built-in option and can be selected normally. This includes
+`opera-boot.bin`, shown separately as **Opera Boot (System)**. "norsa" versions
+have the RSA encryption check disabled, allowing unsigned software to run.
+
+
+More details about the opera-boot boot ROM can be found at:
+https://github.com/trapexit/opera-boot
