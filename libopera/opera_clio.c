@@ -1232,8 +1232,6 @@ opera_clio_fifo_write(uint32_t addr_, uint32_t val_)
         case 0x00:
           /* see patent WO09410641A1, 46.25 */
           CLIO.fifo_i[(addr_>>4)&0xF].start.addr = val_;
-          // A new current address replaces the previous transfer's memory cursor.
-          CLIO.fifo_i[(addr_>>4)&0xF].idx = 0;
           CLIO.fifo_i[(addr_>>4)&0xF].next.addr  = 0;
           break;
         case 0x04:
