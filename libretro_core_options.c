@@ -162,7 +162,7 @@ static struct retro_core_option_v2_definition option_defs_us_v2[] =
         { "32x", "32x - 4800KB/s" },
         { NULL, NULL },
       },
-      "2x"
+      "unbounded"
     },
     {
       "opera_region",
@@ -471,7 +471,7 @@ static struct retro_core_option_definition option_defs_us[] =
         { "32x", "32x - 4800KB/s" },
         { NULL, NULL },
       },
-      "2x"
+      "unbounded"
     },
     {
       "opera_region",
