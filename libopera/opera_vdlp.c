@@ -24,6 +24,12 @@
   - add pseudo random 3bit pattern for second clut bypass mode
 */
 
+enum
+  {
+    VDLP_FORCE_LINE = 5,
+    VDLP_PAL_FORCE_DELAY = 3
+  };
+
 typedef void(*vdlp_renderer_t)();
 
 static vdlp_t               g_VDLP         = {0};
@@ -167,12 +173,11 @@ vdlp_process_vdl_entry(void)
   uint32_t next_entry;
   clut_dma_ctrl_word_s *cdcw = &g_VDLP.clut_ctrl.cdcw;
 
-  if(!g_VDLP.curr_vdl)
+  if(!g_VDLP.next_vdl)
     return;
 
+  g_VDLP.curr_vdl = g_VDLP.next_vdl;
   entry = vram_read32(g_VDLP.curr_vdl);
-  if(!entry)
-    return;
 
   g_VDLP.clut_ctrl.raw = entry;
 
@@ -190,7 +195,7 @@ vdlp_process_vdl_entry(void)
 
   vdlp_process_optional_cmds(cdcw->ctrl_word_cnt);
 
-  g_VDLP.curr_vdl = next_entry;
+  g_VDLP.next_vdl = next_entry;
   g_VDLP.line_cnt = cdcw->persist_len;
 }
 
@@ -836,6 +841,17 @@ visible_scanline(const int line_)
           (line_  < opera_region_end_scanline()));
 }
 
+static
+INLINE
+uint32_t
+_forced_transfer_line(vdlp_t const *state_)
+{
+  assert(state_ != NULL);
+  return (VDLP_FORCE_LINE +
+          (state_->disp_ctrl.dcw.pal_ntsc ? VDLP_PAL_FORCE_DELAY : 0));
+}
+
+
 /*
   See ppgfldr/ggsfldr/gpgfldr/2gpgb.html for details on the frame
   buffer layout.
@@ -847,21 +863,24 @@ visible_scanline(const int line_)
 void
 opera_vdlp_process_line(int line_)
 {
-  int y;
+  // Model the display-effective boundary, not parity-specific DMA pipeline stages.
+  // Latch PALSEL once per field; a loaded mode change applies to the next field.
+  if(line_ == 0)
+    g_VDLP.force_line = _forced_transfer_line(&g_VDLP);
 
-  if(line_ < 5)
+  if(line_ < VDLP_FORCE_LINE)
     return;
 
-  if(line_ == 5)
+  if(line_ == VDLP_FORCE_LINE)
+    g_CURBUF = g_BUF;
+
+  if(madam_clut_dma_enabled())
     {
-      g_CURBUF = g_BUF;
-      g_VDLP.curr_vdl = g_VDLP.head_vdl;
-      if(madam_clut_dma_enabled())
+      if(line_ == (int)g_VDLP.force_line)
+        vdlp_process_vdl_entry();
+      else if((g_VDLP.line_cnt <= 0) && (g_VDLP.clut_ctrl.cdcw.persist_len != 0))
         vdlp_process_vdl_entry();
     }
-
-  if(madam_clut_dma_enabled() && (g_VDLP.line_cnt <= 0))
-    vdlp_process_vdl_entry();
 
   if(visible_scanline(line_))
     g_RENDERER();
@@ -891,6 +910,7 @@ opera_vdlp_init()
 
   /* The boot ROM installs the power-on VDL through MADAM CLUTMID. */
   memset(&g_VDLP,0,sizeof(g_VDLP));
+  g_VDLP.force_line = VDLP_FORCE_LINE;
   g_BUF          = buf;
   g_CURBUF       = buf;
   g_RENDERER     = renderer;
@@ -904,7 +924,7 @@ opera_vdlp_init()
 void
 opera_vdlp_set_vdl_head(const uint32_t addr_)
 {
-  g_VDLP.head_vdl = addr_;
+  g_VDLP.next_vdl = addr_;
 }
 
 uint32_t
@@ -921,9 +941,9 @@ vdlp_state_write_payload(opera_state_writer_t *writer_,
   return (opera_state_write_bytes(writer_,state_->clut_r,CLUT_LEN) &&
           opera_state_write_bytes(writer_,state_->clut_g,CLUT_LEN) &&
           opera_state_write_bytes(writer_,state_->clut_b,CLUT_LEN) &&
-          opera_state_write_u32(writer_,state_->background_color) &&
-          opera_state_write_u32(writer_,state_->head_vdl) &&
+          opera_state_write_u32(writer_,state_->force_line) &&
           opera_state_write_u32(writer_,state_->curr_vdl) &&
+          opera_state_write_u32(writer_,state_->next_vdl) &&
           opera_state_write_u32(writer_,state_->prev_bmp) &&
           opera_state_write_u32(writer_,state_->curr_bmp) &&
           opera_state_write_u32(writer_,state_->bg_color.raw) &&
@@ -964,11 +984,31 @@ opera_vdlp_state_save(void *buf_)
   return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
 }
 
+static
+void
+_migrate_vdlp_state(vdlp_t *state_)
+{
+  assert(state_ != NULL);
+  if(state_->force_line != 0)
+    return;
+
+  // Old payloads stored an unused zero and the last CPU-programmed head here.
+  // Restart their video traversal from that address; new states retain next_vdl.
+  state_->next_vdl = state_->curr_vdl;
+  state_->force_line = _forced_transfer_line(state_);
+}
+
+
 uint32_t
 opera_vdlp_state_load_v1(const void     *buf_,
                          uint32_t const  size_)
 {
-  return opera_state_load_sized(&g_VDLP,"VDLP",buf_,size_,sizeof(g_VDLP));
+  uint32_t loaded;
+
+  loaded = opera_state_load_sized(&g_VDLP,"VDLP",buf_,size_,sizeof(g_VDLP));
+  if(loaded != 0)
+    _migrate_vdlp_state(&g_VDLP);
+  return loaded;
 }
 
 static
@@ -979,9 +1019,9 @@ vdlp_state_read_payload(opera_state_reader_t *reader_,
   return (opera_state_read_bytes(reader_,state_->clut_r,CLUT_LEN) &&
           opera_state_read_bytes(reader_,state_->clut_g,CLUT_LEN) &&
           opera_state_read_bytes(reader_,state_->clut_b,CLUT_LEN) &&
-          opera_state_read_u32(reader_,&state_->background_color) &&
-          opera_state_read_u32(reader_,&state_->head_vdl) &&
+          opera_state_read_u32(reader_,&state_->force_line) &&
           opera_state_read_u32(reader_,&state_->curr_vdl) &&
+          opera_state_read_u32(reader_,&state_->next_vdl) &&
           opera_state_read_u32(reader_,&state_->prev_bmp) &&
           opera_state_read_u32(reader_,&state_->curr_bmp) &&
           opera_state_read_u32(reader_,&state_->bg_color.raw) &&
@@ -1004,6 +1044,7 @@ opera_vdlp_state_load(const void     *buf_,
      !opera_state_reader_finished(&payload))
     return 0;
 
+  _migrate_vdlp_state(&state);
   g_VDLP = state;
 
   return opera_state_reader_used(&reader);

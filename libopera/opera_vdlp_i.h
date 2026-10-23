@@ -123,9 +123,9 @@ struct vdlp_s
   uint8_t  clut_r[CLUT_LEN];
   uint8_t  clut_g[CLUT_LEN];
   uint8_t  clut_b[CLUT_LEN];
-  uint32_t background_color;
-  uint32_t head_vdl;
-  uint32_t curr_vdl;
+  uint32_t force_line; // Effective transfer boundary latched at field start.
+  uint32_t curr_vdl;   // Current entry's header/command cursor.
+  uint32_t next_vdl;   // Retained successor, seeded by CPU DMA-address writes.
   uint32_t prev_bmp;
   uint32_t curr_bmp;
   background_value_word_u bg_color;
