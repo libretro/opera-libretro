@@ -225,7 +225,11 @@ opera_3do_process_frame(void)
 
   while(line < scanlines)
     {
-      opera_madam_cel_tick();
+      if(opera_madam_fsm_get() == FSM_INPROCESS)
+        {
+          opera_madam_cel_handle();
+          opera_madam_fsm_set(FSM_IDLE);
+        }
 
       cnt += opera_arm_execute();
       if(opera_cdrom_ode_restart_requested())
