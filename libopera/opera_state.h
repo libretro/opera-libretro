@@ -8,7 +8,10 @@
 #define OPERA_STATE_VERSION_V1      0x01
 #define OPERA_STATE_VERSION_V2      0x02
 #define OPERA_STATE_VERSION_V3      0x03
-#define OPERA_STATE_VERSION_CURRENT OPERA_STATE_VERSION_V3
+/* V4: the MEM chunk became MEM2 -- only the RAM the memory
+ * configuration uses, and no ROMs. Otherwise laid out as V3. */
+#define OPERA_STATE_VERSION_V4      0x04
+#define OPERA_STATE_VERSION_CURRENT OPERA_STATE_VERSION_V4
 
 typedef struct opera_state_data_t opera_state_data_t;
 struct opera_state_data_t

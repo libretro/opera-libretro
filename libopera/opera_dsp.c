@@ -472,29 +472,19 @@ opera_dsp_state_size_v1(void)
   return opera_state_save_size(sizeof(DSP));
 }
 
+/*
+ * INSTTRAS, REGCONV and BRCONDTAB are decode tables opera_dsp_init()
+ * builds and nothing changes afterwards, so the DSP2 chunk (state V4)
+ * leaves them out and a load keeps the running core's. The older DSPP
+ * chunk carried them; it is still read.
+ */
+/* Everything after the tables. */
 static
 bool
-dsp_state_write_payload(opera_state_writer_t *writer_,
-                        dsp_t const          *state_)
+dsp_state_write_live(opera_state_writer_t *writer_,
+                     dsp_t const          *state_)
 {
   uint32_t i;
-  uint32_t j;
-
-  if(!opera_state_write_u32(writer_,state_->RBASEx4))
-    return false;
-
-  for(i = 0; i < 0x8000; i++)
-    if(!opera_state_write_u8(writer_,state_->INSTTRAS[i].req.raw) ||
-       !opera_state_write_i8(writer_,(int8_t)state_->INSTTRAS[i].BS))
-      return false;
-
-  if(!opera_state_write_u16_array(writer_,&state_->REGCONV[0][0],8 * 16))
-    return false;
-
-  for(i = 0; i < 32; i++)
-    for(j = 0; j < 32; j++)
-      if(!opera_state_write_i32(writer_,state_->BRCONDTAB[i][j]))
-        return false;
 
   if(!opera_state_write_u16_array(writer_,state_->NMem,2048) ||
      !opera_state_write_u16_array(writer_,state_->IMem,1024) ||
@@ -528,6 +518,15 @@ dsp_state_write_payload(opera_state_writer_t *writer_,
 }
 
 static
+bool
+dsp_state_write_payload(opera_state_writer_t *writer_,
+                        dsp_t const          *state_)
+{
+  return (opera_state_write_u32(writer_,state_->RBASEx4) &&
+          dsp_state_write_live(writer_,state_));
+}
+
+static
 uint32_t
 dsp_state_payload_size(void)
 {
@@ -553,7 +552,7 @@ opera_dsp_state_save(void *buf_)
 
   payload_size = dsp_state_payload_size();
   opera_state_writer_init(&writer,buf_,opera_state_chunk_size(payload_size));
-  opera_state_write_chunk_header(&writer,"DSPP",payload_size);
+  opera_state_write_chunk_header(&writer,"DSP2",payload_size);
   dsp_state_write_payload(&writer,&DSP);
 
   return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
@@ -566,99 +565,127 @@ opera_dsp_state_load_v1(const void     *buf_,
   return opera_state_load_sized(&DSP,"DSPP",buf_,size_,sizeof(DSP));
 }
 
+/* The state a DSP2 chunk holds: the DSP minus its decode tables. */
+typedef struct dsp_live_s dsp_live_t;
+struct dsp_live_s
+{
+  uint32_t  RBASEx4;
+  uint16_t  NMem[2048];
+  uint16_t  IMem[1024];
+  int       REGi;
+  REGSTAG_t dregs;
+  INTAG_t   flags;
+  int       CPUSupply[16];
+};
+
 static
 bool
-dsp_state_read_payload(opera_state_reader_t *reader_,
-                       dsp_t                *state_)
+dsp_state_read_live(opera_state_reader_t *reader_,
+                    dsp_live_t           *live_)
 {
   uint32_t i;
-  uint32_t j;
-  int8_t bs;
   uint8_t b;
 
-  memset(state_,0,sizeof(*state_));
-
-  if(!opera_state_read_u32(reader_,&state_->RBASEx4))
-    return false;
-
-  for(i = 0; i < 0x8000; i++)
-    {
-      if(!opera_state_read_u8(reader_,&state_->INSTTRAS[i].req.raw) ||
-         !opera_state_read_i8(reader_,&bs))
-        return false;
-      state_->INSTTRAS[i].BS = (char)bs;
-    }
-
-  if(!opera_state_read_u16_array(reader_,&state_->REGCONV[0][0],8 * 16))
-    return false;
-
-  for(i = 0; i < 32; i++)
-    for(j = 0; j < 32; j++)
-      {
-        int32_t v;
-        if(!opera_state_read_i32(reader_,&v))
-          return false;
-        state_->BRCONDTAB[i][j] = v;
-      }
-
-  if(!opera_state_read_u16_array(reader_,state_->NMem,2048) ||
-     !opera_state_read_u16_array(reader_,state_->IMem,1024) ||
-     !opera_state_read_i32(reader_,&state_->REGi) ||
-     !opera_state_read_u32(reader_,&state_->dregs.PC) ||
-     !opera_state_read_u16(reader_,&state_->dregs.AudioOutStatus) ||
-     !opera_state_read_u16(reader_,&state_->dregs.Sema4Status) ||
-     !opera_state_read_u16(reader_,&state_->dregs.Sema4Data) ||
-     !opera_state_read_i16(reader_,&state_->dregs.DSPPCNT) ||
-     !opera_state_read_i16(reader_,&state_->dregs.DSPPRLD) ||
-     !opera_state_read_i16(reader_,&state_->dregs.AUDCNT) ||
-     !opera_state_read_u16(reader_,&state_->dregs.INT) ||
-     !opera_state_read_i16(reader_,&state_->flags.MULT1) ||
-     !opera_state_read_i16(reader_,&state_->flags.MULT2) ||
-     !opera_state_read_i16(reader_,&state_->flags.ALU1) ||
-     !opera_state_read_i16(reader_,&state_->flags.ALU2) ||
-     !opera_state_read_i32(reader_,&state_->flags.BS) ||
-     !opera_state_read_u16(reader_,&state_->flags.RMAP) ||
-     !opera_state_read_u16(reader_,&state_->flags.nOP_MASK) ||
-     !opera_state_read_u16(reader_,&state_->flags.WRITEBACK) ||
-     !opera_state_read_u8(reader_,&state_->flags.req.raw) ||
+  if(!opera_state_read_u16_array(reader_,live_->NMem,2048) ||
+     !opera_state_read_u16_array(reader_,live_->IMem,1024) ||
+     !opera_state_read_i32(reader_,&live_->REGi) ||
+     !opera_state_read_u32(reader_,&live_->dregs.PC) ||
+     !opera_state_read_u16(reader_,&live_->dregs.AudioOutStatus) ||
+     !opera_state_read_u16(reader_,&live_->dregs.Sema4Status) ||
+     !opera_state_read_u16(reader_,&live_->dregs.Sema4Data) ||
+     !opera_state_read_i16(reader_,&live_->dregs.DSPPCNT) ||
+     !opera_state_read_i16(reader_,&live_->dregs.DSPPRLD) ||
+     !opera_state_read_i16(reader_,&live_->dregs.AUDCNT) ||
+     !opera_state_read_u16(reader_,&live_->dregs.INT) ||
+     !opera_state_read_i16(reader_,&live_->flags.MULT1) ||
+     !opera_state_read_i16(reader_,&live_->flags.MULT2) ||
+     !opera_state_read_i16(reader_,&live_->flags.ALU1) ||
+     !opera_state_read_i16(reader_,&live_->flags.ALU2) ||
+     !opera_state_read_i32(reader_,&live_->flags.BS) ||
+     !opera_state_read_u16(reader_,&live_->flags.RMAP) ||
+     !opera_state_read_u16(reader_,&live_->flags.nOP_MASK) ||
+     !opera_state_read_u16(reader_,&live_->flags.WRITEBACK) ||
+     !opera_state_read_u8(reader_,&live_->flags.req.raw) ||
      !opera_state_read_u8(reader_,&b))
     return false;
-  state_->flags.Running = (b != 0);
+  live_->flags.Running = (b != 0);
   if(!opera_state_read_u8(reader_,&b))
     return false;
-  state_->flags.GenFIQ = (b != 0);
+  live_->flags.GenFIQ = (b != 0);
 
   for(i = 0; i < 16; i++)
     {
       int32_t v;
       if(!opera_state_read_i32(reader_,&v))
         return false;
-      state_->CPUSupply[i] = v;
+      live_->CPUSupply[i] = v;
     }
 
   return true;
 }
 
-uint32_t
-opera_dsp_state_load(const void     *buf_,
-                     uint32_t const  size_)
+static
+void
+dsp_state_apply_live(dsp_t            *dsp_,
+                     dsp_live_t const *live_)
 {
-  dsp_t state;
+  dsp_->RBASEx4 = live_->RBASEx4;
+  memcpy(dsp_->NMem,live_->NMem,sizeof(dsp_->NMem));
+  memcpy(dsp_->IMem,live_->IMem,sizeof(dsp_->IMem));
+  dsp_->REGi  = live_->REGi;
+  dsp_->dregs = live_->dregs;
+  dsp_->flags = live_->flags;
+  memcpy(dsp_->CPUSupply,live_->CPUSupply,sizeof(dsp_->CPUSupply));
+}
+
+/* The DSPP chunk (state V3): the tables are in the stream. They are
+ * the ones opera_dsp_init() builds, so they are stepped over and the
+ * running core's are kept. */
+static
+bool
+dsp_state_skip_tables(opera_state_reader_t *reader_)
+{
+  return opera_state_skip_bytes(reader_,
+                                (0x8000 * 2) +
+                                (8 * 16 * sizeof(uint16_t)) +
+                                (32 * 32 * sizeof(int32_t)));
+}
+
+static
+uint32_t
+opera_dsp_state_load_chunk(const void     *buf_,
+                           uint32_t const  size_,
+                           char const     *name_,
+                           bool            tables_)
+{
+  dsp_live_t live;
   opera_state_reader_t reader;
   opera_state_reader_t payload;
 
   opera_state_reader_init(&reader,buf_,size_);
-  if(!opera_state_read_chunk(&reader,"DSPP",&payload) ||
-     !dsp_state_read_payload(&payload,&state) ||
+  if(!opera_state_read_chunk(&reader,name_,&payload) ||
+     !opera_state_read_u32(&payload,&live.RBASEx4) ||
+     (tables_ && !dsp_state_skip_tables(&payload)) ||
+     !dsp_state_read_live(&payload,&live) ||
      !opera_state_reader_finished(&payload))
     return 0;
 
   if(opera_state_validating())
     return opera_state_reader_used(&reader);
 
-  DSP = state;
+  dsp_state_apply_live(&DSP,&live);
 
   return opera_state_reader_used(&reader);
+}
+
+uint32_t
+opera_dsp_state_load(const void     *buf_,
+                     uint32_t const  size_)
+{
+  if((size_ >= 4) && !memcmp(buf_,"DSP2",4))
+    return opera_dsp_state_load_chunk(buf_,size_,"DSP2",false);
+
+  return opera_dsp_state_load_chunk(buf_,size_,"DSPP",true);
 }
 
 static

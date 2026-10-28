@@ -280,36 +280,59 @@ opera_mem_state_size_v1()
   return size;
 }
 
+/*
+ * The MEM2 chunk: the memory configuration, how many RAM bytes follow,
+ * that much of DRAM, then NVRAM.
+ *
+ * The RAM stored is what the configuration uses: DRAM plus VRAM and its
+ * three high-resolution copies, which sit directly above it. That is
+ * fixed for a session -- the configuration is chosen once, and the
+ * copies are kept whether or not high resolution is on, since it can
+ * be switched at any time -- so the state size does not change under a
+ * frontend that sized its buffers once. The ROMs are not stored: they
+ * are the BIOS and font loaded for the session and never change.
+ *
+ * The older MEM chunk (V3) stored the whole 22 MB DRAM allocation and
+ * both ROMs, 24.1 MB, whatever the configuration.
+ */
+static
+uint32_t
+opera_mem_state_ram_bytes(opera_mem_cfg_t const cfg_)
+{
+  return (opera_mem_dram_size(cfg_) + (opera_mem_vram_size(cfg_) * 4));
+}
+
+static
+uint32_t
+opera_mem_state_payload_size(void)
+{
+  return (sizeof(uint8_t) +
+          sizeof(uint32_t) +
+          opera_mem_state_ram_bytes(g_MEM_CFG) +
+          NVRAM_SIZE);
+}
+
 uint32_t
 opera_mem_state_size()
 {
-  return opera_state_chunk_size(sizeof(uint8_t) +
-                                MAX_HIRES_RAM_SIZE +
-                                ROM1_SIZE +
-                                ROM2_SIZE +
-                                NVRAM_SIZE);
+  return opera_state_chunk_size(opera_mem_state_payload_size());
 }
 
 uint32_t
 opera_mem_state_save(void *data_)
 {
-  opera_mem_state_t memstate;
+  uint32_t ram_bytes;
   opera_state_writer_t writer;
 
-  memstate.mem_cfg = opera_mem_cfg();
+  ram_bytes = opera_mem_state_ram_bytes(g_MEM_CFG);
 
   opera_state_writer_init(&writer,data_,opera_mem_state_size());
   opera_state_write_chunk_header(&writer,
-                                 "MEM",
-                                 sizeof(memstate.mem_cfg) +
-                                 MAX_HIRES_RAM_SIZE +
-                                 ROM1_SIZE +
-                                 ROM2_SIZE +
-                                 NVRAM_SIZE);
-  opera_state_write_u8(&writer,memstate.mem_cfg);
-  opera_state_write_bytes(&writer,DRAM,MAX_HIRES_RAM_SIZE);
-  opera_state_write_bytes(&writer,ROM1,ROM1_SIZE);
-  opera_state_write_bytes(&writer,ROM2,ROM2_SIZE);
+                                 "MEM2",
+                                 opera_mem_state_payload_size());
+  opera_state_write_u8(&writer,(uint8_t)g_MEM_CFG);
+  opera_state_write_u32(&writer,ram_bytes);
+  opera_state_write_bytes(&writer,DRAM,ram_bytes);
   opera_state_write_bytes(&writer,NVRAM,NVRAM_SIZE);
 
   return opera_state_writer_ok(&writer) ? opera_state_writer_used(&writer) : 0;
@@ -352,9 +375,10 @@ opera_mem_state_load_v1(void const     *data_,
   return (data - start);
 }
 
+static
 uint32_t
-opera_mem_state_load(void const     *data_,
-                     uint32_t const  size_)
+opera_mem_state_load_mem(void const     *data_,
+                         uint32_t const  size_)
 {
   uint8_t mem_cfg;
   opera_state_reader_t reader;
@@ -392,4 +416,57 @@ opera_mem_state_load(void const     *data_,
   g_MEM_CFG = (opera_mem_cfg_t)mem_cfg;
 
   return opera_state_reader_used(&reader);
+}
+
+static
+uint32_t
+opera_mem_state_load_mem2(void const     *data_,
+                          uint32_t const  size_)
+{
+  uint8_t mem_cfg;
+  uint32_t ram_bytes;
+  opera_state_reader_t reader;
+  opera_state_reader_t payload;
+
+  opera_state_reader_init(&reader,data_,size_);
+
+  if(!opera_state_read_chunk(&reader,"MEM2",&payload) ||
+     !opera_state_read_u8(&payload,&mem_cfg) ||
+     !opera_mem_is_valid_cfg((opera_mem_cfg_t)mem_cfg) ||
+     !opera_state_read_u32(&payload,&ram_bytes) ||
+     (ram_bytes != opera_mem_state_ram_bytes((opera_mem_cfg_t)mem_cfg)) ||
+     (ram_bytes > MAX_HIRES_RAM_SIZE) ||
+     (opera_state_reader_remaining(&payload) != (ram_bytes + NVRAM_SIZE)))
+    return 0;
+
+  if(opera_state_validating())
+    {
+      if(!opera_state_skip_bytes(&payload,opera_state_reader_remaining(&payload)) ||
+         !opera_state_reader_finished(&payload))
+        return 0;
+      return opera_state_reader_used(&reader);
+    }
+
+  if(!opera_state_read_bytes(&payload,DRAM,ram_bytes) ||
+     !opera_state_read_bytes(&payload,NVRAM,NVRAM_SIZE) ||
+     !opera_state_reader_finished(&payload))
+    return 0;
+
+  _setup_dram_vram((opera_mem_cfg_t)mem_cfg);
+  g_MEM_CFG = (opera_mem_cfg_t)mem_cfg;
+
+  return opera_state_reader_used(&reader);
+}
+
+/* MEM2 from V4 states, MEM from V3; the chunk name says which. */
+uint32_t
+opera_mem_state_load(void const     *data_,
+                     uint32_t const  size_)
+{
+  uint8_t const *name = (uint8_t const*)data_;
+
+  if((size_ >= 4) && !memcmp(name,"MEM2",4))
+    return opera_mem_state_load_mem2(data_,size_);
+
+  return opera_mem_state_load_mem(data_,size_);
 }

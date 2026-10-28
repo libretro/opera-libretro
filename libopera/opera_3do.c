@@ -702,19 +702,35 @@ opera_3do_state_load_v3(const void   *data_,
                                       true);
 }
 
+/* V4 differs from V3 only in its memory chunk, which
+ * opera_mem_state_load() tells apart by name. */
+static
+uint32_t
+opera_3do_state_load_v4(const void   *data_,
+                        size_t const  size_)
+{
+  return opera_3do_state_load_chunked(data_,
+                                      size_,
+                                      OPERA_STATE_VERSION_V4,
+                                      true);
+}
+
 bool
 opera_3do_state_validate(void const *data_,
                          size_t      size_)
 {
   uint32_t rv;
+  uint32_t version;
 
-  /* Only the current format: the older loaders reset parts of the
-   * emulator before they read, so they cannot be dry-run. */
-  if(opera_state_get_version(data_,size_) != OPERA_STATE_VERSION_V3)
+  /* Only the chunked V3/V4 formats: the older loaders reset parts of
+   * the emulator before they read, so they cannot be dry-run. */
+  version = opera_state_get_version(data_,size_);
+  if((version != OPERA_STATE_VERSION_V3) &&
+     (version != OPERA_STATE_VERSION_V4))
     return false;
 
   opera_state_set_validating(true);
-  rv = opera_3do_state_load_v3(data_,size_);
+  rv = opera_3do_state_load_chunked(data_,size_,version,true);
   opera_state_set_validating(false);
 
   return ((rv != 0) && (rv == size_));
@@ -738,6 +754,8 @@ opera_3do_state_load(void const *data_,
       return opera_3do_state_load_v2(data_,size_);
     case OPERA_STATE_VERSION_V3:
       return opera_3do_state_load_v3(data_,size_);
+    case OPERA_STATE_VERSION_V4:
+      return opera_3do_state_load_v4(data_,size_);
     default:
       opera_log_printf(OPERA_LOG_ERROR,
                        "[Opera]: unable to load state - unknown state version %x\n",
