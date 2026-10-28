@@ -32,8 +32,7 @@ RETRO_BEGIN_DECLS
 
 /* nfs:// backend over the built-in NFSv3 client (net/net_nfs3.c).
  * URL shape: nfs://server/export/path, or nfs://server/path with the
- * export from the settings; the subdir, when set, sits between the
- * export and the path. */
+ * export from the settings, the path relative to it. */
 
 #define RETRO_NFS_DEFAULT_TIMEOUT      5
 #define RETRO_NFS_DEFAULT_NUM_CONTEXTS 4
@@ -45,7 +44,6 @@ struct nfs_settings
 {
    const char *server_address;
    const char *export_path;
-   const char *subdir;
    unsigned    timeout;         /* seconds */
    unsigned    num_contexts;    /* connection pool size */
    unsigned    nfs_port;        /* 0: ask the portmapper */
@@ -77,6 +75,8 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);
 int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len);
+int64_t retro_vfs_file_view_nfs(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr);
 int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
       const void *s, uint64_t len);
 int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,

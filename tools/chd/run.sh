@@ -39,20 +39,21 @@ SRC="tools/chd/cdimage_chd_test.c retro_cdimage.c cuefile.c
      opera_lr_callbacks.c
      $L/formats/chd/rchd.c $L/encodings/encoding_huffman.c
      $L/encodings/encoding_rzstd.c $L/encodings/encoding_deflate.c
+     $L/encodings/encoding_xxh64.c $L/vfs/vfs_prefetch.c
      $L/encodings/encoding_crc32.c $L/formats/7z/r7z_lzma.c
      $L/formats/flac/rflac.c $L/streams/chd_stream.c
-     $L/streams/file_stream.c $L/streams/file_stream_transforms.c
+     $L/streams/file_stream.c
      $L/streams/memory_stream.c $L/streams/interface_stream.c
      $L/encodings/encoding_utf.c $L/features/features_cpu.c
      $L/vfs/vfs_implementation.c $L/vfs/vfs_implementation_cdrom.c
      $L/cdrom/cdrom.c $L/compat/compat_strcasestr.c
      $L/compat/compat_posix_string.c $L/compat/compat_strl.c
      $L/compat/compat_snprintf.c $L/compat/fopen_utf8.c
-     $L/memmap/memmap.c $L/string/stdstring.c $L/string/rstrtod.c
+     $L/string/stdstring.c $L/string/rstrtod.c
      $L/file/file_path.c
      $L/file/file_path_io.c $L/file/retro_dirent.c $L/lists/dir_list.c
      $L/lists/string_list.c $L/memmap/memalign.c $L/time/rtime.c
-     $L/rthreads/rthreads.c"
+     $L/rthreads/rthreads.c $L/rthreads/retro_eventcount.c"
 
 # eval, so the quoted INLINE="inline" in DEFS reaches the compiler as the
 # Makefile passes it; SRC is flattened first, since a newline inside eval

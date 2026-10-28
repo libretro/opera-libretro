@@ -60,7 +60,6 @@ endif
 ifneq ($(STATIC_LINKING), 1)
 SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -134,6 +133,8 @@ SOURCES_C += \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
+        $(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.c \
         $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
         $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
 
