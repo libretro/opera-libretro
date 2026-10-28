@@ -2,6 +2,8 @@
 
 #include "opera_log.h"
 
+#include <retro_endianness.h>
+
 #include <stdint.h>
 #include <string.h>
 
@@ -158,7 +160,13 @@ bool
 opera_state_write_u8(opera_state_writer_t *writer_,
                      uint8_t               value_)
 {
-  return opera_state_write_bytes(writer_,&value_,sizeof(value_));
+  uint8_t *dst;
+
+  dst = (uint8_t*)opera_state_write_reserve(writer_,1);
+  if(dst != NULL)
+    dst[0] = value_;
+
+  return !writer_->failed;
 }
 
 bool
@@ -172,12 +180,16 @@ bool
 opera_state_write_u16(opera_state_writer_t *writer_,
                       uint16_t              value_)
 {
-  uint8_t data[2];
+  uint8_t *dst;
 
-  data[0] = (uint8_t)(value_ >> 0);
-  data[1] = (uint8_t)(value_ >> 8);
+  dst = (uint8_t*)opera_state_write_reserve(writer_,2);
+  if(dst != NULL)
+    {
+      dst[0] = (uint8_t)(value_ >> 0);
+      dst[1] = (uint8_t)(value_ >> 8);
+    }
 
-  return opera_state_write_bytes(writer_,data,sizeof(data));
+  return !writer_->failed;
 }
 
 bool
@@ -191,14 +203,18 @@ bool
 opera_state_write_u32(opera_state_writer_t *writer_,
                       uint32_t              value_)
 {
-  uint8_t data[4];
+  uint8_t *dst;
 
-  data[0] = (uint8_t)(value_ >> 0);
-  data[1] = (uint8_t)(value_ >> 8);
-  data[2] = (uint8_t)(value_ >> 16);
-  data[3] = (uint8_t)(value_ >> 24);
+  dst = (uint8_t*)opera_state_write_reserve(writer_,4);
+  if(dst != NULL)
+    {
+      dst[0] = (uint8_t)(value_ >> 0);
+      dst[1] = (uint8_t)(value_ >> 8);
+      dst[2] = (uint8_t)(value_ >> 16);
+      dst[3] = (uint8_t)(value_ >> 24);
+    }
 
-  return opera_state_write_bytes(writer_,data,sizeof(data));
+  return !writer_->failed;
 }
 
 bool
@@ -233,60 +249,94 @@ opera_state_write_i64(opera_state_writer_t *writer_,
   return opera_state_write_u64(writer_,(uint64_t)value_);
 }
 
+/* Arrays go out in one reservation. The stored form is little-endian,
+ * which on a little-endian host is the array's own bytes, so it is one
+ * copy; a big-endian host writes element by element. */
+static
 bool
-opera_state_write_u16_array(opera_state_writer_t *writer_,
-                            uint16_t const       *src_,
-                            uint32_t              count_)
+opera_state_write_array(opera_state_writer_t *writer_,
+                        void const           *src_,
+                        uint32_t              count_,
+                        uint32_t              elem_size_)
 {
+  uint8_t *dst;
   uint32_t i;
 
-  for(i = 0; i < count_; i++)
-    if(!opera_state_write_u16(writer_,src_ == NULL ? 0 : src_[i]))
+  if(count_ > (UINT32_MAX / elem_size_))
+    {
+      opera_state_writer_fail(writer_);
       return false;
+    }
+
+  dst = (uint8_t*)opera_state_write_reserve(writer_,count_ * elem_size_);
+  if(dst == NULL)
+    return !writer_->failed;
+
+  if(src_ == NULL)
+    {
+      memset(dst,0,count_ * elem_size_);
+      return true;
+    }
+
+#if RETRO_IS_LITTLE_ENDIAN
+  (void)i;
+  memcpy(dst,src_,count_ * elem_size_);
+#else
+  if(elem_size_ == 2)
+    {
+      uint16_t const *src = (uint16_t const*)src_;
+      for(i = 0; i < count_; i++, dst += 2)
+        {
+          dst[0] = (uint8_t)(src[i] >> 0);
+          dst[1] = (uint8_t)(src[i] >> 8);
+        }
+    }
+  else
+    {
+      uint32_t const *src = (uint32_t const*)src_;
+      for(i = 0; i < count_; i++, dst += 4)
+        {
+          dst[0] = (uint8_t)(src[i] >> 0);
+          dst[1] = (uint8_t)(src[i] >> 8);
+          dst[2] = (uint8_t)(src[i] >> 16);
+          dst[3] = (uint8_t)(src[i] >> 24);
+        }
+    }
+#endif
 
   return true;
+}
+
+bool
+opera_state_write_u16_array(opera_state_writer_t *writer_,
+                            uint16_t const      *src_,
+                            uint32_t              count_)
+{
+  return opera_state_write_array(writer_,src_,count_,2);
 }
 
 bool
 opera_state_write_i16_array(opera_state_writer_t *writer_,
-                            int16_t const        *src_,
+                            int16_t const       *src_,
                             uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_write_i16(writer_,src_ == NULL ? 0 : src_[i]))
-      return false;
-
-  return true;
+  return opera_state_write_array(writer_,src_,count_,2);
 }
 
 bool
 opera_state_write_u32_array(opera_state_writer_t *writer_,
-                            uint32_t const       *src_,
+                            uint32_t const      *src_,
                             uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_write_u32(writer_,src_ == NULL ? 0 : src_[i]))
-      return false;
-
-  return true;
+  return opera_state_write_array(writer_,src_,count_,4);
 }
 
 bool
 opera_state_write_i32_array(opera_state_writer_t *writer_,
-                            int32_t const        *src_,
+                            int32_t const       *src_,
                             uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_write_i32(writer_,src_ == NULL ? 0 : src_[i]))
-      return false;
-
-  return true;
+  return opera_state_write_array(writer_,src_,count_,4);
 }
 
 bool
@@ -402,7 +452,14 @@ bool
 opera_state_read_u8(opera_state_reader_t *reader_,
                     uint8_t              *value_)
 {
-  return opera_state_read_bytes(reader_,value_,sizeof(*value_));
+  if(reader_->failed || (opera_state_reader_remaining(reader_) < 1))
+    {
+      opera_state_reader_fail(reader_);
+      return false;
+    }
+
+  *value_ = reader_->data[reader_->offset++];
+  return true;
 }
 
 bool
@@ -422,13 +479,18 @@ bool
 opera_state_read_u16(opera_state_reader_t *reader_,
                      uint16_t             *value_)
 {
-  uint8_t data[2];
+  uint8_t const *src;
 
-  if(!opera_state_read_bytes(reader_,data,sizeof(data)))
-    return false;
+  if(reader_->failed || (opera_state_reader_remaining(reader_) < 2))
+    {
+      opera_state_reader_fail(reader_);
+      return false;
+    }
 
-  *value_ = ((uint16_t)data[0] << 0) |
-            ((uint16_t)data[1] << 8);
+  src = &reader_->data[reader_->offset];
+  reader_->offset += 2;
+  *value_ = ((uint16_t)src[0] << 0) |
+            ((uint16_t)src[1] << 8);
   return true;
 }
 
@@ -449,15 +511,20 @@ bool
 opera_state_read_u32(opera_state_reader_t *reader_,
                      uint32_t             *value_)
 {
-  uint8_t data[4];
+  uint8_t const *src;
 
-  if(!opera_state_read_bytes(reader_,data,sizeof(data)))
-    return false;
+  if(reader_->failed || (opera_state_reader_remaining(reader_) < 4))
+    {
+      opera_state_reader_fail(reader_);
+      return false;
+    }
 
-  *value_ = ((uint32_t)data[0] << 0)  |
-            ((uint32_t)data[1] << 8)  |
-            ((uint32_t)data[2] << 16) |
-            ((uint32_t)data[3] << 24);
+  src = &reader_->data[reader_->offset];
+  reader_->offset += 4;
+  *value_ = ((uint32_t)src[0] << 0)  |
+            ((uint32_t)src[1] << 8)  |
+            ((uint32_t)src[2] << 16) |
+            ((uint32_t)src[3] << 24);
   return true;
 }
 
@@ -507,18 +574,57 @@ opera_state_read_i64(opera_state_reader_t *reader_,
   return true;
 }
 
+/* The reading side of opera_state_write_array(). */
+static
+bool
+opera_state_read_array(opera_state_reader_t *reader_,
+                       void                 *dst_,
+                       uint32_t              count_,
+                       uint32_t              elem_size_)
+{
+  uint8_t const *src;
+  uint32_t i;
+
+  if(reader_->failed ||
+     (count_ > (UINT32_MAX / elem_size_)) ||
+     ((count_ * elem_size_) > opera_state_reader_remaining(reader_)))
+    {
+      opera_state_reader_fail(reader_);
+      return false;
+    }
+
+  src = &reader_->data[reader_->offset];
+  reader_->offset += (count_ * elem_size_);
+
+#if RETRO_IS_LITTLE_ENDIAN
+  (void)i;
+  if(count_ > 0)
+    memcpy(dst_,src,count_ * elem_size_);
+#else
+  if(elem_size_ == 2)
+    {
+      uint16_t *dst = (uint16_t*)dst_;
+      for(i = 0; i < count_; i++, src += 2)
+        dst[i] = ((uint16_t)src[0] << 0) | ((uint16_t)src[1] << 8);
+    }
+  else
+    {
+      uint32_t *dst = (uint32_t*)dst_;
+      for(i = 0; i < count_; i++, src += 4)
+        dst[i] = ((uint32_t)src[0] << 0)  | ((uint32_t)src[1] << 8) |
+                 ((uint32_t)src[2] << 16) | ((uint32_t)src[3] << 24);
+    }
+#endif
+
+  return true;
+}
+
 bool
 opera_state_read_u16_array(opera_state_reader_t *reader_,
                            uint16_t             *dst_,
                            uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_read_u16(reader_,&dst_[i]))
-      return false;
-
-  return true;
+  return opera_state_read_array(reader_,dst_,count_,2);
 }
 
 bool
@@ -526,13 +632,7 @@ opera_state_read_i16_array(opera_state_reader_t *reader_,
                            int16_t              *dst_,
                            uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_read_i16(reader_,&dst_[i]))
-      return false;
-
-  return true;
+  return opera_state_read_array(reader_,dst_,count_,2);
 }
 
 bool
@@ -540,13 +640,7 @@ opera_state_read_u32_array(opera_state_reader_t *reader_,
                            uint32_t             *dst_,
                            uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_read_u32(reader_,&dst_[i]))
-      return false;
-
-  return true;
+  return opera_state_read_array(reader_,dst_,count_,4);
 }
 
 bool
@@ -554,13 +648,7 @@ opera_state_read_i32_array(opera_state_reader_t *reader_,
                            int32_t              *dst_,
                            uint32_t              count_)
 {
-  uint32_t i;
-
-  for(i = 0; i < count_; i++)
-    if(!opera_state_read_i32(reader_,&dst_[i]))
-      return false;
-
-  return true;
+  return opera_state_read_array(reader_,dst_,count_,4);
 }
 
 bool
