@@ -2579,6 +2579,14 @@ opera_cdrom_state_load_v2(cdrom_device_t *cd_,
     return 0;
   rv = opera_state_reader_used(&reader);
 
+  if(opera_state_validating())
+    {
+      /* The device checks run against a scratch copy. */
+      static cdrom_device_t scratch;
+
+      return cdrom_state_v2_device_load(&scratch,&device_state) ? rv : 0;
+    }
+
   launch = g_CDROM_STATE.ode.launch;
   ode_state_str_restore(root,
                         g_CDROM_STATE.ode.root,
@@ -2627,6 +2635,11 @@ opera_cdrom_state_load(cdrom_device_t *cd_,
       if(rv != 0)
         return rv;
     }
+
+  /* The older chunk layouts are not validated; a state carrying one
+   * is loaded the slow way, with a backup. */
+  if(opera_state_validating())
+    return 0;
 
   if(data_size == sizeof(*cd_))
     return opera_cdrom_state_load_v1(cd_,data_,chunk_size);

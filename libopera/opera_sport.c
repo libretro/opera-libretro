@@ -261,6 +261,9 @@ opera_sport_state_load(const void     *buf_,
      !opera_state_reader_finished(&payload))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   SPORT = state;
 
   return opera_state_reader_used(&reader);

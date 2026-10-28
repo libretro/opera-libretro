@@ -1044,6 +1044,9 @@ opera_vdlp_state_load(const void     *buf_,
      !opera_state_reader_finished(&payload))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   _migrate_vdlp_state(&state);
   g_VDLP = state;
 

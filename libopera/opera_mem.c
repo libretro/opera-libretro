@@ -371,6 +371,16 @@ opera_mem_state_load(void const     *data_,
                                                  NVRAM_SIZE)))
     return 0;
 
+  /* Validating: the sizes were checked above, so the bulk payload is
+   * only stepped over, not copied. */
+  if(opera_state_validating())
+    {
+      if(!opera_state_skip_bytes(&payload,opera_state_reader_remaining(&payload)) ||
+         !opera_state_reader_finished(&payload))
+        return 0;
+      return opera_state_reader_used(&reader);
+    }
+
   if(!opera_state_read_bytes(&payload,DRAM,MAX_HIRES_RAM_SIZE) ||
      !opera_state_read_bytes(&payload,ROM1,ROM1_SIZE) ||
      !opera_state_read_bytes(&payload,ROM2,ROM2_SIZE) ||

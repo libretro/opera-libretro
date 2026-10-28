@@ -324,6 +324,9 @@ opera_3do_runtime_state_load(void const     *data_,
   if((field_state != 0) && (field_state != 1))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   field = field_state;
   g_FRAME_CYCLE_REMAINDER = remainder_state;
 
@@ -374,6 +377,9 @@ opera_3do_prng_state_load(void const     *data_,
      !opera_state_read_u32(&payload,&prng32_state) ||
      !opera_state_reader_finished(&payload))
     return 0;
+
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
 
   prng16_state_set(prng16_state);
   prng32_state_set(prng32_state);
@@ -637,7 +643,8 @@ opera_3do_state_load_chunked(const void     *data_,
                                 &data,
                                 end))
     return 0;
-  opera_arm_sync_memory_map();
+  if(!opera_state_validating())
+    opera_arm_sync_memory_map();
   if(!opera_3do_state_load_step(opera_sport_state_load,
                                 0,
                                 &data,
@@ -663,6 +670,9 @@ opera_3do_state_load_chunked(const void     *data_,
 
   if(data != end)
     return 0;
+
+  if(opera_state_validating())
+    return (uint32_t)(data - start);
 
   opera_pbus_reset();
   opera_xbus_set_legacy_no_device_abort(0);
@@ -690,6 +700,24 @@ opera_3do_state_load_v3(const void   *data_,
                                       size_,
                                       OPERA_STATE_VERSION_V3,
                                       true);
+}
+
+bool
+opera_3do_state_validate(void const *data_,
+                         size_t      size_)
+{
+  uint32_t rv;
+
+  /* Only the current format: the older loaders reset parts of the
+   * emulator before they read, so they cannot be dry-run. */
+  if(opera_state_get_version(data_,size_) != OPERA_STATE_VERSION_V3)
+    return false;
+
+  opera_state_set_validating(true);
+  rv = opera_3do_state_load_v3(data_,size_);
+  opera_state_set_validating(false);
+
+  return ((rv != 0) && (rv == size_));
 }
 
 uint32_t

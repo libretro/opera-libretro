@@ -261,6 +261,25 @@ retro_unserialize(void const *data_,
   uint32_t restore_size;
   void *backup_state;
 
+  /*
+   * A current-format state is checked first and then loaded: a state
+   * that validates is one the load accepts in full, so there is
+   * nothing to roll back and no need to save the running state first.
+   * That backup was a full serialize into a fresh allocation the size
+   * of a state on every load -- twice the work for run-ahead and
+   * rewind, which load every frame. Anything else (an older format,
+   * a state that does not validate) takes the backup path below, which
+   * leaves the running state as it was if the load fails.
+   */
+  if(opera_3do_state_validate(data_,size_))
+    {
+      size = opera_3do_state_load(data_,size_);
+      if(size != size_)
+        opera_log_printf(OPERA_LOG_ERROR,
+                         "[Opera]: state validated but failed to load\n");
+      return (size == size_);
+    }
+
   backup_state = malloc(retro_serialize_size());
   if(backup_state == NULL)
     return false;

@@ -347,6 +347,37 @@ opera_state_reader_ok(opera_state_reader_t const *reader_)
   return !reader_->failed;
 }
 
+static bool g_STATE_VALIDATING = false;
+
+void
+opera_state_set_validating(bool validating_)
+{
+  g_STATE_VALIDATING = validating_;
+}
+
+bool
+opera_state_validating(void)
+{
+  return g_STATE_VALIDATING;
+}
+
+bool
+opera_state_skip_bytes(opera_state_reader_t *reader_,
+                       uint32_t              size_)
+{
+  if(reader_->failed)
+    return false;
+  if(size_ > opera_state_reader_remaining(reader_))
+    {
+      opera_state_reader_fail(reader_);
+      return false;
+    }
+
+  reader_->offset += size_;
+
+  return true;
+}
+
 bool
 opera_state_read_bytes(opera_state_reader_t *reader_,
                        void                 *dst_,

@@ -347,6 +347,9 @@ opera_arm_state_load(void const     *data_,
      !opera_state_reader_finished(&payload))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   CPU = state;
   g_SOFT_RESET_PENDING = soft_reset_pending;
   set_rom_overlay(rom_overlay);

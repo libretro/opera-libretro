@@ -611,7 +611,8 @@ opera_xbus_state_load(void const     *data_,
      (device_count > 15))
     return 0;
 
-  XBUS = state;
+  if(!opera_state_validating())
+    XBUS = state;
 
   for(i = 0; i < device_count; i++)
     {
@@ -624,7 +625,8 @@ opera_xbus_state_load(void const     *data_,
          (xdev[slot] == NULL))
         return 0;
 
-      xdev[slot](XBP_RESET,NULL);
+      if(!opera_state_validating())
+        xdev[slot](XBP_RESET,NULL);
       remaining = opera_state_reader_remaining(&payload);
       savedata.data = &payload.data[payload.offset];
       savedata.size = remaining;

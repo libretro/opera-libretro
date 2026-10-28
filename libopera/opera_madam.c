@@ -701,6 +701,9 @@ opera_madam_state_load(const void     *buf_,
   if(!opera_state_reader_finished(&payload))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   MADAM = state;
   g_CEL_DRAW_PENDING = (pending != 0);
   // The clock chunk restores the same absolute CPU-cycle timebase.

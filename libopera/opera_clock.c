@@ -235,6 +235,9 @@ opera_clock_state_load(void const     *buf_,
      (state.field_rate == 0))
     return 0;
 
+  if(opera_state_validating())
+    return opera_state_reader_used(&reader);
+
   g_CLOCK = state;
   recalculate_cycles_per();
 

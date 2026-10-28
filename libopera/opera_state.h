@@ -113,6 +113,18 @@ bool     opera_state_read_chunk(opera_state_reader_t *reader,
 bool     opera_state_read_bytes(opera_state_reader_t *reader,
                                 void                 *dst,
                                 uint32_t              size);
+bool     opera_state_skip_bytes(opera_state_reader_t *reader,
+                                uint32_t              size);
+
+/*
+ * Validation pass. While set, every current-format state loader parses
+ * and checks its chunk exactly as it would for a real load but stops
+ * short of changing any emulator state, so a state that validates is
+ * one the real load accepts. Lets a load skip taking a full backup of
+ * the running state to roll back to.
+ */
+void     opera_state_set_validating(bool validating);
+bool     opera_state_validating(void);
 bool     opera_state_read_u8(opera_state_reader_t *reader, uint8_t *value);
 bool     opera_state_read_i8(opera_state_reader_t *reader, int8_t *value);
 bool     opera_state_read_u16(opera_state_reader_t *reader, uint16_t *value);
