@@ -51,6 +51,9 @@ unixcygpath = /$(subst :,,$(call unixpath,$1))
 ifneq (,$(findstring unix,$(platform)))
     AR ?= ${CC_PREFIX}ar
     CC ?= ${CC_PREFIX}gcc
+    # Lets the local VFS map FREQUENT_ACCESS files, so CD image reads
+    # are served from the page cache and CHD hunks are decoded in place.
+    FLAGS += -DHAVE_MMAP
 
     TARGET := $(TARGET_NAME)_libretro.so
     fpic := -fPIC
@@ -146,6 +149,7 @@ else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+   FLAGS += -DHAVE_MMAP
 
 ifeq ($(arch),ppc)
 	FLAGS += -DMSB_FIRST

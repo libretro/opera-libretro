@@ -67,6 +67,9 @@ python3 tools/chd/make_fixture.py "$WORK/base"
 
 export ASAN_OPTIONS=detect_leaks=1:abort_on_error=1
 fail=0
+# Each codec at chdman's default hunk and at the largest hunk it writes
+# (1 MiB, 428 frames of 2448 bytes), which rchd once refused.
+for hs in default 1047744; do
 for c in cdzs cdlz cdzl cdfl; do
    case $c in
       cdzs) name="CD Zstandard" ;;
@@ -74,15 +77,17 @@ for c in cdzs cdlz cdzl cdfl; do
       cdzl) name="CD Deflate" ;;
       cdfl) name="CD FLAC" ;;
    esac
-   chdman createcd -f -c "$c" -i "$WORK/base.cue" -o "$WORK/$c.chd" \
-      >/dev/null 2>&1
+   if [ $hs = default ]; then hsarg=; else hsarg="-hs $hs"; fi
+   chdman createcd -f -c "$c" $hsarg -i "$WORK/base.cue" \
+      -o "$WORK/$c.$hs.chd" >/dev/null 2>&1
    # A codec that fell back to storing hunks uncompressed would leave
    # nothing for this test to decode, so its row in the hunk table has to
    # be there.
-   chdman info -v -i "$WORK/$c.chd" | grep -q "%  $name" \
-      || { echo "$c.chd holds no $name hunks" >&2; exit 1; }
-   "$WORK/cdimage_chd_test" "$WORK/base.cue" "$WORK/$c.chd" | tail -1 \
-      | grep -q PASS || { echo "FAIL: $c"; fail=1; }
+   chdman info -v -i "$WORK/$c.$hs.chd" | grep -q "%  $name" \
+      || { echo "$c.$hs.chd holds no $name hunks" >&2; exit 1; }
+   "$WORK/cdimage_chd_test" "$WORK/base.cue" "$WORK/$c.$hs.chd" | tail -1 \
+      | grep -q PASS || { echo "FAIL: $c hunk $hs"; fail=1; }
+done
 done
 
 if [ $fail = 0 ]; then

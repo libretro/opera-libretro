@@ -22,6 +22,7 @@ typedef struct cdimage_file_t
 {
   intfstream_t *fp;
   size_t        size;
+  int64_t       pos;   /* where a read left @fp, -1 if unknown */
 } cdimage_file_t;
 
 typedef struct cdimage_track_t
@@ -41,6 +42,7 @@ typedef struct cdimage_chd_state_t cdimage_chd_state_t;
 typedef struct cdimage_t
 {
   intfstream_t        *fp;
+  int64_t              fp_pos;  /* as cdimage_file_t.pos, for an ISO */
   cdimage_chd_state_t *chd_state;
   int                  sector_size;
   int                  sector_offset;

@@ -9,6 +9,7 @@
 #include "formats/rchd.h"
 #endif
 #include "streams/interface_stream.h"
+#include "streams/file_stream.h"
 
 #include "endianness.h"
 
@@ -17,7 +18,11 @@
 #include <string.h>
 
 #ifdef HAVE_CHD
-#define CDIMAGE_CHD_REQUEST_BUFFER_SIZE 65536U
+/* How far ahead of a CHD read the OS is asked to bring the file into
+ * memory when it is mapped, and how much of that is used up before the
+ * next request is issued. */
+#define CDIMAGE_CHD_READAHEAD_BYTES  (1024U * 1024U)
+#define CDIMAGE_CHD_READAHEAD_REFILL (512U * 1024U)
 
 typedef struct cdimage_chd_track_map_t
 {
@@ -26,11 +31,24 @@ typedef struct cdimage_chd_track_map_t
   uint32_t span_end_lba;
 } cdimage_chd_track_map_t;
 
+/*
+ * Compressed bytes reach the decoder without a copy where possible. A
+ * mapped file is lent to it straight from the mapping. Otherwise each
+ * request is read into @input, which holds a whole hunk's blob, and
+ * that is lent instead -- the decoder is done with it before the next
+ * request refills it. The open sequence (header, map, metadata) is fed
+ * by copy, since its requests can be larger than a hunk.
+ */
 typedef struct cdimage_chd_state_t
 {
-  intfstream_t *source;
-  rchd_t       *decoder;
-  uint8_t      *request_buffer;
+  RFILE         *source;
+  rchd_t        *decoder;
+  const uint8_t *mapped;
+  uint64_t       file_size;
+  int64_t        pos;            /* file position, -1 if unknown */
+  uint64_t       readahead_end;  /* mapped bytes already asked for */
+  uint8_t       *input;
+  size_t         input_size;
   cdimage_chd_track_map_t tracks[CDIMAGE_MAX_TRACKS];
 } cdimage_chd_state_t;
 
@@ -48,51 +66,138 @@ cdimage_chd_state_free(cdimage_chd_state_t *state_)
   if(state_ == NULL)
     return;
 
-  if(state_->source != NULL)
-    {
-      intfstream_close(state_->source);
-      free(state_->source);
-    }
-
   rchd_free(state_->decoder);
-  free(state_->request_buffer);
+  if(state_->source != NULL)
+    filestream_close(state_->source);
+  free(state_->input);
   free(state_);
 }
 
 
 static
 bool
-cdimage_chd_feed_request(cdimage_chd_state_t  *state_,
-                         const rchd_request_t *request_)
+cdimage_chd_read_exact(cdimage_chd_state_t *state_,
+                       uint64_t             offset_,
+                       uint8_t             *dst_,
+                       size_t               len_)
 {
-  int64_t bytes_read;
-  size_t read_size;
+  size_t total;
 
-  if((state_ == NULL) ||
-     (state_->source == NULL) ||
-     (state_->decoder == NULL) ||
-     (state_->request_buffer == NULL) ||
-     (request_ == NULL) ||
-     (request_->source != RCHD_SOURCE_SELF) ||
-     (request_->offset > INT64_MAX))
+  if(state_->pos != (int64_t)offset_)
+    {
+      if(filestream_seek(state_->source,
+                         (int64_t)offset_,
+                         RETRO_VFS_SEEK_POSITION_START) < 0)
+        {
+          state_->pos = -1;
+          return false;
+        }
+      state_->pos = (int64_t)offset_;
+    }
+
+  total = 0;
+  while(total < len_)
+    {
+      int64_t got;
+
+      got = filestream_read(state_->source,dst_ + total,len_ - total);
+      if(got <= 0)
+        {
+          state_->pos = -1;
+          return false;
+        }
+      total       += (size_t)got;
+      state_->pos += got;
+    }
+
+  return true;
+}
+
+
+/* Asks the OS to bring the mapped bytes past a read into memory before
+ * the decoder touches them, so a cold page does not stall the emulation
+ * thread. Coalesced: one request covers many hunks. */
+static
+void
+cdimage_chd_readahead(cdimage_chd_state_t *state_,
+                      uint64_t             end_)
+{
+  uint64_t to;
+
+  if((end_ + CDIMAGE_CHD_READAHEAD_REFILL) <= state_->readahead_end)
+    return;
+
+  to = end_ + CDIMAGE_CHD_READAHEAD_BYTES;
+  if(to > state_->file_size)
+    to = state_->file_size;
+  if(state_->readahead_end < end_)
+    state_->readahead_end = end_;
+  if(to > state_->readahead_end)
+    filestream_prefetch(state_->source,
+                        state_->readahead_end,
+                        to - state_->readahead_end);
+  state_->readahead_end = to;
+}
+
+
+static
+bool
+cdimage_chd_feed_request(cdimage_chd_state_t  *state_,
+                         const rchd_request_t *request_,
+                         bool                  reading_)
+{
+  uint64_t end;
+
+  if((request_->source != RCHD_SOURCE_SELF) ||
+     (request_->offset > state_->file_size) ||
+     (request_->length > (state_->file_size - request_->offset)))
     return false;
+  end = request_->offset + request_->length;
 
-  read_size = MIN((size_t)request_->length,
-                  (size_t)CDIMAGE_CHD_REQUEST_BUFFER_SIZE);
-  if(intfstream_seek(state_->source,
-                     (int64_t)request_->offset,
-                     RETRO_VFS_SEEK_POSITION_START) == -1)
-    return false;
+  if(state_->mapped != NULL)
+    {
+      if(!reading_)
+        return (rchd_feed(state_->decoder,
+                          state_->mapped + request_->offset,
+                          request_->length) == RCHD_OK);
+      cdimage_chd_readahead(state_,end);
+      return (rchd_feed_borrow(state_->decoder,
+                               request_->offset,
+                               request_->source,
+                               state_->mapped + request_->offset,
+                               request_->length) == RCHD_OK);
+    }
 
-  bytes_read = intfstream_read(state_->source,
-                               state_->request_buffer,
-                               read_size);
-  if(bytes_read <= 0)
-    return false;
+  if(reading_ && (request_->length <= state_->input_size))
+    {
+      if(!cdimage_chd_read_exact(state_,
+                                 request_->offset,
+                                 state_->input,
+                                 request_->length))
+        return false;
+      return (rchd_feed_borrow(state_->decoder,
+                               request_->offset,
+                               request_->source,
+                               state_->input,
+                               request_->length) == RCHD_OK);
+    }
 
-  return (rchd_feed(state_->decoder,
-                    state_->request_buffer,
-                    (size_t)bytes_read) == RCHD_OK);
+  /* The open sequence, or a blob larger than a hunk: fed in pieces the
+   * size of @input. A partial supply is legal; the decoder asks for the
+   * rest. */
+  {
+    size_t len = request_->length;
+
+    if(len > state_->input_size)
+      len = state_->input_size;
+    if(!cdimage_chd_read_exact(state_,request_->offset,state_->input,len))
+      return false;
+    return (rchd_feed_at(state_->decoder,
+                         request_->offset,
+                         request_->source,
+                         state_->input,
+                         len) == RCHD_OK);
+  }
 }
 
 
@@ -110,7 +215,7 @@ cdimage_chd_open_decoder(cdimage_chd_state_t *state_)
         return true;
       if(status != RCHD_PENDING)
         return false;
-      if(!cdimage_chd_feed_request(state_,&request))
+      if(!cdimage_chd_feed_request(state_,&request,false))
         return false;
     }
 
@@ -139,7 +244,7 @@ cdimage_chd_read_bytes(cdimage_chd_state_t *state_,
         return (ssize_t)len_;
       if(status != RCHD_PENDING)
         return -1;
-      if(!cdimage_chd_feed_request(state_,&request))
+      if(!cdimage_chd_feed_request(state_,&request,true))
         return -1;
     }
 }
@@ -349,9 +454,11 @@ cdimage_open_cue_file(cdimage_t  *cdimage_,
   if(!cdimage_file_extension_supported(path_))
     return -1;
 
+  /* FREQUENT_ACCESS lets the VFS map the image, so sector reads are
+   * copies out of the page cache rather than seek and read calls. */
   fp = intfstream_open_file(path_,
                             RETRO_VFS_FILE_ACCESS_READ,
-                            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
   if(fp == NULL)
     return -1;
 
@@ -389,18 +496,55 @@ retro_cdimage_open_chd(const char *path_,
   if(state == NULL)
     return -1;
 
-  state->source = intfstream_open_file(path_,
-                                       RETRO_VFS_FILE_ACCESS_READ,
-                                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+  /* FREQUENT_ACCESS asks the VFS to map the file, which lets the
+   * decoder read compressed hunks in place. */
+  state->source = filestream_open(path_,
+                                  RETRO_VFS_FILE_ACCESS_READ,
+                                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+  if(state->source == NULL)
+    goto error;
+  {
+    int64_t size = filestream_get_size(state->source);
+    int64_t mapped_len = 0;
+
+    if(size <= 0)
+      goto error;
+    state->file_size = (uint64_t)size;
+    state->mapped = filestream_get_mapped_ptr(state->source,&mapped_len);
+    if((state->mapped != NULL) && (mapped_len < size))
+      state->mapped = NULL;
+  }
+  state->pos = 0;
+
+  /* 64 KiB covers the open sequence's header and small metadata in one
+   * read; the buffer is resized to a hunk once the hunk size is known. */
+  state->input_size = 65536U;
+  state->input = (uint8_t*)malloc(state->input_size);
   state->decoder = rchd_new();
-  state->request_buffer = (uint8_t*)malloc(CDIMAGE_CHD_REQUEST_BUFFER_SIZE);
-  if((state->source == NULL) ||
-     (state->decoder == NULL) ||
-     (state->request_buffer == NULL) ||
+  if((state->decoder == NULL) ||
+     (state->input == NULL) ||
      !cdimage_chd_open_decoder(state))
     goto error;
 
   info = rchd_info(state->decoder);
+  if(state->mapped != NULL)
+    {
+      /* Every read is lent from the mapping. */
+      free(state->input);
+      state->input      = NULL;
+      state->input_size = 0;
+    }
+  else if((info != NULL) && (info->hunk_bytes != state->input_size))
+    {
+      /* Allocated here, at open, so a read never allocates. */
+      uint8_t *input = (uint8_t*)malloc(info->hunk_bytes);
+
+      if(input == NULL)
+        goto error;
+      free(state->input);
+      state->input      = input;
+      state->input_size = info->hunk_bytes;
+    }
   track_count = rchd_track_count(state->decoder);
   if((info == NULL) ||
      (info->unit_bytes == 0) ||
@@ -528,9 +672,10 @@ retro_cdimage_open_iso(const char *path_,
   int64_t size;
   bool raw_audio;
 
+  /* Mapped where the VFS can: see cdimage_open_cue_file(). */
   cdimage_->fp = intfstream_open_file(path_,
                                       RETRO_VFS_FILE_ACCESS_READ,
-                                      RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                                      RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
   if(cdimage_->fp == NULL)
     return -1;
 
@@ -743,26 +888,44 @@ retro_cdimage_open_cue(const char *path_,
   return 0;
 }
 
+/* Opening probes the files (size, data-or-audio), so where the streams
+ * stand afterwards is not tracked; the first read of each seeks. */
+static
+void
+cdimage_forget_positions(cdimage_t *cdimage_)
+{
+  int i;
+
+  cdimage_->fp_pos = -1;
+  for(i = 0; i < CDIMAGE_MAX_FILES; i++)
+    cdimage_->files[i].pos = -1;
+}
+
 int
 retro_cdimage_open(const char *path_,
                    cdimage_t  *cdimage_)
 {
   const char *ext;
+  int rv;
 
   ext = path_get_extension(path_);
   if(ext == NULL)
     return -1;
 
   if(!strcasecmp(ext,"chd"))
-    return retro_cdimage_open_chd(path_,cdimage_);
-  if(!strcasecmp(ext,"cue"))
-    return retro_cdimage_open_cue(path_,cdimage_);
-  if(!strcasecmp(ext,"iso"))
-    return retro_cdimage_open_iso(path_,cdimage_);
-  if(!strcasecmp(ext,"bin"))
-    return retro_cdimage_open_bin(path_,cdimage_);
+    rv = retro_cdimage_open_chd(path_,cdimage_);
+  else if(!strcasecmp(ext,"cue"))
+    rv = retro_cdimage_open_cue(path_,cdimage_);
+  else if(!strcasecmp(ext,"iso"))
+    rv = retro_cdimage_open_iso(path_,cdimage_);
+  else if(!strcasecmp(ext,"bin"))
+    rv = retro_cdimage_open_bin(path_,cdimage_);
+  else
+    return -1;
 
-  return -1;
+  cdimage_forget_positions(cdimage_);
+
+  return rv;
 }
 
 int
@@ -937,6 +1100,49 @@ cdimage_stream_for_track(cdimage_t             *cdimage_,
   return cdimage_->files[track_->file_index].fp;
 }
 
+/*
+ * Reads @len_ bytes at @pos_, seeking only when the stream is not
+ * already there. Sector reads are mostly sequential, and a seek to where
+ * the stream already stands still costs a VFS call -- an lseek and a
+ * dropped stdio buffer on an unmapped file.
+ */
+static
+ssize_t
+cdimage_read_at(cdimage_t    *cdimage_,
+                intfstream_t *fp_,
+                size_t        pos_,
+                void         *buf_,
+                size_t        len_)
+{
+  int64_t *pos;
+  int64_t  rv;
+  int      i;
+
+  pos = &cdimage_->fp_pos;
+  for(i = 0; i < cdimage_->num_files; i++)
+    {
+      if(cdimage_->files[i].fp == fp_)
+        {
+          pos = &cdimage_->files[i].pos;
+          break;
+        }
+    }
+
+  if(*pos != (int64_t)pos_)
+    {
+      if(intfstream_seek(fp_,(int64_t)pos_,RETRO_VFS_SEEK_POSITION_START) == -1)
+        {
+          *pos = -1;
+          return -1;
+        }
+    }
+
+  rv = intfstream_read(fp_,buf_,len_);
+  *pos = (rv > 0) ? ((int64_t)pos_ + rv) : -1;
+
+  return (ssize_t)rv;
+}
+
 static
 void
 cdimage_swap_audio_byte_pairs(void    *buf_,
@@ -1045,7 +1251,6 @@ retro_cdimage_read(cdimage_t *cdimage_,
                    size_t     bufsize_)
 {
   intfstream_t *fp;
-  int rv;
   size_t pos;
   size_t offset;
 
@@ -1065,11 +1270,7 @@ retro_cdimage_read(cdimage_t *cdimage_,
   bufsize_ = MIN(bufsize_, cdimage_->sector_size);
   pos      = ((sector_ * cdimage_->sector_size) + offset);
 
-  rv = intfstream_seek(fp,pos,RETRO_VFS_SEEK_POSITION_START);
-  if(rv == -1)
-    return -1;
-
-  return intfstream_read(fp,buf_,bufsize_);
+  return cdimage_read_at(cdimage_,fp,pos,buf_,bufsize_);
 }
 
 ssize_t
@@ -1110,11 +1311,7 @@ retro_cdimage_read_sector(cdimage_t *cdimage_,
               ((sector_ - track_info->start_lba) * track_info->mode) +
               offset);
 
-  rv = intfstream_seek(fp,pos,RETRO_VFS_SEEK_POSITION_START);
-  if(rv == -1)
-    return -1;
-
-  rv = (int)intfstream_read(fp,buf_,bufsize_);
+  rv = (int)cdimage_read_at(cdimage_,fp,pos,buf_,bufsize_);
 
   /*
    * Raw BIN/CUE CD-DA sectors need native-order samples for the 3DO READ_DATA
