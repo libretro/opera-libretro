@@ -21,7 +21,7 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
-#include <zlib.h>
+#include <encodings/deflate.h>
 
 #include <dirent.h>
 #include <dlfcn.h>
@@ -381,8 +381,6 @@ struct harness_run_t
   size_t terminal_rgb_buffer_size;
   uint8_t *terminal_scaled_rgb_buffer;
   size_t terminal_scaled_rgb_buffer_size;
-  z_stream terminal_kitty_zstream;
-  bool terminal_kitty_zstream_initialized;
   byte_buffer_t terminal_kitty_zlib_buffer;
   byte_buffer_t terminal_png_buffer;
   unsigned *terminal_sixel_src_x;
@@ -5567,9 +5565,11 @@ _terminal_compress_kitty_rgb(const uint8_t  *rgb_,
                              size_t         *compressed_len_out_)
 {
   byte_buffer_t *compressed = &g_run.terminal_kitty_zlib_buffer;
-  z_stream *stream = &g_run.terminal_kitty_zstream;
-  uLong bound;
-  int status;
+  void   *stream;
+  size_t  bound;
+  size_t  total_in  = 0;
+  size_t  total_out = 0;
+  int     status;
 
   if(compressed_out_ != NULL)
     *compressed_out_ = NULL;
@@ -5579,39 +5579,39 @@ _terminal_compress_kitty_rgb(const uint8_t  *rgb_,
   if((rgb_ == NULL) || (rgb_len_ == 0U) || (rgb_len_ > UINT_MAX))
     return false;
 
-  if(!g_run.terminal_kitty_zstream_initialized)
-    {
-      memset(stream, 0, sizeof(*stream));
-      status = deflateInit(stream, HARNESS_TERMINAL_KITTY_ZLIB_LEVEL);
-      if(status != Z_OK)
-        return false;
-      g_run.terminal_kitty_zstream_initialized = true;
-    }
-  else if(deflateReset(stream) != Z_OK)
-    {
-      return false;
-    }
-
-  bound = deflateBound(stream, (uLong)rgb_len_);
-  if((bound == 0UL) || (bound > UINT_MAX))
-    return false;
+  /* Stored blocks are the worst case: 5 bytes per 65535 plus the
+   * 2-byte header and 4-byte adler32 trailer; the rest is slack. */
+  bound = rgb_len_ + (rgb_len_ >> 12) + (rgb_len_ >> 14) + 64U;
 
   _byte_buffer_reset(compressed);
-  if(!_byte_buffer_reserve(compressed, (size_t)bound))
+  if(!_byte_buffer_reserve(compressed, bound))
     return false;
 
-  stream->next_in = (Bytef *)rgb_;
-  stream->avail_in = (uInt)rgb_len_;
-  stream->next_out = compressed->data;
-  stream->avail_out = (uInt)bound;
-  status = deflate(stream, Z_FINISH);
-  if((status != Z_STREAM_END) || (stream->avail_in != 0U))
+  stream = rdeflate_new(HARNESS_TERMINAL_KITTY_ZLIB_LEVEL, 15);
+  if(stream == NULL)
     return false;
 
-  compressed->len = (size_t)bound - (size_t)stream->avail_out;
-  if(compressed->len == 0U)
+  rdeflate_set_in(stream, rgb_, rgb_len_);
+  rdeflate_set_out(stream, compressed->data, bound);
+  rdeflate_finish(stream);
+  for(;;)
+    {
+      size_t rd = 0;
+      size_t wr = 0;
+
+      status = rdeflate_process(stream, &rd, &wr);
+      total_in  += rd;
+      total_out += wr;
+      if((status != RDEFLATE_PROCESS_NEXT) || ((rd == 0U) && (wr == 0U)))
+        break;
+    }
+  rdeflate_free(stream);
+
+  if((status != RDEFLATE_PROCESS_END) || (total_in != rgb_len_) ||
+     (total_out == 0U))
     return false;
 
+  compressed->len = total_out;
   if(compressed_out_ != NULL)
     *compressed_out_ = compressed->data;
   if(compressed_len_out_ != NULL)
@@ -6973,13 +6973,6 @@ static
 void
 _terminal_free_image_buffers(void)
 {
-  if(g_run.terminal_kitty_zstream_initialized)
-    {
-      (void)deflateEnd(&g_run.terminal_kitty_zstream);
-      memset(&g_run.terminal_kitty_zstream, 0,
-             sizeof(g_run.terminal_kitty_zstream));
-      g_run.terminal_kitty_zstream_initialized = false;
-    }
 
   free(g_run.terminal_rgb_buffer);
   free(g_run.terminal_scaled_rgb_buffer);

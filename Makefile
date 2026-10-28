@@ -651,23 +651,17 @@ $(CORE_DIR)/libopera/opera_bios.o: $(CORE_DIR)/libopera/opera_bios.h \
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS)
 
 HARNESS_TARGET := opera-test-harness
-HARNESS_ZLIB_DIR := $(DEPS_DIR)/zlib-1.3.1.2
-HARNESS_ZLIB_CFLAGS := -I$(HARNESS_ZLIB_DIR)
-HARNESS_ZLIB_SOURCES := \
-	$(HARNESS_ZLIB_DIR)/adler32.c \
-	$(HARNESS_ZLIB_DIR)/crc32.c \
-	$(HARNESS_ZLIB_DIR)/deflate.c \
-	$(HARNESS_ZLIB_DIR)/trees.c \
-	$(HARNESS_ZLIB_DIR)/zutil.c
-HARNESS_ZLIB_DEPS := $(HARNESS_ZLIB_SOURCES) \
-	$(wildcard $(HARNESS_ZLIB_DIR)/*.h)
-HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(HARNESS_ZLIB_CFLAGS) $(INCFLAGS)
+HARNESS_LC_SOURCES := \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
+HARNESS_CFLAGS := -O2 -g -Wall -Wextra $(INCFLAGS)
 HARNESS_LIBS := -ldl -lm
 
 harness: $(HARNESS_TARGET)
 
-$(HARNESS_TARGET): tools/test_harness.c tools/stb_image_write.h $(HARNESS_ZLIB_DEPS)
-	$(CC) -o $@ tools/test_harness.c $(HARNESS_ZLIB_SOURCES) \
+$(HARNESS_TARGET): tools/test_harness.c tools/stb_image_write.h $(HARNESS_LC_SOURCES)
+	$(CC) -o $@ tools/test_harness.c $(HARNESS_LC_SOURCES) \
 		$(HARNESS_CFLAGS) $(HARNESS_LIBS)
 
 clean:

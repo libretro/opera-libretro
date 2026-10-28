@@ -2,13 +2,11 @@ ifeq ($(LIBRETRO_COMM_DIR),)
 	LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 endif
 OPERA_DIR         := $(CORE_DIR)/libopera
-DEPS_DIR          := $(CORE_DIR)/deps
 
 INCFLAGS := \
          -I$(CORE_DIR) \
          -I$(CORE_DIR)/libopera \
-         -I$(LIBRETRO_COMM_DIR)/include \
-         -I$(DEPS_DIR)
+         -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq (,$(findstring msvc2003,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
@@ -64,6 +62,7 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
@@ -124,40 +123,23 @@ FLAGS += \
 	-DHAVE_RCHD_ZSTD \
 	-DHAVE_RFLAC
 
-INCFLAGS += \
-	-I$(DEPS_DIR)/zlib-1.3.1.2
-
 SOURCES_C += \
         $(LIBRETRO_COMM_DIR)/streams/chd_stream.c \
         $(LIBRETRO_COMM_DIR)/formats/chd/rchd.c \
-        $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
         $(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.c \
         $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
         $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
+endif
 
+# The built-in boot ROM is inflated by rinflate, so a static build needs
+# it (and the CRC32/CPU-feature code it uses) with or without CHD.
 ifeq ($(STATIC_LINKING), 1)
 SOURCES_C += \
         $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+        $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
         $(LIBRETRO_COMM_DIR)/features/features_cpu.c
 endif
-endif
 
-ZLIB_INCFLAGS  = -I$(DEPS_DIR)/zlib-1.3.1.2
-ZLIB_SOURCES_C = \
-	$(DEPS_DIR)/zlib-1.3.1.2/adler32.c \
-	$(DEPS_DIR)/zlib-1.3.1.2/crc32.c \
-	$(DEPS_DIR)/zlib-1.3.1.2/inffast.c \
-	$(DEPS_DIR)/zlib-1.3.1.2/inflate.c \
-	$(DEPS_DIR)/zlib-1.3.1.2/inftrees.c \
-	$(DEPS_DIR)/zlib-1.3.1.2/zutil.c
-
-    ifeq ($(SYSTEM_ZLIB), 1)
-       INCFLAGS += $(shell pkg-config --cflags zlib)
-       LIBS += $(shell pkg-config --libs zlib)
-    else
-       INCFLAGS += $(ZLIB_INCFLAGS)
-       SOURCES_C += $(ZLIB_SOURCES_C)
-    endif

@@ -2,7 +2,7 @@
 
 #include "opera_bios.h"
 
-#include <zlib.h>
+#include <encodings/deflate.h>
 
 #include "opera_boot.h"
 
@@ -235,35 +235,41 @@ int
 opera_bios_load_builtin(uint8_t *data_,
                         size_t   capacity_)
 {
-  int rv;
-  int end_rv;
-  z_stream stream = {0};
+  int    rv;
+  void  *stream;
+  size_t read  = 0;
+  size_t wrote = 0;
 
   if((data_ == NULL) || (capacity_ < OPERA_BOOT_ROM_BYTES))
     return -1;
 
-  // zlib's input type is mutable for compatibility; inflate does not write it.
-  stream.next_in = (Bytef *)OPERA_BOOT_ZLIB;
-  stream.avail_in = sizeof(OPERA_BOOT_ZLIB);
-  stream.next_out = data_;
-  stream.avail_out = OPERA_BOOT_ROM_BYTES;
-  rv = inflateInit(&stream);
-  if(rv != Z_OK)
+  /* zlib-wrapped (window bits 15): rinflate checks the adler32 trailer.
+   * The ROM decodes straight into the caller's buffer. */
+  stream = rinflate_new(15);
+  if(stream == NULL)
     return -1;
 
-  rv = inflate(&stream,Z_FINISH);
-  if((rv != Z_STREAM_END) ||
-     (stream.total_in != sizeof(OPERA_BOOT_ZLIB)) ||
-     (stream.total_out != OPERA_BOOT_ROM_BYTES))
-    rv = -1;
-  else
-    rv = OPERA_BOOT_ROM_BYTES;
+  rinflate_set_in(stream,OPERA_BOOT_ZLIB,sizeof(OPERA_BOOT_ZLIB));
+  rinflate_set_out(stream,data_,OPERA_BOOT_ROM_BYTES);
+  for(;;)
+    {
+      size_t rd = 0;
+      size_t wr = 0;
 
-  end_rv = inflateEnd(&stream);
-  if(end_rv != Z_OK)
+      rv = rinflate_process(stream,&rd,&wr);
+      read  += rd;
+      wrote += wr;
+      if((rv != RDEFLATE_PROCESS_NEXT) || ((rd == 0) && (wr == 0)))
+        break;
+    }
+  rinflate_free(stream);
+
+  if((rv != RDEFLATE_PROCESS_END) ||
+     (read != sizeof(OPERA_BOOT_ZLIB)) ||
+     (wrote != OPERA_BOOT_ROM_BYTES))
     return -1;
 
-  return rv;
+  return OPERA_BOOT_ROM_BYTES;
 }
 
 
