@@ -87,6 +87,12 @@ for c in cdzs cdlz cdzl cdfl; do
       || { echo "$c.$hs.chd holds no $name hunks" >&2; exit 1; }
    "$WORK/cdimage_chd_test" "$WORK/base.cue" "$WORK/$c.$hs.chd" | tail -1 \
       | grep -q PASS || { echo "FAIL: $c hunk $hs"; fail=1; }
+   # Behind a frontend VFS: v7 lends the mapping, v3 and v6 read
+   for v in 7 6 3; do
+      "$WORK/cdimage_chd_test" "$WORK/base.cue" "$WORK/$c.$hs.chd" \
+         --frontend $v | tail -1 | grep -q PASS \
+         || { echo "FAIL: $c hunk $hs, frontend v$v"; fail=1; }
+   done
 done
 done
 

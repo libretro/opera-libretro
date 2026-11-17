@@ -504,13 +504,22 @@ retro_cdimage_open_chd(const char *path_,
   if(state->source == NULL)
     goto error;
   {
+    struct retro_vfs_volume vol;
     int64_t size = filestream_get_size(state->source);
     int64_t mapped_len = 0;
 
     if(size <= 0)
       goto error;
     state->file_size = (uint64_t)size;
-    state->mapped = filestream_get_mapped_ptr(state->source,&mapped_len);
+    /* A removable or network drive can fail a touch of the mapping,
+     * which faults where a read would only fail: those are read. The
+     * kind is told on Windows; elsewhere it is not, and maps as before. */
+    if(!filestream_volume(state->source,RETRO_VFS_VOLUME_WANT_KIND,&vol) ||
+       ((vol.kind != RETRO_VFS_VOLUME_REMOVABLE) &&
+        (vol.kind != RETRO_VFS_VOLUME_REMOTE)))
+      /* Local, or lent by a v7 frontend's VFS; NULL under an older one,
+       * which leaves the reads below */
+      state->mapped = filestream_map(state->source,&mapped_len);
     if((state->mapped != NULL) && (mapped_len < size))
       state->mapped = NULL;
   }

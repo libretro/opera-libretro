@@ -87,22 +87,30 @@ retro_environment_set_controller_info(void)
   retro_environment_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,(void*)ports);
 }
 
+/* The newest VFS the frontend has, down to v3: v7 lends the CHD's
+ * mapping, an older frontend still opens everything (filestream copies
+ * instead), and filestream_vfs_init takes only the members the
+ * frontend's version has. */
 static
 void
 retro_vfs_initialize(void)
 {
   struct retro_vfs_interface_info vfs_info;
+  uint32_t version;
 
-  vfs_info.required_interface_version = 3;
-  vfs_info.iface                      = NULL;
-
-  if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info) &&
-     (vfs_info.iface != NULL))
+  for(version = 7; version >= 3; version--)
     {
-      filestream_vfs_init(&vfs_info);
-      path_vfs_init(&vfs_info);
-      dirent_vfs_init(&vfs_info);
-      return;
+      vfs_info.required_interface_version = version;
+      vfs_info.iface                      = NULL;
+
+      if(retro_environment_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,&vfs_info) &&
+         (vfs_info.iface != NULL))
+        {
+          filestream_vfs_init(&vfs_info);
+          path_vfs_init(&vfs_info);
+          dirent_vfs_init(&vfs_info);
+          return;
+        }
     }
 
   vfs_info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
